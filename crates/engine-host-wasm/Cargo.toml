@@ -14,7 +14,7 @@ authors.workspace = true
 # only the host-arch cranelift backend is compiled in and the build.rs
 # trips "Support for this target is disabled". Adds ~1-2 min to every
 # wasmtime-touching crate's compile but the matrix can't ship without it.
-wasmtime = { version = "43", features = ["all-arch"] }
+wasmtime = { version = "48", features = ["all-arch"] }
 wasmtime-wasi = "43"
 thiserror = { workspace = true }
 
