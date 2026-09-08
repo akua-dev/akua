@@ -15,7 +15,7 @@ authors.workspace = true
 # trips "Support for this target is disabled". Adds ~1-2 min to every
 # wasmtime-touching crate's compile but the matrix can't ship without it.
 wasmtime = { version = "43", features = ["all-arch"] }
-wasmtime-wasi = "43"
+wasmtime-wasi = "48"
 thiserror = { workspace = true }
 
 [dev-dependencies]
