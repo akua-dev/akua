@@ -75,7 +75,7 @@ schemars = { version = "1", optional = true }
 # engine-host-wasm (helm, kustomize) — one Config, one Engine, many
 # Stores — matching the wasmtime docs' canonical pattern. Nested
 # Engines trip process-global trap-handler TLS; avoid.
-wasmtime = "43"
+wasmtime = "48"
 wasmtime-wasi = "43"
 engine-host-wasm = { path = "../engine-host-wasm" }
 
@@ -97,7 +97,7 @@ tokio = { version = "1", optional = true, default-features = false, features = [
 # use the same wasmtime version + Config shape as the runtime host
 # or Module::deserialize fails the compat-hash check. Uses
 # engine-host-wasm::shared_config so Config matches runtime exactly.
-wasmtime = "43"
+wasmtime = "48"
 engine-host-wasm = { path = "../engine-host-wasm" }
 # Content-hash check against `<wasm>.sources.sha256` (written by
 # `task build:render-worker`). Catches the false-positive case the
