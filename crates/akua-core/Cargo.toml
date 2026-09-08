@@ -123,7 +123,7 @@ gix = { version = "0.66", default-features = false, features = ["blocking-http-t
 curl = { version = "0.4", optional = true, features = ["static-ssl"] }
 p256 = { version = "0.13", default-features = false, features = ["ecdsa", "std", "pem", "pkcs8"], optional = true }
 pkcs8 = { version = "0.10", default-features = false, features = ["pem", "pkcs5", "encryption", "alloc"], optional = true }
-pem = { version = "3", optional = true }
+pem = { version = "4", optional = true }
 signature = { version = "2", optional = true }
 notify = { version = "6", optional = true }
 notify-debouncer-mini = { version = "0.4", optional = true, default-features = false }
