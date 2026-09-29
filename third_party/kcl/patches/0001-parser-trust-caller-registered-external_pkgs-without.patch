@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Robin=20Br=C3=A4mer?= <robin.braemer@web.de>
+Date: Tue, 29 Sep 2026 13:13:52 +0200
+Subject: [PATCH 1/5] parser: trust caller-registered external_pkgs without
+ .exists() probe
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+kcl-parser's is_external_pkg used Path::exists() to probe
+{pkg_root}/kcl.mod regardless of how the pkg was declared. For pkgs
+registered explicitly via opts.package_maps that probe is redundant -
+the caller promised the directory is valid. And on wasm32-wasip1 with
+the pkg directory handed over through a WASI preopen, Path::exists for
+absolute paths through preopens is unreliable in Rust's current std;
+the probe returns false and the caller's explicit registration is
+silently discarded, surfacing later as "pkgroot not found: <pkg>".
+
+Split the resolution into two branches:
+
+- Caller-registered (package_maps hit): skip the .exists() probe,
+  TRUST the caller. Proceed straight to canonicalize + k-file walk.
+- Vendor-dirs fallback: probe with .exists() as before - the caller
+  didn't declare anything and we're scanning.
+
+Zero behaviour change on native: if .exists() was going to return true
+for caller-registered pkgs (it always was, on native), we bypass a
+filesystem round-trip. If it would have returned false, native callers
+would have hit the same "missing kcl.mod" confusion as today - better
+to surface a clear get_pkg_kfile_list error downstream than silently
+drop the caller's declaration.
+
+Unblocks akua's wasip1 render worker, where the host preopens the
+charts pkg dir and hands the guest path to KCL as an external_pkg.
+
+Originally landed as akua-dev/kcl@aff70cc5 on the akua-wasm32 branch;
+rebased here onto upstream main after upstream's ParseLoadCache
+refactor changed is_external_pkg's signature.
+
+Signed-off-by: Robin Brämer <robin.braemer@web.de>
+---
+ crates/parser/src/lib.rs | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
+
+diff --git a/crates/parser/src/lib.rs b/crates/parser/src/lib.rs
+index 52689704..80a9d58d 100644
+--- a/crates/parser/src/lib.rs
++++ b/crates/parser/src/lib.rs
+@@ -845,16 +845,26 @@ fn is_external_pkg(
+     load_cache: &mut ParseLoadCache,
+ ) -> Result<Option<PkgInfo>> {
+     let pkg_name = parse_external_pkg_name(pkg_path)?;
+-    let external_pkg_root = if let Some(root) = opts.package_maps.get(&pkg_name) {
+-        PathBuf::from(root).join(KCL_MOD_FILE)
++    // Two resolution paths:
++    //
++    // 1. Caller registered the pkg explicitly via `opts.package_maps` -
++    //    e.g. an embedder that materialized the pkg to a known path
++    //    (possibly via WASI preopens on wasip1, where `Path::exists`
++    //    through absolute preopen paths is unreliable in std).
++    //    TRUST the caller: skip the .exists() probe, jump straight
++    //    to the pkg-root resolution below.
++    // 2. Fall back to `vendor_dirs`, where we do probe with
++    //    `.exists()` since the caller didn't declare anything.
++    let (external_pkg_root, explicit) = if let Some(root) = opts.package_maps.get(&pkg_name) {
++        (PathBuf::from(root).join(KCL_MOD_FILE), true)
+     } else {
+         match pkg_exists(&opts.vendor_dirs, pkg_path, load_cache) {
+-            Some(path) => PathBuf::from(path).join(&pkg_name).join(KCL_MOD_FILE),
++            Some(path) => (PathBuf::from(path).join(&pkg_name).join(KCL_MOD_FILE), false),
+             None => return Ok(None),
+         }
+     };
+ 
+-    if external_pkg_root.exists() {
++    if explicit || external_pkg_root.exists() {
+         Ok(Some(match external_pkg_root.parent() {
+             Some(root) => {
+                 let abs_root = canonicalize_path_cached(root, load_cache)

@@ -1,0 +1,4 @@
+This directory vendors source from kcl-lang/kcl (https://github.com/kcl-lang/kcl),
+Copyright The KCL Authors, licensed under the Apache License, Version 2.0
+(see LICENSE in this directory). See patches/README.md for the exact
+vendored commit, the applied patch series, and provenance.

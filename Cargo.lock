@@ -740,6 +740,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "borsh"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "553c5d846a6ba5150c65e3b1b8ec073bcf1abc20f9b7220de384a4443ea4e20a"
+dependencies = [
+ "bytes",
+ "cfg_aliases",
+]
+
+[[package]]
 name = "bstr"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1021,7 +1031,7 @@ dependencies = [
 [[package]]
 name = "compiler_base_error"
 version = "0.1.6"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "compiler_base_macros",
@@ -1038,12 +1048,12 @@ dependencies = [
 [[package]]
 name = "compiler_base_macros"
 version = "0.1.1"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 
 [[package]]
 name = "compiler_base_session"
 version = "0.1.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "compiler_base_error",
@@ -1053,7 +1063,7 @@ dependencies = [
 [[package]]
 name = "compiler_base_span"
 version = "0.1.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "rustc_span",
 ]
@@ -1656,6 +1666,12 @@ name = "dyn-clone"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
+
+[[package]]
+name = "ec4rs"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b31a881d38439026e3d5dd938ab20328d36e23caca8fd5981c42e4b677f5842"
 
 [[package]]
 name = "ecdsa"
@@ -2976,6 +2992,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0cc23270f6e1808e30a928bdc84dea0b9b4136a8bc82338574f23baf47bbd280"
 
 [[package]]
+name = "globset"
+version = "0.4.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e47d37d2ae4464254884b60ab7071be2b876a9c35b696bd018ddcc76847309cd"
+dependencies = [
+ "aho-corasick",
+ "bstr 1.12.1",
+ "log",
+ "regex-automata 0.4.14",
+ "regex-syntax",
+]
+
+[[package]]
 name = "gloo-timers"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3480,6 +3509,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ignore"
+version = "0.4.32"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b17771570a2b94107741a7b033f19132c2eee21d59d21b24d2ced26500bd66e"
+dependencies = [
+ "crossbeam-deque",
+ "globset",
+ "log",
+ "memchr",
+ "regex-automata 0.4.14",
+ "same-file",
+ "walkdir",
+ "winapi-util",
+]
+
+[[package]]
 name = "im-rc"
 version = "15.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3868,8 +3913,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-api"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "futures",
@@ -3890,6 +3935,7 @@ dependencies = [
  "kcl-tools",
  "kcl-utils",
  "kcl-version",
+ "libc",
  "maplit",
  "once_cell",
  "prost 0.14.3",
@@ -3900,15 +3946,15 @@ dependencies = [
  "protoc-bin-vendored",
  "serde",
  "serde_json",
- "serde_yaml 0.9.34+deprecated (git+https://github.com/cnap-tech/kcl?branch=akua-wasm32)",
+ "serde_yaml 0.9.34+deprecated (git+https://github.com/kcl-lang/kcl)",
  "tempfile",
  "tokio",
 ]
 
 [[package]]
 name = "kcl-ast"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "compiler_base_span",
@@ -3923,8 +3969,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-ast-pretty"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "compiler_base_macros",
  "compiler_base_session",
@@ -3937,8 +3983,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-config"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3953,15 +3999,15 @@ dependencies = [
  "ron",
  "serde",
  "serde_json",
- "serde_yaml 0.9.34+deprecated (git+https://github.com/cnap-tech/kcl?branch=akua-wasm32)",
+ "serde_yaml 0.9.34+deprecated (git+https://github.com/kcl-lang/kcl)",
  "toml 0.5.11",
  "url",
 ]
 
 [[package]]
 name = "kcl-driver"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "flate2",
@@ -3983,8 +4029,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-error"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "annotate-snippets",
  "anyhow",
@@ -4005,8 +4051,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-evaluator"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "generational-arena",
@@ -4020,8 +4066,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-lang"
-version = "0.12.3"
-source = "git+https://github.com/kcl-lang/lib#bde7439b68315f269533bf53b6755b7569bcbc86"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/lib#efa2893a83b400ea6732d824af39241c5573d1c3"
 dependencies = [
  "anyhow",
  "kcl-api",
@@ -4034,8 +4080,7 @@ dependencies = [
 
 [[package]]
 name = "kcl-language-server"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4044,6 +4089,7 @@ dependencies = [
  "crossbeam-channel",
  "dashmap",
  "env_logger",
+ "ignore",
  "im-rc",
  "kcl-ast",
  "kcl-config",
@@ -4052,6 +4098,7 @@ dependencies = [
  "kcl-parser",
  "kcl-primitives",
  "kcl-query",
+ "kcl-runtime",
  "kcl-sema",
  "kcl-span",
  "kcl-tools",
@@ -4075,12 +4122,13 @@ dependencies = [
  "threadpool",
  "tokio",
  "tokio-test",
+ "walkdir",
 ]
 
 [[package]]
 name = "kcl-lexer"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "kcl-error",
  "rustc_lexer",
@@ -4089,8 +4137,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-loader"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "kcl-ast",
@@ -4106,8 +4154,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-macros"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4117,8 +4165,7 @@ dependencies = [
 
 [[package]]
 name = "kcl-parser"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
 dependencies = [
  "anyhow",
  "bstr 0.2.17",
@@ -4151,8 +4198,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-primitives"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "indexmap 2.14.0",
  "rustc-hash 2.1.2",
@@ -4160,8 +4207,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-query"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "compiler_base_macros",
@@ -4181,8 +4228,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-runner"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "cc",
@@ -4215,8 +4262,7 @@ dependencies = [
 
 [[package]]
 name = "kcl-runtime"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
 dependencies = [
  "anyhow",
  "base32",
@@ -4242,9 +4288,10 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "serde_yaml 0.9.34+deprecated (git+https://github.com/cnap-tech/kcl?branch=akua-wasm32)",
+ "serde_yaml 0.9.34+deprecated (git+https://github.com/kcl-lang/kcl)",
  "sha1",
  "sha2 0.9.9",
+ "smol_str",
  "unic-ucd-bidi",
  "unic-ucd-category",
  "unicode-casing",
@@ -4254,8 +4301,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-sema"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "bit-set",
@@ -4287,8 +4334,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-span"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "compiler_base_span",
  "kcl-macros",
@@ -4298,12 +4345,13 @@ dependencies = [
 
 [[package]]
 name = "kcl-tools"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "compiler_base_session",
  "compiler_base_span",
+ "ec4rs",
  "fancy-regex",
  "json-spanned-value",
  "kcl-ast",
@@ -4323,14 +4371,14 @@ dependencies = [
  "regex",
  "rustc_lexer",
  "serde_json",
- "serde_yaml 0.9.34+deprecated (git+https://github.com/cnap-tech/kcl?branch=akua-wasm32)",
+ "serde_yaml 0.9.34+deprecated (git+https://github.com/kcl-lang/kcl)",
  "walkdir",
 ]
 
 [[package]]
 name = "kcl-utils"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "anyhow",
  "fslock",
@@ -4339,8 +4387,8 @@ dependencies = [
 
 [[package]]
 name = "kcl-version"
-version = "0.12.3"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+version = "0.13.0"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "vergen",
 ]
@@ -5635,7 +5683,7 @@ dependencies = [
 [[package]]
 name = "proc_macro_crate"
 version = "0.1.0"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6342,7 +6390,7 @@ dependencies = [
 [[package]]
 name = "rustc_errors"
 version = "0.1.2"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "termcolor",
  "winapi",
@@ -6360,7 +6408,7 @@ dependencies = [
 [[package]]
 name = "rustc_span"
 version = "0.1.2"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "blake3",
  "cfg-if 0.1.10",
@@ -6798,7 +6846,7 @@ dependencies = [
 [[package]]
 name = "serde_yaml"
 version = "0.9.34+deprecated"
-source = "git+https://github.com/cnap-tech/kcl?branch=akua-wasm32#d584c0bc2fb5dee13c563ad32a9e5e370d650d59"
+source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
 dependencies = [
  "indexmap 2.14.0",
  "itoa",
@@ -6976,6 +7024,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "smol_str"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4aaa7368fcf4852a4c2dd92df0cace6a71f2091ca0a23391ce7f3a31833f1523"
+dependencies = [
+ "borsh",
+ "serde_core",
 ]
 
 [[package]]

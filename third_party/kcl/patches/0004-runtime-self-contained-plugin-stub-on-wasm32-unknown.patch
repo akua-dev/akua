@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Robin=20Br=C3=A4mer?= <robin.braemer@web.de>
+Date: Tue, 29 Sep 2026 13:17:20 +0200
+Subject: [PATCH 4/5] runtime: self-contained plugin stub on
+ wasm32-unknown-unknown
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The kcl_plugin_invoke_json_wasm import only makes sense when there's a
+host to fill it in - wasmtime in akua's render worker, or any WASI
+host. On wasm32-unknown-unknown (e.g. a JS-loaded SDK bundle) there is
+no host, so the extern becomes an unresolved env.* import that every
+JS loader stumbles over.
+
+Gate the extern to target_os = "wasi" and provide a self-contained
+stub on the non-WASI path. The stub returns a __kcl_PanicInfo__
+envelope pointing users at the CLI, so Packages that try to call
+helm.template / kustomize.build / pkg.render in the SDK bundle surface
+a clean diagnostic instead of a silent misevaluation.
+
+Verified against a temporary `uuid` "js" feature addition (kcl's own
+separate, pre-existing wasm32-unknown-unknown gap, tracked
+independently and not part of this patch - the consuming crate closes
+it via Cargo feature unification, see akuapkg's
+docs/spikes/kcl-wasm-feasibility.md) - kcl-runtime alone checks clean
+for wasm32-unknown-unknown with that gap closed.
+
+Originally landed as akua-dev/kcl@5b214696 on the akua-wasm32 branch;
+applies unchanged on top of upstream main (upstream's own #2106
+release of the dispatch-lock fix landed in the same function without
+touching this extern block).
+
+Signed-off-by: Robin Brämer <robin.braemer@web.de>
+---
+ crates/runtime/src/stdlib/plugin.rs | 26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/crates/runtime/src/stdlib/plugin.rs b/crates/runtime/src/stdlib/plugin.rs
+index 4db15ff7..7b87fc63 100644
+--- a/crates/runtime/src/stdlib/plugin.rs
++++ b/crates/runtime/src/stdlib/plugin.rs
+@@ -116,7 +116,13 @@ pub unsafe extern "C-unwind" fn kcl_plugin_invoke_json(
+     }
+ }
+ 
+-#[cfg(target_arch = "wasm32")]
++// `wasm32-wasip1` expects a wasmtime host (or any WASI host) to link
++// `kcl_plugin_invoke_json_wasm` at instantiation - that's how akua's
++// render worker ferries plugin callouts back to host handlers. On
++// `wasm32-unknown-unknown` (e.g. a JS-loaded SDK bundle) there is no
++// host, so the extern would leave an unresolved `env.*` import that
++// every JS loader stumbles over.
++#[cfg(all(target_arch = "wasm32", target_os = "wasi"))]
+ unsafe extern "C-unwind" {
+     pub fn kcl_plugin_invoke_json_wasm(
+         method: *const c_char,
+@@ -125,6 +131,24 @@ unsafe extern "C-unwind" {
+     ) -> *const c_char;
+ }
+ 
++/// Self-contained no-op stub for `wasm32-unknown-unknown`, where there
++/// is no host to link the real `kcl_plugin_invoke_json_wasm` extern.
++/// Callers that need plugins stick with `wasm32-wasip1` + a wasmtime
++/// host.
++#[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
++pub unsafe fn kcl_plugin_invoke_json_wasm(
++    _method: *const c_char,
++    _args: *const c_char,
++    _kwargs: *const c_char,
++) -> *const c_char {
++    // `__kcl_PanicInfo__` shape - KCL's plugin-invoke glue treats this
++    // response as a runtime panic, so Packages that call a plugin
++    // surface a clean evaluator error with the message below rather
++    // than a silent misevaluation.
++    c"{\"__kcl_PanicInfo__\":\"plugin callouts are not available in this KCL build (wasm32-unknown-unknown) - use a wasmtime-hosted build for helm.template / kustomize.build / pkg.render\"}"
++        .as_ptr() as *const c_char
++}
++
+ #[cfg(all(test, not(target_arch = "wasm32")))]
+ mod tests {
+     use super::*;

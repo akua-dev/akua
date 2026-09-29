@@ -1,0 +1,23 @@
+# Build file for the pinned, patched kcl-lang/kcl source archive (see
+# MODULE.bazel). Scoped to only the three crates akuapkg vendors - the
+# archive is a plain upstream checkout with no Bazel packages of its own,
+# so a single filegroup per crate keeps analysis narrow without risking a
+# glob() package-boundary surprise later if that changes.
+
+filegroup(
+    name = "kcl_parser_srcs",
+    srcs = glob(["crates/parser/**"]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "kcl_language_server_srcs",
+    srcs = glob(["crates/tools/src/LSP/**"]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "kcl_runtime_srcs",
+    srcs = glob(["crates/runtime/**"]),
+    visibility = ["//visibility:public"],
+)

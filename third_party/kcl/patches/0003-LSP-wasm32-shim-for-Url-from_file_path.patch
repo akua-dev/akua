@@ -1,0 +1,175 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Robin=20Br=C3=A4mer?= <robin.braemer@web.de>
+Date: Tue, 29 Sep 2026 13:15:49 +0200
+Subject: [PATCH 3/5] LSP: wasm32 shim for Url::from_file_path
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The url crate's from_file_path is gated on cfg(any(unix, windows)) and
+doesn't exist on wasm32-unknown-unknown. The LSP uses it to build
+file:// URIs for diagnostic locations; without the helper,
+kcl-language-server (and therefore kcl-api, which depends on it
+unconditionally) fails to compile for targets without a filesystem.
+
+Provide util::url_from_file_path that forwards to Url::from_file_path
+on native and parses file://${path} via Url::parse on wasm32 - LSP
+responses carry the same URL shape either way. Swap production call
+sites to the helper; the two Url::from_file_path calls in
+quick_fix.rs's own test module stay on the native API since tests
+never run on wasm32.
+
+Unblocks embedding KCL via wasm32-unknown-unknown for a JS-loaded SDK
+bundle (akua's Phase 4B - not yet built in this repo, but the crate
+must still compile for that target since kcl-api pulls in
+kcl-language-server unconditionally, not behind a feature flag).
+
+Originally landed as akua-dev/kcl@29dda76e on the akua-wasm32 branch;
+from_lsp.rs and to_lsp.rs applied unchanged, util.rs rebased onto
+upstream's current file (quick_fix.rs needed no change - both of its
+from_file_path calls are test-only).
+
+Signed-off-by: Robin Brämer <robin.braemer@web.de>
+---
+ crates/tools/src/LSP/src/from_lsp.rs |  6 +++--
+ crates/tools/src/LSP/src/to_lsp.rs   | 12 ++++++----
+ crates/tools/src/LSP/src/util.rs     | 34 +++++++++++++++++++++++++++-
+ 3 files changed, 44 insertions(+), 8 deletions(-)
+
+diff --git a/crates/tools/src/LSP/src/from_lsp.rs b/crates/tools/src/LSP/src/from_lsp.rs
+index 29b66586..83b7a1d4 100644
+--- a/crates/tools/src/LSP/src/from_lsp.rs
++++ b/crates/tools/src/LSP/src/from_lsp.rs
+@@ -5,10 +5,12 @@ use kcl_utils::path::PathPrefix;
+ use lsp_types::{Position, Url};
+ use ra_ap_vfs::AbsPathBuf;
+ 
++use crate::util::url_to_file_path;
++
+ /// Converts the specified `uri` to an absolute path. Returns an error if the url could not be
+ /// converted to an absolute path.
+ pub(crate) fn abs_path(uri: &Url) -> anyhow::Result<AbsPathBuf> {
+-    uri.to_file_path()
++    url_to_file_path(uri)
+         .ok()
+         .and_then(|path| AbsPathBuf::try_from(path).ok())
+         .ok_or_else(|| anyhow::anyhow!("invalid uri: {}", uri))
+@@ -51,7 +53,7 @@ pub(crate) fn text_range(text: &str, range: lsp_types::Range) -> Range<usize> {
+ /// Converts the specified `url` to a utf8 encoded file path string. Returns an error if the url could not be
+ /// converted to a valid utf8 encoded file path string.
+ pub(crate) fn file_path_from_url(url: &Url) -> anyhow::Result<String> {
+-    url.to_file_path()
++    url_to_file_path(url)
+         .ok()
+         .and_then(|path| {
+             path.to_str()
+diff --git a/crates/tools/src/LSP/src/to_lsp.rs b/crates/tools/src/LSP/src/to_lsp.rs
+index 6e35b053..e6306fef 100644
+--- a/crates/tools/src/LSP/src/to_lsp.rs
++++ b/crates/tools/src/LSP/src/to_lsp.rs
+@@ -8,6 +8,8 @@ use kcl_utils::path::PathPrefix;
+ use lsp_types::*;
+ use serde_json::json;
+ 
++use crate::util::url_from_file_path;
++
+ use std::{
+     path::{Component, Path, Prefix},
+     str::FromStr,
+@@ -25,7 +27,7 @@ pub fn lsp_pos(pos: &KCLPos) -> Position {
+ /// Convert start and pos format to lsp location.
+ /// The position of the location in lsp protocol is different with position in ast node whose line number is 1 based.
+ pub fn lsp_location(file_path: String, start: &KCLPos, end: &KCLPos) -> Option<Location> {
+-    let uri = Url::from_file_path(file_path).ok()?;
++    let uri = url_from_file_path(file_path).ok()?;
+     Some(Location {
+         uri,
+         range: Range {
+@@ -69,7 +71,7 @@ pub fn kcl_msg_to_lsp_diags(
+         Some(
+             related_msg
+                 .iter()
+-                .filter_map(|m| match Url::from_file_path(m.range.0.filename.clone()) {
++                .filter_map(|m| match url_from_file_path(m.range.0.filename.clone()) {
+                     Ok(uri) => Some(DiagnosticRelatedInformation {
+                         location: Location {
+                             uri,
+@@ -183,7 +185,7 @@ pub(crate) fn url_from_path(path: impl AsRef<Path>) -> anyhow::Result<Url> {
+ /// Returns a `Url` object from a given path, will lowercase drive letters if present.
+ /// This will only happen when processing Windows paths.
+ ///
+-/// When processing non-windows path, this is essentially do the same as `Url::from_file_path`.
++/// When processing non-windows path, this is essentially do the same as `url_from_file_path`.
+ pub(crate) fn url_from_path_with_drive_lowercasing(path: impl AsRef<Path>) -> anyhow::Result<Url> {
+     let component_has_windows_drive = path.as_ref().components().any(|comp| {
+         if let Component::Prefix(c) = comp {
+@@ -197,7 +199,7 @@ pub(crate) fn url_from_path_with_drive_lowercasing(path: impl AsRef<Path>) -> an
+ 
+     // VSCode expects drive letters to be lowercased, whereas rust will uppercase the drive letters.
+     if component_has_windows_drive {
+-        let url_original = Url::from_file_path(&path).map_err(|_| {
++        let url_original = url_from_file_path(&path).map_err(|_| {
+             anyhow::anyhow!("can't convert path to url: {}", path.as_ref().display())
+         })?;
+ 
+@@ -214,7 +216,7 @@ pub(crate) fn url_from_path_with_drive_lowercasing(path: impl AsRef<Path>) -> an
+             .map_err(|e| anyhow::anyhow!("Url from str ParseError: {}", e))?;
+         Ok(url)
+     } else {
+-        Ok(Url::from_file_path(&path).map_err(|_| {
++        Ok(url_from_file_path(&path).map_err(|_| {
+             anyhow::anyhow!("can't convert path to url: {}", path.as_ref().display())
+         })?)
+     }
+diff --git a/crates/tools/src/LSP/src/util.rs b/crates/tools/src/LSP/src/util.rs
+index 9941631e..06346ce5 100644
+--- a/crates/tools/src/LSP/src/util.rs
++++ b/crates/tools/src/LSP/src/util.rs
+@@ -18,6 +18,38 @@ use serde::{Serialize, de::DeserializeOwned};
+ use std::fs;
+ use std::path::{Path, PathBuf};
+ 
++/// `Url::from_file_path` is `cfg(any(unix, windows))` in the `url`
++/// crate - unavailable on `wasm32-unknown-unknown`. The LSP only
++/// needs a `file://` URL for a path, so on wasm32 we build one via
++/// `Url::parse`. No Windows-drive handling on wasm32 since that
++/// target has no filesystem anyway.
++pub(crate) fn url_from_file_path<P: AsRef<Path>>(path: P) -> Result<Url, ()> {
++    #[cfg(not(target_arch = "wasm32"))]
++    {
++        Url::from_file_path(path)
++    }
++    #[cfg(target_arch = "wasm32")]
++    {
++        let p = path.as_ref().to_string_lossy();
++        Url::parse(&format!("file://{p}")).map_err(|_| ())
++    }
++}
++
++/// Inverse of [`url_from_file_path`]. Same story: `to_file_path` is
++/// `cfg(any(unix, windows))` on `url`. On wasm32 we strip the
++/// `file://` prefix and return the remainder as a `PathBuf`.
++pub(crate) fn url_to_file_path(url: &Url) -> Result<PathBuf, ()> {
++    #[cfg(not(target_arch = "wasm32"))]
++    {
++        url.to_file_path()
++    }
++    #[cfg(target_arch = "wasm32")]
++    {
++        let s = url.as_str();
++        s.strip_prefix("file://").map(PathBuf::from).ok_or(())
++    }
++}
++
+ /// Deserializes a `T` from a json value.
+ pub(crate) fn from_json<T: DeserializeOwned>(
+     what: &'static str,
+@@ -73,7 +105,7 @@ pub(crate) fn load_files_code_from_vfs(
+     let mut res = vec![];
+     let vfs = &mut vfs.read();
+     for file in files {
+-        let url = Url::from_file_path(file)
++        let url = url_from_file_path(file)
+             .map_err(|_| anyhow::anyhow!("can't convert file to url: {}", file))?;
+         let path = from_lsp::abs_path(&url)?;
+         match vfs.file_id(&path.clone().into()) {

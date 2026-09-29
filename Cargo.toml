@@ -41,32 +41,28 @@ opentelemetry = "0.26"
 opentelemetry_sdk = { version = "0.26", features = ["rt-tokio-current-thread"] }
 opentelemetry-otlp = { version = "0.26", features = ["grpc-tonic"] }
 
-# Patch kcl-driver to cfg-guard its `std::env::current_dir()` call on
-# wasm32 — unblocks Phase 4's per-render wasmtime sandbox for every
-# kcl-derived crate in the workspace. Single-line fix lives on the
-# `akua-wasm32` branch of cnap-tech/kcl; upstream PR in flight.
-# Remove this block once the fix merges upstream.
+# kcl-lang (crates/akua-core's engine-kcl dependency, from
+# https://github.com/kcl-lang/lib) declares every kcl-* crate as a
+# plain `git = "https://github.com/kcl-lang/kcl"` dependency with no
+# rev/branch - Cargo pins the resolved commit in the committed
+# Cargo.lock, refreshed only by an explicit `cargo update`. That's
+# reproducible on its own; a same-URL `[patch]` entry with just an
+# added `rev` is not accepted by Cargo ("patches must point to
+# different sources"), so most kcl-* crates need no patch entry here
+# at all. Three crates still need a real wasm32 fix upstream hasn't
+# landed yet, patched locally instead of via the old akua-dev/kcl
+# fork: kcl-parser (WASI preopen probing), kcl-language-server (wasm32
+# Url::from_file_path shim), kcl-runtime (wasm32-unknown-unknown
+# plugin stub). Patches live as a numbered series in
+# third_party/kcl/patches/, applied and vendored under
+# third_party/kcl/vendor/ - see that README for the per-patch
+# rationale, upstream PR status, remove-when condition, and the exact
+# pinned upstream commit. Never reference the akua-dev/kcl fork from
+# this repo again.
 [patch."https://github.com/kcl-lang/kcl"]
-kcl-api = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-ast = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-ast-pretty = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-config = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-driver = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-error = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-evaluator = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-language-server = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-lexer = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-loader = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-parser = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-primitives = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-query = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-runner = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-runtime = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-sema = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-span = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-tools = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-utils = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
-kcl-version = { git = "https://github.com/cnap-tech/kcl", branch = "akua-wasm32" }
+kcl-language-server = { path = "third_party/kcl/vendor/kcl-language-server" }
+kcl-parser = { path = "third_party/kcl/vendor/kcl-parser" }
+kcl-runtime = { path = "third_party/kcl/vendor/kcl-runtime" }
 
 [profile.release]
 lto = true
