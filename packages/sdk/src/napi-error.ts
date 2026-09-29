@@ -12,8 +12,8 @@ import {
 	AkuaError,
 	classifyByExitCode,
 	isStructuredErrorShape,
-} from './errors.ts';
-import type { StructuredError } from './types/StructuredError.ts';
+} from './errors';
+import type { StructuredError } from './types/StructuredError';
 
 export interface NapiStructuredError extends StructuredError {
 	exit_code?: number;

@@ -36,9 +36,7 @@ const body = `
 <pre><code><span style="color: var(--accent); user-select: none;">$</span> cargo install --git https://github.com/akua-dev/akuapkg akuapkg-cli</code></pre>
 
 <h2>SDK</h2>
-<pre><code><span style="color: var(--accent); user-select: none;">$</span> npm install @akua-dev/sdk</code></pre>
-<pre><code><span style="color: var(--accent); user-select: none;">$</span> bun add @akua-dev/sdk</code></pre>
-<pre><code><span style="color: var(--accent); user-select: none;">$</span> deno add npm:@akua-dev/sdk</code></pre>
+<p>npm publishing is discontinued; see the <a href="/concepts/sdk">SDK docs</a> for building <code>@akua-dev/sdk</code> from source.</p>
 
 <h2>Docs</h2>
 <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: 14px;">

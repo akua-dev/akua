@@ -6,7 +6,7 @@
 import Ajv2020, { type ErrorObject, type ValidateFunction } from 'ajv/dist/2020.js';
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 
-import { AkuaError } from './errors.ts';
+import { AkuaError } from './errors';
 import akuaSchema from './schemas/akua.json' with { type: 'json' };
 
 type SchemaBundle = {

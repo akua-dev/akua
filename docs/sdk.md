@@ -8,13 +8,19 @@ This is the Akua Package SDK, not the Akua Cloud REST SDK. It works without an A
 
 ## Install
 
+Akuapkg no longer publishes new SDK versions to npm (akua-dev/cnap#2348); `@akua-dev/sdk` on npm is frozen at its last published version and receives no further updates. To use the current SDK, build it from source:
+
 ```sh
-bun add @akua-dev/sdk
-# or
-npm install @akua-dev/sdk
+git clone https://github.com/akua-dev/akuapkg
+cd akuapkg
+mise exec -- task sdk:build
 ```
 
-Published to [npm](https://www.npmjs.com/package/@akua-dev/sdk). ESM-only. The package supports Node 22+ and Bun 1.3+ today. Browser support is deferred because this package depends on the host-side `@akua-dev/native` NAPI addon.
+`package.json`'s `exports` resolve to the built `dist/`, not `src/`: a Node.js consumer cannot type-strip a `.ts` file under `node_modules`, so `dist/` (both `*.js` and `*.d.ts`) stays the package's public contract. Workspace consumers (e.g. `akua-dev/cnap`) build `dist/` hermetically via Bazel and commit the result as a drift-checked artifact.
+
+The actively maintained distribution channel for Akuapkg is the `akuapkg` CLI binary, installed via the [install script](https://cli.akua.dev/install) or [GitHub Releases](https://github.com/akua-dev/akuapkg/releases).
+
+ESM-only. The package supports Node 22+ and Bun 1.3+ today. Browser support is deferred because this package depends on the host-side `@akua-dev/native` NAPI addon.
 
 ---
 

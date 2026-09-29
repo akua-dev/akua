@@ -42,8 +42,6 @@
 	"scripts": {
 		"build": "napi build --platform --release",
 		"build:debug": "napi build --platform",
-		"prepublishOnly": "napi prepublish -t npm --no-gh-release",
-		"artifacts": "napi artifacts",
 		"version": "napi version"
 	},
 	"dependencies": {

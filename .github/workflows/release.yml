@@ -1,44 +1,26 @@
 name: release
 
-# Build half of the release pipeline. Triggered by `v<semver>` tag pushes.
-# Builds binaries, creates the GitHub Release, then dispatches
-# `release-publish.yml` for the npm publish step.
+# Builds the `akuapkg` release: per-platform CLI binaries, the immutable
+# GitHub Release, and the `ghcr.io/akua-dev/akuapkg` container image.
+# Triggered by `v<semver>` tag pushes.
 #
 # Job graph:
 #
-#   detect-version ─┬─> wasm-bundle ─┬─> native-build ──┐
-#                   │                │                  │
-#                   │                │  sdk-build ──────┤
-#                   │                │                  │
-#                   │                └─> cli-build ─┬─> github-release ┬─> trigger-publish ──> release-publish.yml
-#                   │                               └─> docker         │
+#   detect-version ─┬─> wasm-bundle ─> cli-build ─┬─> github-release
+#                   │                              └─> docker
 #                   └─ (version + is_prerelease propagated to every job)
 #
-# Why split publish into a separate workflow: `npm publish` is the
-# most failure-prone step (OIDC config drift, registry hiccups,
-# version-pin mismatch). When it fails today, fixing it required
-# re-running the whole build matrix (~hours). With the split:
+# npm packages are no longer published from this pipeline (akua-dev/cnap#2348):
+# `@akua-dev/sdk` is consumed directly inside the akua-dev/cnap monorepo, and
+# the `@akua-dev/native*` napi packages were only ever npm-publish plumbing.
+# See docs/releasing.md for the recovery dispatch shape that remains.
 #
-#   See docs/releasing.md for the SHA-bound recovery dispatch.
+# `wasm-bundle` builds the embedded engines once and `cli-build` downloads
+# the same bytes — was rebuilt per matrix job before, ~5-10 min saved per
+# release.
 #
-# re-runs publish without repeating successful npm versions. The build outputs
-# remain Actions artifacts for the source run; a recovery preserves existing
-# GitHub Release assets byte-for-byte and publishes only from the exact verified
-# source-run artifacts.
-#
-# `trigger-publish` calls `gh workflow run release-publish.yml` —
-# `workflow_dispatch` is explicitly carved out of the GITHUB_TOKEN
-# no-recursion rule (per Actions docs), so the default token works
-# without a PAT.
-#
-# Other wins preserved from the prior unified-workflow setup:
-# - `wasm-bundle` builds once (was rebuilt in cli + native + sdk
-#   matrices — ~5–10 min saved per release).
-# - One status check on the build half; one on the publish half.
-#
-# Prerelease handling: tags containing `-` (e.g. `v0.8.7-rc1`) publish
-# to the npm `next` dist-tag instead of `latest`, are marked as
-# prereleases on GitHub Releases, and skip the `:latest` Docker tag.
+# Prerelease handling: tags containing `-` (e.g. `v0.8.7-rc1`) are marked as
+# prereleases on GitHub Releases and skip the `:latest` Docker tag.
 
 on:
   push:
@@ -70,8 +52,6 @@ on:
 permissions:
   contents: write   # github-release: create Releases
   packages: write   # docker: push to ghcr.io
-  id-token: write   # npm publish: OIDC trusted publishing
-  actions: write    # trigger-publish: gh workflow run release-publish.yml
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -89,7 +69,6 @@ jobs:
       tag: ${{ steps.parse.outputs.tag }}
       version: ${{ steps.parse.outputs.version }}
       is_prerelease: ${{ steps.parse.outputs.is_prerelease }}
-      npm_dist_tag: ${{ steps.parse.outputs.npm_dist_tag }}
       source_commit: ${{ steps.parse.outputs.source_commit }}
     steps:
       - uses: actions/checkout@v6
@@ -139,41 +118,16 @@ jobs:
           # (1.2.3-rc1, 1.2.3-alpha.4). A bare `v1.2.3` doesn't match.
           if [[ "$version" == *-* ]]; then
             is_prerelease=true
-            npm_dist_tag=next
           else
             is_prerelease=false
-            npm_dist_tag=latest
           fi
           {
             echo "tag=$tag"
             echo "version=$version"
             echo "is_prerelease=$is_prerelease"
-            echo "npm_dist_tag=$npm_dist_tag"
             echo "source_commit=$source_commit"
           } >> "$GITHUB_OUTPUT"
-          echo "Resolved: tag=$tag commit=$source_commit version=$version prerelease=$is_prerelease npm_dist_tag=$npm_dist_tag"
-
-      - name: Record immutable recovery inputs
-        env:
-          TAG: ${{ steps.parse.outputs.tag }}
-          SOURCE_COMMIT: ${{ steps.parse.outputs.source_commit }}
-          WORKFLOW_COMMIT: ${{ github.workflow_sha }}
-        run: |
-          set -eu
-          jq -n \
-            --arg tag "$TAG" \
-            --arg source_commit "$SOURCE_COMMIT" \
-            --arg workflow_commit "$WORKFLOW_COMMIT" \
-            '{tag: $tag, source_commit: $source_commit, workflow_commit: $workflow_commit}' \
-            > release-inputs.json
-
-      - name: Upload immutable recovery inputs
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-inputs
-          path: release-inputs.json
-          if-no-files-found: error
-          retention-days: 1
+          echo "Resolved: tag=$tag commit=$source_commit version=$version prerelease=$is_prerelease"
 
   # ---------------------------------------------------------------------------
   # wasm-bundle — engine + render-worker wasm artefacts built once on
@@ -256,248 +210,8 @@ jobs:
           retention-days: 1
 
   # ---------------------------------------------------------------------------
-  # native-build — per-platform `.node` binary matrix. Downloads the
-  # wasm bundle, runs `napi build` against the local toolchain.
-  # ---------------------------------------------------------------------------
-  native-build:
-    needs: [detect-version, wasm-bundle]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - host: macos-14
-            target: aarch64-apple-darwin
-          # macos-13 (Intel) runners are being deprecated and queue for
-          # 40min+. Cross-compile x86_64 from macos-14 (arm64) — rustc
-          # + Apple SDK handle this without extra setup.
-          - host: macos-14
-            target: x86_64-apple-darwin
-          - host: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            cross: true
-          - host: ubuntu-latest
-            target: x86_64-unknown-linux-musl
-            cross: true
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-musl
-            cross: true
-          - host: windows-latest
-            target: x86_64-pc-windows-msvc
-    runs-on: ${{ matrix.host }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ needs.detect-version.outputs.source_commit }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      # Pin to the same rust version mise installs (`.mise.toml`) so the
-      # cross-compile target lands on the toolchain mise will later
-      # activate. With `@stable`, mise's rust 1.95.0 became the active
-      # toolchain after this step ran and cargo couldn't find the target.
-      - uses: dtolnay/rust-toolchain@1.95.0
-        with:
-          targets: ${{ matrix.target }}
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: native-${{ matrix.target }}
-          cache-on-failure: true
-
-      - uses: oven-sh/setup-bun@v2
-
-      - name: Install napi deps
-        working-directory: crates/akua-napi
-        run: bun install --frozen-lockfile
-
-      - name: Bump package.json version from the tag
-        shell: bash
-        run: |
-          set -eu
-          version="${{ needs.detect-version.outputs.version }}"
-          echo "Building @akua-dev/native@${version}"
-          jq --arg v "$version" \
-            '.version = $v | .dependencies["@akua-dev/native-engines"] = $v' \
-            crates/akua-napi/package.json > crates/akua-napi/package.json.tmp
-          mv crates/akua-napi/package.json.tmp crates/akua-napi/package.json
-
-      # The git tag is the single source of truth for the version. Inject it
-      # into the Rust workspace so CARGO_PKG_VERSION (SLSA provenance, OCI
-      # annotations, user-agent) matches the tag the artifact ships under —
-      # the committed Cargo.toml value is only a dev placeholder.
-      - name: Set Cargo version from the tag
-        shell: bash
-        run: ./scripts/set-cargo-version.sh "${{ needs.detect-version.outputs.version }}"
-
-      - uses: jdx/mise-action@v4
-        with:
-          install: true
-          cache: true
-
-      - name: Download wasm bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: wasm-bundle
-          path: .
-
-      - uses: mlugg/setup-zig@v2
-        if: matrix.cross == true
-        with:
-          version: 0.14.1
-
-      - uses: taiki-e/install-action@v2
-        if: matrix.cross == true
-        with:
-          tool: cargo-zigbuild
-
-      - name: Build native (release)
-        working-directory: crates/akua-napi
-        shell: bash
-        # `-x` tells napi to use cargo-zigbuild for cross-compile. zigbuild
-        # knows how to set ARM ASM defines for ring and ships its own
-        # musl toolchain — fixes both the napi-cross __ARM_ARCH failure
-        # and the missing-musl-gcc problem in one step.
-        run: |
-          set -eu
-          if [ "${{ matrix.cross }}" = "true" ]; then
-            bunx napi build --platform --release --target ${{ matrix.target }} -x
-          else
-            bunx napi build --platform --release --target ${{ matrix.target }}
-          fi
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: native-${{ matrix.target }}
-          path: crates/akua-napi/*.node
-          if-no-files-found: error
-          retention-days: 1
-
-  # ---------------------------------------------------------------------------
-  # trigger-publish — last step of release.yml. Dispatches
-  # `release-publish.yml` with this run ID so it can consume the verified
-  # native binaries, wasm engines, and staged SDK from Actions artifacts.
-  # Recovery must never alter the immutable GitHub Release assets.
-  #
-  # Why split: npm publication has its own idempotency boundary, but every
-  # recovery starts a fresh immutable source build so publish inputs never
-  # depend on mutable Release assets. See release-publish.yml for the publish
-  # logic itself.
-  # ---------------------------------------------------------------------------
-  trigger-publish:
-    needs: [detect-version, wasm-bundle, native-build, sdk-build, github-release]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || inputs.dry-run == false
-    steps:
-      - name: Dispatch release-publish.yml
-        # workflow_dispatch is explicitly carved out of the GITHUB_TOKEN
-        # no-recursion rule (per Actions docs), so the default token
-        # works — no PAT needed.
-        env:
-          TAG: ${{ needs.detect-version.outputs.tag }}
-          EXPECTED_SOURCE_COMMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.expected-source-commit || needs.detect-version.outputs.source_commit }}
-          EXPECTED_WORKFLOW_COMMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.expected-workflow-commit || github.workflow_sha }}
-          WORKFLOW_REF: ${{ github.ref_name }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -eu
-          gh workflow run release-publish.yml \
-            --repo "$GITHUB_REPOSITORY" \
-            --ref "$WORKFLOW_REF" \
-            -f tag="$TAG" \
-            -f expected-source-commit="$EXPECTED_SOURCE_COMMIT" \
-            -f expected-workflow-commit="$EXPECTED_WORKFLOW_COMMIT" \
-            -f source-run-id="$GITHUB_RUN_ID"
-          echo "Dispatched release-publish.yml with tag=$TAG source=$EXPECTED_SOURCE_COMMIT workflow=$EXPECTED_WORKFLOW_COMMIT. Watch:"
-          echo "  https://github.com/$GITHUB_REPOSITORY/actions/workflows/release-publish.yml"
-
-  # ---------------------------------------------------------------------------
-  # sdk-build — regenerates types + schemas from the Rust source, runs
-  # the drift guard, builds the SDK bundle. Independent of the native
-  # publish chain (no native artefacts needed here — the SDK consumes
-  # native at install time on end-user machines, not at build time).
-  # ---------------------------------------------------------------------------
-  sdk-build:
-    needs: detect-version
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ needs.detect-version.outputs.source_commit }}
-
-      - uses: jdx/mise-action@v4
-        with:
-          install: true
-          cache: true
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: sdk-release
-          cache-on-failure: true
-
-      - name: Regenerate SDK types + schema bundle
-        run: mise exec -- task sdk:gen
-
-      - name: Drift guard (fail if Rust source and bindings diverge)
-        run: mise exec -- task sdk:check
-
-      - name: Build SDK (bun bundle + tsc declarations)
-        run: mise exec -- task sdk:build
-
-      - name: Bump package.json version + native dep pin from the tag
-        run: |
-          set -eu
-          version="${{ needs.detect-version.outputs.version }}"
-          repo='git+https://github.com/akua-dev/akuapkg.git'
-          homepage='https://github.com/akua-dev/akuapkg#readme'
-          echo "Preparing @akua-dev/sdk@${version}"
-          jq --arg v "$version" --arg repo "$repo" --arg homepage "$homepage" \
-            '.version = $v
-             | .dependencies["@akua-dev/native"] = $v
-             | .repository.url = $repo
-             | .homepage = $homepage' \
-            packages/sdk/package.json > packages/sdk/package.json.tmp
-          mv packages/sdk/package.json.tmp packages/sdk/package.json
-
-      - name: Pack dry-run (manifest sanity + exports completeness)
-        working-directory: packages/sdk
-        # `npm pack --dry-run` alone only reports what ended up in the
-        # tarball, not what package.json's exports map promises should be
-        # there — that gap is how v0.9.3 published without dist/execute.js.
-        # Feed the JSON file listing back through the same checker that
-        # gates `task sdk:build` so this publish lane fails loudly instead
-        # of shipping an incomplete tarball again. Writes outside dist/ —
-        # dist/ is fully included by package.json's `files` array, and this
-        # directory is uploaded as the sdk-staged artifact right after, so
-        # a leftover file dropped in dist/ would ship inside the real
-        # published tarball.
-        run: |
-          pack_json="$(mktemp)"
-          npm pack --dry-run --json > "$pack_json"
-          bun run scripts/verify-package-exports.ts --tarball "$pack_json"
-          rm -f "$pack_json"
-
-      # Stage the prepared SDK tree (with bumped package.json + dist/)
-      # for the publish job — same approach native uses to keep build
-      # and publish on separate runners.
-      - uses: actions/upload-artifact@v4
-        with:
-          name: sdk-staged
-          path: packages/sdk
-          if-no-files-found: error
-          retention-days: 1
-
-  # ---------------------------------------------------------------------------
   # cli-build — per-platform `akuapkg` binary matrix. Downloads the wasm
-  # bundle (same artefact native-build consumes), packages tarballs +
-  # sha256 sidecars.
+  # bundle built above, packages tarballs + sha256 sidecars.
   # ---------------------------------------------------------------------------
   cli-build:
     needs: [detect-version, wasm-bundle]

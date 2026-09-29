@@ -1,31 +1,31 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { basename, dirname, resolve as resolvePath, join as joinPath } from 'node:path';
+import { basename, resolve as resolvePath, join as joinPath } from 'node:path';
 
-import { callNapi, loadNapi } from './napi.ts';
-import { execute as executePackageCommand, type ExecuteOptions } from './execute.ts';
+import { callNapi, loadNapi } from './napi';
+import { execute as executePackageCommand, type ExecuteOptions } from './execute';
 
-import type { CheckOutput } from './types/CheckOutput.ts';
-import type { CheckResult } from './types/CheckResult.ts';
-import type { DirDiff } from './types/DirDiff.ts';
-import type { FileChange } from './types/FileChange.ts';
-import type { FmtFile } from './types/FmtFile.ts';
-import type { FmtOutput } from './types/FmtOutput.ts';
-import type { InspectOutput } from './types/InspectOutput.ts';
-import type { LintIssue } from './types/LintIssue.ts';
-import type { LintOutput } from './types/LintOutput.ts';
-import type { OciPackageInspectBody } from './types/OciPackageInspectBody.ts';
-import type { OptionInfo } from './types/OptionInfo.ts';
-import type { RenderSummary } from './types/RenderSummary.ts';
-import type { TreeOutput } from './types/TreeOutput.ts';
-import type { VendorAddOutput } from './types/VendorAddOutput.ts';
-import type { VendorCheckOutput } from './types/VendorCheckOutput.ts';
-import type { VendorListOutput } from './types/VendorListOutput.ts';
-import type { VerifyOutput } from './types/VerifyOutput.ts';
-import type { VersionOutput } from './types/VersionOutput.ts';
-import type { WhoamiOutput } from './types/WhoamiOutput.ts';
+import type { CheckOutput } from './types/CheckOutput';
+import type { CheckResult } from './types/CheckResult';
+import type { DirDiff } from './types/DirDiff';
+import type { FileChange } from './types/FileChange';
+import type { FmtFile } from './types/FmtFile';
+import type { FmtOutput } from './types/FmtOutput';
+import type { InspectOutput } from './types/InspectOutput';
+import type { LintIssue } from './types/LintIssue';
+import type { LintOutput } from './types/LintOutput';
+import type { OciPackageInspectBody } from './types/OciPackageInspectBody';
+import type { OptionInfo } from './types/OptionInfo';
+import type { RenderSummary } from './types/RenderSummary';
+import type { TreeOutput } from './types/TreeOutput';
+import type { VendorAddOutput } from './types/VendorAddOutput';
+import type { VendorCheckOutput } from './types/VendorCheckOutput';
+import type { VendorListOutput } from './types/VendorListOutput';
+import type { VerifyOutput } from './types/VerifyOutput';
+import type { VersionOutput } from './types/VersionOutput';
+import type { WhoamiOutput } from './types/WhoamiOutput';
 
-import { type SchemaName, validateAs } from './validate.ts';
+import { validateAs } from './validate';
 
 // Every verb is dispatched through the napi addon. We previously
 // kept a wasm-bindgen path for "pure" verbs (check, fmt, lint, tree,
@@ -38,13 +38,13 @@ import { type SchemaName, validateAs } from './validate.ts';
 // bug class entirely. If browser support comes back, it ships as a
 // separate `@akua-dev/sdk-wasm` package, not as a side-channel here.
 
-export * from './errors.ts';
-export { configureNapi } from './napi.ts';
-export { execute } from './execute.ts';
-export type { ExecuteOptions } from './execute.ts';
-export type { NapiAddon } from './napi.ts';
-export { AkuaContractError, standardSchemaFor, validateAs } from './validate.ts';
-export type { SchemaName } from './validate.ts';
+export * from './errors';
+export { configureNapi } from './napi';
+export { execute } from './execute';
+export type { ExecuteOptions } from './execute';
+export type { NapiAddon } from './napi';
+export { AkuaContractError, standardSchemaFor, validateAs } from './validate';
+export type { SchemaName } from './validate';
 export type {
 	CheckOutput,
 	CheckResult,
@@ -66,11 +66,11 @@ export type {
 	VersionOutput,
 	WhoamiOutput,
 };
-export type { ExitCode } from './types/ExitCode.ts';
-export type { StructuredError } from './types/StructuredError.ts';
-export type { Level } from './types/Level.ts';
-export type { AgentContext } from './types/AgentContext.ts';
-export type { AgentSource } from './types/AgentSource.ts';
+export type { ExitCode } from './types/ExitCode';
+export type { StructuredError } from './types/StructuredError';
+export type { Level } from './types/Level';
+export type { AgentContext } from './types/AgentContext';
+export type { AgentSource } from './types/AgentSource';
 
 export interface AkuaOptions {
 	/**

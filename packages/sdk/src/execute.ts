@@ -1,4 +1,4 @@
-import { callNapi, loadNapi } from './napi.ts';
+import { callNapi, loadNapi } from './napi';
 
 export interface ExecuteOptions {
 	/** Invocation rendered by command help, usage, and parser errors. */

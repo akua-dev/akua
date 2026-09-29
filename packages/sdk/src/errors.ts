@@ -3,10 +3,10 @@
 // by reading `err.structured.code` — the stable `E_*` identifier
 // cli-contract §1.2 guarantees.
 
-import type { ExitCode } from './types/ExitCode.ts';
-import type { StructuredError } from './types/StructuredError.ts';
+import type { ExitCode } from './types/ExitCode';
+import type { StructuredError } from './types/StructuredError';
 
-import { exitCodeFromNumber } from './exit-code.ts';
+import { exitCodeFromNumber } from './exit-code';
 
 export interface AkuaErrorInit {
 	structured?: StructuredError;

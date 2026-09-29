@@ -15,7 +15,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
 
-import { type NapiStructuredError, parseNapiError } from './napi-error.ts';
+import { type NapiStructuredError, parseNapiError } from './napi-error';
 
 /**
  * Mirror of the typed shape `crates/akua-napi/index.d.ts` exports.

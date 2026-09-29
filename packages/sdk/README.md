@@ -4,11 +4,15 @@ TypeScript SDK for [Akuapkg](https://github.com/akua-dev/akuapkg). Every verb ru
 
 ## Install
 
+npm publishing is discontinued (akua-dev/cnap#2348); `@akua-dev/sdk` on npm is frozen at its last published version. Build it from source instead:
+
 ```sh
-bun  add @akua-dev/sdk
-pnpm add @akua-dev/sdk
-npm  install @akua-dev/sdk
+git clone https://github.com/akua-dev/akuapkg
+cd akuapkg
+mise exec -- task sdk:build
 ```
+
+`package.json`'s `exports` resolve to the built `dist/` (not `src/`): a Node.js consumer cannot type-strip a `.ts` file under `node_modules`, so `dist/` (both `*.js` and `*.d.ts`) stays the package's public contract. Workspace consumers (e.g. `akua-dev/cnap`) build `dist/` hermetically via Bazel and commit the result as a drift-checked artifact.
 
 Node 22+ / Bun 1.3+. Browser support is deferred because the napi addon is host-side; a `wasm32-unknown-unknown` bundle is the path forward. See [docs/spikes/engines-on-wasm32-unknown-unknown.md](../../docs/spikes/engines-on-wasm32-unknown-unknown.md).
 
@@ -85,7 +89,6 @@ task sdk:gen             # regenerate types + schema from Rust
 task sdk:check           # regenerate + diff-check (wired into `task ci`)
 task sdk:build           # bun bundle + tsc declarations → packages/sdk/dist/
 task sdk:test            # bun test (uses the bundled native addon)
-task sdk:publish:check   # npm pack --dry-run
 ```
 
 ## Release flow

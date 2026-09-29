@@ -115,10 +115,7 @@ For cross-Package composition (install one Akua package on top of another, with 
 
 Published binaries belong to [Akuapkg releases](https://github.com/akua-dev/akuapkg/releases). Verify that the version you need is published before relying on release assets; a source tag alone does not publish them.
 
-```sh
-# TypeScript SDK — in-process via napi, no `akuapkg` binary on PATH
-bun add @akua-dev/sdk
-```
+npm publishing of the TypeScript SDK is discontinued (akua-dev/cnap#2348); see [`docs/sdk.md`](docs/sdk.md) for building `@akua-dev/sdk` from source.
 
 Agent-specific setup: [`docs/agent-usage.md`](docs/agent-usage.md).
 

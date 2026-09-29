@@ -305,10 +305,13 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--line);
 <p>This is the Akua Package SDK, not the Akua Cloud REST SDK. It works without an Akua Cloud account and does not call hosted Akua APIs.</p>
 <hr />
 <h2 id="install">Install</h2>
-<pre><code class="lang-sh">bun add @akua-dev/sdk
-# or
-npm install @akua-dev/sdk</code></pre>
-<p>Published to <a href="https://www.npmjs.com/package/@akua-dev/sdk">npm</a>. ESM-only. The package supports Node 22+ and Bun 1.3+ today. Browser support is deferred because this package depends on the host-side <code>@akua-dev/native</code> NAPI addon.</p>
+<p>Akuapkg no longer publishes new SDK versions to npm (akua-dev/cnap#2348); <code>@akua-dev/sdk</code> on npm is frozen at its last published version and receives no further updates. To use the current SDK, build it from source:</p>
+<pre><code class="lang-sh">git clone https://github.com/akua-dev/akuapkg
+cd akuapkg
+mise exec -- task sdk:build</code></pre>
+<p><code>package.json</code>'s <code>exports</code> resolve to the built <code>dist/</code>, not <code>src/</code>: a Node.js consumer cannot type-strip a <code>.ts</code> file under <code>node_modules</code>, so <code>dist/</code> stays the package's public contract. Workspace consumers (e.g. <code>akua-dev/cnap</code>) get <code>dist/</code> rebuilt automatically by this package's own <code>postinstall</code> script whenever <code>bun install</code> runs.</p>
+<p>The actively maintained distribution channel for Akuapkg is the <code>akuapkg</code> CLI binary, installed via the <a href="https://cli.akua.dev/install">install script</a> or <a href="https://github.com/akua-dev/akuapkg/releases">GitHub Releases</a>.</p>
+<p>ESM-only. The package supports Node 22+ and Bun 1.3+ today. Browser support is deferred because this package depends on the host-side <code>@akua-dev/native</code> NAPI addon.</p>
 <hr />
 <h2 id="quickstart">Quickstart</h2>
 <pre><code class="lang-ts">import { Akua } from '@akua-dev/sdk';

@@ -2,14 +2,14 @@
 
 > Status as of v0.6.x. Re-verify per release.
 
-The SDK ships as a normal npm package with a per-platform native addon (`@akua-dev/native-{os}-{arch}-{libc}`) loaded via Node-API. The compatibility matrix below captures which runtimes load + drive the addon end-to-end.
+The SDK is built as a package with a per-platform native addon (`@akua-dev/native-{os}-{arch}-{libc}`) loaded via Node-API; see [docs/sdk.md](sdk.md#install) for how to build it, since npm publishing is discontinued. The compatibility matrix below captures which runtimes load + drive the addon end-to-end.
 
 ## Supported
 
 | Runtime | Version | OCI fetch | Helm engine | Kustomize engine | cosign verify | Notes |
 |---|---|---|---|---|---|---|
 | **Node.js** | 22.x | ✅ | ✅ | ✅ | ✅ | Primary target. CI sweeps green per push. |
-| **Node.js** | 24.x | ✅ | ✅ | ✅ | ✅ | release-publish.yml runs npm publish jobs on 24 (npm 11+ for OIDC trusted publishing). |
+| **Node.js** | 24.x | ✅ | ✅ | ✅ | ✅ | CI's sdk job runs on 24. |
 | **Bun** | 1.3+ | ✅ | ✅ | ✅ | ✅ | `task sdk:test` runs entirely under bun. Bun's Node-API impl is compatible. |
 | **Deno** | 2.x | ✅ | ✅ | ✅ | ✅ | Loads `@akua-dev/native` via `npm:` specifier. Requires `--allow-read --allow-net --allow-env`. |
 
