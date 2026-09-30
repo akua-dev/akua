@@ -1031,7 +1031,7 @@ dependencies = [
 [[package]]
 name = "compiler_base_error"
 version = "0.1.6"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "compiler_base_macros",
@@ -1048,12 +1048,12 @@ dependencies = [
 [[package]]
 name = "compiler_base_macros"
 version = "0.1.1"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 
 [[package]]
 name = "compiler_base_session"
 version = "0.1.3"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "compiler_base_error",
@@ -1063,7 +1063,7 @@ dependencies = [
 [[package]]
 name = "compiler_base_span"
 version = "0.1.3"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "rustc_span",
 ]
@@ -3914,7 +3914,7 @@ dependencies = [
 [[package]]
 name = "kcl-api"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "futures",
@@ -3954,7 +3954,7 @@ dependencies = [
 [[package]]
 name = "kcl-ast"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "compiler_base_span",
@@ -3970,7 +3970,7 @@ dependencies = [
 [[package]]
 name = "kcl-ast-pretty"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "compiler_base_macros",
  "compiler_base_session",
@@ -3984,7 +3984,7 @@ dependencies = [
 [[package]]
 name = "kcl-config"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4007,7 +4007,7 @@ dependencies = [
 [[package]]
 name = "kcl-driver"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "flate2",
@@ -4030,7 +4030,7 @@ dependencies = [
 [[package]]
 name = "kcl-error"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "annotate-snippets",
  "anyhow",
@@ -4052,7 +4052,7 @@ dependencies = [
 [[package]]
 name = "kcl-evaluator"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "generational-arena",
@@ -4128,7 +4128,7 @@ dependencies = [
 [[package]]
 name = "kcl-lexer"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "kcl-error",
  "rustc_lexer",
@@ -4138,7 +4138,7 @@ dependencies = [
 [[package]]
 name = "kcl-loader"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "kcl-ast",
@@ -4155,7 +4155,7 @@ dependencies = [
 [[package]]
 name = "kcl-macros"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4199,7 +4199,7 @@ dependencies = [
 [[package]]
 name = "kcl-primitives"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "indexmap 2.14.0",
  "rustc-hash 2.1.2",
@@ -4208,7 +4208,7 @@ dependencies = [
 [[package]]
 name = "kcl-query"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "compiler_base_macros",
@@ -4229,7 +4229,7 @@ dependencies = [
 [[package]]
 name = "kcl-runner"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "cc",
@@ -4302,7 +4302,7 @@ dependencies = [
 [[package]]
 name = "kcl-sema"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "bit-set",
@@ -4335,7 +4335,7 @@ dependencies = [
 [[package]]
 name = "kcl-span"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "compiler_base_span",
  "kcl-macros",
@@ -4346,7 +4346,7 @@ dependencies = [
 [[package]]
 name = "kcl-tools"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "compiler_base_session",
@@ -4378,7 +4378,7 @@ dependencies = [
 [[package]]
 name = "kcl-utils"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "anyhow",
  "fslock",
@@ -4388,7 +4388,7 @@ dependencies = [
 [[package]]
 name = "kcl-version"
 version = "0.13.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "vergen",
 ]
@@ -5683,7 +5683,7 @@ dependencies = [
 [[package]]
 name = "proc_macro_crate"
 version = "0.1.0"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6390,7 +6390,7 @@ dependencies = [
 [[package]]
 name = "rustc_errors"
 version = "0.1.2"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "termcolor",
  "winapi",
@@ -6408,7 +6408,7 @@ dependencies = [
 [[package]]
 name = "rustc_span"
 version = "0.1.2"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "blake3",
  "cfg-if 0.1.10",
@@ -6846,7 +6846,7 @@ dependencies = [
 [[package]]
 name = "serde_yaml"
 version = "0.9.34+deprecated"
-source = "git+https://github.com/kcl-lang/kcl#931e6a980ab32d5ff02654980f6ef35e5266578f"
+source = "git+https://github.com/kcl-lang/kcl#da013146648e2c322b5bab52e78dd7187a862ae5"
 dependencies = [
  "indexmap 2.14.0",
  "itoa",

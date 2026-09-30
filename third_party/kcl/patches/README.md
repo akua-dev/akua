@@ -15,7 +15,7 @@ This replaces the former `git = "https://github.com/akua-dev/kcl", branch =
 ## Pin
 
 The tracked upstream commit is recorded in `.upstream-rev` (also embedded in
-`MODULE.bazel`'s `kcl_lang_kcl_931e6a98` `http_archive`, and, for the ~17
+`MODULE.bazel`'s `kcl_lang_kcl_da013146` `http_archive`, and, for the ~17
 unpatched `kcl-*` crates plus `kcl-lang` itself, enforced via the committed
 `Cargo.lock`; see "Applying" below for why there are two places).
 
@@ -37,9 +37,9 @@ otherwise-floating git dependency reproducible, refreshed only by an explicit
   upstream kcl (`0.13.0`); updating `kcl-lang` is a required part of this
   migration, not an unrelated bump.
 - Every `kcl-*` crate (`https://github.com/kcl-lang/kcl`): commit
-  `931e6a980ab32d5ff02654980f6ef35e5266578f`, upstream `main` as of
-  2026-09-26 (`fix(api): use a single service method registry for
-  BuiltinService.ListMethod (#2205)`). No tagged release exists past
+  `da013146648e2c322b5bab52e78dd7187a862ae5`, upstream `main` as of
+  2026-09-29 (`fix(runtime): self-contained plugin stub on
+  wasm32-unknown-unknown (#2208)`). No tagged release exists past
   `v0.11.2` (2025-04-18), well before the fixes this crate needs, so the pin
   is a main commit rather than a tag; reassess when upstream cuts a new
   release. Its ancestry contains both fixes that used to require the fork:
@@ -48,6 +48,10 @@ otherwise-floating git dependency reproducible, refreshed only by an explicit
     first place; no patch file needed for it anymore.
   - `kcl-lang/kcl#2203` ("fix(api): make ValidateCode, Rename and
     UpdateDependencies work on WASI/wasm32", commit `dccc38ec`, 2026-09-26).
+  - `kcl-lang/kcl#2207` (LSP wasm32 `Url::from_file_path` shim, commit
+    `d2b50eb8`) and `kcl-lang/kcl#2208` (self-contained plugin stub on
+    `wasm32-unknown-unknown`, commit `da013146`), both merged 2026-09-29;
+    these were our former patches 0003/0004.
 
 Moving the pin forward: `cargo update -p kcl-lang` (scoped; do not delete
 `Cargo.lock` and run a bare `cargo update`, which re-resolves the entire
@@ -70,9 +74,9 @@ own unpinned git declaration, pinned only via `Cargo.lock` (see "Pin" above).
 `third_party/kcl/vendor/` is **gitignored, never committed**. It is
 materialized by Bazel from the pinned, patched archive:
 
-1. `MODULE.bazel`'s `kcl_lang_kcl_931e6a98` `http_archive` fetches
+1. `MODULE.bazel`'s `kcl_lang_kcl_da013146` `http_archive` fetches
    `https://github.com/kcl-lang/kcl/archive/<rev>.tar.gz`, verifies its
-   `sha256`, and applies all five patches below (`patch_args = ["-p1"]`) at
+   `sha256`, and applies all three patches below (`patch_args = ["-p1"]`) at
    fetch time. A drifted hash or a patch that no longer applies fails the
    fetch outright.
 2. `tools/akuapkg/source/third_party/kcl/BUILD.bazel` exposes the three
@@ -95,7 +99,7 @@ materialized by Bazel from the pinned, patched archive:
 This is why each vendored crate's manifest cannot use Cargo workspace
 inheritance (`version.workspace = true`, `kcl-lexer.workspace = true`, ...):
 that only resolves inside kcl-lang/kcl's own workspace root, which the
-vendored copy isn't part of. Patch 0005 rewrites each manifest to concrete
+vendored copy isn't part of. Patch 0003 rewrites each manifest to concrete
 values, an empty `[workspace]` table (marks it a standalone package instead
 of one Cargo tries, and fails, to fold into an ancestor workspace), and
 plain `git = "https://github.com/kcl-lang/kcl"` (**no** `rev=`) for every
@@ -118,7 +122,7 @@ applies them fresh from the pin on every `bazel run
 `.github/workflows/{ci,release}.yml`. Those workflows run `task ci` /
 `cargo build` directly and need `third_party/kcl/vendor/` populated - but the
 public repo has no cnap `MODULE.bazel`, no `@bazel_lib`, and no
-`kcl_lang_kcl_931e6a98` repo to fetch from, so `bazel run
+`kcl_lang_kcl_da013146` repo to fetch from, so `bazel run
 //tools/akuapkg:write_kcl_vendor` cannot run there at all. This is a real,
 currently-unresolved gap, not addressed by this patch series. Options, none
 chosen yet:
@@ -143,11 +147,9 @@ or run `task test`/`task ci`.
 
 | # | File | Crate | What | Upstream PR | Remove when |
 |---|------|-------|------|--------------|-------------|
-| 0001 | `0001-parser-trust-caller-registered-external_pkgs-without.patch` | `kcl-parser` | `is_external_pkg` skips the redundant `Path::exists()` probe for pkgs the caller explicitly registered via `opts.package_maps` - on `wasm32-wasip1`, `Path::exists()` on an absolute path through a WASI preopen is unreliable in Rust's current std and silently discards the caller's registration. | [kcl-lang/kcl#2206](https://github.com/kcl-lang/kcl/pull/2206), open. | Upstream merges #2206 or an equivalent fix, or `std`'s WASI `path_filestat_get` starts resolving preopens correctly for absolute paths. |
-| 0002 | `0002-parser-probe-preopen-paths-via-read_dir-open-on-wasm.patch` | `kcl-parser` | Adds `path_exists_or_file`, which falls back to `read_dir`/`File::open` (uses WASI's `path_open`, which does walk preopens) instead of `Path::exists()` on `wasm32`. Also short-circuits `is_internal_pkg` when `pkg_root` is empty. | [kcl-lang/kcl#2206](https://github.com/kcl-lang/kcl/pull/2206), open (combined with 0001 - same root cause, one upstream PR). | Upstream merges #2206 or an equivalent fix. |
-| 0003 | `0003-LSP-wasm32-shim-for-Url-from_file_path.patch` | `kcl-language-server` | `url::Url::from_file_path`/`to_file_path` are `cfg(any(unix, windows))` and don't exist on `wasm32-unknown-unknown`. `kcl-api` depends on `kcl-language-server` unconditionally (not behind a feature), so this crate must compile on every target `kcl-api` supports. Adds `util::{url_from_file_path, url_to_file_path}` shims (native: forward to `url`; wasm32: hand-roll via `Url::parse`/prefix-strip) and swaps the 6 production call sites. | [kcl-lang/kcl#2207](https://github.com/kcl-lang/kcl/pull/2207), open (this is exactly path 2 from `docs/spikes/kcl-wasm-feasibility.md`). | Upstream merges #2207, gates `kcl-language-server` behind an optional feature in `kcl-api` (spike doc's preferred "path 1"), or the `url` crate adds wasm32-unknown-unknown support for these helpers. |
-| 0004 | `0004-runtime-self-contained-plugin-stub-on-wasm32-unknown.patch` | `kcl-runtime` | `kcl_plugin_invoke_json_wasm` is declared as an `extern` that a WASI host (wasmtime) links at instantiation. On `wasm32-unknown-unknown` there is no host, so it's an unresolved `env.*` import that breaks every JS loader. Gates the extern to `target_os = "wasi"` and provides a self-contained stub (returns a `__kcl_PanicInfo__` envelope) on the non-WASI wasm32 path. | [kcl-lang/kcl#2208](https://github.com/kcl-lang/kcl/pull/2208), open. | Upstream merges #2208 or ships an equivalent `target_os` gate, or the plugin ABI grows a real non-WASI dispatch path. |
-| 0005 | `0005-vendor-standalone-manifests-for-the-three-patched-cr.patch` | `kcl-parser`, `kcl-language-server`, `kcl-runtime` | Rewrites each crate's `Cargo.toml` to a standalone manifest (concrete `version`/`edition`, empty `[workspace]` table, plain unpinned `git` sibling deps) so it can be vendored outside kcl-lang/kcl's own workspace. Cargo/build-only, not an upstream-relevant behavior change. | N/A, akuapkg-vendoring mechanics, not a kcl fix. | Never carried upstream; regenerate whenever the pin moves or a vendored crate's own dependency list changes. |
+| 0001 | `0001-parser-trust-caller-registered-external_pkgs-without.patch` | `kcl-parser` | `is_external_pkg` skips the redundant `Path::exists()` probe for pkgs the caller explicitly registered via `opts.package_maps` - on `wasm32-wasip1`, `Path::exists()` on an absolute path through a WASI preopen is unreliable in Rust's current std and silently discards the caller's registration. | [kcl-lang/kcl#2206](https://github.com/kcl-lang/kcl/pull/2206), open, review feedback (format CI) addressed 2026-09-30. | Upstream merges #2206 or an equivalent fix, or `std`'s WASI `path_filestat_get` starts resolving preopens correctly for absolute paths. |
+| 0002 | `0002-parser-probe-preopen-paths-via-read_dir-open-on-wasm.patch` | `kcl-parser` | Adds `path_exists_or_file`, which falls back to `read_dir`/`File::open` (uses WASI's `path_open`, which does walk preopens) instead of `Path::exists()` on `wasm32`. Also short-circuits `is_internal_pkg` when `pkg_root` is empty. | [kcl-lang/kcl#2206](https://github.com/kcl-lang/kcl/pull/2206), open, review feedback (format CI) addressed 2026-09-30 (combined with 0001 - same root cause, one upstream PR). | Upstream merges #2206 or an equivalent fix. |
+| 0003 | `0003-vendor-standalone-manifests-for-the-three-patched-cr.patch` | `kcl-parser`, `kcl-language-server`, `kcl-runtime` | Rewrites each crate's `Cargo.toml` to a standalone manifest (concrete `version`/`edition`, empty `[workspace]` table, plain unpinned `git` sibling deps) so it can be vendored outside kcl-lang/kcl's own workspace. Cargo/build-only, not an upstream-relevant behavior change. | N/A, akuapkg-vendoring mechanics, not a kcl fix. | Never carried upstream; regenerate whenever the pin moves or a vendored crate's own dependency list changes. |
 
 Dropped from the old fork (superseded by upstream, not carried forward):
 
@@ -162,20 +164,15 @@ Dropped from the old fork (superseded by upstream, not carried forward):
 
 ## Notes
 
-- None of the four still-needed patches are akua-specific hacks or make any
-  assumption about akua's own sandbox shape - they are general wasm32/WASI
-  portability fixes in `kcl-parser`, `kcl-language-server`, and `kcl-runtime`
-  that any wasm32 embedder of these crates would need. All four are open as
-  upstream PRs from a personal fork (`robinbraemer/kcl`, not `akua-dev/kcl`):
-  see the patch table above for links.
-- Patches 0003 and 0004 target `wasm32-unknown-unknown`, which no crate in
-  this workspace currently builds for (the planned `akua-wasm` browser SDK
-  bundle, referenced in `crates/akua-napi/Cargo.toml`'s comments and
-  `docs/spikes/kcl-wasm-feasibility.md`, hasn't landed yet). They're carried
-  now because `kcl-language-server` is an unconditional (non-optional)
-  dependency of `kcl-api`, so `kcl-lang` itself fails to compile for that
-  target without them, verified directly against the pinned rev (see below),
-  not assumed.
+- The two still-needed code patches (0001, 0002) are not akua-specific hacks:
+  they are general WASI portability fixes in `kcl-parser`, open as one
+  upstream PR (#2206) from a personal fork (`robinbraemer/kcl`, not
+  `akua-dev/kcl`). The former 0003/0004 (`wasm32-unknown-unknown` fixes for
+  `kcl-language-server` and `kcl-runtime`) landed upstream in #2207/#2208 and
+  were dropped by moving the pin; 0005 was renumbered to 0003.
+- Pin moved 2026-09-30: patches 0001-0003 apply cleanly to the new pin
+  (`git apply` against a fresh checkout). The verification notes below date
+  from the previous pin (`931e6a98`) and are re-checked in the PR that moved it.
 - Verified 2026-09-29 against a fresh checkout of the pinned commit: all five
   patches apply cleanly in order (`git apply` fuzz-free), the full kcl
   workspace (`cargo check --workspace`) compiles clean, `kcl-parser` and
