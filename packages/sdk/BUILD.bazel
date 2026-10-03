@@ -62,10 +62,22 @@ _SDK_SRCS = glob(
 # Consumed by the generated `_workspace_package_src` fallback in
 # tools/bun/generated/packages_imports.bzl: once a directory owns its own
 # BUILD.bazel, a root-relative glob can no longer cross into it, so that
-# generator aliases to `//<path>:package_src` instead.
+# generator aliases to a package-owned store source target instead.
 filegroup(
     name = "package_src",
     srcs = _SDK_SRCS,
+    visibility = ["//visibility:public"],
+)
+
+_SDK_SPEC_SUFFIXES = tuple([
+    ".{}.{}".format(kind, extension)
+    for kind in ["test", "spec", "e2e", "vitest"]
+    for extension in ["ts", "tsx", "mts", "cts", "js", "jsx", "mjs", "cjs"]
+])
+
+js_library(
+    name = "workspace_verification_package_store_src",
+    srcs = [source for source in _SDK_SRCS if not source.endswith(_SDK_SPEC_SUFFIXES)],
     visibility = ["//visibility:public"],
 )
 
