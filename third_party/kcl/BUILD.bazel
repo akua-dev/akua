@@ -1,7 +1,27 @@
-load("@bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
-load("//tools/bazel:buildifier.bzl", "bazel_format_test")
+load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
+load(":vendor.bzl", "package_kcl_vendor")
 
-exports_files(glob(["patches/*.patch"]))
+exports_files([
+    "BUILD.bazel",
+    ".upstream-rev",
+    ".upstream-sha256",
+    "upstream.BUILD.bazel",
+] + glob([
+    "patches/*.patch",
+    "*.bzl",
+]))
+
+package_kcl_vendor(name = "kcl")
+
+write_source_files(
+    name = "write_vendor",
+    diff_test = False,
+    files = {
+        "vendor/kcl-language-server": ":kcl_language_server_vendor",
+        "vendor/kcl-parser": ":kcl_parser_vendor",
+        "vendor/kcl-runtime": ":kcl_runtime_vendor",
+    },
+)
 
 filegroup(
     name = "typescript_only_policy_srcs",
@@ -11,52 +31,3 @@ filegroup(
     ),
     visibility = ["//visibility:public"],
 )
-
-# The three patched crates, pulled from the pinned+patched kcl-lang/kcl
-# archive (see MODULE.bazel) and rerooted so each crate's own directory
-# content lands at the directory root - matching the layout Cargo's
-# `[patch]` path entries in ../../Cargo.toml expect.
-copy_to_directory(
-    name = "kcl_parser_vendor",
-    srcs = ["@kcl_lang_kcl_da013146//:kcl_parser_srcs"],
-    include_external_repositories = ["*"],
-    include_srcs_patterns = ["crates/parser/**"],
-    replace_prefixes = {"crates/parser/": ""},
-    visibility = ["//visibility:public"],
-)
-
-copy_to_directory(
-    name = "kcl_language_server_vendor",
-    srcs = ["@kcl_lang_kcl_da013146//:kcl_language_server_srcs"],
-    include_external_repositories = ["*"],
-    include_srcs_patterns = ["crates/tools/src/LSP/**"],
-    replace_prefixes = {"crates/tools/src/LSP/": ""},
-    visibility = ["//visibility:public"],
-)
-
-copy_to_directory(
-    name = "kcl_runtime_vendor",
-    srcs = ["@kcl_lang_kcl_da013146//:kcl_runtime_srcs"],
-    include_external_repositories = ["*"],
-    include_srcs_patterns = ["crates/runtime/**"],
-    replace_prefixes = {"crates/runtime/": ""},
-    visibility = ["//visibility:public"],
-)
-
-# Registered as a "build" CI gate (root BUILD.bazel core_verification_roots,
-# id kcl_vendor_pin): building this forces Bazel to fetch the pinned
-# archive, verify its sha256, and apply all three patches, so a broken pin
-# (drifted hash, a patch that no longer applies) fails //:ci_build loudly
-# instead of only surfacing the next time someone happens to run
-# `bazel run //tools/akuapkg:write_kcl_vendor` locally.
-filegroup(
-    name = "kcl_vendor_pin_check",
-    srcs = [
-        ":kcl_language_server_vendor",
-        ":kcl_parser_vendor",
-        ":kcl_runtime_vendor",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-bazel_format_test()

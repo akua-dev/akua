@@ -23,8 +23,14 @@ tasks:
 
   # ---- Build / test / check ------------------------------------------------
 
+  kcl:prepare:
+    desc: Prepare the pinned and patched KCL crates for Cargo
+    cmds:
+      - bazel run //third_party/kcl:write_vendor
+
   build:
     desc: Build the Rust workspace (no wasm engines — sandbox-only features)
+    deps: [kcl:prepare]
     cmds:
       - cargo build --workspace
 
@@ -220,6 +226,7 @@ tasks:
 
   build:render-worker:
     desc: Build akua-render-worker for wasm32-wasip1 (embedded in akuapkg-cli)
+    deps: [kcl:prepare]
     # akua-core is linked into the worker, so akua-core edits change
     # the produced wasm. Without it in `sources:`, task's caching
     # reports "up to date" while akuapkg-cli's build.rs flags the worker

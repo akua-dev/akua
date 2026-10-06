@@ -4,6 +4,7 @@
 [tools]
 rust = "1.95.0"
 task = "3.48.0"
+bazel = "9.2.0"
 # Shell-out engines: helm.template + kustomize.build plug into the
 # corresponding akua-core `engine-*-shell` features and expect these
 # binaries on PATH. Pin versions so examples + integration tests

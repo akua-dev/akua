@@ -115,6 +115,8 @@ For cross-Package composition (install one Akua package on top of another, with 
 
 Published binaries belong to [Akuapkg releases](https://github.com/akua-dev/akuapkg/releases). Verify that the version you need is published before relying on release assets; a source tag alone does not publish them.
 
+For a clean source checkout, run `mise install` and `task kcl:prepare` before direct Cargo commands. Preparation uses the same checksum-pinned KCL source and patches as the canonical Bazel build; `task build` and `task build:render-worker` prepare them automatically.
+
 npm publishing of the TypeScript SDK is discontinued (akua-dev/cnap#2348); see [`docs/sdk.md`](docs/sdk.md) for building `@akua-dev/sdk` from source.
 
 Agent-specific setup: [`docs/agent-usage.md`](docs/agent-usage.md).
