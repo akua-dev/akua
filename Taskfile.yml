@@ -102,7 +102,6 @@ tasks:
     deps:
       - fmt:check
     cmds:
-      - task: release:check-workflows
       - task: hooks:check-pre-push
       - task: lint
       - task: test
@@ -154,11 +153,6 @@ tasks:
           --test examples_helm_repo_dep
           -- --include-ignored
 
-  release:check-workflows:
-    desc: Check release workflow step ordering invariants
-    cmds:
-      - bash scripts/check-release-workflows.sh
-
   # ---- Release builds ------------------------------------------------------
 
   release:local:
@@ -168,7 +162,7 @@ tasks:
       - ls -lh target/release/akuapkg
 
   release:target:
-    desc: Build Akuapkg for a specific Rust target (used by the release workflow)
+    desc: Build Akuapkg for a specific Rust target
     vars:
       TARGET: '{{.TARGET | default "x86_64-unknown-linux-gnu"}}'
       CARGO: '{{.CARGO | default "cargo"}}'

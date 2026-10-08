@@ -1,6 +1,6 @@
 {
   "name": "@akua-dev/sdk",
-  "version": "0.8.8",
+  "version": "0.9.6",
   "description": "TypeScript SDK for akua \u2014 render Kubernetes Packages in-process. Helm + Kustomize engines, OCI fetch, cosign verify, JSON Schema export. No `akua` binary required.",
   "license": "Apache-2.0",
   "repository": {
@@ -34,7 +34,7 @@
     "build": "rm -rf dist && bun build src/mod.ts src/execute.ts --target node --format esm --outdir dist --sourcemap=linked --packages=external && bunx tsc --emitDeclarationOnly && bun run scripts/verify-package-exports.ts"
   },
   "dependencies": {
-    "@akua-dev/native": "0.9.4",
+    "@akua-dev/native": "0.9.6",
     "@standard-schema/spec": "^1.1.0",
     "ajv": "^8.18.0",
     "yaml": "^2.8.3"

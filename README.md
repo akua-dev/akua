@@ -46,8 +46,6 @@ akuapkg render --inputs inputs.yaml --out ./deploy
 akua pkg render --inputs inputs.yaml --out ./deploy
 ```
 
-> **Release availability:** `v0.9.3` is tagged in source but does not yet have published GitHub Release artifacts. Check [Akuapkg releases](https://github.com/akua-dev/akuapkg/releases) before relying on a version-specific binary or package-manager install.
-
 ## Quick start
 
 A real Package: typed inputs, an OCI-fetched Helm chart with **typed values**, and a KCL overlay across every rendered resource. No `helm` binary on the machine; no shell-out anywhere.
@@ -115,7 +113,7 @@ For cross-Package composition (install one Akua package on top of another, with 
 
 Published binaries belong to [Akuapkg releases](https://github.com/akua-dev/akuapkg/releases). Verify that the version you need is published before relying on release assets; a source tag alone does not publish them.
 
-For a clean source checkout, run `mise install` and `task kcl:prepare` before direct Cargo commands. Preparation uses the same checksum-pinned KCL source and patches as the canonical Bazel build; `task build` and `task build:render-worker` prepare them automatically.
+For a clean source checkout, run `mise install` and `task kcl:prepare` before direct Cargo commands. Preparation uses the same checksum-pinned KCL source and patches as the canonical Bazel build; `task build` and `task build:render-worker` prepare them automatically. Release publication follows [`docs/releasing.md`](docs/releasing.md).
 
 npm publishing of the TypeScript SDK is discontinued (akua-dev/cnap#2348); see [`docs/sdk.md`](docs/sdk.md) for building `@akua-dev/sdk` from source.
 
