@@ -49,4 +49,4 @@ These are not part of CI today. When v0.7 lands the CI matrix follow-up, `.githu
 
 - `crates/akua-napi/` — the native crate.
 - `crates/akua-napi/index.js` — the auto-generated platform-loader (what picks the right `@akua-dev/native-*` per host).
-- `.github/workflows/release.yml` builds and stages the release; `.github/workflows/release-publish.yml` publishes npm packages from the source-run Actions artifacts in dependency order. The build workflow also drives the CLI binary release and Docker.
+- [Releasing](releasing.md) describes the canonical Bazel build and public artifact handoff. Public workflows do not publish SDK packages.

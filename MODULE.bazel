@@ -1,0 +1,6 @@
+module(name = "platform_package_source")
+
+bazel_dep(name = "bazel_lib", version = "3.7.0")
+
+upstream = use_extension("//third_party/kcl:repositories.bzl", "upstream")
+use_repo(upstream, "kcl_lang_kcl_da013146")

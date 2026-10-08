@@ -124,7 +124,7 @@ export function loadNapi(): NapiAddon {
 	const require_ = createRequire(import.meta.url);
 
 	try {
-		cached = require_('@akua-dev/native') as NapiAddon;
+		cached = require_('@akua-dev/native/loader.js') as NapiAddon;
 		return cached;
 	} catch (err) {
 		errors.push(`@akua-dev/native: ${(err as Error).message}`);

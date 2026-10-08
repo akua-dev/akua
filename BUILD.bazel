@@ -1,0 +1,101 @@
+"""Source inputs of the standalone package tool."""
+
+filegroup(
+    name = "kustomize_example",
+    srcs = glob([
+        "examples/09-kustomize-hello/**/*.k",
+        "examples/09-kustomize-hello/**/*.toml",
+        "examples/09-kustomize-hello/**/*.yaml",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+exports_files([
+    "Cargo.toml",
+    "Cargo.lock",
+    "crates/akua-napi/build.rs",
+    "crates/helm-engine-wasm/go-src/go.mod",
+    "crates/helm-engine-wasm/go-src/go.sum",
+    "crates/kustomize-engine-wasm/go-src/go.mod",
+    "crates/kustomize-engine-wasm/go-src/go.sum",
+    "crates/helm-engine-wasm/fork/helm-v4.1.4.patch",
+    "crates/helm-engine-wasm/go-src/main.go",
+    "crates/kustomize-engine-wasm/go-src/main.go",
+] + glob(["crates/*/Cargo.toml"]))
+
+filegroup(
+    name = "rust_sources",
+    srcs = [
+        "Cargo.lock",
+        "Cargo.toml",
+    ] + glob([
+        "crates/*/src/**",
+        "crates/*/stdlib/**",
+        "crates/*/Cargo.toml",
+        "crates/*/build.rs",
+        "crates/*/index.d.ts",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "typescript_only_policy_srcs",
+    srcs = [],
+    visibility = ["//visibility:public"],
+)
+
+exports_files([
+    "packages/sdk/tsconfig.json",
+    "packages/sdk/src/mod.ts",
+    "packages/sdk/src/execute.ts",
+])
+
+filegroup(
+    name = "sdk_sources",
+    srcs = glob(
+        [
+            "packages/sdk/src/**/*.ts",
+            "packages/sdk/src/**/*.json",
+        ],
+        exclude = ["packages/sdk/src/**/*.test.ts"],
+    ),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "sdk_package_inputs",
+    srcs = [
+        "packages/sdk/README.md",
+        "packages/sdk/package.json",
+    ] + glob(
+        ["packages/sdk/src/**"],
+        exclude = ["packages/sdk/src/**/*.test.ts"],
+    ),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "native_package_inputs",
+    srcs = [
+        "crates/akua-napi/index.d.ts",
+        "crates/akua-napi/index.js",
+        "crates/akua-napi/loader.js",
+        "crates/akua-napi/package.json",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "engines_package_inputs",
+    srcs = [
+        "crates/akua-native-engines-npm/index.js",
+        "crates/akua-native-engines-npm/package.json",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "sdk_committed_dist_sources",
+    srcs = glob(["packages/sdk/dist/**"]),
+    visibility = ["//visibility:public"],
+)

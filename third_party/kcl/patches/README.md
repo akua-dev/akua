@@ -14,8 +14,8 @@ This replaces the former `git = "https://github.com/akua-dev/kcl", branch =
 
 ## Pin
 
-The tracked upstream commit is recorded in `.upstream-rev` (also embedded in
-`MODULE.bazel`'s `kcl_lang_kcl_da013146` `http_archive`, and, for the ~17
+The tracked upstream commit is recorded in `../.upstream-rev` (read by the
+shared `../repositories.bzl` module extension, and, for the ~17
 unpatched `kcl-*` crates plus `kcl-lang` itself, enforced via the committed
 `Cargo.lock`; see "Applying" below for why there are two places).
 
@@ -74,7 +74,7 @@ own unpinned git declaration, pinned only via `Cargo.lock` (see "Pin" above).
 `third_party/kcl/vendor/` is **gitignored, never committed**. It is
 materialized by Bazel from the pinned, patched archive:
 
-1. `MODULE.bazel`'s `kcl_lang_kcl_da013146` `http_archive` fetches
+1. The shared `../repositories.bzl` module extension fetches
    `https://github.com/kcl-lang/kcl/archive/<rev>.tar.gz`, verifies its
    `sha256`, and applies all three patches below (`patch_args = ["-p1"]`) at
    fetch time. A drifted hash or a patch that no longer applies fails the
@@ -115,33 +115,15 @@ The `.patch` files here are the source of truth and audit trail; Bazel
 applies them fresh from the pin on every `bazel run
 //tools/akuapkg:write_kcl_vendor`, so `vendor/` never drifts from them.
 
-### Public projected repo gap (open, undecided)
+### Standalone source preparation
 
-`tools/akuapkg/source` is Josh-projected verbatim to the public
-`akua-dev/akuapkg` repo, including this directory and its own
-`.github/workflows/{ci,release}.yml`. Those workflows run `task ci` /
-`cargo build` directly and need `third_party/kcl/vendor/` populated - but the
-public repo has no cnap `MODULE.bazel`, no `@bazel_lib`, and no
-`kcl_lang_kcl_da013146` repo to fetch from, so `bazel run
-//tools/akuapkg:write_kcl_vendor` cannot run there at all. This is a real,
-currently-unresolved gap, not addressed by this patch series. Options, none
-chosen yet:
-
-- Give the public repo its own independent prepare mechanism (a script or
-  Taskfile task there, mirroring `crates/helm-engine-wasm/fork/apply.sh`'s
-  existing shallow-clone-plus-patch shape) - but `tools/akuapkg/source` is
-  projected 1:1 from cnap, so any such file would have to be added on the
-  cnap side too, which conflicts with cnap's Bazel-only-orchestration
-  convention for this migration.
-- Commit a prepared, patched snapshot of `vendor/` specifically for the
-  public repo's own CI to consume, diverging it from what cnap tracks (adds
-  drift risk between the two).
-- Change the public repo's CI to fetch/patch some other way that does not
-  need Bazel or a checked-in vendor tree.
-
-Until this is decided, a fresh clone of the public `akua-dev/akuapkg` repo's
-own CI (and anyone building outside cnap) cannot build `akua-render-worker`
-or run `task test`/`task ci`.
+The public source repository and canonical Bazel workspace load the same
+`../repositories.bzl` extension. It reads the source-owned revision and archive
+checksum, applies these three patches, and exposes the same upstream crate inputs.
+Run `task kcl:prepare` in the public checkout, or
+`bazel run //tools/akuapkg:write_kcl_vendor` in the canonical repository, to
+materialize Cargo's three gitignored vendor paths. Both callers share the
+`../vendor.bzl` recipes; no prepared snapshot is committed.
 
 ## Patch list
 
