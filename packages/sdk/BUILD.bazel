@@ -1,14 +1,14 @@
-load("@aspect_rules_js//js:defs.bzl", "js_library")
-load("@bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
-load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
-load("@@+bun_imports+bun_packages__ajv__links//:defs.bzl", _link_ajv = "npm_link_imported_package_store_internal")  # buildifier: disable=canonical-repository
-load("@@+bun_imports+bun_packages__yaml__links//:defs.bzl", _link_yaml = "npm_link_imported_package_store_internal")  # buildifier: disable=canonical-repository
-load("@@+bun_imports+bun_packages__typescript__links//:defs.bzl", _link_typescript = "npm_link_imported_package_store_internal")  # buildifier: disable=canonical-repository
 load("@@+bun_imports+bun_packages___40akua-dev_2fnative__links//:defs.bzl", _link_akua_native = "npm_link_imported_package_store_internal")  # buildifier: disable=canonical-repository
 load("@@+bun_imports+bun_packages___40standard-schema_2fspec__links//:defs.bzl", _link_standard_schema = "npm_link_imported_package_store_internal")  # buildifier: disable=canonical-repository
 load("@@+bun_imports+bun_packages___40types_2fnode__links//:defs.bzl", _link_types_node = "npm_link_imported_package_store_internal")  # buildifier: disable=canonical-repository
-load("//tools/bun:bun_bundle.bzl", "bun_bundle")
+load("@@+bun_imports+bun_packages__ajv__links//:defs.bzl", _link_ajv = "npm_link_imported_package_store_internal")  # buildifier: disable=canonical-repository
+load("@@+bun_imports+bun_packages__typescript__links//:defs.bzl", _link_typescript = "npm_link_imported_package_store_internal")  # buildifier: disable=canonical-repository
+load("@@+bun_imports+bun_packages__yaml__links//:defs.bzl", _link_yaml = "npm_link_imported_package_store_internal")  # buildifier: disable=canonical-repository
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+load("@bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
+load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
 load("//tools/akuapkg:sdk_declarations.bzl", "sdk_tsc_declarations")
+load("//tools/bun:bun_bundle.bzl", "bun_bundle")
 
 # Hand-written, not generated. `packages/sdk` is part of the grafted upstream
 # akua-dev/akuapkg history (published source view; publishing-source-views
@@ -54,9 +54,14 @@ load("//tools/akuapkg:sdk_declarations.bzl", "sdk_tsc_declarations")
 # build (no sourcemaps): those served npm-tarball consumers, and npm
 # publishing is discontinued (akua-dev/cnap#2348).
 _SDK_SRCS = glob(
-    ["src/**", "dist/**", "package.json", "README.md"],
-    exclude = ["node_modules/**"],
+    [
+        "src/**",
+        "dist/**",
+        "package.json",
+        "README.md",
+    ],
     allow_empty = True,
+    exclude = ["node_modules/**"],
 )
 
 # Consumed by the generated `_workspace_package_src` fallback in
@@ -71,8 +76,22 @@ filegroup(
 
 _SDK_SPEC_SUFFIXES = tuple([
     ".{}.{}".format(kind, extension)
-    for kind in ["test", "spec", "e2e", "vitest"]
-    for extension in ["ts", "tsx", "mts", "cts", "js", "jsx", "mjs", "cjs"]
+    for kind in [
+        "test",
+        "spec",
+        "e2e",
+        "vitest",
+    ]
+    for extension in [
+        "ts",
+        "tsx",
+        "mts",
+        "cts",
+        "js",
+        "jsx",
+        "mjs",
+        "cjs",
+    ]
 ])
 
 js_library(
@@ -84,9 +103,17 @@ js_library(
 js_library(
     name = "workspace_verification_production_package_src",
     srcs = glob(
-        ["src/**", "dist/**", "package.json", "README.md"],
-        exclude = ["src/**/*.test.ts", "node_modules/**"],
+        [
+            "src/**",
+            "dist/**",
+            "package.json",
+            "README.md",
+        ],
         allow_empty = True,
+        exclude = [
+            "src/**/*.test.ts",
+            "node_modules/**",
+        ],
     ),
     visibility = ["//visibility:public"],
 )
@@ -97,7 +124,10 @@ js_library(
 # its own BUILD.bazel above, so it must expose the same target name.
 filegroup(
     name = "typescript_only_policy_srcs",
-    srcs = glob(["**/*.py"], allow_empty = True),
+    srcs = glob(
+        ["**/*.py"],
+        allow_empty = True,
+    ),
     visibility = ["//visibility:public"],
 )
 
@@ -127,7 +157,10 @@ _link_types_node(
 )
 
 _SDK_BUNDLE_SRCS = glob(
-    ["src/**/*.ts", "src/**/*.json"],
+    [
+        "src/**/*.ts",
+        "src/**/*.json",
+    ],
     exclude = ["src/**/*.test.ts"],
 )
 
@@ -169,17 +202,17 @@ sdk_tsc_declarations(
     out_dir = "sdk_declarations_dir",
     tsconfig = "tsconfig.json",
     deps = _SDK_BUNDLE_DEPS + [
-        ":node_modules/typescript",
         ":node_modules/@types/node",
+        ":node_modules/typescript",
     ],
 )
 
 copy_to_directory(
     name = "sdk_dist",
     srcs = [
-        ":sdk_mod_js",
-        ":sdk_execute_js",
         ":sdk_declarations",
+        ":sdk_execute_js",
+        ":sdk_mod_js",
     ],
     replace_prefixes = {
         "sdk_declarations_dir/": "",
