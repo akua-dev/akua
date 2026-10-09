@@ -1,0 +1,37 @@
+"""Source inputs for the embedded engine host."""
+
+load("@platform_package_napi_crates//:defs.bzl", napi_deps = "all_crate_deps")
+load("@platform_package_source_version//:version.bzl", "PACKAGE_SOURCE_VERSION")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+exports_files(["Cargo.toml"])
+
+filegroup(
+    name = "rust_sources",
+    srcs = ["Cargo.toml"] + glob(
+        [
+            "src/**",
+            "build.rs",
+            "index.d.ts",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)
+
+rust_library(
+    name = "engine_host_napi",
+    srcs = glob(["src/**/*.rs"]),
+    crate_name = "engine_host_wasm",
+    crate_root = "src/lib.rs",
+    edition = "2021",
+    rustc_env = {
+        "CARGO_PKG_NAME": "engine-host-wasm",
+        "CARGO_PKG_VERSION": PACKAGE_SOURCE_VERSION,
+    },
+    visibility = ["//visibility:public"],
+    deps = napi_deps(
+        package_name = "tools/akuapkg/source/crates/engine-host-wasm",
+        normal = True,
+    ),
+)

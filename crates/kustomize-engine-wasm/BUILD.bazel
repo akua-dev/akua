@@ -1,0 +1,42 @@
+"""Source inputs for the embedded Kustomize engine."""
+
+load("@platform_package_napi_crates//:defs.bzl", napi_deps = "all_crate_deps")
+load("@platform_package_source_version//:version.bzl", "PACKAGE_SOURCE_VERSION")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+exports_files([
+    "Cargo.toml",
+    "go-src/go.mod",
+    "go-src/go.sum",
+    "go-src/main.go",
+])
+
+filegroup(
+    name = "rust_sources",
+    srcs = ["Cargo.toml"] + glob(
+        [
+            "src/**",
+            "build.rs",
+            "index.d.ts",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)
+
+rust_library(
+    name = "kustomize_napi",
+    srcs = glob(["src/**/*.rs"]),
+    crate_name = "kustomize_engine_wasm",
+    crate_root = "src/lib.rs",
+    edition = "2021",
+    rustc_env = {
+        "CARGO_PKG_NAME": "kustomize-engine-wasm",
+        "CARGO_PKG_VERSION": PACKAGE_SOURCE_VERSION,
+    },
+    visibility = ["//visibility:public"],
+    deps = ["//tools/akuapkg/source/crates/engine-host-wasm:engine_host_napi"] + napi_deps(
+        package_name = "tools/akuapkg/source/crates/kustomize-engine-wasm",
+        normal = True,
+    ),
+)

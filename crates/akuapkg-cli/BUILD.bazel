@@ -1,0 +1,84 @@
+"""Source inputs for the package command-line executable."""
+
+load("@platform_package_napi_crates//:defs.bzl", napi_aliases = "aliases", napi_deps = "all_crate_deps")
+load("@platform_package_source_version//:version.bzl", "PACKAGE_SOURCE_VERSION")
+load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+exports_files(["Cargo.toml"])
+
+filegroup(
+    name = "rust_sources",
+    srcs = ["Cargo.toml"] + glob(
+        [
+            "src/**",
+            "build.rs",
+            "index.d.ts",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)
+
+_WORKER_BUILD_DATA = [
+    "//tools/akuapkg:official_worker_wasm_bytes",
+    "//tools/akuapkg:official_worker_source_hash",
+    "//tools/akuapkg/source/crates/akua-core:rust_sources",
+    "//tools/akuapkg/source/crates/akua-render-worker:rust_sources",
+]
+
+cargo_build_script(
+    name = "napi_cli_build_script",
+    srcs = ["build.rs"],
+    build_script_env = {
+        "PLATFORM_PACKAGE_WORKER_WASM": "$(location //tools/akuapkg:official_worker_wasm_bytes)",
+    },
+    crate_features = [
+        "oci-fetch",
+        "cosign-verify",
+    ],
+    crate_root = "build.rs",
+    data = _WORKER_BUILD_DATA,
+    edition = "2021",
+    pkg_name = "akuapkg-cli",
+    version = PACKAGE_SOURCE_VERSION,
+    deps = [
+        "//tools/akuapkg/source/crates/engine-host-wasm:engine_host_napi",
+        "//tools/akuapkg/source/crates/source-hash:source_hash_napi",
+    ] + napi_deps(
+        package_name = "tools/akuapkg/source/crates/akuapkg-cli",
+        build = True,
+    ),
+)
+
+rust_library(
+    name = "napi_cli_library",
+    srcs = glob(
+        ["src/**/*.rs"],
+        exclude = ["src/main.rs"],
+    ),
+    aliases = napi_aliases(
+        package_name = "tools/akuapkg/source/crates/akuapkg-cli",
+        normal = True,
+    ),
+    crate_features = [
+        "oci-fetch",
+        "cosign-verify",
+    ],
+    crate_name = "akuapkg_cli",
+    crate_root = "src/lib.rs",
+    edition = "2021",
+    rustc_env = {
+        "CARGO_PKG_NAME": "akuapkg-cli",
+        "CARGO_PKG_VERSION": PACKAGE_SOURCE_VERSION,
+    },
+    visibility = ["//visibility:public"],
+    deps = [
+        ":napi_cli_build_script",
+        "//tools/akuapkg/source/crates/akua-core:core_napi",
+        "//tools/akuapkg/source/crates/engine-host-wasm:engine_host_napi",
+    ] + napi_deps(
+        package_name = "tools/akuapkg/source/crates/akuapkg-cli",
+        normal = True,
+    ),
+)

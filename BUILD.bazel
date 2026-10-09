@@ -14,28 +14,22 @@ exports_files([
     ".gitleaksignore",
     "Cargo.toml",
     "Cargo.lock",
-    "crates/akua-napi/build.rs",
-    "crates/helm-engine-wasm/go-src/go.mod",
-    "crates/helm-engine-wasm/go-src/go.sum",
-    "crates/kustomize-engine-wasm/go-src/go.mod",
-    "crates/kustomize-engine-wasm/go-src/go.sum",
-    "crates/helm-engine-wasm/fork/helm-v4.1.4.patch",
-    "crates/helm-engine-wasm/go-src/main.go",
-    "crates/kustomize-engine-wasm/go-src/main.go",
-] + glob(["crates/*/Cargo.toml"]))
+])
 
 filegroup(
     name = "rust_sources",
     srcs = [
         "Cargo.lock",
         "Cargo.toml",
-    ] + glob([
-        "crates/*/src/**",
-        "crates/*/stdlib/**",
-        "crates/*/Cargo.toml",
-        "crates/*/build.rs",
-        "crates/*/index.d.ts",
-    ]),
+        "//tools/akuapkg/source/crates/akua-core:rust_sources",
+        "//tools/akuapkg/source/crates/akua-napi:rust_sources",
+        "//tools/akuapkg/source/crates/akua-render-worker:rust_sources",
+        "//tools/akuapkg/source/crates/akuapkg-cli:rust_sources",
+        "//tools/akuapkg/source/crates/engine-host-wasm:rust_sources",
+        "//tools/akuapkg/source/crates/helm-engine-wasm:rust_sources",
+        "//tools/akuapkg/source/crates/kustomize-engine-wasm:rust_sources",
+        "//tools/akuapkg/source/crates/source-hash:rust_sources",
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -77,12 +71,7 @@ filegroup(
 
 filegroup(
     name = "native_package_inputs",
-    srcs = [
-        "crates/akua-napi/index.d.ts",
-        "crates/akua-napi/index.js",
-        "crates/akua-napi/loader.js",
-        "crates/akua-napi/package.json",
-    ],
+    srcs = ["//tools/akuapkg/source/crates/akua-napi:native_package_inputs"],
     visibility = ["//visibility:public"],
 )
 

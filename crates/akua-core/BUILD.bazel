@@ -1,0 +1,96 @@
+"""Declared source inputs for the package core crate."""
+
+load("@platform_package_crates//:defs.bzl", "aliases", "crate_deps")
+load("@platform_package_napi_crates//:defs.bzl", napi_aliases = "aliases", napi_deps = "all_crate_deps")
+load("@platform_package_source_version//:version.bzl", "PACKAGE_SOURCE_VERSION")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+exports_files(["Cargo.toml"])
+
+filegroup(
+    name = "rust_sources",
+    srcs = ["Cargo.toml"] + glob(
+        [
+            "src/**",
+            "stdlib/**",
+            "build.rs",
+            "index.d.ts",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)
+
+rust_library(
+    name = "core_worker",
+    srcs = glob(["src/**/*.rs"]),
+    aliases = aliases(
+        package_name = "tools/akuapkg/source/crates/akua-core",
+        normal = True,
+    ),
+    compile_data = glob([
+        "stdlib/**/*.k",
+        "tests/fixtures/helm-multidoc.yaml",
+    ]),
+    crate_features = ["engine-kcl"],
+    crate_name = "akua_core",
+    crate_root = "src/lib.rs",
+    edition = "2021",
+    rustc_env = {
+        "CARGO_PKG_NAME": "akua-core",
+        "CARGO_PKG_VERSION": PACKAGE_SOURCE_VERSION,
+    },
+    visibility = ["//visibility:public"],
+    deps = [
+        "@@rules_rust++crate+platform_package_crates__kcl-lang-0.13.0//:kcl_lang",
+        "@@rules_rust++crate+platform_package_crates__sha2-0.10.9//:sha2",
+        "@@rules_rust++crate+platform_package_crates__tempfile-3.27.0//:tempfile",
+    ] + crate_deps(
+        [
+            "base64",
+            "serde",
+            "serde_json",
+            "serde_yaml",
+            "thiserror",
+            "toml",
+        ],
+        package_name = "tools/akuapkg/source/crates/akua-core",
+    ),
+)
+
+rust_library(
+    name = "core_napi",
+    srcs = glob(["src/**/*.rs"]),
+    aliases = napi_aliases(
+        package_name = "tools/akuapkg/source/crates/akua-core",
+        normal = True,
+    ),
+    compile_data = glob([
+        "stdlib/**/*.k",
+        "tests/fixtures/helm-multidoc.yaml",
+    ]),
+    crate_features = [
+        "engine-kcl",
+        "engine-helm",
+        "engine-kustomize",
+        "oci-fetch",
+        "git-fetch",
+        "helm-fetch",
+        "cosign-verify",
+    ],
+    crate_name = "akua_core",
+    crate_root = "src/lib.rs",
+    edition = "2021",
+    rustc_env = {
+        "CARGO_PKG_NAME": "akua-core",
+        "CARGO_PKG_VERSION": PACKAGE_SOURCE_VERSION,
+    },
+    visibility = ["//visibility:public"],
+    deps = [
+        "//tools/akuapkg/source/crates/helm-engine-wasm:helm_napi",
+        "//tools/akuapkg/source/crates/kustomize-engine-wasm:kustomize_napi",
+    ] + napi_deps(
+        package_name = "tools/akuapkg/source/crates/akua-core",
+        normal = True,
+    ),
+)

@@ -29,7 +29,9 @@ fn worker_config() -> wasmtime::Config {
 }
 
 fn main() {
-    let worker_wasm = workspace_root().join("target/wasm32-wasip1/release/akua-render-worker.wasm");
+    let worker_wasm = std::env::var_os("PLATFORM_PACKAGE_WORKER_WASM")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| workspace_root().join("target/wasm32-wasip1/release/akua-render-worker.wasm"));
     let out_dir = PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR not set"));
     let cwasm_out = out_dir.join("akua-render-worker.cwasm");
     let wasm_out = out_dir.join("akua-render-worker.wasm");
