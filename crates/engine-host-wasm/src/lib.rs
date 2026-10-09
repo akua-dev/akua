@@ -130,28 +130,16 @@ pub fn engine_config() -> Config {
     shared_config()
 }
 
-/// Build-script variant of [`shared_config`]. When `cargo` is cross-
-/// compiling (`TARGET != HOST`), tell wasmtime's Cranelift backend to
-/// AOT for the binary's target arch instead of the build host's.
-///
-/// Without this, the macos-latest runner (now aarch64) produces a
-/// cwasm baked for aarch64 inside an x86_64-apple-darwin binary, and
-/// runtime `Module::deserialize` rejects it: `Module was compiled for
-/// architecture 'aarch64'`. Same trap applies to any future cross-
-/// compile combination.
+/// Build-script variant of [`shared_config`]. Pinning Cargo's `TARGET`
+/// prevents wasmtime from inferring build-host CPU features even when
+/// `TARGET == HOST`, so precompiled modules can load on baseline hosts.
+/// It also AOT-compiles for the binary's architecture when cross-compiling.
 pub fn build_script_config() -> Config {
     let mut config = shared_config();
-    let target = std::env::var("TARGET").ok();
-    let host = std::env::var("HOST").ok();
-    if let (Some(t), Some(h)) = (target.as_deref(), host.as_deref()) {
-        if t != h {
-            // Cargo's TARGET is a target-triple in target_lexicon
-            // shape — wasmtime's Config::target() takes the same
-            // shape directly.
-            config
-                .target(t)
-                .expect("wasmtime: Config::target rejected cargo TARGET triple");
-        }
+    if let Ok(target) = std::env::var("TARGET") {
+        config
+            .target(&target)
+            .expect("wasmtime: Config::target rejected cargo TARGET triple");
     }
     config
 }
@@ -557,9 +545,7 @@ mod tests {
         let _engine = Engine::new(&cfg).expect("engine_config must produce a valid Config");
     }
 
-    /// `build_script_config` with TARGET unset (or equal to HOST) skips
-    /// the Cranelift target override and returns the same shape as
-    /// `shared_config`. This exercises the no-cross-compile branch.
+    /// With TARGET unset, build scripts retain the host configuration.
     #[test]
     fn build_script_config_no_cross_compile_branch() {
         // SAFETY: tests run single-threaded under nextest's
