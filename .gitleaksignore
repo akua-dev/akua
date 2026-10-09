@@ -5,9 +5,67 @@
 # A captured Temporal Helm render contains a chart-generated Grafana password
 # and its checksum. They are static fixture data for the multi-document parser,
 # not credentials used by an Akua environment.
-064c6f184877185521d91b910d3346f8121064d4:crates/akua-core/tests/fixtures/helm-multidoc.yaml:generic-api-key:118
 064c6f184877185521d91b910d3346f8121064d4:crates/akua-core/tests/fixtures/helm-multidoc.yaml:generic-api-key:1814
 
 # The scanner spans Rust source between two PEM header literals. The test
 # creates a fresh key with OsRng at runtime; no private-key bytes are committed.
 f708ad15b4f356f7f282a5750196d4554b2a87e3:crates/akua-core/src/cosign.rs:private-key:512
+
+# Reviewed historical documentation examples, test fixtures, and sample values.
+# New findings outside these immutable fingerprints remain blocked.
+064c6f184877185521d91b910d3346f8121064d4:crates/akua-core/tests/fixtures/helm-multidoc.yaml:generic-password:118
+064c6f184877185521d91b910d3346f8121064d4:crates/akua-core/tests/fixtures/helm-multidoc.yaml:generic-password:135
+064c6f184877185521d91b910d3346f8121064d4:crates/akua-core/tests/fixtures/helm-multidoc.yaml:kubernetes-secret-yaml:104
+064c6f184877185521d91b910d3346f8121064d4:crates/akua-core/tests/fixtures/helm-multidoc.yaml:kubernetes-secret-yaml:123
+1733f36a45a1ea80920e81f01d59077109354e7a:docs/errors/E_AUTH_PARSE.md:generic-password:48
+1733f36a45a1ea80920e81f01d59077109354e7a:docs/errors/E_AUTH_PARSE.md:generic-password:52
+1733f36a45a1ea80920e81f01d59077109354e7a:docs/errors/E_AUTH_PARSE.md:generic-password:74
+1733f36a45a1ea80920e81f01d59077109354e7a:docs/errors/E_AUTH_PARSE.md:generic-password:75
+20ff9b0248301e0b56913020a5e07668b2f72812:site/concepts/sdk.html:generic-password:381
+20ff9b0248301e0b56913020a5e07668b2f72812:site/errors/E_AUTH_PARSE.html:generic-password:336
+20ff9b0248301e0b56913020a5e07668b2f72812:site/errors/E_AUTH_PARSE.html:generic-password:340
+20ff9b0248301e0b56913020a5e07668b2f72812:site/errors/E_AUTH_PARSE.html:generic-password:351
+20ff9b0248301e0b56913020a5e07668b2f72812:site/errors/E_AUTH_PARSE.html:generic-password:352
+20ff9b0248301e0b56913020a5e07668b2f72812:site/errors/E_MANIFEST_HELM_USERINFO.html:generic-credential-uri:12
+20ff9b0248301e0b56913020a5e07668b2f72812:site/errors/E_MANIFEST_HELM_USERINFO.html:generic-credential-uri:316
+20ff9b0248301e0b56913020a5e07668b2f72812:site/errors/E_MANIFEST_HELM_USERINFO.html:generic-credential-uri:7
+20ff9b0248301e0b56913020a5e07668b2f72812:site/errors/index.html:generic-credential-uri:338
+20ff9b0248301e0b56913020a5e07668b2f72812:site/errors/index.html:generic-credential-uri:350
+33048b54d4d7f63abb35fd05ff193b8fb07f457f:docs/sdk.md:generic-password:142
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:docs/errors/E_MANIFEST_GIT_USERINFO.md:generic-credential-uri:70
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:docs/errors/E_MANIFEST_GIT_USERINFO.md:generic-credential-uri:9
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:docs/errors/E_MANIFEST_GIT_USERINFO.md:generic-password:38
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:docs/errors/E_MANIFEST_GIT_USERINFO.md:generic-password:56
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:docs/sdk.md:generic-credential-uri:241
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:docs/sdk.md:generic-password:225
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:docs/sdk.md:generic-password:229
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:docs/sdk.md:generic-password:230
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:site/cli/vendor.html:generic-password:315
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:site/cli/vendor.html:generic-password:316
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:site/concepts/sdk.html:generic-password:431
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:site/concepts/sdk.html:generic-password:435
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:site/concepts/sdk.html:generic-password:436
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:site/errors/E_MANIFEST_GIT_USERINFO.html:generic-credential-uri:12
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:site/errors/E_MANIFEST_GIT_USERINFO.html:generic-credential-uri:320
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:site/errors/E_MANIFEST_GIT_USERINFO.html:generic-credential-uri:349
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:site/errors/E_MANIFEST_GIT_USERINFO.html:generic-credential-uri:7
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:site/errors/E_MANIFEST_GIT_USERINFO.html:generic-password:334
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:site/errors/E_MANIFEST_GIT_USERINFO.html:generic-password:343
+7d3983bb12917ab6b289a3bcc8ecb05b3f546fd7:site/errors/index.html:generic-credential-uri:342
+950c842a549c96309b6b5270e9c1ef65663c8c78:crates/akua-cli/src/api_config.rs:generic-credential-uri:244
+9b4a5a750917b3f06f65f911c12a46b14f72656a:docs/superpowers/plans/2026-05-29-https-helm-repo-deps.md:generic-credential-uri:147
+a26f20e36d07b6be23fb7bcc0b5091ed46f016ca:crates/akua-core/src/mod_file.rs:generic-credential-uri:921
+bd959c70db246a35d3c69c80da403be12d4e7355:crates/akua-core/src/host_auth.rs:generic-credential-uri:133
+bd959c70db246a35d3c69c80da403be12d4e7355:crates/akua-core/src/host_auth.rs:generic-credential-uri:231
+bd959c70db246a35d3c69c80da403be12d4e7355:crates/akua-core/src/host_auth.rs:generic-credential-uri:253
+bd959c70db246a35d3c69c80da403be12d4e7355:crates/akua-core/src/host_auth.rs:generic-credential-uri:300
+c708519eba70557b039531fa5e6322fbbb16f2c5:crates/akua-core/src/oci_auth.rs:generic-password:307
+c708519eba70557b039531fa5e6322fbbb16f2c5:crates/akua-core/src/oci_auth.rs:generic-password:378
+c83f2d3a4765056e5fb390eb828036c45a005480:bun.lock:generic-password:64
+dc4eb4a343e9947046fbc7d075d2be49a8ea19b4:site/errors/E_MANIFEST_HELM_USERINFO.html:generic-credential-uri:318
+e3e776d4f0b0f2aef176da3823cff677523341c7:crates/akua-core/src/cli_contract/codes.rs:generic-credential-uri:28
+e7a42108c05202ff48a3f58e32f7e0f7479f76e5:site/errors/E_MANIFEST_HELM_USERINFO.html:generic-credential-uri:318
+f1502949bc35182a38bf038ed42d9789a3338faf:crates/akua-core/src/cli_contract/codes.rs:generic-credential-uri:42
+f1ea16c802e0c86afd2430ec8d395a5598d5c1de:packages/sdk/tests/docker-config.test.ts:generic-password:32
+f1ea16c802e0c86afd2430ec8d395a5598d5c1de:packages/sdk/tests/docker-config.test.ts:generic-password:39
+f3ca982b7668f20dc0f93e88981c0385af86fff1:crates/akua-napi/bun.lock:generic-password:41

@@ -11,6 +11,7 @@ filegroup(
 )
 
 exports_files([
+    ".gitleaksignore",
     "Cargo.toml",
     "Cargo.lock",
     "crates/akua-napi/build.rs",
