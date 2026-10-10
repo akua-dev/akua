@@ -2,7 +2,6 @@
 
 exports_files([
     "BUILD.bazel",
-    "src/lib.rs",
     "Cargo.toml",
     "fork/helm-v4.1.4.patch",
     "go-src/go.mod",
@@ -25,8 +24,13 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+exports_files([
+    "src/lib.rs",
+    "build.rs",
+])
+
 filegroup(
-    name = "compiler_sources",
+    name = "rust_compile_sources",
     srcs = glob(["src/**/*.rs"]),
     visibility = ["//visibility:public"],
 )

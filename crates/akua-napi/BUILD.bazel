@@ -1,8 +1,7 @@
-"""Source inputs for the pinned package NAPI addon."""
+"""Official Linux NAPI addon from the pinned package Cargo closure."""
 
 exports_files([
     "BUILD.bazel",
-    "src/lib.rs",
     "Cargo.toml",
     "build.rs",
 ])
@@ -33,8 +32,12 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+exports_files([
+    "src/lib.rs",
+])
+
 filegroup(
-    name = "compiler_sources",
+    name = "rust_compile_sources",
     srcs = glob(["src/**/*.rs"]),
     visibility = ["//visibility:public"],
 )

@@ -1,9 +1,7 @@
-"""Source inputs for the pinned package source digest utility."""
+"""The source digest utility from the pinned package workspace."""
 
 exports_files([
     "BUILD.bazel",
-    "src/lib.rs",
-    "src/main.rs",
     "Cargo.toml",
 ])
 
@@ -22,8 +20,13 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+exports_files([
+    "src/lib.rs",
+    "src/main.rs",
+])
+
 filegroup(
-    name = "compiler_sources",
+    name = "rust_library_sources",
     srcs = glob(
         ["src/**/*.rs"],
         exclude = ["src/main.rs"],

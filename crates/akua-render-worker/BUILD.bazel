@@ -1,8 +1,7 @@
-"""Source inputs for the sandboxed package render worker."""
+"""The sandboxed render worker for the package runtime."""
 
 exports_files([
     "BUILD.bazel",
-    "src/main.rs",
     "Cargo.toml",
 ])
 
@@ -21,8 +20,10 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+exports_files(["src/main.rs"])
+
 filegroup(
-    name = "compiler_sources",
+    name = "rust_compile_sources",
     srcs = glob(["src/**/*.rs"]),
     visibility = ["//visibility:public"],
 )
