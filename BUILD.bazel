@@ -17,23 +17,6 @@ exports_files([
 ])
 
 filegroup(
-    name = "rust_sources",
-    srcs = [
-        "Cargo.lock",
-        "Cargo.toml",
-        "//tools/akuapkg/source/crates/akua-core:rust_sources",
-        "//tools/akuapkg/source/crates/akua-napi:rust_sources",
-        "//tools/akuapkg/source/crates/akua-render-worker:rust_sources",
-        "//tools/akuapkg/source/crates/akuapkg-cli:rust_sources",
-        "//tools/akuapkg/source/crates/engine-host-wasm:rust_sources",
-        "//tools/akuapkg/source/crates/helm-engine-wasm:rust_sources",
-        "//tools/akuapkg/source/crates/kustomize-engine-wasm:rust_sources",
-        "//tools/akuapkg/source/crates/source-hash:rust_sources",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-filegroup(
     name = "typescript_only_policy_srcs",
     srcs = [],
     visibility = ["//visibility:public"],
@@ -66,12 +49,6 @@ filegroup(
         ["packages/sdk/src/**"],
         exclude = ["packages/sdk/src/**/*.test.ts"],
     ),
-    visibility = ["//visibility:public"],
-)
-
-filegroup(
-    name = "native_package_inputs",
-    srcs = ["//tools/akuapkg/source/crates/akua-napi:native_package_inputs"],
     visibility = ["//visibility:public"],
 )
 

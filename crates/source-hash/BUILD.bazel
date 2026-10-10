@@ -1,8 +1,5 @@
 """The source digest utility from the pinned package workspace."""
 
-load("@platform_package_napi_crates//:defs.bzl", napi_deps = "all_crate_deps")
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
-
 exports_files(["Cargo.toml"])
 
 filegroup(
@@ -18,27 +15,16 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-rust_library(
-    name = "source_hash_napi",
+exports_files([
+    "src/lib.rs",
+    "src/main.rs",
+])
+
+filegroup(
+    name = "rust_library_sources",
     srcs = glob(
         ["src/**/*.rs"],
         exclude = ["src/main.rs"],
     ),
-    crate_name = "source_hash",
-    crate_root = "src/lib.rs",
-    edition = "2021",
     visibility = ["//visibility:public"],
-    deps = napi_deps(
-        package_name = "tools/akuapkg/source/crates/source-hash",
-        normal = True,
-    ),
-)
-
-rust_binary(
-    name = "source_hash_bin",
-    srcs = ["src/main.rs"],
-    crate_root = "src/main.rs",
-    edition = "2021",
-    visibility = ["//visibility:public"],
-    deps = [":source_hash_napi"],
 )
