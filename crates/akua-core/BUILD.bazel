@@ -1,7 +1,12 @@
 """Declared source inputs for the package core crate."""
 
-exports_files(["Cargo.toml"])
+exports_files([
+    "BUILD.bazel",
+    "Cargo.toml",
+])
 
+# Build scripts and declarations are optional across the pinned crate inputs.
+# buildifier: disable=constant-glob
 filegroup(
     name = "rust_sources",
     srcs = ["Cargo.toml"] + glob(
@@ -24,6 +29,8 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+# The fixture remains optional alongside the stdlib source inputs.
+# buildifier: disable=constant-glob
 filegroup(
     name = "rust_compile_data",
     srcs = glob([

@@ -11,6 +11,8 @@ filegroup(
 )
 
 exports_files([
+    "BUILD.bazel",
+    "MODULE.bazel",
     ".gitleaksignore",
     "Cargo.toml",
     "Cargo.lock",

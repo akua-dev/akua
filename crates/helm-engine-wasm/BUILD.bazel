@@ -1,6 +1,7 @@
 """Source inputs for the embedded Helm engine."""
 
 exports_files([
+    "BUILD.bazel",
     "Cargo.toml",
     "fork/helm-v4.1.4.patch",
     "go-src/go.mod",
@@ -8,6 +9,8 @@ exports_files([
     "go-src/main.go",
 ])
 
+# Build scripts and declarations are optional across the pinned crate inputs.
+# buildifier: disable=constant-glob
 filegroup(
     name = "rust_sources",
     srcs = ["Cargo.toml"] + glob(

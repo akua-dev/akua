@@ -1,12 +1,15 @@
 """Source inputs for the embedded Kustomize engine."""
 
 exports_files([
+    "BUILD.bazel",
     "Cargo.toml",
     "go-src/go.mod",
     "go-src/go.sum",
     "go-src/main.go",
 ])
 
+# Build scripts and declarations are optional across the pinned crate inputs.
+# buildifier: disable=constant-glob
 filegroup(
     name = "rust_sources",
     srcs = ["Cargo.toml"] + glob(
