@@ -177,9 +177,21 @@ pub fn build_engine_wasm(name: &str) {
     use std::path::PathBuf;
     let manifest_dir =
         std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set in build.rs");
-    let wasm_path = PathBuf::from(&manifest_dir)
-        .join("assets")
-        .join(format!("{name}.wasm"));
+    let wasm_path = std::env::var_os("PLATFORM_PACKAGE_ENGINE_WASM")
+        .map(|value| {
+            let path = PathBuf::from(value);
+            assert!(
+                path.is_file(),
+                "declared {name}.wasm missing at {}",
+                path.display()
+            );
+            path
+        })
+        .unwrap_or_else(|| {
+            PathBuf::from(&manifest_dir)
+                .join("assets")
+                .join(format!("{name}.wasm"))
+        });
     let out_dir = PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR not set"));
     let cwasm_dest = out_dir.join(format!("{name}.cwasm"));
     let wasm_dest = out_dir.join(format!("{name}.wasm"));
