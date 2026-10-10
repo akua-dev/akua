@@ -1,11 +1,13 @@
-"""The sandboxed render worker for the package runtime."""
+"""Source inputs for the sandboxed package render worker."""
 
-load("@platform_package_crates//:defs.bzl", "aliases", "crate_deps")
-load("@platform_package_source_version//:version.bzl", "PACKAGE_SOURCE_VERSION")
-load("@rules_rust//rust:defs.bzl", "rust_binary")
+exports_files([
+    "BUILD.bazel",
+    "src/main.rs",
+    "Cargo.toml",
+])
 
-exports_files(["Cargo.toml"])
-
+# Build scripts and declarations are optional across the pinned crate inputs.
+# buildifier: disable=constant-glob
 filegroup(
     name = "rust_sources",
     srcs = ["Cargo.toml"] + glob(
@@ -19,29 +21,8 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-rust_binary(
-    name = "render_worker",
+filegroup(
+    name = "compiler_sources",
     srcs = glob(["src/**/*.rs"]),
-    aliases = aliases(
-        package_name = "tools/akuapkg/source/crates/akua-render-worker",
-        normal = True,
-    ),
-    crate_name = "akua_render_worker",
-    crate_root = "src/main.rs",
-    edition = "2021",
-    rustc_env = {
-        "CARGO_PKG_NAME": "akua-render-worker",
-        "CARGO_PKG_VERSION": PACKAGE_SOURCE_VERSION,
-    },
     visibility = ["//visibility:public"],
-    deps = ["//tools/akuapkg/source/crates/akua-core:core_worker"] + crate_deps(
-        [
-            "serde",
-            "serde_json",
-            "serde_yaml",
-            "tracing",
-            "tracing-subscriber",
-        ],
-        package_name = "tools/akuapkg/source/crates/akua-render-worker",
-    ),
 )
