@@ -1,10 +1,5 @@
 """Official Linux NAPI addon from the pinned package Cargo closure."""
 
-load("@platform_package_napi_crates//:defs.bzl", "aliases", "all_crate_deps")
-load("@platform_package_source_version//:version.bzl", "PACKAGE_SOURCE_VERSION")
-load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
-load("@rules_rust//rust:defs.bzl", "rust_shared_library")
-
 exports_files([
     "Cargo.toml",
     "build.rs",
@@ -34,44 +29,12 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-cargo_build_script(
-    name = "napi_build_script",
-    srcs = ["build.rs"],
-    crate_root = "build.rs",
-    edition = "2021",
-    pkg_name = "akua-napi",
-    version = PACKAGE_SOURCE_VERSION,
-    deps = all_crate_deps(
-        package_name = "tools/akuapkg/source/crates/akua-napi",
-        build = True,
-    ),
-)
+exports_files([
+    "src/lib.rs",
+])
 
-rust_shared_library(
-    name = "napi_addon",
+filegroup(
+    name = "rust_compile_sources",
     srcs = glob(["src/**/*.rs"]),
-    aliases = aliases(
-        package_name = "tools/akuapkg/source/crates/akua-napi",
-        normal = True,
-    ),
-    crate_name = "akua_napi",
-    crate_root = "src/lib.rs",
-    edition = "2021",
-    proc_macro_deps = all_crate_deps(
-        package_name = "tools/akuapkg/source/crates/akua-napi",
-        proc_macro = True,
-    ),
-    rustc_env = {
-        "CARGO_PKG_NAME": "akua-napi",
-        "CARGO_PKG_VERSION": PACKAGE_SOURCE_VERSION,
-    },
     visibility = ["//visibility:public"],
-    deps = [
-        ":napi_build_script",
-        "//tools/akuapkg/source/crates/akua-core:core_napi",
-        "//tools/akuapkg/source/crates/akuapkg-cli:napi_cli_library",
-    ] + all_crate_deps(
-        package_name = "tools/akuapkg/source/crates/akua-napi",
-        normal = True,
-    ),
 )
