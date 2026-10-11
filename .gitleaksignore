@@ -71,7 +71,9 @@ f1ea16c802e0c86afd2430ec8d395a5598d5c1de:packages/sdk/tests/docker-config.test.t
 f3ca982b7668f20dc0f93e88981c0385af86fff1:crates/akua-napi/bun.lock:generic-password:41
 
 # The error catalog's documentation example of a git URL that embeds
-# credentials (`https://user:pass@host/...`), in the catalog and in the
-# cli.akua.dev page generated from it; reworded in the next commit.
+# credentials, in the catalog and in the cli.akua.dev page generated from it;
+# reworded in the following commit. The first version of this comment quoted
+# the example itself.
 6d60012381490fad6e6499825f14523bd5fbb11e:host/src/error-catalog.ts:generic-credential-uri:34
 6d60012381490fad6e6499825f14523bd5fbb11e:pages/errors/E_MANIFEST_GIT_USERINFO.html:generic-credential-uri:8
+0d1a69a6516f102d4913e016f2f189771881d7d4:.gitleaksignore:generic-credential-uri:74
