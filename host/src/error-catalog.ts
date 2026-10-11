@@ -43,7 +43,7 @@ export const ERROR_CATALOG: ReadonlyArray<ErrorCatalogEntry> = [
       "Then pass them at the call site, keyed by URL prefix (the longest matching prefix wins):",
       "",
       "```sh",
-      "akua pkg vendor add upstream --auth github.com/myco/private=alice:$GH_TOKEN",
+      "akua pkg vendor add upstream --auth github.com/myco=alice:$GH_TOKEN",
       "```"
     ].join("\n")
   },

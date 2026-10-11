@@ -51,7 +51,8 @@ main() {
     mkdir -p "$bin_dir" || error "cannot create ${bin_dir}"
     local tmpdir
     tmpdir="$(mktemp -d 2>/dev/null || mktemp -d -t 'akuapkg')"
-    trap 'rm -rf "$tmpdir"' EXIT
+    # Expanded now: `tmpdir` is local and gone when the EXIT trap runs.
+    trap "rm -rf '$tmpdir'" EXIT
 
     curl -fsSL "$url" -o "$tmpdir/akuapkg.tar.gz" \
         || error "download failed from ${url}"
