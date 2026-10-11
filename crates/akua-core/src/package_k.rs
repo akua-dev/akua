@@ -316,6 +316,59 @@ pub fn lint_kcl(path: &Path) -> Result<Vec<LintIssue>, PackageKError> {
     lint_kcl_source(&path.to_string_lossy(), &source)
 }
 
+/// [`lint_kcl_source`] with a render's dependency packages registered, so
+/// `import charts.<name>`, `import pkgs.<name>` and KCL-module imports
+/// resolve as they do in a render. Paths are as the evaluator sees them
+/// (guest paths inside the worker).
+pub fn lint_kcl_source_with_pkgs(
+    filename: &str,
+    source: &str,
+    charts_pkg_dir: Option<&Path>,
+    kcl_pkgs: &std::collections::BTreeMap<String, std::path::PathBuf>,
+    pkgs_pkg_dir: Option<&Path>,
+) -> Result<Vec<LintIssue>, PackageKError> {
+    use kcl_lang::{ParseProgramArgs, API};
+
+    let api = API::default();
+    let args = ParseProgramArgs {
+        paths: vec![filename.to_string()],
+        sources: vec![source.to_string()],
+        external_pkgs: render_external_pkgs(charts_pkg_dir, kcl_pkgs, pkgs_pkg_dir),
+    };
+    run_parse_program(&api, &args)
+}
+
+/// The `akua` stdlib plus a render's dependency packages: `charts`,
+/// `pkgs`, and one entry per KCL-module dependency.
+fn render_external_pkgs(
+    charts_pkg_dir: Option<&Path>,
+    kcl_pkgs: &std::collections::BTreeMap<String, std::path::PathBuf>,
+    pkgs_pkg_dir: Option<&Path>,
+) -> Vec<kcl_lang::ExternalPkg> {
+    use kcl_lang::ExternalPkg;
+
+    let mut external_pkgs = akua_external_pkgs();
+    if let Some(dir) = charts_pkg_dir {
+        external_pkgs.push(ExternalPkg {
+            pkg_name: "charts".to_string(),
+            pkg_path: dir.to_string_lossy().into_owned(),
+        });
+    }
+    if let Some(dir) = pkgs_pkg_dir {
+        external_pkgs.push(ExternalPkg {
+            pkg_name: "pkgs".to_string(),
+            pkg_path: dir.to_string_lossy().into_owned(),
+        });
+    }
+    for (alias, guest_path) in kcl_pkgs {
+        external_pkgs.push(ExternalPkg {
+            pkg_name: alias.clone(),
+            pkg_path: guest_path.to_string_lossy().into_owned(),
+        });
+    }
+    external_pkgs
+}
+
 fn run_parse_program(
     api: &kcl_lang::API,
     args: &kcl_lang::ParseProgramArgs,
@@ -409,9 +462,12 @@ pub fn list_options_kcl_source(
     use kcl_lang::{ParseProgramArgs, API};
 
     let api = API::default();
+    // KCL's option extractor unwraps the symbol of every called identifier,
+    // so an `@ui(...)` decorator (unknown to KCL) panics it. Strip them
+    // first, as a render does; lines stay where they were.
     let args = ParseProgramArgs {
         paths: vec![filename.to_string()],
-        sources: vec![source.to_string()],
+        sources: vec![strip_akua_decorators(source)],
         external_pkgs: akua_external_pkgs(),
     };
     match api.list_options(&args) {

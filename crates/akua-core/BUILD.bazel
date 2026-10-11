@@ -39,3 +39,10 @@ filegroup(
     ]),
     visibility = ["//visibility:public"],
 )
+
+# The `akua` KCL stdlib the akuapkg host preopens into the render worker.
+filegroup(
+    name = "akua_stdlib",
+    srcs = glob(["stdlib/akua/*.k"]),
+    visibility = ["//visibility:public"],
+)

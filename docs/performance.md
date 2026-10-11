@@ -26,7 +26,7 @@ All numbers are in milliseconds. Measured on one machine; absolute values will v
 | KCL | `kcl-lang` 0.12.3 |
 | wasmtime | 43.0.1 |
 | helm | 4.1.1 |
-| kustomize | (via mise, 5.8.1) |
+| kustomize | 5.8.1 |
 | hyperfine | 1.20.0 |
 
 All builds `--release`, `lto = "thin"`, `codegen-units = 1`, stripped.

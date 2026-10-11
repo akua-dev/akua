@@ -4,3 +4,10 @@
 # Cargo.toml).
 [net]
 git-fetch-with-cli = true
+
+# The render worker's KCL runtime calls the host plugin bridge
+# (kcl_plugin_invoke_json_wasm) through a plain extern, so it must stay an
+# import of the worker module. Rust 1.96+ no longer links wasm targets with
+# --allow-undefined by default.
+[target.wasm32-wasip1]
+rustflags = ["-C", "link-arg=--allow-undefined"]

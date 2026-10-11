@@ -8,7 +8,7 @@
 set -e
 
 if ! command -v task >/dev/null 2>&1; then
-  echo "pre-push: \`task\` not on PATH; install via \`mise install\` or skip with --no-verify" >&2
+  echo "pre-push: \`task\` not on PATH; put the Bazel-pinned tools on PATH (\`bazel run //tools/dev:bazel_env\`) or skip with --no-verify" >&2
   exit 1
 fi
 

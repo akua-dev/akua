@@ -9,19 +9,21 @@ Every green row in the table below renders through the shipped `akua` binary and
 | # | directory | what it shows | status |
 |---|---|---|---|
 | 00 | [00-helm-hello/](00-helm-hello/) | simplest Package exercising `helm.template` against a bundled chart | ✅ renders |
-| 01 | [01-hello-webapp/](01-hello-webapp/) | typed `charts.*` dep from `akua.toml`, Helm template, Deployment + Service | ✅ renders |
+| 01 | [01-hello-webapp/](01-hello-webapp/) | typed `charts.*` dep from `akua.toml`, Helm template, Deployment + Service | ⏳ needs dependency resolution, not in the Bun host yet |
 | 02 | [02-webapp-postgres/](02-webapp-postgres/) | cross-source wiring — a webapp consuming a CNPG-managed Postgres secret via convention; `test_package.k` | ⚠ target-state (OCI chart refs need refreshing) |
 | 03 | [03-multi-env-app/](03-multi-env-app/) | Package + App + Environment as typed KCL — the full workspace authoring shape | 📘 pattern reference (no single `akuapkg render` target) |
 | 04 | [04-policy-tier/](04-policy-tier/) | Rego tier + Kyverno compile-resolved import, passing + failing fixtures | 📘 target-state (policy engine not shipped) |
 | 05 | [05-tests-and-golden/](05-tests-and-golden/) | `test_*.k` + `*_test.rego` + golden-fixture render snapshots | ⚠ target-state (lockfile pins OCI refs that need refreshing) |
 | 06 | [06-multi-engine/](06-multi-engine/) | Helm + Kustomize + kro RGD + inline KCL in one Package | ⚠ target-state (references `pkg.akua.dev` — not yet published) |
 | 07 | [07-package-reuse/](07-package-reuse/) | one akua Package composing another via `pkg.render()` | ⚠ target-state (references `pkg.acme.corp` — fictional) |
-| 08 | [08-pkg-compose/](08-pkg-compose/) | pure-KCL Package-of-Packages composition via local `pkg.render("./shared", …)` | ✅ renders |
+| 08 | [08-pkg-compose/](08-pkg-compose/) | pure-KCL Package-of-Packages composition via local `pkg.render("./shared", …)` | ⏳ needs `pkg.render`, not in the Bun host yet |
 | 09 | [09-kustomize-hello/](09-kustomize-hello/) | smallest `kustomize.build` example — overlay adds namePrefix + labels | ✅ renders |
-| 10 | [10-kcl-ecosystem/](10-kcl-ecosystem/) | pull `oci://ghcr.io/kcl-lang/k8s` (a kpm-published KCL package) and author a typed `Deployment` against it | ✅ renders |
-| 11 | [11-install-as-package/](11-install-as-package/) | install-as-Package shape — `pkg.render` an upstream, overlay tenant label, filter out a kind, append extras | ✅ renders |
-| 13 | [13-subpackage-helm/](13-subpackage-helm/) | a root Package composes a sub-package (via `pkgs.<alias>`) whose own `akua.toml` declares a Helm chart dep — chart context propagates through the composition | ✅ renders |
-| 14 | [14-helm-repo-dep/](14-helm-repo-dep/) | pull podinfo from a classic HTTPS Helm repository (`repo`/`chart`/`version`); sha256-pinned in `akua.lock` — no OCI, no local path | ✅ renders (network-gated e2e test) |
+| 10 | [10-kcl-ecosystem/](10-kcl-ecosystem/) | pull `oci://ghcr.io/kcl-lang/k8s` (a kpm-published KCL package) and author a typed `Deployment` against it | ⏳ needs dependency resolution, not in the Bun host yet |
+| 11 | [11-install-as-package/](11-install-as-package/) | install-as-Package shape — `pkg.render` an upstream, overlay tenant label, filter out a kind, append extras | ⏳ needs `pkg.render`, not in the Bun host yet |
+| 12 | [12-vendor-offline/](12-vendor-offline/) | render off the local vendor tree (`.akua/vendor/`): no registry, network or credentials at render time | ✅ renders |
+| 13 | [13-subpackage-helm/](13-subpackage-helm/) | a root Package composes a sub-package (via `pkgs.<alias>`) whose own `akua.toml` declares a Helm chart dep — chart context propagates through the composition | ⏳ needs dependency resolution, not in the Bun host yet |
+| 14 | [14-helm-repo-dep/](14-helm-repo-dep/) | pull podinfo from a classic HTTPS Helm repository (`repo`/`chart`/`version`); sha256-pinned in `akua.lock` — no OCI, no local path | ⏳ needs dependency resolution, not in the Bun host yet |
+| 15 | [15-yaml-output/](15-yaml-output/) | the exact YAML `akuapkg render` writes: key order, sequence layout, which strings get quoted | ✅ renders |
 
 **Legend:**
 

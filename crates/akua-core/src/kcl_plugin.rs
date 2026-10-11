@@ -109,26 +109,16 @@ pub fn unregister(method: &str) -> bool {
 /// Currently registers:
 ///
 /// - `pkg.render` — pure Rust, always available.
-/// - `helm.template` — typed-error stub until `helm-engine-wasm` lands
-///   . Returns `E_ENGINE_NOT_AVAILABLE`.
-/// - `kustomize.build` — typed-error stub until `kustomize-engine-wasm`
-///   lands .
-///
-/// Per CLAUDE.md, these will never be served by a shell-out to an
-/// external binary. The only supported backend is a wasmtime-hosted
-/// wasip1 engine compiled from the upstream Go source.
+/// - `helm.template` / `kustomize.build`: typed-error stubs. In a real
+///   render the akuapkg host answers these from its Wasmtime-hosted Go
+///   engines through the worker plugin bridge; in-process akua-core has
+///   no engine, and never shells out to one.
 pub fn install_builtin_plugins() {
     static INSTALLED: OnceLock<()> = OnceLock::new();
     INSTALLED.get_or_init(|| {
         crate::pkg_render::install();
-        #[cfg(feature = "engine-helm")]
-        crate::helm::install();
-        #[cfg(not(feature = "engine-helm"))]
-        register_engine_stub("helm.template", "helm-engine-wasm");
-        #[cfg(feature = "engine-kustomize")]
-        crate::kustomize::install();
-        #[cfg(not(feature = "engine-kustomize"))]
-        register_engine_stub("kustomize.build", "kustomize-engine-wasm");
+        register_engine_stub("helm.template", "the akuapkg host");
+        register_engine_stub("kustomize.build", "the akuapkg host");
     });
 }
 

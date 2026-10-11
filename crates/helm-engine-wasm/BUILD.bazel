@@ -1,36 +1,9 @@
-"""Source inputs for the embedded Helm engine."""
+"""Go source of the embedded Helm engine, compiled to wasip1."""
 
 exports_files([
     "BUILD.bazel",
-    "Cargo.toml",
     "fork/helm-v4.1.4.patch",
     "go-src/go.mod",
     "go-src/go.sum",
     "go-src/main.go",
 ])
-
-# Build scripts and declarations are optional across the pinned crate inputs.
-# buildifier: disable=constant-glob
-filegroup(
-    name = "rust_sources",
-    srcs = ["Cargo.toml"] + glob(
-        [
-            "src/**",
-            "build.rs",
-            "index.d.ts",
-        ],
-        allow_empty = True,
-    ),
-    visibility = ["//visibility:public"],
-)
-
-exports_files([
-    "src/lib.rs",
-    "build.rs",
-])
-
-filegroup(
-    name = "rust_compile_sources",
-    srcs = glob(["src/**/*.rs"]),
-    visibility = ["//visibility:public"],
-)

@@ -96,6 +96,41 @@ enum Request {
         #[serde(default)]
         pkgs_pkg_path: Option<String>,
     },
+    /// Parse a Package (syntax + import resolution) without running it.
+    Lint {
+        #[serde(default = "default_package_filename")]
+        package_filename: String,
+        source: String,
+        /// The same dependency mounts as `render`, so imports resolve.
+        #[serde(default)]
+        charts_pkg_path: Option<String>,
+        #[serde(default)]
+        kcl_pkgs: std::collections::BTreeMap<String, String>,
+        #[serde(default)]
+        pkgs_pkg_path: Option<String>,
+    },
+    /// Format KCL source with KCL's canonical formatter.
+    Format { source: String },
+    /// The Package's `Input` schema as JSON Schema 2020-12 or OpenAPI 3.1.
+    Export {
+        #[serde(default = "default_package_filename")]
+        package_filename: String,
+        source: String,
+        format: ExportFormat,
+    },
+    /// The `option(...)` calls a Package reads (its input surface).
+    Options {
+        #[serde(default = "default_package_filename")]
+        package_filename: String,
+        source: String,
+    },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+enum ExportFormat {
+    JsonSchema,
+    Openapi,
 }
 
 fn default_package_filename() -> String {
@@ -118,6 +153,38 @@ enum Response {
         message: String,
         worker_version: &'static str,
     },
+    Lint {
+        status: &'static str,
+        issues: Vec<akua_core::LintIssue>,
+        #[serde(skip_serializing_if = "String::is_empty")]
+        message: String,
+    },
+    Format {
+        status: &'static str,
+        formatted: String,
+        #[serde(skip_serializing_if = "String::is_empty")]
+        message: String,
+    },
+    Export {
+        status: &'static str,
+        schema: serde_json::Value,
+        #[serde(skip_serializing_if = "String::is_empty")]
+        message: String,
+    },
+    Options {
+        status: &'static str,
+        options: Vec<akua_core::OptionInfo>,
+        #[serde(skip_serializing_if = "String::is_empty")]
+        message: String,
+    },
+}
+
+/// `ok` with the value, or `fail` with the error's message.
+fn outcome<T, E: std::fmt::Display>(result: Result<T, E>, empty: T) -> (&'static str, T, String) {
+    match result {
+        Ok(value) => ("ok", value, String::new()),
+        Err(e) => ("fail", empty, e.to_string()),
+    }
 }
 
 fn main() {
@@ -169,6 +236,78 @@ fn run() -> Result<(), WorkerError> {
             kcl_pkgs,
             pkgs_pkg_path,
         ),
+        Request::Lint {
+            package_filename,
+            source,
+            charts_pkg_path,
+            kcl_pkgs,
+            pkgs_pkg_path,
+        } => {
+            let charts = charts_pkg_path.map(std::path::PathBuf::from);
+            let pkgs = pkgs_pkg_path.map(std::path::PathBuf::from);
+            let kcl_pkgs = kcl_pkgs
+                .into_iter()
+                .map(|(alias, path)| (alias, std::path::PathBuf::from(path)))
+                .collect();
+            let (status, issues, message) = outcome(
+                akua_core::lint_kcl_source_with_pkgs(
+                    &package_filename,
+                    &source,
+                    charts.as_deref(),
+                    &kcl_pkgs,
+                    pkgs.as_deref(),
+                ),
+                Vec::new(),
+            );
+            Response::Lint {
+                status,
+                issues,
+                message,
+            }
+        }
+        Request::Format { source } => {
+            let (status, formatted, message) =
+                outcome(akua_core::format_kcl(&source), String::new());
+            Response::Format {
+                status,
+                formatted,
+                message,
+            }
+        }
+        Request::Export {
+            package_filename,
+            source,
+            format,
+        } => {
+            let result = match format {
+                ExportFormat::JsonSchema => {
+                    akua_core::export::export_input_schema(&package_filename, &source)
+                }
+                ExportFormat::Openapi => {
+                    akua_core::export::export_input_openapi(&package_filename, &source)
+                }
+            };
+            let (status, schema, message) = outcome(result, serde_json::Value::Null);
+            Response::Export {
+                status,
+                schema,
+                message,
+            }
+        }
+        Request::Options {
+            package_filename,
+            source,
+        } => {
+            let (status, options, message) = outcome(
+                akua_core::list_options_kcl_source(&package_filename, &source),
+                Vec::new(),
+            );
+            Response::Options {
+                status,
+                options,
+                message,
+            }
+        }
     };
 
     let out =

@@ -1,0 +1,15 @@
+[package]
+name = "precompile"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+license = "Apache-2.0"
+publish = false
+
+[workspace]
+
+# Build-time only: Cranelift with every backend, so one machine produces
+# machine code for every target. Never linked into the shipped addon.
+[dependencies]
+wasmtime = { version = "=49.0.1", default-features = false, features = ["cranelift", "all-arch", "parallel-compilation", "runtime", "std", "gc", "gc-drc"] }
+zstd = "=0.14.0"

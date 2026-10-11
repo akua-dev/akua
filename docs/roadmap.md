@@ -441,7 +441,7 @@ Reasons this matters:
 - [ ] [docs/sdk.md](sdk.md) — WASM-in-process transport, single-entrypoint rationale, bundle size, lazy-init semantics, Node + Deno + Bun + browser matrix.
 - [ ] Tag `sdk-v0.1.0` to exercise the publish workflow — dry-run via `workflow_dispatch` first.
 - [ ] Drift guard (`task sdk:check`) wired into the v0.1.0 CI matrix so generated types + the WASM bundle + committed artifacts stay in sync.
-- [ ] Runtime matrix in CI: smoke-test the JSR artifact on Node (current LTS), Deno (latest), Bun (pinned `.mise.toml` version), plus a headless-browser check. Single `import { Akua } from "@akua-dev/sdk"` across all five.
+- [ ] Runtime matrix in CI: smoke-test the JSR artifact on Node (current LTS), Deno (latest), Bun (the version Bazel pins), plus a headless-browser check. Single `import { Akua } from "@akua-dev/sdk"` across all five.
 
 ---
 

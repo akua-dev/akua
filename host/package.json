@@ -1,0 +1,33 @@
+{
+  "name": "@akua-dev/sdk",
+  "version": "0.10.0",
+  "description": "akuapkg host: renders Packages by running the KCL worker and the Helm/Kustomize engines in a Wasmtime sandbox (Bun + Effect).",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akua-dev/akuapkg.git",
+    "directory": "host"
+  },
+  "type": "module",
+  "exports": {
+    "./cli": "./src/cli.ts",
+    "./contract": "./src/contract.ts",
+    "./process": "./src/process.ts",
+    "./render": "./src/render.effect.ts"
+  },
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "dependencies": {
+    "@akua-dev/wasm-sandbox": "workspace:*",
+    "@bjorn3/browser_wasi_shim": "0.4.2",
+    "@effect/platform-bun": "4.0.1",
+    "effect": "4.0.1",
+    "isomorphic-git": "1.41.4",
+    "smol-toml": "1.8.0",
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.2"
+  }
+}

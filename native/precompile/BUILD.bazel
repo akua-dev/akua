@@ -1,0 +1,8 @@
+"""Sources of the build-time Wasmtime precompiler."""
+
+exports_files([
+    "BUILD.bazel",
+    "Cargo.lock",
+    "Cargo.toml",
+    "src/main.rs",
+])

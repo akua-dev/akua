@@ -14,28 +14,15 @@ discuss direction.
 
 ## Development setup
 
-Prerequisites are managed via [mise](https://mise.jdx.dev/) —
-`mise install` pulls everything listed in `.mise.toml` (Rust, Go, bun,
-task, helmfile, wasm-pack, etc.) at pinned versions.
+Akuapkg builds in cnap with Bazel, which pins every toolchain (Rust, Go,
+Bun) and builds the render worker, the Helm/Kustomize engines and the
+Wasmtime addon for each target:
 
 ```bash
-git clone git@github.com:akua-dev/akuapkg.git
-cd akua
-mise install
-
-# One-time: build the embedded Helm template engine wasm
-task build:helm-engine-wasm
-
-# Full workspace build + tests
-cargo build --workspace
-cargo test --workspace
-
-# WASM bindings + smoke test
-task wasm:smoke
+bazel run //tools/dev:bazel_env        # developer CLIs on PATH (via direnv)
+bazel build //tools/akuapkg:akuapkg_darwin_arm64
+bazel test //tools/akuapkg:host_render_contract_test
 ```
-
-First `cargo build` takes ~3.5 min (KCL + Helm dep trees are heavy).
-Subsequent builds are fast.
 
 ## Running the examples
 
