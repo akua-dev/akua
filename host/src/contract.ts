@@ -167,6 +167,8 @@ export const toCliFailure = ({ reason: error }: HostError): CliFailure => {
       return fail("E_PACKAGE_PARSE", error.message, ExitCode.userError)
     case "PackageMissing":
       return packageMissing(error.path)
+    case "InputsMissing":
+      return fail("E_INPUTS_MISSING", error.message, ExitCode.userError, error.path)
     case "InputsParseError":
       return fail("E_INPUTS_PARSE", error.message, ExitCode.userError, error.path)
     case "ManifestInvalid":

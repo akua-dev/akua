@@ -138,6 +138,12 @@ export const ERROR_CATALOG: ReadonlyArray<ErrorCatalogEntry> = [
       "`package.k` does not have the shape a Package needs, for example no top-level `resources` list or an `Input` schema KCL cannot load."
   },
   {
+    code: "E_INPUTS_MISSING",
+    section: "Rendering",
+    summary:
+      "The inputs file passed with `--inputs` does not exist or cannot be read. The message carries the operating system's reason."
+  },
+  {
     code: "E_INPUTS_PARSE",
     section: "Rendering",
     summary: "The inputs file passed with `--inputs` (or found next to the Package) is not valid JSON or YAML."

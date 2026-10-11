@@ -1,6 +1,6 @@
 {
   "name": "@akua-dev/sdk",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "akuapkg host: renders Packages by running the KCL worker and the Helm/Kustomize engines in a Wasmtime sandbox (Bun + Effect).",
   "license": "Apache-2.0",
   "repository": {

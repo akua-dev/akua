@@ -83,6 +83,12 @@ export class PackageMissing extends Schema.TaggedError<PackageMissing>()("Packag
   }
 }
 
+/** The inputs file at `path` could not be read; `message` is the OS reason. */
+export class InputsMissing extends Schema.TaggedError<InputsMissing>()("InputsMissing", {
+  path: Schema.String,
+  message: Schema.String
+}) {}
+
 /** The inputs file at `path` is not JSON or YAML. */
 export class InputsParseError extends Schema.TaggedError<InputsParseError>()("InputsParseError", {
   path: Schema.String,
@@ -122,6 +128,7 @@ export class IoError extends Schema.TaggedError<IoError>()("IoError", {
 
 const HostErrorReason = Schema.Union([
   PackageMissing,
+  InputsMissing,
   InputsParseError,
   ManifestInvalid,
   LockInvalid,

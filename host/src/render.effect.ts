@@ -1,7 +1,7 @@
 import { Effect, FileSystem, Option, Path, Predicate } from "effect"
 import YAML from "yaml"
 import type { RenderSummary } from "./contract"
-import { HostError, InputsParseError, PackageMissing } from "./errors"
+import { HostError, InputsMissing, InputsParseError, osMessage, PackageMissing } from "./errors"
 import { loadSnapshot } from "./snapshot.effect"
 import { RenderWorker } from "./worker.effect"
 
@@ -87,7 +87,9 @@ export const renderPackage = Effect.fn("renderPackage")(
       : discovered === undefined
       ? undefined
       : path.join(packageDir, discovered)
-    const inputsText = inputsPath === undefined ? "" : yield* fs.readFileString(inputsPath)
+    const inputsText = inputsPath === undefined ? "" : yield* fs.readFileString(inputsPath).pipe(
+      Effect.mapError((error) => new InputsMissing({ path: inputsPath, message: osMessage(error) }))
+    )
     const inputs = yield* Effect.try({
       try: (): unknown => YAML.parse(inputsText) ?? {},
       catch: (cause) => new InputsParseError({ path: inputsPath ?? "", message: String(cause) })

@@ -10,12 +10,10 @@ import { emit, universal } from "./universal"
 const PACKAGE_K = `# Minimal Package.k - edit me.
 #
 # See docs/package-format.md for the full authoring reference.
-
 import akua.ctx
 
 schema Input:
     """Public inputs for this Package."""
-
     appName: str
     """Application name. Used as resource-name prefix."""
 
