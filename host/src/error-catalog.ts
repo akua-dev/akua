@@ -31,7 +31,7 @@ export const ERROR_CATALOG: ReadonlyArray<ErrorCatalogEntry> = [
     code: "E_MANIFEST_GIT_USERINFO",
     section: "Manifest and lockfile",
     summary:
-      "A `git` dependency URL embeds credentials (`https://user:pass@host/...`). It is rejected so the secret never reaches the lockfile or git history; pass credentials with `--auth` or `--auth-file` instead.",
+      "A `git` dependency URL embeds credentials (a `user:password@` part before the host). It is rejected so the secret never reaches the lockfile or git history; pass credentials with `--auth` or `--auth-file` instead.",
     fix: [
       "Strip the credentials from the URL in `akua.toml`:",
       "",
@@ -74,7 +74,7 @@ export const ERROR_CATALOG: ReadonlyArray<ErrorCatalogEntry> = [
     code: "E_MANIFEST_OCI_USERINFO",
     section: "Manifest and lockfile",
     summary:
-      "An `oci` dependency URL embeds credentials (`oci://user:pass@host/...`). Pass credentials with `--auth`, `--auth-file` or `auth.toml` instead."
+      "An `oci` dependency URL embeds credentials (a `user:password@` part before the host). Pass credentials with `--auth`, `--auth-file` or `auth.toml` instead."
   },
   {
     code: "E_LOCK_MISSING",
@@ -120,7 +120,7 @@ export const ERROR_CATALOG: ReadonlyArray<ErrorCatalogEntry> = [
       "",
       "```toml",
       "[auth]",
-      "\"github.com/myco\" = { username = \"alice\", password = \"ghp_...\" }",
+      "\"github.com/myco\" = { username = \"alice\", password = \"<token>\" }",
       "```"
     ].join("\n")
   },

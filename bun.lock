@@ -9,7 +9,7 @@
       "name": "@akua-dev/sdk",
       "version": "0.10.0",
       "dependencies": {
-        "@akua-dev/wasm-sandbox": "workspace:*",
+        "@akua-dev/wasm-sandbox": "0.1.0",
         "@bjorn3/browser_wasi_shim": "0.4.2",
         "@effect/platform-bun": "4.0.1",
         "effect": "4.0.1",
