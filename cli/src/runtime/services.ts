@@ -78,7 +78,7 @@ export const StoredWorkspace = Schema.Struct({
 export type StoredWorkspace = typeof StoredWorkspace.Type;
 
 /**
- * The user-only `~/.config/akua/config.json` file. Writes are atomic and keep
+ * The selected user-only config file. Writes are atomic and keep
  * keys this CLI version does not know.
  */
 export class SecureConfig extends Context.Service<

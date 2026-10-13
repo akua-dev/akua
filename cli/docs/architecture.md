@@ -126,15 +126,20 @@ Authentication:
 - `AKUA_API_TOKEN` is the noninteractive credential environment variable and
   takes precedence over a stored token.
 
-Configuration should live under the Akua namespace:
+Configuration defaults to the Akua namespace:
 
 ```text
 ~/.config/akua/config.json
 ```
 
+`AKUA_CONFIG_DIR` selects a separate config directory; otherwise
+`XDG_CONFIG_HOME` replaces `$HOME/.config`. Empty values count as unset.
+See [Keep separate logins](../README.md#keep-separate-logins) for precedence
+and examples. Only the selected file is read, even if it doesn't exist.
+
 The implemented config file is JSON. It stores a `token` string and the
 `workspace` (`{ "id", "name" }`) saved by `akua workspaces use`, while
-preserving unrelated keys. Writes create `~/.config/akua` with
+preserving unrelated keys. Writes create the selected directory with
 user-only `0700` permissions and `config.json` with user-only `0600`
 permissions.
 
@@ -143,13 +148,15 @@ The implemented local auth/config surface is:
 ```sh
 akua auth login                  # browser/device login
 akua auth login --no-browser     # device login without launching a browser
-akua auth login --token <token>  # save a token in ~/.config/akua/config.json
-akua auth status                 # show whether auth comes from env, config, or none
+akua auth login --token <token>  # save a token in the selected config file
+akua auth status                 # show the auth source and selected config path
 akua auth logout                 # remove only the stored config token
 ```
 
-`auth login` requires `HOME` so it can locate the config file. `auth status`
-honors `AKUA_API_TOKEN` even when `HOME` is unset, and otherwise reads the
+`auth login` requires `AKUA_CONFIG_DIR`, `XDG_CONFIG_HOME`, or `HOME` to locate
+the config file. `auth status` shows the selected path in human output and
+`data.config_path` in JSON output. It honors `AKUA_API_TOKEN` even when
+`HOME` is unset, and otherwise reads the
 stored token. `auth logout` leaves `AKUA_API_TOKEN` untouched and reports env
 auth as still active when that variable is set.
 

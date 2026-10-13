@@ -24,6 +24,8 @@ export function runAkua(
 	const childEnv: Record<string, string | undefined> = { ...process.env, ...env };
 	if (!('AKUA_OUTPUT' in env)) delete childEnv.AKUA_OUTPUT;
 	if (!('AKUA_API_TOKEN' in env)) delete childEnv.AKUA_API_TOKEN;
+	if (!('AKUA_CONFIG_DIR' in env)) delete childEnv.AKUA_CONFIG_DIR;
+	if (!('XDG_CONFIG_HOME' in env)) delete childEnv.XDG_CONFIG_HOME;
 
 	return Effect.runPromise(
 		Effect.gen(function* () {
