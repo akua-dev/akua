@@ -9,11 +9,12 @@ import {
   ProgramShape,
   RenderError
 } from "./errors"
-import { Artifacts, type MountedTree, WasmHost } from "./host"
-import { chartReference, chartsPackage, kclModules, packageStubs } from "./kcl-modules"
+import { Artifacts, type EngineBudget, type MountedTree, WasmHost } from "./host"
+import { chartReference, chartsPackage, crdsPackage, kclModules, packageStubs } from "./kcl-modules"
 import { GitRemote } from "./git.effect"
 import { HelmRepository } from "./helm-repository.effect"
 import { OciRegistry } from "./oci.effect"
+import { UrlSource } from "./url-source.effect"
 import { KclPlugins, type PluginScope } from "./plugins.effect"
 import {
   ExportResponse,
@@ -174,7 +175,7 @@ export class RenderWorker extends Context.Service<RenderWorker, {
       const host = yield* WasmHost
       const artifacts = yield* Artifacts
       const plugins = yield* KclPlugins
-      const platform = yield* Effect.context<FileSystem.FileSystem | Path.Path | OciRegistry | HelmRepository | GitRemote>()
+      const platform = yield* Effect.context<FileSystem.FileSystem | Path.Path | OciRegistry | HelmRepository | GitRemote | UrlSource>()
       const worker = yield* host.command("akua-render-worker", yield* fs.readFile(artifacts.worker))
       const stdlibFiles: Snapshot = new Map(
         yield* Effect.forEach(
@@ -194,7 +195,7 @@ export class RenderWorker extends Context.Service<RenderWorker, {
       ): Effect.Effect<
         PackageTree,
         ManifestInvalid | DependencyUnresolved | RenderError,
-        Scope.Scope | FileSystem.FileSystem | Path.Path | OciRegistry | HelmRepository | GitRemote
+        Scope.Scope | FileSystem.FileSystem | Path.Path | OciRegistry | HelmRepository | GitRemote | UrlSource
       > =>
         Effect.gen(function*() {
           const stack = [...ancestors, yield* fs.realPath(pkg.workspace)]
@@ -202,6 +203,7 @@ export class RenderWorker extends Context.Service<RenderWorker, {
           const charts = yield* chartsPackage(resolved.dependencies)
           const stubs = yield* packageStubs(resolved.dependencies)
           const modules = yield* kclModules(resolved.dependencies)
+          const crds = yield* crdsPackage(resolved.dependencies)
           const packages = new Map<string, PackageTree | Unrenderable>()
           for (const dependency of resolved.dependencies.filter((dependency) => dependency.kind === "package")) {
             const root = yield* fs.realPath(dependency.root)
@@ -231,8 +233,10 @@ export class RenderWorker extends Context.Service<RenderWorker, {
             mounts: {
               ...(charts === undefined ? {} : { charts: yield* host.mount(charts) }),
               ...(stubs === undefined ? {} : { pkgs: yield* host.mount(stubs) }),
-              kclModules: yield* Effect.forEach(modules, ({ files, ident }) =>
-                host.mount(files).pipe(Effect.map((tree) => ({ ident, tree }))))
+              kclModules: yield* Effect.forEach(
+                crds === undefined ? modules : [...modules, { ident: "crds", files: crds }],
+                ({ files, ident }) => host.mount(files).pipe(Effect.map((tree) => ({ ident, tree })))
+              )
             }
           } satisfies PackageTree
         }).pipe(
@@ -324,7 +328,7 @@ export class RenderWorker extends Context.Service<RenderWorker, {
       })
 
       /** Shared by a render and every render nested in it. */
-      interface Budget {
+      interface Budget extends EngineBudget {
         nested: number
       }
 
@@ -403,6 +407,7 @@ export class RenderWorker extends Context.Service<RenderWorker, {
             files: tree.files,
             charts: tree.charts,
             strict,
+            budget,
             renderPackage: renderDependency(tree, strict, budget)
           }
           // KCL turns a plugin failure into an opaque runtime panic; the first
@@ -458,13 +463,13 @@ export class RenderWorker extends Context.Service<RenderWorker, {
       const render = Effect.fn("RenderWorker.render")(function*(
         { inputs, strict, tree }: Parameters<RenderWorker["Service"]["render"]>[0]
       ) {
-        return yield* renderTree(tree, inputs, strict, { nested: 0 })
+        return yield* renderTree(tree, inputs, strict, { nested: 0, fuelSpent: 0 })
       })
 
       const evaluate = Effect.fn("RenderWorker.evaluate")(function*(
         { filename, inputs, tree }: Parameters<RenderWorker["Service"]["evaluate"]>[0]
       ) {
-        return yield* evaluateTree(tree, filename, inputs, false, { nested: 0 })
+        return yield* evaluateTree(tree, filename, inputs, false, { nested: 0, fuelSpent: 0 })
       })
 
       return RenderWorker.of({ prepare, render, evaluate, lint, format, exportSchema, options })

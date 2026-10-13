@@ -27,6 +27,7 @@ import { update } from "./cli/update"
 import { vendor } from "./cli/vendor"
 import { verify } from "./cli/verify"
 import { versionVerb } from "./cli/version"
+import { CliName } from "./cli-name"
 import { ExitCode } from "./contract"
 import { HelmEngine, KustomizeEngine } from "./engines.effect"
 import { GitRemote } from "./git.effect"
@@ -36,6 +37,7 @@ import { NativeWasmHost, type SandboxLimits } from "./host-native.effect"
 import { NativeSandbox } from "./native"
 import { OciRegistry } from "./oci.effect"
 import { KclPlugins } from "./plugins.effect"
+import { UrlSource } from "./url-source.effect"
 import { RenderWorker } from "./worker.effect"
 
 /** What an executable embeds for the host: the wasm modules and stdlib, and its Wasmtime addon. */
@@ -45,9 +47,9 @@ export interface HostAssets {
   readonly loadAddon: () => NativeSandbox["Service"]
 }
 
-/** The dependency fetchers (OCI registries, Helm repositories, git remotes): no sandbox, no addon. */
+/** The dependency fetchers (OCI registries, Helm repositories, git remotes, URLs): no sandbox, no addon. */
 export const fetchLayer = Layer.mergeAll(
-  Layer.mergeAll(OciRegistry.layer, HelmRepository.layer).pipe(Layer.provide(FetchHttpClient.layer)),
+  Layer.mergeAll(OciRegistry.layer, HelmRepository.layer, UrlSource.layer).pipe(Layer.provide(FetchHttpClient.layer)),
   GitRemote.layer
 )
 
@@ -83,7 +85,7 @@ export const akuapkgCommand = (name: string, version: string, assets: HostAssets
       test(context),
       repl(context),
       add(context),
-      remove(),
+      remove(context),
       tree(),
       lock(context),
       update(context),
@@ -113,7 +115,10 @@ export const runAkuapkg = (version: string, assets: HostAssets) =>
   programName.pipe(
     Effect.orElseSucceed(() => "akuapkg"),
     Effect.flatMap((name) =>
-      akuapkgCommand(name, version, assets).pipe(Command.run({ version: version, renderErrors: false }))
+      akuapkgCommand(name, version, assets).pipe(
+        Command.run({ version: version, renderErrors: false }),
+        Effect.provideService(CliName, name)
+      )
     ),
     Effect.catchIf(CliError.isCliError, reportUsage)
   )
@@ -131,6 +136,7 @@ export const runAkuapkgWith = (
     version: options.version,
     renderErrors: false
   })(args).pipe(
+    Effect.provideService(CliName, options.name),
     Effect.catchIf(CliError.isCliError, reportUsage),
     Effect.as<number>(ExitCode.success),
     Effect.catchTags({

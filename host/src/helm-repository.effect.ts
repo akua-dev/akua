@@ -1,4 +1,5 @@
 import { Context, Effect, FileSystem, Layer, Option, Path, Schema } from "effect"
+import { CliName } from "./cli-name"
 import { HttpClient, HttpClientRequest } from "effect/http"
 import YAML from "yaml"
 import { gunzip, untar } from "./archive"
@@ -151,8 +152,8 @@ export class HelmRepository extends Context.Service<HelmRepository, {
           return yield* new HelmRepositoryFailed({
             offline: true,
             message: Option.isSome(request.pin)
-              ? "offline mode and the helm cache doesn't have this dep - run `akua add` online first"
-              : "offline mode needs a lockfile-pinned digest - run `akua add` first"
+              ? `offline mode and the helm cache doesn't have this dep - run \`${yield* CliName} add\` online first`
+              : `offline mode needs a lockfile-pinned digest - run \`${yield* CliName} add\` first`
           })
         }
         const indexUrl = `${request.repository.replace(/\/+$/, "")}/index.yaml`

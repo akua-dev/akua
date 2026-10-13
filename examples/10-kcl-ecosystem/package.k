@@ -12,10 +12,8 @@
 #
 #   akuapkg render --package examples/10-kcl-ecosystem/package.k --out ./rendered
 #
-# Bigger pitch: any package on ghcr.io/kcl-lang/* (or any kpm-published
-# OCI ref) plugs in the same way. akua handles the digest pin, signature
-# verify-on-pull, and typed resolution in the wasmtime sandbox; the KCL
-# ecosystem provides the schemas.
+# Any kpm-published OCI module plugs in the same way: akuapkg pins it by
+# digest and resolves the import inside the sandbox.
 
 import k8s.api.apps.v1 as apps
 import k8s.api.core.v1 as corev1

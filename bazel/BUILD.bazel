@@ -1,0 +1,473 @@
+"""Builds akuapkg and the akua CLI for every release target.
+
+    bazel build //bazel:akuapkg_darwin_arm64 //bazel:akua_darwin_arm64
+    bazel build //bazel:release_archives //bazel:cli_release_archive
+    bazel test //bazel:cli_unit_test //bazel:akuapkg_golden_test
+
+Every target cross-compiles on a Linux x86_64 execution platform; see
+docs/building.md.
+"""
+
+load("@bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
+load("@bazel_lib//lib:expand_template.bzl", "expand_template")
+load("@npm//:workspace.bzl", "WORKSPACE_LINKS")
+load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_files")
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+load("@rules_pkg//pkg:zip.bzl", "pkg_zip")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+load("//bazel/bun:defs.bzl", "bun_compile", "bun_test")
+load("//bazel/rust:contract_test.bzl", "darwin_link_inputs_test", "render_worker_input_contract_test", "render_worker_memory_contract_test", "render_worker_stamp_contract_test")
+load("//bazel/rust:rust_artifact.bzl", "package_rust_artifact", "wasm_precompile")
+load(":cli_release_archive.bzl", "cli_release_archive")
+load(":source_build.bzl", "go_wasi_engine")
+load(":version.bzl", "PACKAGE_SOURCE_VERSION")
+
+# The `effect` patch and the rest of the bun.lock packages the executables run with.
+_NODE_MODULES = "@npm//:production"
+
+# ---------------------------------------------------------------------------
+# Embedded engines: Helm and Kustomize (Go to wasip1), the KCL render worker
+# (Rust to wasm32-wasip1).
+# ---------------------------------------------------------------------------
+
+go_wasi_engine(
+    name = "helm_engine_wasm",
+    out = "helm-engine.wasm",
+    exec_properties = {"cpu_count": "4"},
+    module = "@helm_sources//:go.mod",
+    source = "@helm_sources//:sources",
+    visibility = ["//visibility:public"],
+)
+
+go_wasi_engine(
+    name = "kustomize_engine_wasm",
+    out = "kustomize-engine.wasm",
+    exec_properties = {"cpu_count": "4"},
+    module = "@kustomize_sources//:go.mod",
+    source = "@kustomize_sources//:sources",
+    visibility = ["//visibility:public"],
+)
+
+# tokio for the render worker's crate closure, built from the locked sources
+# with only the runtime features the worker uses. The worker crate repo's tokio
+# annotation points here (MODULE.bazel).
+# The crate extension exposes aggregate repos, not the worker's generated source labels.
+# buildifier: disable=canonical-repository
+rust_library(
+    name = "worker_tokio",
+    srcs = ["@@rules_rust++crate+akua_worker_crates__tokio-1.52.1//:tokio_worker_sources"],
+    compile_data = ["@@rules_rust++crate+akua_worker_crates__tokio-1.52.1//:tokio_worker_compile_data"],
+    crate_features = [
+        "rt",
+        "sync",
+        "time",
+        "test-util",
+    ],
+    crate_name = "tokio",
+    crate_root = "@@rules_rust++crate+akua_worker_crates__tokio-1.52.1//:src/lib.rs",
+    edition = "2021",
+    rustc_env_files = ["@@rules_rust++crate+akua_worker_crates__tokio-1.52.1//:cargo_toml_env_vars"],
+    rustc_flags = ["--cap-lints=allow"],
+    version = "1.52.1",
+    visibility = ["//visibility:public"],
+    deps = ["@@rules_rust++crate+akua_worker_crates__pin-project-lite-0.2.17//:pin_project_lite"],
+)
+
+package_rust_artifact(
+    name = "official_render_worker_wasm",
+    out = "akua-render-worker.wasm",
+    compiled = "//bazel/rust:render_worker",
+    profile = "worker",
+    target_platform = "//bazel/platforms:render_worker_wasi",
+    visibility = ["//visibility:public"],
+)
+
+render_worker_stamp_contract_test(
+    name = "render_worker_stamp_contract_test",
+    target_under_test = "//bazel/rust:render_worker",
+    visibility = ["//visibility:public"],
+)
+
+render_worker_memory_contract_test(
+    name = "render_worker_memory_contract_test",
+    target_under_test = ":official_render_worker_wasm",
+    visibility = ["//visibility:public"],
+)
+
+render_worker_input_contract_test(
+    name = "render_worker_input_contract_test",
+    target_under_test = ":official_render_worker_wasm",
+    visibility = ["//visibility:public"],
+)
+
+# ---------------------------------------------------------------------------
+# Executables: the Bun/Effect host plus, per target, the Wasmtime addon and
+# the engines precompiled to that target's machine code.
+# ---------------------------------------------------------------------------
+
+# name, Rust target triple, Bun compile target, Bun runtime, executable suffix.
+# x64 uses Bun's baseline runtime: the modules are precompiled for baseline CPU
+# features, and the default x64 runtime requires AVX2.
+_TARGETS = [
+    ("linux_x64", "x86_64-unknown-linux-gnu", "bun-linux-x64-baseline", "@bun_runtime_linux_x64_baseline//:bun", ""),
+    ("linux_arm64", "aarch64-unknown-linux-gnu", "bun-linux-arm64", "@bun_runtime_linux_arm64//:bun", ""),
+    ("darwin_x64", "x86_64-apple-darwin", "bun-darwin-x64", "@bun_runtime_darwin_x64//:bun", ""),
+    ("darwin_arm64", "aarch64-apple-darwin", "bun-darwin-arm64", "@bun_runtime_darwin_arm64//:bun", ""),
+    ("windows_x64", "x86_64-pc-windows-msvc", "bun-windows-x64-baseline", "@bun_runtime_windows_x64_baseline//:bun.exe", ".exe"),
+]
+
+_MODULES = {
+    "akua-render-worker": ":official_render_worker_wasm",
+    "helm-engine": ":helm_engine_wasm",
+    "kustomize-engine": ":kustomize_engine_wasm",
+}
+
+# The Wasmtime addon (native/) for each target.
+[
+    package_rust_artifact(
+        name = "sandbox_addon_" + name,
+        out = "host_assets/{}/wasm-sandbox.node".format(name),
+        compiled = "//bazel/rust:sandbox_addon",
+        profile = "native",
+        target_platform = "//bazel/platforms:target_" + name,
+        visibility = ["//visibility:public"],
+    )
+    for name, _, _, _, _ in _TARGETS
+]
+
+# The addon's final Darwin link declares the SDK without its C headers.
+[
+    darwin_link_inputs_test(
+        name = "darwin_{}_link_inputs_test".format(name),
+        target_under_test = ":sandbox_addon_darwin_" + name,
+        visibility = ["//visibility:public"],
+    )
+    for name in [
+        "x64",
+        "arm64",
+    ]
+]
+
+# Each wasm module as zstd-compressed machine code for each target.
+[
+    wasm_precompile(
+        name = "{}_{}".format(
+            module.replace("-", "_"),
+            name,
+        ),
+        out = "host_assets/{}/{}.cwasm.zst".format(name, module),
+        exec_properties = {"cpu_count": "4"},
+        target_triple = triple,
+        wasm = wasm,
+    )
+    for name, triple, _, _, _ in _TARGETS
+    for module, wasm in _MODULES.items()
+]
+
+# Per-target sources: the embedded render services import exactly that
+# target's assets (see the templates); akua embeds the same module.
+[
+    expand_template(
+        name = "{}_{}".format(kind, name),
+        out = "{}_{}.ts".format(kind, name),
+        substitutions = {
+            "{TARGET}": name,
+            "{VERSION}": PACKAGE_SOURCE_VERSION,
+        },
+        template = kind + ".ts.tmpl",
+    )
+    for name, _, _, _, _ in _TARGETS
+    for kind in [
+        "akuapkg_entry",
+        "akuapkg_embedded",
+        "akua_entry",
+    ]
+]
+
+# Everything `akuapkg_embedded_<target>.ts` imports: the executable brings the
+# host itself; these are its `HostAssets`.
+[
+    filegroup(
+        name = "akuapkg_embedded_srcs_" + name,
+        srcs = [
+            ":akuapkg_embedded_" + name,
+            ":sandbox_addon_" + name,
+            "//crates/akua-core:akua_stdlib",
+            "//native:index.d.ts",
+        ] + [":{}_{}".format(
+            module.replace("-", "_"),
+            name,
+        ) for module in _MODULES],
+        visibility = ["//visibility:public"],
+    )
+    for name, _, _, _, _ in _TARGETS
+]
+
+[
+    bun_compile(
+        name = "akuapkg_" + name,
+        srcs = [
+            ":akuapkg_embedded_srcs_" + name,
+            ":akuapkg_entry_" + name,
+            "//host:package.json",
+            "//host:srcs",
+        ],
+        out = "bin/{}/akuapkg{}".format(name, suffix),
+        entry = ":akuapkg_entry_" + name,
+        node_modules = _NODE_MODULES,
+        target = bun_target,
+        target_runtime = bun_runtime,
+        visibility = ["//visibility:public"],
+        workspace_links = WORKSPACE_LINKS,
+    )
+    for name, _, bun_target, bun_runtime, suffix in _TARGETS
+]
+
+# The `akua` CLI, with `akua pkg` served in-process by the same host and assets.
+[
+    bun_compile(
+        name = "akua_" + name,
+        srcs = [
+            ":akua_entry_" + name,
+            ":akuapkg_embedded_srcs_" + name,
+            "//cli:package.json",
+            "//cli:srcs",
+            "//host:package.json",
+            "//host:srcs",
+        ],
+        out = "bin/{}/akua{}".format(name, suffix),
+        entry = ":akua_entry_" + name,
+        node_modules = _NODE_MODULES,
+        target = bun_target,
+        target_runtime = bun_runtime,
+        visibility = ["//visibility:public"],
+        workspace_links = WORKSPACE_LINKS,
+    )
+    for name, _, bun_target, bun_runtime, suffix in _TARGETS
+]
+
+# The executables for the target platform.
+[
+    alias(
+        name = tool,
+        actual = select({
+            "//bazel/platforms:darwin_arm64": ":{}_darwin_arm64".format(tool),
+            "//bazel/platforms:darwin_x64": ":{}_darwin_x64".format(tool),
+            "//bazel/platforms:linux_arm64": ":{}_linux_arm64".format(tool),
+            "//bazel/platforms:windows": ":{}_windows_x64".format(tool),
+            "//conditions:default": ":{}_linux_x64".format(tool),
+        }),
+        visibility = ["//visibility:public"],
+    )
+    for tool in [
+        "akuapkg",
+        "akua",
+    ]
+]
+
+# ---------------------------------------------------------------------------
+# Release archives. akuapkg: akuapkg-v<version>-<triple>.{tar.gz,zip} plus the
+# source identity; akua: thirteen assets from cli/scripts/release.ts's contract.
+# ---------------------------------------------------------------------------
+
+[
+    pkg_files(
+        name = "release_binary_" + name,
+        srcs = [":akuapkg_" + name],
+        attributes = pkg_attributes(mode = "0755"),
+    )
+    for name, _, _, _, _ in _TARGETS
+]
+
+[
+    pkg_tar(
+        name = "release_archive_" + name,
+        srcs = [":release_binary_" + name],
+        out = "archive_parts/akuapkg-v{}-{}.tar.gz".format(PACKAGE_SOURCE_VERSION, triple),
+        compression_level = 5 if name == "darwin_arm64" else -1,
+        extension = "tar.gz",
+        stamp = 0,
+    )
+    for name, triple, _, _, _ in _TARGETS
+    if "windows" not in triple
+]
+
+pkg_zip(
+    name = "release_archive_windows_x64",
+    srcs = [":release_binary_windows_x64"],
+    out = "archive_parts/akuapkg-v{}-x86_64-pc-windows-msvc.zip".format(PACKAGE_SOURCE_VERSION),
+)
+
+expand_template(
+    name = "source_build_identity",
+    out = "archive_parts/source-build-identity.json",
+    stamp_substitutions = {"PLATFORM_SOURCE_SHA": "{{STABLE_SOURCE_SHA}}"},
+    substitutions = {"PLATFORM_SOURCE_SHA": "0" * 40},
+    template = [json.encode({
+        "version": PACKAGE_SOURCE_VERSION,
+        "source": {"sha": "PLATFORM_SOURCE_SHA"},
+        "assets": [{
+            "target": triple,
+            "file": "akuapkg-v{}-{}.{}".format(
+                PACKAGE_SOURCE_VERSION,
+                triple,
+                "zip" if "windows" in triple else "tar.gz",
+            ),
+        } for _, triple, _, _, _ in _TARGETS],
+    })],
+)
+
+copy_to_directory(
+    name = "release_archives",
+    srcs = [":release_archive_" + name for name, _, _, _, _ in _TARGETS] + [":source_build_identity"],
+    out = "release",
+    root_paths = ["bazel/archive_parts"],
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "stamp",
+    values = {"stamp": "1"},
+)
+
+cli_release_archive(
+    name = "cli_release_archive",
+    srcs = [
+        "//cli:release_program_srcs",
+    ],
+    out = "cli-release",
+    binaries = {
+        ":akua_darwin_arm64": "darwin-arm64",
+        ":akua_darwin_x64": "darwin-x64",
+        ":akua_linux_arm64": "linux-arm64",
+        ":akua_linux_x64": "linux-x64",
+        ":akua_windows_x64": "windows-x64",
+    },
+    exec_properties = {
+        # NativeLink sampled 724 parts and 108 assemblies over seven days:
+        # every sampled process-group peak was below 1 GiB. Of 710 CPU-time
+        # samples, every one was at most five seconds. Keep 2 GiB of memory
+        # headroom without reserving most of the worker for each archive.
+        "cpu_count": "2",
+        "memory_kb": "2097152",
+    },
+    node_modules = _NODE_MODULES,
+    package_json = "//cli:package.json",
+    package_version = PACKAGE_SOURCE_VERSION,
+    program = "release-package-command.ts",
+    stamp = select({
+        ":stamp": True,
+        "//conditions:default": False,
+    }),
+    visibility = ["//visibility:public"],
+    workspace_links = WORKSPACE_LINKS,
+)
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+_TEST_NODE_MODULES = select({
+    "//bazel/platforms:darwin_arm64": "@npm//:darwin_arm64",
+    "//bazel/platforms:darwin_x64": "@npm//:darwin_x64",
+    "//bazel/platforms:linux_arm64": "@npm//:linux_arm64",
+    "//conditions:default": "@npm//:linux_x64",
+})
+
+# `tsc --noEmit` over each TypeScript workspace member's tsconfig.json.
+bun_test(
+    name = "cli_typecheck_test",
+    size = "medium",
+    srcs = [
+        "//:package.json",
+        "//cli:test_srcs",
+        "//host:package.json",
+        "//host:srcs",
+        "//native:index.d.ts",
+        "//native:package.json",
+    ],
+    bun_args = [
+        "../node_modules/typescript/bin/tsc",
+        "--noEmit",
+        "--project",
+        "tsconfig.json",
+    ],
+    chdir = "cli",
+    node_modules = _TEST_NODE_MODULES,
+    visibility = ["//visibility:public"],
+    workspace_links = WORKSPACE_LINKS,
+)
+
+bun_test(
+    name = "host_typecheck_test",
+    size = "medium",
+    srcs = [
+        "//:package.json",
+        "//host:package.json",
+        "//host:srcs",
+        "//host:tsconfig.json",
+        "//native:index.d.ts",
+        "//native:package.json",
+    ],
+    bun_args = [
+        "../node_modules/typescript/bin/tsc",
+        "--noEmit",
+        "--project",
+        "tsconfig.json",
+    ],
+    chdir = "host",
+    node_modules = _TEST_NODE_MODULES,
+    visibility = ["//visibility:public"],
+    workspace_links = WORKSPACE_LINKS,
+)
+
+# The CLI's own suite, run by vitest inside Bun (cli/package.json `test`).
+bun_test(
+    name = "cli_unit_test",
+    size = "large",
+    timeout = "long",
+    srcs = [
+        "//:Cargo.toml",
+        "//:cli_workflow",
+        "//:package.json",
+        "//cli:test_srcs",
+        "//host:package.json",
+        "//host:srcs",
+    ],
+    bun_args = [
+        "--bun",
+        "../node_modules/vitest/vitest.mjs",
+        "run",
+        # Packages and smokes the host's archives with the host's zip and tar,
+        # which hermetic workers do not ship; :cli_release_archive builds the
+        # release.
+        "--exclude",
+        "test/release.test.ts",
+    ],
+    chdir = "cli",
+    data = ["@bazel_tools//tools/zip:zipper"],
+    env = {"PLATFORM_CLI_TEST_ZIPPER": "$RUNFILES/$(rlocationpath @bazel_tools//tools/zip:zipper)"},
+    node_modules = _TEST_NODE_MODULES,
+    visibility = ["//visibility:public"],
+    workspace_links = WORKSPACE_LINKS,
+)
+
+# This repository's build logic, for the monorepo's published-source boundary
+# check and Starlark formatting gate.
+filegroup(
+    name = "starlark_sources",
+    srcs = glob([
+        "*.bazel",
+        "*.bzl",
+    ]) + [
+        "//bazel/{}:starlark_sources".format(package)
+        for package in [
+            "bun",
+            "npm",
+            "platforms",
+            "rust",
+            "toolchains",
+        ]
+    ],
+    visibility = ["//visibility:public"],
+)

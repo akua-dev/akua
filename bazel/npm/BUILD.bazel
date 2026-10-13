@@ -1,0 +1,13 @@
+"""Repository rule installing bun.lock packages."""
+
+filegroup(
+    name = "starlark_sources",
+    srcs = glob(
+        [
+            "*.bazel",
+            "*.bzl",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//bazel:__pkg__"],
+)

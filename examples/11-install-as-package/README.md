@@ -1,49 +1,30 @@
 # 11-install-as-package
 
-Composes a third-party Akua package (`./upstream/`) and applies a
-tenant overlay, drops a kind, and appends extras — the
-install-as-Package shape. Demonstrates the natural call form
-`upstream.render(upstream.Input{...})`: typed inputs at the consumer
-call site, no path strings in user code.
+Installs a third-party Package with local changes, without forking it: the
+install renders the upstream Package, labels every resource with the
+tenant, drops one kind and adds a ConfigMap.
 
-## Layout
-
-| file | purpose |
+| File | Purpose |
 |---|---|
-| `upstream/package.k` | Sibling Akua package — Deployment + Service + PodDisruptionBudget. Authored as a normal Package; nothing about it is install-aware. |
-| `akua.toml` | Dep alias `upstream = { path = "./upstream" }` for `akuapkg tree` + lock-time validation. |
-| `package.k` | The install: `upstream.render(...)`, overlay tenant label, drop PDB, append a ConfigMap. |
-| `inputs.example.yaml` | Per-install inputs (tenant, app, replicas). |
-| `rendered/` | Reference output (3 files: Deployment, Service, ConfigMap). |
-
-## Render
+| `upstream/` | the upstream Package: Deployment, Service, PodDisruptionBudget |
+| `akua.toml` | declares `upstream = { path = "./upstream" }` |
+| `package.k` | the install |
+| `inputs.example.yaml` | tenant, app name, replicas |
 
 ```sh
-akuapkg render --out ./rendered
+akuapkg render --out ./out
 ```
 
-## The install pattern
+This writes a Deployment, a Service and a ConfigMap; the
+PodDisruptionBudget is filtered out.
 
 ```kcl
 import pkgs.upstream as upstream
 
-_up = upstream.render(upstream.Input { appName = ..., replicas = ... })
-
-# Overlay
+_up = upstream.render(upstream.Input {appName = input.app, replicas = input.replicas})
 _patched = [r | {metadata.labels = {"install.cnap.tech/tenant" = input.tenant}} for r in _up]
-
-# Filter
 _filtered = [r for r in _patched if r.kind != "PodDisruptionBudget"]
-
-# Extras
-_extras = [{apiVersion = "v1", kind = "ConfigMap", ...}]
-
-resources = _filtered + _extras
 ```
 
-The import lands a synthesized stub that owns a `render` lambda and
-re-exports upstream's schemas — KCL type-checks `upstream.Input{...}`
-at the call site (typos surface as compile errors, not as runtime
-worker traps). The mechanism mirrors `import charts.<name>` for Helm
-charts; see [docs/package-format.md](../../docs/package-format.md)
-for the full shape.
+`import pkgs.upstream` exposes the upstream's own `Input` schema, so a
+misspelled or mistyped input is a compile error at the call site.

@@ -1,7 +1,349 @@
-module(name = "platform_package_source")
+"""akuapkg and the akua CLI. See docs/building.md.
+
+This module builds standalone and as a module of the cnap monorepo, which
+builds the official releases from these same BUILD files. Only the root
+module may configure the Rust toolchains and override rules_rust, so those
+parts live in toolchains.MODULE.bazel (included by both roots) and in the
+archive_override below (mirrored in the monorepo's MODULE.bazel).
+"""
+
+module(name = "akua")
 
 bazel_dep(name = "aspect_rules_js", version = "3.4.0")
 bazel_dep(name = "bazel_lib", version = "3.7.0")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "hermetic_cc_toolchain", version = "4.3.0")
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "rules_cc", version = "0.2.17")
+bazel_dep(name = "rules_pkg", version = "1.3.0")
+bazel_dep(name = "rules_rust", version = "0.67.0")
 
-upstream = use_extension("//third_party/kcl:repositories.bzl", "upstream")
-use_repo(upstream, "kcl_lang_kcl_da013146")
+# The release archive with its checksum-pinned cargo-bazel binaries, plus two
+# fixes the cross builds need (full stdlib metadata for cross targets on Rust
+# 1.95+, and rust-lld for Darwin cdylibs). Mirrored by the monorepo's root.
+archive_override(
+    module_name = "rules_rust",
+    integrity = "sha256-3Ch+PsqAsp1cyV4mHK4nPu3xr0oAqWrpN+I0U02tskw=",
+    patch_strip = 1,
+    patches = [
+        "//bazel:patches/rules-rust-cross-stdlib-rmeta.patch",
+        "//bazel:patches/rules-rust-darwin-lld-link.patch",
+    ],
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.67.0/rules_rust-0.67.0.tar.gz"],
+)
+
+include("//:toolchains.MODULE.bazel")
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+use_repo(rust, "rust_toolchains")
+
+# zig_config-linux-amd64 is reported as an indirect dependency (the extension
+# only advertises zig_sdk); `bazel mod tidy` would drop the import the
+# toolchains in bazel/toolchains need.
+zig = use_extension("@hermetic_cc_toolchain//toolchain:ext.bzl", "toolchains")
+use_repo(zig, "zig_config-linux-amd64", "zig_sdk")
+
+# Linux C toolchains for a standalone checkout; a consuming root brings its own.
+register_toolchains(
+    "//bazel/toolchains:linux_x64_cc_toolchain",
+    "//bazel/toolchains:linux_arm64_cc_toolchain",
+    dev_dependency = True,
+)
+
+register_toolchains("//bazel/bun:all")
+
+# ---------------------------------------------------------------------------
+# Bun: the compiler per execution platform, the runtime each release target
+# embeds, and the npm packages bun.lock pins.
+# ---------------------------------------------------------------------------
+
+bun_release = use_repo_rule("//bazel/bun:repositories.bzl", "bun_release")
+
+bun_release(
+    name = "bun_compiler_darwin_arm64",
+    kind = "compiler",
+    target = "bun-darwin-arm64",
+)
+
+bun_release(
+    name = "bun_compiler_darwin_x64",
+    kind = "compiler",
+    target = "bun-darwin-x64",
+)
+
+bun_release(
+    name = "bun_compiler_linux_arm64",
+    kind = "compiler",
+    target = "bun-linux-arm64",
+)
+
+bun_release(
+    name = "bun_compiler_linux_x64",
+    kind = "compiler",
+    target = "bun-linux-x64-baseline",
+)
+
+bun_release(
+    name = "bun_runtime_darwin_arm64",
+    kind = "runtime",
+    target = "bun-darwin-arm64",
+)
+
+bun_release(
+    name = "bun_runtime_darwin_x64",
+    kind = "runtime",
+    target = "bun-darwin-x64",
+)
+
+bun_release(
+    name = "bun_runtime_linux_arm64",
+    kind = "runtime",
+    target = "bun-linux-arm64",
+)
+
+bun_release(
+    name = "bun_runtime_linux_x64_baseline",
+    kind = "runtime",
+    target = "bun-linux-x64-baseline",
+)
+
+bun_release(
+    name = "bun_runtime_windows_x64_baseline",
+    kind = "runtime",
+    target = "bun-windows-x64-baseline",
+)
+
+bun_lock_repository = use_repo_rule("//bazel/npm:bun_lock.bzl", "bun_lock_repository")
+
+bun_lock_repository(
+    name = "npm",
+    lock = "//:bun.lock",
+    patches = {"patches/effect@4.0.1.patch": "//:patches/effect@4.0.1.patch"},
+)
+
+# ---------------------------------------------------------------------------
+# Source version, cross SDKs and compilers
+# ---------------------------------------------------------------------------
+
+source_version = use_repo_rule("//bazel:source_version.bzl", "source_version")
+
+source_version(name = "source_version")
+
+macos_sdk = use_repo_rule("//bazel:source_cross_sdks.bzl", "macos_sdk")
+
+macos_sdk(name = "macos_sdk")
+
+windows_sdk_inputs = use_repo_rule("//bazel:source_cross_sdks.bzl", "windows_sdk_inputs")
+
+windows_sdk_inputs(name = "windows_sdk_inputs")
+
+windows_build_tools = use_repo_rule("//bazel:source_cross_sdks.bzl", "windows_build_tools")
+
+windows_build_tools(name = "windows_build_tools")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+# clang-cl, lld-link and the LLVM binutils for the Windows target.
+http_archive(
+    name = "llvm",
+    build_file = "//bazel/toolchains:llvm.BUILD.bazel",
+    sha256 = "54ec30358afcc9fb8aa74307db3046f5187f9fb89fb37064cdde906e062ebf36",
+    strip_prefix = "clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04",
+    urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang%2Bllvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz"],
+)
+
+source_compilers = use_repo_rule("//bazel:source_toolchains.bzl", "source_compilers")
+
+# Go for vendoring engine modules on the host, and for compiling the WASI
+# engines on Linux executors.
+source_compilers(name = "go_host")
+
+source_compilers(
+    name = "go_linux_x64",
+    host = "x86_64-unknown-linux-gnu",
+)
+
+go_sources = use_repo_rule("//bazel:source_dependencies.bzl", "go_sources")
+
+go_sources(
+    name = "helm_sources",
+    engine = "helm",
+    sources = [
+        "//crates/helm-engine-wasm:go-src/go.mod",
+        "//crates/helm-engine-wasm:go-src/go.sum",
+        "//crates/helm-engine-wasm:go-src/main.go",
+    ],
+)
+
+go_sources(
+    name = "kustomize_sources",
+    engine = "kustomize",
+    sources = [
+        "//crates/kustomize-engine-wasm:go-src/go.mod",
+        "//crates/kustomize-engine-wasm:go-src/go.sum",
+        "//crates/kustomize-engine-wasm:go-src/main.go",
+    ],
+)
+
+# ---------------------------------------------------------------------------
+# Rust crates
+# ---------------------------------------------------------------------------
+
+rust_host_tools = use_extension("@rules_rust//rust:extensions.bzl", "rust_host_tools")
+rust_host_tools.host_tools(
+    name = "akua_rust_host",
+    version = "1.98.1",
+)
+use_repo(rust_host_tools, "akua_rust_host")
+
+# akuapkg's per-render wasmtime sandbox needs three kcl-lang/kcl crates
+# patched for wasm32 support upstream has not landed yet (see
+# third_party/kcl/patches/README.md for the per-patch rationale and upstream
+# PR status). No tagged release contains the fixes, so this pins a main
+# commit by SHA; an upgrade whose patch no longer applies fails loudly.
+kcl = use_extension("//third_party/kcl:repositories.bzl", "upstream")
+use_repo(kcl, "kcl_lang_kcl_da013146")
+
+cargo_manifest_workspace = use_repo_rule("//bazel:source_dependencies.bzl", "cargo_manifest_workspace")
+
+# The worker keeps first-party Cargo packages as members while projecting only
+# the selected release feature closure for crate_universe.
+cargo_manifest_workspace(
+    name = "worker_manifest_workspace",
+    lockfile = "//bazel/rust:worker.lock",
+    resolution_root = "worker",
+)
+
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.from_cargo(
+    name = "akua_worker_crates",
+    cargo_lockfile = "@worker_manifest_workspace//:Cargo.lock",
+    host_tools = "@akua_rust_host",
+    manifests = [
+        "@worker_manifest_workspace//:Cargo.toml",
+        "@worker_manifest_workspace//:crates/akua-core/Cargo.toml",
+        "@worker_manifest_workspace//:crates/akua-render-worker/Cargo.toml",
+    ],
+    skip_cargo_lockfile_overwrite = True,
+    supported_platform_triples = [
+        "wasm32-wasip1",
+        "x86_64-unknown-linux-gnu",
+    ],
+)
+
+# The generic Wasmtime sandbox addon and its build-time precompiler are
+# separate Cargo workspaces (native/, native/precompile/): one shared
+# resolution would unify wasmtime features and pull Cranelift into the addon.
+crate.from_cargo(
+    name = "akua_sandbox_crates",
+    cargo_lockfile = "//native:Cargo.lock",
+    host_tools = "@akua_rust_host",
+    manifests = ["//native:Cargo.toml"],
+    skip_cargo_lockfile_overwrite = True,
+    supported_platform_triples = [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+    ],
+)
+crate.from_cargo(
+    name = "akua_precompile_crates",
+    cargo_lockfile = "//native/precompile:Cargo.lock",
+    host_tools = "@akua_rust_host",
+    manifests = ["//native/precompile:Cargo.toml"],
+    skip_cargo_lockfile_overwrite = True,
+    supported_platform_triples = ["x86_64-unknown-linux-gnu"],
+)
+crate.annotation(
+    crate = "kcl-parser",
+    patch_args = ["-p3"],
+    patches = [
+        "//third_party/kcl:patches/0001-parser-trust-caller-registered-external_pkgs-without.patch",
+        "//third_party/kcl:patches/0002-parser-probe-preopen-paths-via-read_dir-open-on-wasm.patch",
+    ],
+    repositories = ["akua_worker_crates"],
+    version = "0.13.0",
+)
+crate.annotation(
+    crate = "kcl-runtime",
+    patch_args = ["-p3"],
+    patches = [
+        "//third_party/kcl:patches/0004-runtime-record-missing-required-attribute-on-wasm32.patch",
+    ],
+    repositories = ["akua_worker_crates"],
+    version = "0.13.0",
+)
+crate.annotation(
+    crate = "kcl-evaluator",
+    patch_args = ["-p3"],
+    patches = [
+        "//third_party/kcl:patches/0006-evaluator-record-a-failed-type-check-on-wasm32.patch",
+    ],
+    repositories = ["akua_worker_crates"],
+    version = "0.13.0",
+)
+crate.annotation(
+    crate = "kcl-loader",
+    patch_args = ["-p3"],
+    patches = [
+        "//third_party/kcl:patches/0005-loader-skip-unresolved-identifiers-when-listing-options.patch",
+    ],
+    repositories = ["akua_worker_crates"],
+    version = "0.13.0",
+)
+crate.annotation(
+    # Cargo selects only rt/sync/time/test-util for the worker's WASI
+    # tokio-test dependency. crate_universe also sees Linux-hosted KCL tools,
+    # which otherwise union their native-only Tokio features into WASI.
+    additive_build_file_content = """
+exports_files(["src/lib.rs"])
+
+filegroup(
+    name = "tokio_worker_sources",
+    srcs = glob(["**/*.rs"]),
+)
+
+filegroup(
+    name = "tokio_worker_compile_data",
+    srcs = glob(["**"], exclude = ["**/* *", ".tmp_git_root/**/*", "BUILD", "BUILD.bazel", "WORKSPACE", "WORKSPACE.bazel"]),
+)
+""",
+    crate = "tokio",
+    override_target_lib = "//bazel:worker_tokio",
+    repositories = ["akua_worker_crates"],
+    version = "1.52.1",
+)
+crate.annotation(
+    crate = "protoc-bin-vendored-linux-x86_64",
+    data_glob = [
+        "bin/protoc",
+        "include/**",
+    ],
+    repositories = ["akua_worker_crates"],
+    version = "3.2.0",
+)
+
+# Native Windows import libraries must remain declared inputs of the final
+# link. The upstream build script otherwise emits a runfiles-only search path.
+crate.annotation(
+    crate = "windows_x86_64_msvc",
+    data_glob = ["lib/**"],
+    patch_args = ["-p1"],
+    patches = ["//bazel:patches/windows-msvc-import-lib-link.patch"],
+    repositories = ["akua_sandbox_crates"],
+)
+
+# use_repo exposes aggregate crate repos, not these generated per-crate inputs.
+# buildifier: disable=canonical-repository
+crate.annotation(
+    build_script_data = ["@@rules_rust++crate+akua_worker_crates__protoc-bin-vendored-linux-x86_64-3.2.0//:bin/protoc"],
+    build_script_env = {
+        "PROTOC": "$(location @@rules_rust++crate+akua_worker_crates__protoc-bin-vendored-linux-x86_64-3.2.0//:bin/protoc)",
+    },
+    crate = "kcl-api",
+    repositories = ["akua_worker_crates"],
+    version = "0.13.0",
+)
+use_repo(crate, "akua_precompile_crates", "akua_sandbox_crates", "akua_worker_crates")

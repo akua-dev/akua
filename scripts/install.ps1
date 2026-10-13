@@ -28,7 +28,7 @@ $triple = switch ($arch) {
     'x86_64' { 'x86_64-pc-windows-msvc' }
     # aarch64-pc-windows-msvc builds aren't shipped yet. Users on ARM64
     # Windows get a clear error rather than a silently-broken binary.
-    'ARM64' { Die "ARM64 Windows not yet supported. File an issue at https://github.com/akua-dev/akuapkg/issues" }
+    'ARM64' { Die "ARM64 Windows not yet supported. File an issue at https://github.com/akua-dev/akua/issues" }
     default { Die "unsupported Windows arch: $arch" }
 }
 
@@ -50,7 +50,7 @@ function Resolve-Version($v) {
     # -MaximumRedirection 0 means: stop at the first redirect and read
     # its Location header, rather than actually following it.
     $resp = try {
-        Invoke-WebRequest -Uri 'https://github.com/akua-dev/akuapkg/releases/latest' `
+        Invoke-WebRequest -Uri 'https://github.com/akua-dev/akua/releases/latest' `
             -MaximumRedirection 0 -ErrorAction SilentlyContinue
     } catch {
         $_.Exception.Response
@@ -69,7 +69,7 @@ $version = Resolve-Version $requestedVersion
 
 $base = if ($env:AKUAPKG_DOWNLOAD_BASE) { $env:AKUAPKG_DOWNLOAD_BASE } else { 'https://github.com' }
 $asset = "akuapkg-$version-$triple.zip"
-$url = "$base/akua-dev/akuapkg/releases/download/$version/$asset"
+$url = "$base/akua-dev/akua/releases/download/$version/$asset"
 
 $installRoot = if ($env:AKUAPKG_INSTALL) { $env:AKUAPKG_INSTALL } else { Join-Path $env:USERPROFILE '.akuapkg' }
 $binDir = Join-Path $installRoot 'bin'

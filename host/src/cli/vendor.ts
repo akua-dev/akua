@@ -1,15 +1,17 @@
 import { Effect, FileSystem, Option, Path, type PlatformError } from "effect"
+import { CliName } from "../cli-name"
 import { osMessage } from "../errors"
 import { Argument, Command, Flag } from "effect/cli"
 import type { FetchServices } from "../cli"
 import { ExitCode, fail } from "../contract"
-import { canonicalGitUrl, detectKind, lockRecordFor, VENDOR_DIR } from "../dependencies.effect"
+import { canonicalGitUrl, configuredCosignKey, detectKind, lockRecordFor, VENDOR_DIR } from "../dependencies.effect"
 import { GitRemote, type GitRequest } from "../git.effect"
 import { type HostAuthMap, lookupAuth, resolveAuth } from "../host-auth"
 import { emptyLock, type Lock, mergeIntoLock } from "../lockfile"
 import { type Dependency, dependencySpec } from "../manifest"
 import { OciRegistry } from "../oci.effect"
 import { loadSnapshot } from "../snapshot.effect"
+import { UrlSource } from "../url-source.effect"
 import { hashDirectory } from "../walk.effect"
 import type { VerbContext } from "./context"
 import { joinPath } from "./files"
@@ -46,8 +48,10 @@ interface Source {
   readonly sourceRef: string
   /** The tree to vendor. */
   readonly root: string
-  /** What `akua.lock` pins when it is not the tree digest (a git commit). */
+  /** What `akua.lock` pins when it is not the tree digest (a git commit, an OCI blob). */
   readonly lockDigest: Option.Option<string>
+  /** `cosign:key:...`: the configured key verified the pulled artifact. */
+  readonly signature: Option.Option<string>
 }
 
 /** A user-authored dependency path: relative, existing, and inside the workspace. */
@@ -88,9 +92,9 @@ const workspaceDirectory = Effect.fnUntraced(function*(workspace: string, name: 
   return target
 })
 
-/** The digest `akua.lock` pins for `name`, when it came from `kind` (`oci://` or `git+`). */
-const lockedDigest = (lock: Option.Option<Lock>, name: string, prefix: string) =>
-  Option.flatMapNullishOr(lock, (l) => (l.package ?? []).find((p) => p.name === name && p.source.startsWith(prefix))?.digest)
+/** The `akua.lock` entry for `name`, when it came from `kind` (`oci://` or `git+`). */
+const lockedEntry = (lock: Option.Option<Lock>, name: string, prefix: string) =>
+  Option.flatMapNullishOr(lock, (l) => (l.package ?? []).find((p) => p.name === name && p.source.startsWith(prefix)))
 
 /** Where a declared dependency's tree comes from: the workspace, a registry pull or a git checkout. */
 const resolveSource = Effect.fnUntraced(function*(
@@ -98,7 +102,9 @@ const resolveSource = Effect.fnUntraced(function*(
   name: string,
   dependency: Dependency,
   lock: Option.Option<Lock>,
-  auth: HostAuthMap
+  auth: HostAuthMap,
+  /** `[signing].cosign_public_key`: an OCI pull must carry its signature, as for `lock`. */
+  cosignPublicKey: Option.Option<string>
 ) {
   const path = yield* Path.Path
   const spec = dependencySpec(dependency)
@@ -108,19 +114,26 @@ const resolveSource = Effect.fnUntraced(function*(
         kind: "path",
         sourceRef: spec.path,
         root: yield* workspaceDirectory(workspace, name, spec.path),
-        lockDigest: Option.none()
+        lockDigest: Option.none(),
+        signature: Option.none()
       } satisfies Source
     case "Oci": {
       const registry = yield* OciRegistry
+      const locked = lockedEntry(lock, name, "oci://")
       const pulled = yield* registry.pull({
         reference: spec.oci,
         version: spec.version,
-        pin: lockedDigest(lock, name, "oci://"),
+        pin: Option.map(locked, (entry) => entry.digest),
         offline: false,
-        cosignPublicKey: Option.none()
+        cosignPublicKey,
+        lockedSignature: Option.flatMapNullishOr(locked, (entry) => entry.signature)
       }).pipe(
         Effect.mapError((error) =>
-          fail("E_DEP_RESOLVE", `fetching OCI dep \`${name}\`: ${error.message}`, ExitCode.userError)
+          fail(
+            error.code,
+            error.code === "E_DEP_RESOLVE" ? `fetching OCI dep \`${name}\`: ${error.message}` : error.message,
+            ExitCode.userError
+          )
         )
       )
       // The package inside the pulled tree, as resolution finds it.
@@ -129,7 +142,9 @@ const resolveSource = Effect.fnUntraced(function*(
         kind: "oci",
         sourceRef: `${spec.oci}@${spec.version}`,
         root: prefix === "" ? pulled.directory : path.join(pulled.directory, prefix),
-        lockDigest: Option.none()
+        // The blob stays the pin, so a re-vendor can fetch against it; the tree goes in `vendor_digest`.
+        lockDigest: Option.some(pulled.digest),
+        signature: pulled.signature
       } satisfies Source
     }
     case "Git": {
@@ -143,7 +158,7 @@ const resolveSource = Effect.fnUntraced(function*(
       const fetched = yield* remote.fetch({
         url: spec.git,
         ref,
-        pin: Option.map(lockedDigest(lock, name, "git+"), (digest) => digest.replace(/^git:/, "")),
+        pin: Option.map(lockedEntry(lock, name, "git+"), (entry) => entry.digest.replace(/^git:/, "")),
         offline: false,
         ...(Option.isSome(credential) ? { auth: credential.value } : {})
       }).pipe(
@@ -156,15 +171,34 @@ const resolveSource = Effect.fnUntraced(function*(
         kind: "git",
         sourceRef: `${canonicalGitUrl(spec.git)}@${label}`,
         root: fetched.directory,
-        lockDigest: Option.some(`git:${fetched.commit}`)
+        lockDigest: Option.some(`git:${fetched.commit}`),
+        signature: Option.none()
       } satisfies Source
     }
     case "Helm":
       return yield* fail(
         "E_DEP_RESOLVE",
-        `dep \`${name}\`: helm source not yet supported by \`akua vendor\``,
+        `dep \`${name}\`: helm source not yet supported by \`${yield* CliName} vendor\``,
         ExitCode.userError
       )
+    case "Url": {
+      const source = yield* UrlSource
+      const fetched = yield* source.fetch({
+        url: spec.url,
+        pin: Option.map(lockedEntry(lock, name, "url+"), (entry) => entry.digest),
+        offline: false
+      }).pipe(
+        Effect.mapError((error) => fail("E_DEP_RESOLVE", `fetching url dep \`${name}\`: ${error.message}`, ExitCode.userError))
+      )
+      return {
+        kind: "url",
+        sourceRef: spec.url,
+        root: fetched.directory,
+        lockDigest: Option.some(fetched.digest),
+        // A single file has no signing layer, like a git checkout.
+        signature: Option.none()
+      } satisfies Source
+    }
   }
 })
 
@@ -227,7 +261,15 @@ interface ExpectedTree {
 }
 
 const lockedKind = (source: string) =>
-  source.startsWith("path+file://") ? "path" : source.startsWith("oci://") ? "oci" : "git"
+  source.startsWith("path+file://")
+    ? "path"
+    : source.startsWith("oci://")
+    ? "oci"
+    : source.startsWith("url+")
+    ? "url"
+    : source.startsWith("helm+")
+    ? "helm"
+    : "git"
 
 /** Every dependency the manifest declares or the lock pins, with the tree digest it should vendor to. */
 const expectedTrees = Effect.fnUntraced(function*(workspace: string) {
@@ -247,7 +289,7 @@ const expectedTrees = Effect.fnUntraced(function*(workspace: string) {
       })
       continue
     }
-    const source = yield* resolveSource(workspace, name, dependency, lock, new Map())
+    const source = yield* resolveSource(workspace, name, dependency, lock, new Map(), Option.none())
     const { digest } = yield* hashDirectory(source.root).pipe(Effect.mapError(ioFailure(source.root)))
     trees.push({ name, source_kind: source.kind, source_ref: source.sourceRef, digest })
   }
@@ -264,7 +306,7 @@ const expectedTrees = Effect.fnUntraced(function*(workspace: string) {
   return { names, trees: trees.toSorted((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)) }
 })
 
-const vendorAdd = (fetchers: FetchServices) =>
+const vendorAdd = (fetchers: FetchServices, cli: string) =>
   Command.make(
     "add",
     {
@@ -301,7 +343,10 @@ const vendorAdd = (fetchers: FetchServices) =>
         }
         // Pins are best effort here; a broken lockfile fails the write below.
         const pins = yield* loadLock(flags.workspace).pipe(Effect.orElseSucceed(() => Option.none<Lock>()))
-        const source = yield* resolveSource(flags.workspace, flags.name, dependency, pins, auth).pipe(
+        const cosignPublicKey = yield* configuredCosignKey(flags.workspace, manifest).pipe(
+          Effect.mapError((error) => fail(error.code, error.message, ExitCode.userError))
+        )
+        const source = yield* resolveSource(flags.workspace, flags.name, dependency, pins, auth, cosignPublicKey).pipe(
           Effect.provide(fetchers)
         )
         const target = joinPath(vendorRoot(flags.workspace), flags.name)
@@ -326,7 +371,14 @@ const vendorAdd = (fetchers: FetchServices) =>
             version: locked.version,
             source: locked.source,
             digest: lockDigest,
-            replaced: Option.none()
+            replaced: Option.none(),
+            signature: source.signature,
+            // Vendoring does not regenerate CRD schemas: keep the recorded digest.
+            crdsDigest: Option.flatMap(lock, (current) =>
+              Option.fromUndefinedOr(
+                current.package?.find((entry) => entry.name === flags.name && entry.version === locked.version)
+                  ?.crds_digest
+              ))
           }])
           yield* saveLock(flags.workspace, {
             ...merged,
@@ -335,7 +387,7 @@ const vendorAdd = (fetchers: FetchServices) =>
                 ? { ...entry, vendor_digest: digest }
                 : entry
             )
-          })
+          }, cli)
         }
         const output = {
           name: flags.name,
@@ -484,5 +536,5 @@ const vendorList = (fetchers: FetchServices) =>
 export const vendor = (context: VerbContext) =>
   Command.make("vendor").pipe(
     Command.withDescription("Materialize and inspect the vendor tree at `.akua/vendor/`"),
-    Command.withSubcommands([vendorAdd(context.fetchers), vendorCheck(context.fetchers), vendorList(context.fetchers)])
+    Command.withSubcommands([vendorAdd(context.fetchers, context.name), vendorCheck(context.fetchers), vendorList(context.fetchers)])
   )

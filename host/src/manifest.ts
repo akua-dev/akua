@@ -16,9 +16,17 @@ const Dependency = Schema.Struct({
   /** HTTPS Helm repository; pairs with `chart`. */
   repo: Schema.optionalKey(Schema.String),
   chart: Schema.optionalKey(Schema.String),
+  /** HTTPS URL of one manifest file; only with `crds`. */
+  url: Schema.optionalKey(Schema.String),
   version: Schema.optionalKey(Schema.String),
   tag: Schema.optionalKey(Schema.String),
   rev: Schema.optionalKey(Schema.String),
+  /**
+   * Typed schemas from the CustomResourceDefinitions in the source, imported
+   * as `crds.<name>.<group>.<version>`: `true` for the whole source, or a
+   * file or directory inside it.
+   */
+  crds: Schema.optionalKey(Schema.Union([Schema.Boolean, Schema.String])),
   /** Local fork of an `oci` / `git` dependency, still locked by its canonical source. */
   replace: Schema.optionalKey(Schema.Struct({ path: Schema.String }))
 })
@@ -48,6 +56,7 @@ export type DependencySpec =
   | { readonly _tag: "Oci"; readonly oci: string; readonly version: string }
   | { readonly _tag: "Git"; readonly git: string; readonly tag: Option.Option<string>; readonly rev: Option.Option<string> }
   | { readonly _tag: "Helm"; readonly repo: string; readonly chart: string; readonly version: string }
+  | { readonly _tag: "Url"; readonly url: string }
 
 const decodeManifest = Schema.decodeUnknownEffect(Manifest)
 
@@ -78,9 +87,21 @@ export const parseManifest = Effect.fn("parseManifest")(function*(text: string, 
 export const dependencies = (manifest: Manifest): ReadonlyArray<readonly [string, Dependency]> =>
   Object.entries(manifest.dependencies ?? {}).toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
 
+/**
+ * The file or directory a CRD dependency's schemas come from, relative to
+ * its source (`.` for all of it); none for other dependencies.
+ */
+export const crdSelector = (dependency: Dependency) =>
+  dependency.crds === undefined || dependency.crds === false
+    ? undefined
+    : dependency.crds === true
+    ? "."
+    : dependency.crds
+
 /** The dependency's source; call only on a validated manifest. */
 export const dependencySpec = (dependency: Dependency): DependencySpec => {
   if (dependency.path !== undefined) return { _tag: "Path", path: dependency.path }
+  if (dependency.url !== undefined) return { _tag: "Url", url: dependency.url }
   if (dependency.oci !== undefined) return { _tag: "Oci", oci: dependency.oci, version: dependency.version ?? "" }
   if (dependency.git !== undefined) {
     return {
@@ -106,10 +127,10 @@ export const validateDependency = (
   const fail = (message: string, code = "E_MANIFEST_PARSE") => ({ message: `dependency \`${name}\`: ${message}`, code })
   const credentials = "must not embed credentials (`user:pass@`). " +
     "Pass credentials via the SDK `auth` parameter or the CLI `--auth` flag."
-  const sources = [dependency.oci, dependency.git, dependency.path, dependency.repo].filter((source) =>
+  const sources = [dependency.oci, dependency.git, dependency.path, dependency.repo, dependency.url].filter((source) =>
     source !== undefined
   ).length
-  if (sources !== 1) return fail(`exactly one of oci / git / path must be set, got ${sources}`)
+  if (sources !== 1) return fail(`exactly one of oci / git / path / repo / url must be set, got ${sources}`)
   if (dependency.oci !== undefined) {
     if (dependency.version === undefined) return fail("oci dep requires a version")
     if (hasUserInfo(dependency.oci)) return fail(`oci URL ${credentials}`, "E_MANIFEST_OCI_USERINFO")
@@ -121,6 +142,25 @@ export const validateDependency = (
   if (dependency.path !== undefined) {
     if (dependency.version !== undefined || dependency.tag !== undefined || dependency.rev !== undefined) {
       return fail("path dep must not set version / tag / rev")
+    }
+  }
+  if (dependency.url !== undefined) {
+    if (dependency.crds === undefined || dependency.crds === false) {
+      return fail("url dep is a CRD source: set `crds = true`", "E_MANIFEST_CRDS_INVALID")
+    }
+    if (!dependency.url.startsWith("https://")) return fail("url dep must be an https:// URL", "E_MANIFEST_CRDS_INVALID")
+    if (dependency.version !== undefined || dependency.tag !== undefined || dependency.rev !== undefined) {
+      return fail("url dep must not set version / tag / rev: akua.lock pins the file by digest", "E_MANIFEST_CRDS_INVALID")
+    }
+    if (hasUserInfo(dependency.url)) return fail(`url ${credentials}`, "E_MANIFEST_CRDS_INVALID")
+  }
+  if (typeof dependency.crds === "string") {
+    const selector = dependency.crds
+    if (selector === "" || selector.startsWith("/") || selector.startsWith("\\") || selector.split(/[/\\]/).includes("..")) {
+      return fail(
+        `\`crds\` value \`${selector}\` must be a relative path inside the source (no leading \`/\`, no \`..\`)`,
+        "E_MANIFEST_CRDS_INVALID"
+      )
     }
   }
   if (dependency.repo !== undefined) {
@@ -170,7 +210,8 @@ export const formatManifest = (manifest: Manifest) =>
         ["name", manifest.package.name],
         ["version", manifest.package.version],
         ["edition", manifest.package.edition],
-        ["strict_signing", manifest.package.strict_signing ?? true]
+        // Written only when set: the default depends on `[signing]`.
+        ["strict_signing", manifest.package.strict_signing]
       ])
     ],
     ["workspace", manifest.workspace && table([["members", manifest.workspace.members ?? []]])],
@@ -191,9 +232,11 @@ export const formatManifest = (manifest: Manifest) =>
           ["path", dependency.path],
           ["repo", dependency.repo],
           ["chart", dependency.chart],
+          ["url", dependency.url],
           ["version", dependency.version],
           ["tag", dependency.tag],
           ["rev", dependency.rev],
+          ["crds", dependency.crds],
           ["replace", dependency.replace && table([["path", dependency.replace.path]])]
         ])
       ]))

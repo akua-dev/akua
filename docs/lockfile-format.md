@@ -1,346 +1,212 @@
 # `akua.toml` and `akua.lock`
 
-akua's package manager is modeled on Go's two-file split but uses TOML for both files (the format Cargo, Poetry, and pnpm adopted for richer dep graphs than Go's directive syntax expresses).
+A Package declares what it depends on in `akua.toml` and records exactly
+what it got in `akua.lock`. Both files are TOML and both are committed.
 
-- **`akua.toml`** — what you asked for. Declared deps, version constraints, workspace members, package metadata. Human-edited.
-- **`akua.lock`** — what you got. One `[[package]]` entry per resolved artifact with digest + cosign signature + optional transitive dep references. Machine-maintained, never hand-edited.
-
-Both files are TOML. Both are checked into git. Both are required.
-
----
-
-## Why two files
-
-Clear separation of concerns:
-
-| | intent | evidence |
+| | `akua.toml` | `akua.lock` |
 |---|---|---|
-| file | `akua.toml` | `akua.lock` |
-| edited by | human | `akuapkg add` / `akuapkg pull` / `akuapkg publish` / `akuapkg update` |
-| shape | small, stable | may be large; churns on every resolved-version change |
-| review focus | "do we want this dep?" | "is this the expected digest + signature?" |
+| Holds | intent: name, version, dependencies, signing keys | evidence: one entry per dependency with its digest |
+| Written by | you, and `akuapkg init`, `add`, `remove` | `akuapkg init`, `add`, `remove`, `lock`, `update`, `vendor add` |
+| Review question | do we want this dependency? | is this the expected digest and signature? |
 
-A PR that modifies `akua.lock` but not `akua.toml` is automatically suspicious (someone changed what they got without changing what they asked for). CI can lint for this.
-
-Merged-lockfile alternatives (npm's `package-lock.json`, Cargo's `Cargo.lock` *with* deps embedded in `Cargo.toml`) bundle both concerns differently; we take Go's split (intent vs evidence in separate files) and Cargo's structured-TOML lockfile (so we can express a richer dep graph than go.sum's line-per-hash format).
-
-### Naming
-
-- Lowercase throughout — matches `go.mod`, `poetry.lock`, `pnpm-lock.yaml`, `pyproject.toml` (every lockfile shipped after ~2014 went lowercase).
-- `.toml` extension on the manifest — honest about the format; editors pick up TOML highlighting automatically.
-- No extension on the lockfile — matches `Cargo.lock` / `poetry.lock` / `yarn.lock` / `package-lock.json` convention (lockfile name is descriptive; the tool knows the format).
-
----
+A change to `akua.lock` without a matching change to `akua.toml` deserves a
+close look in review. `akuapkg lock --check` fails CI when the two disagree.
 
 ## `akua.toml`
 
-### Top-level structure
-
 ```toml
 [package]
-name    = "my-app"
+name = "hello"
 version = "0.1.0"
-edition = "akua.dev/v1alpha1"                 # akua schema compat marker
-
-# (Optional) workspace members — for monorepos with many akua packages
-[workspace]
-members = ["./", "./apps/*"]
-
-# Dependencies — every import in KCL / Rego must be declared here
-[dependencies]
-# key = { source_type = "<ref>", version = "..." }
-```
-
-### Dependency forms
-
-| form | example | use when |
-|---|---|---|
-| OCI | `{ oci = "oci://ghcr.io/.../foo", version = "1.2.3" }` | published signed artifact (most common) |
-| Git | `{ git = "https://github.com/foo/bar", tag = "v1.2.3" }` | non-OCI-distributed sources |
-| Path | `{ path = "../shared" }` | workspace-local, dev-only |
-| Helm repo | `{ repo = "https://go.temporal.io/helm-charts", chart = "temporal", version = "0.62.0" }` | classic HTTPS Helm repository |
-| Replace | `{ oci = "...", replace = { path = "../fork" } }` | local-fork override for debugging |
-
-### Example
-
-```toml
-[package]
-name    = "payments-api"
-version = "3.2.0"
 edition = "akua.dev/v1alpha1"
 
 [dependencies]
-# KCL sources
-k8s       = { oci = "oci://ghcr.io/kcl-lang/k8s",                  version = "1.31.2" }
-cnpg      = { oci = "oci://ghcr.io/cloudnative-pg/charts/cluster", version = "0.20.0" }
-webapp    = { oci = "oci://ghcr.io/acme/charts/webapp",            version = "2.1.0" }
-
-# Rego policies (compile-resolved as data. imports — see policy-format.md)
-tier-prod = { oci = "oci://policies.akua.dev/tier/production",   version = "1.2.0" }
-kyv-sec   = { oci = "oci://policies.akua.dev/kyverno/security",  version = "2.0.0" }
-
-# Local fork for debugging
-our-glue  = { oci = "oci://pkg.acme.internal/glue", version = "0.3.0",
-              replace = { path = "../glue-fork" } }
+k8s = { oci = "oci://ghcr.io/kcl-lang/k8s", version = "1.35" }
+cert-manager = { url = "https://github.com/cert-manager/cert-manager/releases/download/v1.16.0/cert-manager.crds.yaml", crds = true }
+traefik = { oci = "oci://ghcr.io/traefik/helm/traefik", version = "37.1.1" }
 ```
 
-### Version resolution
+`akuapkg add` and `remove` rewrite the file in a canonical form: comments
+are dropped and each dependency becomes its own `[dependencies.<name>]`
+table. Both forms mean the same thing.
 
-- **Exact pin preferred.** `version = "1.2.3"` means that version, nothing else. No implicit semver-range resolution.
-- **Semver range allowed** (`version = "^1.2.0"`) for dependencies where minor updates are trusted. akua's resolver picks the highest matching version satisfying all constraints across the graph.
-- **Conflicts error out.** If two dependencies pin different versions of a shared transitive, the resolver fails with a clear message. Use `replace` to force a single version.
+### `[package]`
 
-### Fields
-
-| field | required | notes |
+| Field | Required | Notes |
 |---|---|---|
-| `[package].name` | yes | a valid KCL package identifier |
-| `[package].version` | yes | semver |
-| `[package].edition` | yes | `akua.dev/v1alpha1` for v0 compatibility |
-| `[package].strictSigning` | no | default `true`; set `false` to permit unsigned deps (discouraged) |
-| `[workspace].members` | no | glob patterns; enables monorepo |
-| `[dependencies]` | yes (can be empty) | see dependency forms above |
+| `name` | yes | a KCL identifier |
+| `version` | yes | the Package's version; `publish` uses it as the default tag |
+| `edition` | yes | `akua.dev/v1alpha1` |
+| `strict_signing` | no | require every remote dependency to be locked with a signature from `[signing].cosign_public_key`. Defaults to `true` when that key is set, `false` otherwise. See [Signing](#signing). |
 
----
+### `[dependencies]`
+
+Each key is the alias the Package imports, and the value names one source:
+
+| Source | Shape | Imported as |
+|---|---|---|
+| OCI | `{ oci = "oci://ghcr.io/org/chart", version = "1.2.3" }` | `charts.<name>`, `pkgs.<name>` or a KCL module, by artifact type |
+| Git | `{ git = "https://github.com/org/repo", tag = "v1.2.3" }` or `rev = "<commit>"` | as for OCI |
+| Helm repository | `{ repo = "https://charts.example.com", chart = "app", version = "1.2.3" }` | `charts.<name>` |
+| Local path | `{ path = "./chart" }` | as for OCI |
+| URL | `{ url = "https://example.com/crds.yaml", crds = true }` | CRD source only |
+
+Options on any dependency:
+
+| Option | Meaning |
+|---|---|
+| `crds = true` or `crds = "<file or dir>"` | generate typed schemas from the CustomResourceDefinitions in the source, imported as `crds.<name>.<group>.<version>`; see [typed-resources.md](typed-resources.md) |
+| `replace = { path = "../fork" }` | use a local copy of an `oci` or `git` dependency while `akua.lock` keeps pinning the canonical source; for local debugging only |
+
+`akuapkg add` writes these for you:
+
+```sh
+akuapkg add traefik --oci oci://ghcr.io/traefik/helm/traefik --version 37.1.1
+akuapkg add temporal --repo https://go.temporal.io/helm-charts --chart temporal --version 0.62.0
+akuapkg add upstream --git https://github.com/org/repo --tag v1.0.0
+akuapkg add shared --path ./shared
+akuapkg add k8s --k8s 1.36 --force
+```
+
+### Versions
+
+- **OCI** versions are tags, resolved to a manifest digest when locked.
+- **Helm repository** versions are an exact version or a semver requirement
+  (`">=0.60, <0.63"`); the highest matching chart in the repository's
+  `index.yaml` is locked.
+- **Git** dependencies take a `tag` or a full commit `rev`; the commit is
+  locked.
+- **Path** dependencies are hashed; `akuapkg verify` reports when the
+  directory no longer matches.
+
+`akuapkg update` re-resolves every dependency, or one with `--dep`, to what
+its source serves now and rewrites the lock entries.
+
+### Paths stay inside the workspace
+
+`path` dependencies and `replace` overrides must resolve inside the
+workspace; absolute paths and `..` escapes are rejected. `akuapkg publish`
+removes every `replace` before it packs, so consumers never inherit one.
+Renders fail on any `replace` when `AKUA_REJECT_REPLACE=1` is set or an
+agent runs akuapkg.
+
+### Signing
+
+```toml
+[signing]
+cosign_public_key = "./cosign.pub"     # verify OCI dependencies
+cosign_private_key = "./cosign.key"    # sign on publish
+```
+
+Both paths are relative to the workspace. With `cosign_public_key`, `add`,
+`lock`, `update` and `vendor add` refuse an OCI dependency without a valid
+cosign signature from that key (`E_COSIGN_SIG_MISSING`, `E_COSIGN_VERIFY`)
+and record the key in its lock entry. With `cosign_private_key`,
+`akuapkg publish` signs the pushed artifact and attaches a SLSA v1
+provenance attestation; an encrypted key's passphrase comes from
+`AKUA_COSIGN_PASSPHRASE`. Keys are ECDSA P-256 in PEM; keyless signing is
+not supported.
 
 ## `akua.lock`
 
-Cargo.lock-flavored TOML: one `[[package]]` entry per resolved artifact, alphabetically ordered, with optional `dependencies` for the transitive graph.
-
-### Format
-
 ```toml
-# akua.lock — machine-maintained. Never hand-edit.
-# Regenerated by `akuapkg add`, `akuapkg pull`, `akuapkg publish`, `akuapkg update`.
+# akua.lock - machine-maintained. Never hand-edit.
 
-version = 1   # lockfile format version; bumped on incompatible changes
-
-[[package]]
-name    = "cnpg"
-version = "0.20.0"
-source  = "oci://ghcr.io/cloudnative-pg/charts/cluster"
-digest  = "sha256:3c5d9e7f1a2b4c6d8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d"
-signature = "cosign:sigstore:cloudnative-pg"
-
-[[package]]
-name    = "webapp"
-version = "2.1.0"
-source  = "oci://ghcr.io/acme/charts/webapp"
-digest  = "sha256:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
-signature = "cosign:key:acme"
-dependencies = [
-  "common@2.20.0",
-]
-
-[[package]]
-name    = "common"
-version = "2.20.0"
-source  = "oci://ghcr.io/bitnamicharts/common"
-digest  = "sha256:f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0"
-signature = "cosign:sigstore:bitnamicharts"
-```
-
-### Fields per `[[package]]`
-
-| field | required | notes |
-|---|---|---|
-| `name` | yes | matches the `[dependencies]` key in `akua.toml` |
-| `version` | yes | exact resolved semver (not a range) |
-| `source` | yes | full source ref: `oci://…`, `git+https://…`, `path+file://…`, or `helm+<repo-url>#<chart>` |
-| `digest` | yes | content-addressable source hash: `sha256:` for OCI/path/helm-repo deps; `git:<commit-sha>` for git deps |
-| `vendor_digest` | no | `sha256:` hash of the vendored on-disk tree when it differs from `digest`; used by `akuapkg vendor check` for git deps without losing the commit pin |
-| `signature` | conditional | cosign signature. Keyless: `cosign:sigstore:<issuer>`. Keyed: `cosign:key:<identity>`. Required unless `[package].strictSigning = false` in `akua.toml` |
-| `dependencies` | no | `["name@version", …]` — transitive edges for graph walks |
-| `attestation` | no | SLSA attestation digest; present when the dep's author publishes one alongside |
-| `replaced` | no | `{ path = "…" }` when a local replace is active |
-| `yanked` | no | `true` for retracted versions |
-
-### Rules
-
-- **Alphabetical order by `name`.** Stable diffs even across unrelated PRs.
-- **One `[[package]]` per resolved (name, version).** Two major versions of the same dep means two entries.
-- **No mutable metadata.** No timestamps, no resolver versions, no author info. Everything is deterministic.
-- **No comments in generated content.** The tool-written `[[package]]` entries are clean; put explanations in `akua.toml`.
-- **Trailing newline.** POSIX file discipline.
-
-### Helm-repo lock entries
-
-A dep resolved from a classic HTTPS Helm repository locks with:
-
-```toml
-[[package]]
-name    = "temporal"
-version = "0.62.0"
-source  = "helm+https://go.temporal.io/helm-charts#temporal"
-digest  = "sha256:<tgz-sha256>"
-```
-
-`source` format is `helm+<repo-url>#<chart>`. `digest` is the `sha256:` hash of the downloaded `.tgz`, content-pinned and verified on every subsequent pull. No cosign signature (`signature` field absent) — Helm repositories distribute plain tarballs without a signing layer. Private repos use the host-keyed `--auth` / `auth:` credential at fetch time; credentials never appear in `akua.lock`.
-
-### What `akua.lock` does NOT contain
-
-- Source code (not a vendor directory — see `akuapkg vendor` for that)
-- Version ranges (those live in `akua.toml`)
-- User-facing comments
-
----
-
-## Resolution workflow
-
-### `akuapkg add <kind> <ref> --version=<v>`
-
-1. Reads current `akua.toml`
-2. Adds the new entry to `[dependencies]`
-3. Fetches the artifact; computes digest
-4. Verifies cosign signature
-5. Updates `akua.lock` — inserts/updates the `[[package]]` entry; adds transitive deps alphabetically
-6. If the new dep transitively pulls others, repeats for each
-
-Result: both `akua.toml` and `akua.lock` updated in one atomic operation.
-
-### `akuapkg verify` (CI gate)
-
-1. Reads `akua.toml` and `akua.lock`
-2. Resolves every dep from `akua.toml`
-3. Compares expected (manifest) vs locked (lockfile) digest + signature
-4. Exits 0 if everything matches; non-zero otherwise
-
-Run in CI on every PR to catch lockfile tampering.
-
-### `akuapkg update [dep]`
-
-Updates to the highest allowed version per `akua.toml` constraints; rewrites the relevant `[[package]]` entries in `akua.lock`. Leaves other deps untouched unless their constraints also match a new version.
-
-### `akuapkg vendor` (optional)
-
-Materializes a dependency's bytes into `.akua/vendor/<name>/` and pins the source digest in `akua.lock`. The resolver prefers the vendored copy across all dep kinds (`path` / `oci` / `git` / `helm`), so the canonical source can be deleted post-vendor and `akuapkg render` still succeeds offline. For git deps, `digest` stays `git:<commit-sha>` and `vendor_digest` stores the vendored tree hash for local drift checks. Required for air-gapped builds, optional otherwise.
-
-**Bytes-tied lockfile metadata.** Cosign signatures, SLSA attestations, transitive dependency lists, `yanked`, and Kyverno-converter fields all bind to a specific digest. When a re-vendor or version bump produces a new digest, those fields are dropped on upsert rather than written as `(digest=B, sig=sig(A))` entries that no consumer can verify. The `source` / `version` / `digest` triple is always rewritten; everything else is conditional on `prior.digest == new.digest`.
-
----
-
-## Workspaces
-
-For monorepos with multiple akua packages:
-
-```
-platform/
-├── akua.toml                    # workspace root
-├── akua.lock
-├── apps/
-│   ├── api/
-│   │   └── package.k            # member package
-│   ├── worker/
-│   │   └── package.k
-│   └── dashboard/
-│       └── package.k
-└── policies/
-    └── org-baseline/
-        └── policy.rego          # member policy module
-```
-
-Workspace root `akua.toml`:
-
-```toml
-[workspace]
-members = ["./apps/*", "./policies/*"]
-
-[dependencies]
-# Shared deps used by all members
-k8s = { oci = "oci://ghcr.io/kcl-lang/k8s", version = "1.31.2" }
-```
-
-Members inherit workspace dependencies; they may override in a member-local `akua.toml` (minimal). Cross-member imports work as `path`-type deps.
-
----
-
-## Compatibility with kpm
-
-akua's `akua.toml` is not the same as KCL's `kcl.mod`. We don't try to be. akua packages can contain a `kcl.mod` in their source tree for pure-KCL consumers who want to use upstream `kcl run` against the package directly; akua's resolver honors either file when it's unambiguous.
-
-**Pulling kpm-published packages.** OCI deps published by `kpm push` (e.g. everything under `ghcr.io/kcl-lang/*`) work transparently through the same `[dependencies]` shape Helm charts use. The fetcher detects the artifact family from the manifest's media type + `org.kcllang.package.*` annotations, unpacks the plain tar, and registers each as a typed `ExternalPkg` entry inside the wasmtime render sandbox — so a Package.k can write `import k8s.api.apps.v1` and have it resolve against the upstream schema bundle. See [examples/10-kcl-ecosystem/](../examples/10-kcl-ecosystem/) for a worked example.
-
-See [the broader architecture note](https://github.com/cnap-tech/cortex/blob/docs/cnap-masterplan/workspaces/robin/akua-masterplan.md) for the "akua is the outer package manager; kpm is the inner KCL-layer tool" framing.
-
----
-
-## Example: a real workspace
-
-```
-./
-├── akua.toml
-├── akua.lock
-├── apps/
-│   ├── api/
-│   │   └── package.k
-│   └── worker/
-│       └── package.k
-├── policies/
-│   └── production.rego
-└── environments/
-    ├── dev/inputs.yaml
-    ├── staging/inputs.yaml
-    └── production/inputs.yaml
-```
-
-`akua.toml`:
-
-```toml
-[package]
-name    = "acme-platform"
-version = "0.1.0"
-edition = "akua.dev/v1alpha1"
-
-[workspace]
-members = ["./apps/*"]
-
-[dependencies]
-k8s       = { oci = "oci://ghcr.io/kcl-lang/k8s",                  version = "1.31.2" }
-cnpg      = { oci = "oci://ghcr.io/cloudnative-pg/charts/cluster", version = "0.20.0" }
-webapp    = { oci = "oci://ghcr.io/acme/charts/webapp",            version = "2.1.0" }
-tier-prod = { oci = "oci://policies.akua.dev/tier/production",   version = "1.2.0" }
-kyv-sec   = { oci = "oci://policies.akua.dev/kyverno/security",  version = "2.0.0" }
-```
-
-`akua.lock` (after resolution):
-
-```toml
 version = 1
 
 [[package]]
-name    = "cnpg"
-version = "0.20.0"
-source  = "oci://ghcr.io/cloudnative-pg/charts/cluster"
-digest  = "sha256:d4e5f6…"
-signature = "cosign:sigstore:cloudnative-pg"
+name = "cert-manager"
+version = "url"
+source = "url+https://github.com/cert-manager/cert-manager/releases/download/v1.16.0/cert-manager.crds.yaml"
+digest = "sha256:6b81e668c80301955ea3c618a0e29ceb98b54d1d80a7b0082c77e5c7d827b41b"
 
 [[package]]
-name    = "k8s"
-version = "1.31.2"
-source  = "oci://ghcr.io/kcl-lang/k8s"
-digest  = "sha256:a1b2c3…"
-signature = "cosign:sigstore:kcl-lang"
+name = "k8s"
+version = "1.35"
+source = "oci://ghcr.io/kcl-lang/k8s"
+digest = "sha256:078b87bde17d1e1ec6670372e82de668bdbac36417878bb89fe3385d605759b7"
 
 [[package]]
-name    = "kyv-sec"
-version = "2.0.0"
-source  = "oci://policies.akua.dev/kyverno/security"
-digest  = "sha256:j0k1l2…"
-signature = "cosign:sigstore:akua-release"
-
-[[package]]
-name    = "tier-prod"
-version = "1.2.0"
-source  = "oci://policies.akua.dev/tier/production"
-digest  = "sha256:g7h8i9…"
-signature = "cosign:sigstore:akua-release"
-
-[[package]]
-name    = "webapp"
-version = "2.1.0"
-source  = "oci://ghcr.io/acme/charts/webapp"
-digest  = "sha256:m3n4o5…"
-signature = "cosign:key:acme"
+name = "prometheus"
+version = "v0.80.0"
+source = "git+https://github.com/prometheus-operator/prometheus-operator@v0.80.0"
+digest = "git:56cc9eea5f8bffedbc4a77ae08555dd5f510ed76"
 ```
 
-CI runs `akuapkg verify` on every PR; any digest mismatch or missing signature fails the build.
+Entries are sorted by name, carry no timestamps, and end with a newline, so
+the file diffs cleanly.
+
+| Field | Notes |
+|---|---|
+| `name` | the `[dependencies]` key |
+| `version` | the resolved version (`local` for paths, `url` for URLs) |
+| `source` | `oci://...`, `git+https://...@<ref>`, `helm+<repo-url>#<chart>`, `path+file://...` or `url+https://...` |
+| `digest` | `sha256:` of the OCI blob, chart archive, file or directory; `git:<commit>` for git |
+| `vendor_digest` | `sha256:` of the vendored tree under `.akua/vendor/<name>/`, when it differs from `digest` |
+| `signature` | `cosign:key:sha256:<key id>`: the key that verified this OCI dependency when it was locked. Only OCI dependencies carry one; git, Helm-repository and URL sources have no signing layer |
+| `crds_digest` | for a CRD dependency, `sha256:` of its generated schemas under `.akua/crds/<name>/` as `lock` wrote them; a render uses that directory only while it has this digest |
+| `replaced` | `{ path = "..." }` while a `replace` is active |
+
+A new digest drops the fields that were bound to the old one, such as
+`signature`, unless resolution verified them again.
+
+`signature` records which key verified the bytes at lock time; it is not a
+signature itself. A later render does not verify again: it serves cached or
+vendored copies, and generated CRD schemas, only when they match the digests
+in `akua.lock` (and, with a key configured, only when the entry names that
+key). Trust in those copies therefore rests on a reviewed `akua.lock` and
+its digests, so review lock changes like code.
+
+## Workflows
+
+### Locking
+
+`akuapkg add` adds the entry to `akua.toml`, fetches the source, verifies its
+signature when a key is configured, and writes the lock entry and any
+generated CRD schemas. `akuapkg lock` does the same for everything in
+`akua.toml`; `akuapkg lock --check` changes nothing and fails when
+`akua.lock` or `.akua/crds/` would change.
+
+### Verifying (CI)
+
+`akuapkg verify`:
+
+1. checks that every declared dependency is locked, every locked one is
+   declared, and path dependencies still match their digest;
+2. under `strict_signing`, requires each remote entry's `signature` to name
+   the configured key: `missing-signature` when there is none,
+   `signature-mismatch` for another key, `signature-unverifiable` when
+   `strict_signing = true` is set without a key;
+3. without strict signing, lists unsigned remote dependencies as warnings;
+4. exits 0 when there is no violation, 1 otherwise.
+
+`akuapkg verify --tarball PKG.tgz --sig PKG.tgz.sig` checks a packed Package
+against its detached signature instead.
+
+A render with a key configured uses a cached or vendored OCI dependency only
+when its lock entry records that key; otherwise it fetches and verifies
+again, or, with `--offline`, fails with `E_COSIGN_SIG_MISSING`.
+
+### Vendoring (offline renders)
+
+`akuapkg vendor add <name>` copies a dependency into `.akua/vendor/<name>/`.
+Renders prefer the vendored copy over the cache and the network, so with
+every dependency vendored, `akuapkg render --offline` needs neither.
+`akuapkg vendor check` reports drift between the vendor tree and the lock;
+`vendor list` shows what is vendored. `akuapkg pack` includes the vendor
+tree unless you pass `--no-vendor`.
+[examples/12-vendor-offline](../examples/12-vendor-offline/) shows the
+layout.
+
+## KCL modules from OCI
+
+OCI artifacts published with KCL's `kpm`, such as everything under
+`ghcr.io/kcl-lang`, work as ordinary dependencies. akuapkg recognizes them
+by their manifest annotations and makes them importable by alias, as with
+`import k8s.api.apps.v1`. akuapkg reads `akua.toml`, not KCL's `kcl.mod`.
+
+## Related topics
+
+- [Typed resources](typed-resources.md)
+- [Package format](package-format.md)
+- [Security model](security-model.md#supply-chain)

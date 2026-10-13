@@ -77,6 +77,21 @@ export const ERROR_CATALOG: ReadonlyArray<ErrorCatalogEntry> = [
       "An `oci` dependency URL embeds credentials (a `user:password@` part before the host). Pass credentials with `--auth`, `--auth-file` or `auth.toml` instead."
   },
   {
+    code: "E_MANIFEST_CRDS_INVALID",
+    section: "Manifest and lockfile",
+    summary:
+      "A CRD dependency is declared wrong: a `url` source without `crds = true`, a `url` that is not `https://` or that sets `version`, `tag` or `rev`, or a `crds` path that is absolute or climbs out of the source with `..`.",
+    fix: [
+      "A `url` dependency is one CRD manifest file, pinned by digest in `akua.lock`; a `crds` path is relative to the source:",
+      "",
+      "```toml",
+      "[dependencies]",
+      "cert-manager = { url = \"https://github.com/cert-manager/cert-manager/releases/download/v1.16.0/cert-manager.crds.yaml\", crds = true }",
+      "prometheus = { git = \"https://github.com/prometheus-operator/prometheus-operator\", tag = \"v0.80.0\", crds = \"example/prometheus-operator-crd\" }",
+      "```"
+    ].join("\n")
+  },
+  {
     code: "E_LOCK_MISSING",
     section: "Manifest and lockfile",
     summary: "The workspace has no `akua.lock`. Run `akua pkg lock` to create it."
@@ -103,6 +118,21 @@ export const ERROR_CATALOG: ReadonlyArray<ErrorCatalogEntry> = [
     section: "Manifest and lockfile",
     summary:
       "A dependency in `akua.toml` failed to resolve: a missing path, a path outside the workspace, an OCI, Helm or git fetch failure, or a digest that disagrees with `akua.lock`."
+  },
+  {
+    code: "E_CRDS_INVALID",
+    section: "Manifest and lockfile",
+    summary:
+      "A CRD dependency yields no typed schemas: its `crds` path names nothing in the source, the files under it hold no `CustomResourceDefinition`, a CRD is malformed, or two files define the same kind and version differently.",
+    fix:
+      "Point `crds` at the directory or file that holds the CRDs (for a Helm chart, `crds = true` reads `crds/` and the templates), and narrow it when the source carries several copies of the same CRD."
+  },
+  {
+    code: "E_CRDS_STALE",
+    section: "Manifest and lockfile",
+    summary:
+      "The generated schemas under `.akua/crds/<name>/` were made from another source, version, `crds` path or digest than `akua.toml` and `akua.lock` declare now, typically after editing `akua.toml` by hand, or their files no longer match the `crds_digest` `akua.lock` records (an edited schema, or a lock written before that field). Rendering refuses them instead of typing resources against the wrong schemas; `akua pkg lock --check` also reports a directory that is missing or differs from what `lock` would write.",
+    fix: "Run `akua pkg lock` to resolve the dependency again and regenerate `.akua/crds/`, then commit both."
   },
   {
     code: "E_AUTH_PARSE",
@@ -193,12 +223,13 @@ export const ERROR_CATALOG: ReadonlyArray<ErrorCatalogEntry> = [
     code: "E_RENDER_BUDGET_DEADLINE",
     section: "Rendering",
     summary:
-      "The render ran out of its CPU budget (the Package's own KCL, or an engine call) before finishing. The command exits 6, the timeout exit code."
+      "The render ran out of its CPU budget before finishing: the Package's own KCL, or its Helm and Kustomize calls, which share one budget per render however many there are. The command exits 6, the timeout exit code."
   },
   {
     code: "E_RENDER_BUDGET_MEMORY",
     section: "Rendering",
-    summary: "The render's sandbox reached its memory cap and was stopped."
+    summary:
+      "The render's sandbox reached its memory cap and was stopped, or a Helm or Kustomize call returned more than the host accepts from an engine (64 MiB)."
   },
   {
     code: "E_STRICT_UNTYPED_CHART",
@@ -216,7 +247,7 @@ export const ERROR_CATALOG: ReadonlyArray<ErrorCatalogEntry> = [
     code: "E_COSIGN_SIG_MISSING",
     section: "Rendering",
     summary:
-      "A cosign public key is configured but the registry has no `.sig` sidecar for the artifact, or it is malformed. The publisher has not signed this version."
+      "A cosign public key is configured but the registry has no `.sig` sidecar for the artifact, or it is malformed: the publisher has not signed this version. Offline, it also means `akua.lock` does not record the configured key for a cached dependency; run `akua pkg lock` online to verify and record it."
   },
   // Commands
   {

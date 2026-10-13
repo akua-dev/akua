@@ -13,9 +13,20 @@ export interface ReactorSpec {
   readonly entry: string
 }
 
-/** A compiled engine. `call` is synchronous end to end and instantiates on first use. */
+/**
+ * What the engine calls of one render have spent so far, shared with every
+ * render nested in it: engine fuel is a budget per render, not per call.
+ */
+export interface EngineBudget {
+  fuelSpent: number
+}
+
+/**
+ * A compiled engine. `call` is synchronous end to end, instantiates on first
+ * use, and charges `budget` for the work it does.
+ */
 export interface Reactor {
-  readonly call: (input: Uint8Array) => Effect.Effect<Uint8Array, EngineError | GuestFailure>
+  readonly call: (input: Uint8Array, budget: EngineBudget) => Effect.Effect<Uint8Array, EngineError | GuestFailure>
 }
 
 /**

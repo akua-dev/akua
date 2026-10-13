@@ -1,142 +1,187 @@
 # Security model
 
-akua is a **sandboxed-by-default** render substrate. Every render runs inside a wasmtime WASI sandbox with memory / CPU / wall-clock caps and capability-model filesystem preopens. The invariant lives in [CLAUDE.md](../CLAUDE.md); this document records what that actually means, what's guaranteed, and what's not.
-
----
+This page describes what akuapkg guarantees when it renders a Package you do
+not trust, how each guarantee is enforced, and where the guarantees end. For
+the reasoning behind the design, and the Helm and Kustomize advisories it
+responds to, read [why.md](why.md) first.
 
 ## Threat model
 
-**Who is the adversary?** The Package itself — author of the KCL program + the charts, overlays, policies it depends on.
+**The adversary is the Package**: the author of `package.k` and of every
+chart, kustomization, CRD source and KCL module it depends on. akuapkg is
+meant to render such Packages on machines that hold something worth
+protecting: a developer laptop with kubeconfigs, a CI runner with deploy
+credentials, a service that renders Packages for many tenants.
 
-**Why?** akua is designed to run in shared multi-tenant environments (hosted build services, CI pipelines accepting PR-submitted Packages, in-browser dev loops loading third-party examples). In all three, the Package is untrusted by definition.
+A render must not let the Package:
 
-**What must we prevent?**
+1. read files outside the Package and the dependencies `akua.toml` declares;
+2. write files anywhere except the output directory the caller chose;
+3. make network requests;
+4. start processes or load plugins;
+5. read environment variables or credentials;
+6. exhaust the host's memory or CPU;
+7. change its output based on when or where it runs.
 
-1. Reading files outside the Package directory and its explicit dep scope
-2. Writing files outside the designated output directory
-3. Making network requests
-4. Spawning subprocesses
-5. Exhausting host memory
-6. Exhausting host CPU (runaway loops, pathological schema evaluation)
-7. Exceeding a wall-clock deadline
-8. Escaping the sandbox to compromise the host process
+Out of scope, by design:
 
-**What are we NOT trying to prevent?**
+- **What the manifests say.** akuapkg renders what the Package declares,
+  including privileged pods or cluster-admin bindings. Policy and admission
+  control decide what may reach a cluster.
+- **Side channels** such as timing.
+- **The first fetch of a dependency.** See [Supply chain](#supply-chain).
 
-- **Declarative mischief** in the Package's rendered output. akua produces whatever YAML the author writes. Policy evaluation ([docs/policy-format.md](policy-format.md)) is the layer that catches "this Package declares a root-privileged Deployment." The renderer's job is faithful execution of the Package, not moral judgment.
-- **Side-channel leaks** (timing, memory-access patterns). wasmtime provides strong isolation but not constant-time; a sophisticated adversary could extract bits via timing. Not our bar.
-- **Bugs in the dep supply chain beyond what the lockfile catches.** `akua.lock` pins OCI deps by sha256 of the chart blob; a drift between what the lockfile recorded and what the registry now serves is rejected (`LockDigestMismatch`). But if the *initial* `akuapkg add` pulled from a compromised registry that served a malicious chart and recorded its digest, every subsequent render faithfully reproduces it. Phase 6 (cosign verification + SLSA attestation walk) closes this gap.
+## Architecture
 
----
-
-## Execution model
-
-**The render path runs in a wasmtime WASI sandbox.** Concretely:
-
-- **`akua-render-worker`** — akua's render pipeline compiled to `wasm32-wasip1`, AOT-compiled to `.cwasm` at akua's build time.
-- **wasmtime host** — akua's native binary loads the `.cwasm` once per process and instantiates per-render.
-- **Per-render `Store`** — fresh `WasiCtx` with the tenant's preopens, fresh `StoreLimits` with a hard memory cap, fresh epoch deadline. Dropped on render completion.
-
-### One Engine, many Stores — with a plugin bridge
-
-akua follows wasmtime's documented pattern: **one process-global `Engine`, one `Linker` of host imports, many per-invocation `Store`s**. The render worker and every engine plugin (helm, kustomize, future kro/CEL) share the same Engine so that:
-
-- JIT-compiled code is compiled once and reused across all Stores.
-- Type interning, compat-hash checks, and trap dispatch live in one place — no duplication, no inter-Engine TLS races.
-- Per-invocation isolation still holds: each render gets its own `Store`, and plugin calls execute in their own separate `Store` too.
-
-When a Package calls `helm.template(...)` or `kustomize.build(...)` from inside the render worker:
-
-```
-akuapkg-cli (native Rust)
-  └ Engine (shared)
-      ├ Store A — render worker, KCL evaluator paused in host import
-      │     ⇣ kcl_plugin_invoke_json_wasm (wasm import)
-      │     ⇡ host Rust dispatches to registered plugin handler
-      │         ⇣
-      └ Store B — helm.wasm, runs the Go helm engine
-            ⇡ manifests bytes
-      ⇡ host writes response into Store A's guest memory, returns ptr
-      ⇡ KCL continues in Store A
+```text
+akuapkg (Bun + Effect host)
+  - reads the Package into memory, resolves dependencies, writes the output
+  - Wasmtime, through a small native addon
+      - KCL render worker     wasm32-wasip1, read-only copy of the Package
+          | one host import: kcl_plugin_invoke_json_wasm
+          v
+      - host plugin dispatch  helm.template, kustomize.build, pkg.render
+          v
+      - Helm engine           wasm32-wasip1, no filesystem
+      - Kustomize engine      wasm32-wasip1, no filesystem
 ```
 
-Both Stores live on the same Engine and the same OS thread. Wasmtime's TLS tracks which Store is currently active; the paused Store resumes correctly when the plugin callout returns. Nested Engines were explicitly ruled out — they share process-global signal handlers in an untested way and duplicate the JIT cache. See [docs/spikes/wasmtime-multi-engine.md](spikes/wasmtime-multi-engine.md) for the research + verification.
+The host is TypeScript on Bun; Wasmtime runs inside it through a
+[napi-rs](https://napi.rs) addon (`native/`). The KCL runtime is compiled to
+`wasm32-wasip1` as the render worker; Helm v4.1.4 and Kustomize api v0.21.3
+are compiled from Go to `wasip1`. All modules are compiled to machine code at
+build time and embedded in the executable, so the shipped binary contains no
+compiler and loads no code from disk.
 
-### Plugin bridge boundary
+When `package.k` calls a chart or a kustomization, the worker calls its one
+host import. The host looks the call up in a closed plugin registry (a
+Package cannot register plugins), builds the engine's input from files it
+already holds in memory, calls the engine and hands the result back to the
+worker.
 
-The `env::kcl_plugin_invoke_json_wasm` import is the one hole in the worker's sandbox — the only place untrusted KCL can call out to host code. It has exactly one job: read three JSON-string arguments from the guest's linear memory, dispatch to akua-core's plugin registry on the host, allocate response bytes in the guest via the worker's exported `akua_bridge_alloc`, and hand back a pointer. The host never runs arbitrary guest-supplied code; only the dispatcher and its registered handlers. Plugin handlers themselves run in their own Store, not on the host — so even a compromised helm engine can't escape to the native process.
+## What the sandbox guarantees
 
-The bridge emits a one-line trace per call under `AKUA_BRIDGE_TRACE=1` (stderr), useful for debugging misrouted plugin invocations.
-
-## What's guaranteed
-
-| Threat | Defense |
+| Threat | Enforcement |
 |---|---|
-| Read files outside scope | **Preopened dirs only.** WASI is a capability model: `WasiCtxBuilder::preopened_dir(host_path, guest_path, DirPerms::READ, FilePerms::READ)` hands exactly one directory to the guest. `/etc`, `/proc`, `$HOME`, `/var/run/secrets` — all unreachable because they're not mounted. There is no ambient filesystem; nothing to escape to. |
-| Write files outside scope | Same mechanism. Output dir preopened with `DirPerms::MUTATE + FilePerms::WRITE`; nothing else writable. |
-| Network | **wasip1 has no socket syscalls, period.** Not "denied by default" — denied by construction. No `connect()`, no DNS, no TLS initiation. The guest cannot fabricate a socket. |
-| Subprocess | No `fork`/`exec` in wasip1. Shell-out is unavailable at the host-ABI level. |
-| Memory | `StoreLimitsBuilder::memory_size(256 << 20)` caps each render Store at 256 MiB (tunable). `memory.grow` fails beyond the cap; wasm traps. Default: **256 MiB per render**. |
-| CPU (wall-clock) | `Config::epoch_interruption(true)` + background thread calling `engine.increment_epoch()` on a fixed tick. `store.set_epoch_deadline(K)` traps when the current epoch exceeds deadline. Cheap to check (compiled into every loop backedge). Default: **30 ticks × 100 ms/tick = 3 s wall-clock deadline per render**. Engine-plugin Stores (helm, kustomize) opt out with `deadline = u64::MAX` — the host-Rust caller above them owns whole-call timeouts. Per-invocation fuel-based instruction counting is not enabled today; can return later without ABI impact. |
-| Stack overflow | `Config::max_wasm_stack(bytes)` caps the wasm-side stack. Default 512 KiB; lower for defense-in-depth. |
-| Instance count / table bloat | `StoreLimitsBuilder::instances(N)`, `tables(N)`. Prevents wasm from inflating host memory via many small allocations. |
+| Reading host files | The engines get no preopened directory: charts and kustomizations arrive as in-memory archives. The worker gets one read-only preopen, a private temporary copy of the Package. Before that copy is made, every path is resolved to its real path and a symlink that leaves the Package fails the render (`E_PATH_ESCAPE`). Paths a Package passes to `helm.template` or `kustomize.build` resolve inside that copy; absolute paths and `..` escapes are rejected. |
+| Writing host files | Preopens are read-only. Only the host writes, and only the output directory. |
+| Network | WASI preview 1 has no sockets. The guests cannot open a connection or resolve a name. |
+| Processes and plugins | WASI preview 1 has no process API. Helm plugins, post-renderers and getters, and Kustomize exec, Go and container plugins and the `helmCharts` generator are not reachable. |
+| Environment and credentials | The guests get an empty environment. Credentials stay in the host, which uses them only to fetch dependencies. |
+| Cluster access | The Helm engine is built without a Kubernetes client, so `lookup` has no cluster to query. |
+| Memory | Each sandbox has a hard linear-memory cap: 256 MiB for the worker, 2 GiB for each engine. Growing past it stops the render with `E_RENDER_BUDGET_MEMORY`. |
+| Large results | Standard output and standard error are captured in memory, capped at 64 MiB each. An engine result above 64 MiB is refused before the host copies it (`E_RENDER_BUDGET_MEMORY`). |
+| CPU | Wasmtime fuel, roughly one unit per instruction. The Package's own KCL gets one budget per run (a fraction of a second); all Helm and Kustomize calls of one render share a second budget of about 25 seconds, nested `pkg.render` calls included. Running out stops the render with `E_RENDER_BUDGET_DEADLINE` and exit code 6. |
+| Runaway composition | Nested `pkg.render` calls are capped at depth 16 (`E_RENDER_BUDGET_DEPTH`). |
+| Time and randomness | The wall clock is fixed at the Unix epoch. Non-cryptographic randomness is a seeded generator. Cryptographic randomness is real, so a chart that generates keys (`genCA`, `genSignedCert`) does not hand every user the same private key. Helm's `rand*` functions use it too. |
+| A failed engine | An engine instance is reused across calls only while its calls succeed. After a trap, exhausted fuel or a denied allocation, the instance is discarded and the next call gets a fresh one. |
 
-## What's enforced in Package code itself (belt and suspenders)
+The guest ABI is what makes these guarantees structural. The worker and the
+engines are linked against WASI preview 1 (clocks, randomness, and file
+descriptors for in-memory standard streams and the read-only preopen) and,
+for the worker, the one KCL plugin import. There is nothing else to call.
 
-Even inside the sandbox, akua applies additional invariants on the Package's own code:
+### Values reach Helm as JSON
 
-- **Path-traversal guard** on every plugin callable's path argument. `kcl_plugin::resolve_in_package` canonicalizes + asserts-under-package-dir + resolves symlinks. A Package that passes `"../../etc/passwd"` to `pkg.render(...)` gets a typed error, not a render. Absolute paths are accepted only when they fall under an `allowed_roots` entry the renderer registered — today, that's exactly the set of resolved `charts.*` deps (path-based dep dir or OCI cache dir for the blob we just pulled). Nothing else.
-- **KCL language-level sandbox.** The KCL language itself has no `os.read`, `http.get`, env reads, or `time.now()`. A pure-KCL Package is deterministic by construction. This is upstream KCL's own invariant.
-- **Plugin registry is closed.** Only akua-core can register plugins (`kcl_plugin::register` is pub but only called at akua startup). Packages cannot invent their own.
-- **Strict render mode** (`--strict`): reject raw-string paths in plugin callables. Forces typed `charts.*` imports resolved via `akua.toml`. Default for `akuapkg publish` and `akua serve`; optional for interactive `akuapkg render`.
+The Helm engine parses values as YAML 1.1, where `NO` is `false` and `0b101`
+is `5`. The host serializes values as JSON, which is valid YAML with every
+string quoted, so a KCL string reaches the chart as a string.
 
----
+### Deterministic output
 
-## What's NOT shipped yet
+Given the same Package, inputs, `akua.lock` and akuapkg version, a render is
+byte-identical unless a chart calls one of Helm's random functions
+(`randAlphaNum`, `genCA` and the like): the clock is fixed, maps are written
+in a stable order and dependencies are pinned by digest. KCL itself has no file, network or
+environment functions.
 
-This is the current-state gap vs the target. See [docs/roadmap.md](roadmap.md) phases for timing.
+## Outside the sandbox: dependency resolution
 
-| Guarantee | State today | Phase |
-|---|---|---|
-| Path-traversal rejection in plugin handlers | Shipped — `resolve_in_package` + `allowed_roots` | ✅ Phase 0 |
-| `helm.template` / `kustomize.build` via WASM engines | Shipped — no shell-out, wasmtime-hosted | ✅ Phases 1 + 3 |
-| Typed `charts.*` imports + lockfile digests | Shipped — path + OCI, replace override | ✅ Phase 2a, 2b A+B |
-| `akuapkg render --strict` rejects raw chart paths | Shipped — `E_STRICT_UNTYPED_CHART` | ✅ Phase 2b C |
-| `akuapkg verify` path-dep digest drift detection | Shipped — `PathDigestDrift` / `PathMissing` | ✅ Phase 2b C |
-| Render worker wrapped in wasmtime | Shipped — every render runs inside a `Store` with memory/epoch caps + capability-model preopens | ✅ Phase 4 |
-| `akua serve` per-tenant isolation | Verb doesn't exist | Phase 5 |
-| cosign keyed verification on OCI deps | Shipped — `[signing] cosign_public_key`, ECDSA P-256 | ✅ Phase 6 A |
-| `akuapkg publish` with cosign sign-by-default | Shipped — P-256 PKCS#8 PEM private keys | ✅ Phase 7 A |
-| `akuapkg pull` with manifest digest verify | Shipped | ✅ Phase 7 A |
-| cosign keyless (fulcio + rekor) verification | Not implemented | Phase 6 B |
-| SLSA v1 attestation generation on publish | Shipped — DSSE envelope, in-toto v1 statement | ✅ Phase 7 B |
-| `akuapkg verify` attestation chain walk | Shipped — pulls `.att` sidecars + DSSE verify + subject-digest check for every OCI dep | ✅ Phase 7 C |
-| Recursive attestation walk over transitive deps | Not implemented — needs published Package to attest its own deps | Phase 7 C (follow-up) |
-| Encrypted cosign private keys — PKCS#8 PBES2 | Shipped — `$AKUA_COSIGN_PASSPHRASE` env var | ✅ Phase 7 C |
-| OCI-vendored deps → network-free `akuapkg render` after pull | Shipped — `.akua/vendor/<name>/` convention | ✅ Phase 7 C |
-| HSM / cosign-native key format | Not implemented | Phase 7 D |
-| Git dep checkout via `gix` | Shipped — pure Rust, no shell-out | ✅ Phase 2b C |
-| Private-repo OCI auth (docker config / akuapkg auth.toml) | Shipped — Basic + bearer PAT | ✅ Phase 2b C |
-| Docker credential helpers | Not implemented — would require shell-out | Won't ship |
+The host, not the sandbox, fetches dependencies. It is the escape boundary,
+so it is strict:
 
----
+- **Only declared sources.** `add`, `lock`, `update`, `vendor` and `pull`
+  fetch exactly what `akua.toml` or the command line names. A chart's own
+  `Chart.yaml` dependencies are never fetched by the engine.
+- **Pinned by digest.** Every OCI, git, Helm-repository and URL dependency is
+  pinned in `akua.lock`: the blob or file `sha256`, or the git commit. A
+  render or pull whose bytes do not match fails before anything is
+  unpacked.
+- **Bounded downloads.** OCI manifests and Helm indexes are capped at 32 MiB,
+  OCI blobs and Helm chart archives at 1 GiB, CRD URL files at 64 MiB, and
+  any decompressed archive at 2 GiB.
+- **Strict archives.** Absolute paths, `..` segments and non-UTF-8 names
+  fail the archive; symlinks, hard links and devices are skipped.
+- **HTTPS.** Registries and repositories are reached over HTTPS, except
+  loopback registries. A Helm repository index served over `https://` that
+  points a chart download at `http://` is refused.
+- **Local paths stay local.** `path` dependencies and `replace` overrides
+  must stay inside the workspace. `akuapkg publish` strips every `replace`
+  before it packs, so consumers never inherit a publisher's local override.
+  With `AKUA_REJECT_REPLACE=1`, or when an agent runs akuapkg, a render that
+  touches a `replace` fails.
+- **Offline renders.** With dependencies cached or vendored under
+  `.akua/vendor/`, `akuapkg render --offline` makes no network request.
 
-## Why no shell-out, ever
+## Supply chain
 
-A prior design considered keeping `helm.template` as shell-out for convenience, with a feature flag and clear "trusted input only" warnings. That design is **rejected**. Reasons:
+- **Digests always.** `akua.lock` pins every remote dependency; `akuapkg lock
+  --check` and `akuapkg verify` fail when `akua.toml`, `akua.lock` and the
+  generated CRD schemas disagree.
+- **Signatures when you configure a key.** With `[signing].cosign_public_key`
+  in `akua.toml`, `add`, `lock`, `update` and `vendor add` refuse an OCI
+  dependency without a valid cosign signature from that key, and `akua.lock`
+  records the key that verified it. `strict_signing` then defaults to on:
+  `akuapkg verify` fails any remote dependency whose lock entry does not
+  name the key. Without a key, `verify` lists unsigned dependencies as
+  warnings and exits 0; integrity rests on the digest pin.
+- **Publishing.** With `[signing].cosign_private_key` configured,
+  `akuapkg publish` signs the pushed artifact with cosign (ECDSA P-256) and
+  attaches a SLSA v1 provenance attestation. Without a key it publishes
+  unsigned.
+- **Limits.** Only keyed cosign signatures are supported; keyless (Fulcio and
+  Rekor) is not. Git, Helm-repository and URL sources have no signing layer,
+  and Helm `.prov` files are not checked. The `kcl-lang/k8s` modules are not
+  signed upstream.
 
-1. **Opt-in security is not security.** If the flag defaults to safe but can be flipped by a single command, every hosted service will eventually flip it for a one-off, forget, and get hit. "Secure by default" means the unsafe path doesn't exist, not that it's one flag away.
-2. **Shell-out inherits host privileges.** `helm` runs as the akua process's user with full `PATH`, env, cwd, network. Sandboxing individual subprocess invocations (seccomp, unshared namespaces) is possible but fragile, platform-specific, and hard to verify.
-3. **WASM engines are the viable alternative.** Benchmarks at [docs/performance.md](performance.md) show KCL under wasmtime/WASI runs at ~2× native — comfortably inside the sub-100ms render budget. helm-engine-wasm prior work hit 20 MB WASM + 2.3s cold render. These are fine numbers.
-4. **Removing shell-out forces the right engineering.** As long as shell-out is "available as an escape hatch," investment flows there instead of toward the WASM engines. Cutting it is what unblocks Phases 1 + 3.
+## What akuapkg does not protect against
 
-The alternative — keep shell-out with lots of warnings — would ship a sandbox that has a hole in it. That's worse than shipping no sandbox; users would assume protection that doesn't exist.
+- **Rendered manifests.** They are as trustworthy as the Package. Use policy
+  and admission control.
+- **The first fetch.** A digest pin proves you get the same bytes again, not
+  that the first bytes were good. Services that render untrusted Packages
+  should restrict network egress, or render only from `akua.lock` and
+  vendored dependencies with `--offline`.
+- **Denial of service, entirely.** Budgets bound one render. A service should
+  still bound wall-clock time and concurrency: `@akua-dev/sdk/process` runs
+  the `akuapkg` executable in a child process with a deadline, which can be
+  wrapped in an OS sandbox.
+- **The browser host.** The JavaScript host (`host-js.effect.ts`) runs the
+  same modules on the JavaScript engine's own WebAssembly. It has no memory
+  caps or fuel and relies on the browser's process isolation.
+- **Wasmtime and the host code.** They are the trusted computing base.
+  Wasmtime has had sandbox escapes
+  ([CVE-2026-34971](https://www.cve.org/CVERecord?id=CVE-2026-34971));
+  akuapkg pins Wasmtime 49.0.2 and updates it deliberately.
 
----
+## Why there is no shell-out
 
-## Related docs
+Every engine runs in the sandbox, or the feature does not ship. There is no
+`--unsafe-host` flag and no fallback to a `helm` or `kustomize` binary on
+`$PATH`:
 
-- [CLAUDE.md — invariants](../CLAUDE.md) — the "Sandboxed by default. No shell-out, ever." rule
-- [docs/roadmap.md](roadmap.md) — phased plan to the end-state
-- [docs/performance.md](performance.md) — benchmarks demonstrating WASM viability
-- [docs/embedded-engines.md](embedded-engines.md) — what ships inside the akua binary
+1. **An opt-out is not a default.** A hosted service flips a convenience
+   flag once and keeps it.
+2. **A subprocess inherits the host.** `helm` would run with akuapkg's user,
+   environment, working directory and network. OS-level sandboxing of a
+   subprocess is platform-specific and fails inside many containers.
+3. **The WebAssembly engines are good enough.** The largest chart in use,
+   Cilium, renders in about one second.
+
+## Related topics
+
+- [Why akuapkg](why.md): the problems the sandbox and the types address
+- [Typed resources](typed-resources.md): Kubernetes versions and CRDs
+- [Lockfile format](lockfile-format.md): `akua.toml`, `akua.lock` and signing
+- [Error codes](https://docs.akua.dev/akua/errors): the budget and path errors
+- [SECURITY.md](../SECURITY.md): reporting a vulnerability

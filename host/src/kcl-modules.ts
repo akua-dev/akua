@@ -1,6 +1,8 @@
-import { Console, Effect } from "effect"
+import { Console, Effect, Option } from "effect"
+import { crdSchemaTree } from "./crd-schemas"
+import { CRDS_KCL_MOD } from "./crds.effect"
 import type { ResolvedDependency } from "./dependencies.effect"
-import { RenderError } from "./errors"
+import { DependencyUnresolved, RenderError } from "./errors"
 import { kclIdent } from "./manifest"
 import { stubModule } from "./package-stubs"
 import type { Snapshot } from "./snapshot.effect"
@@ -9,9 +11,11 @@ import { kclStringLiteral, valuesSchemaKcl } from "./values-schema"
 /**
  * The KCL packages a render generates from its dependencies: `charts` (one
  * module per Helm dependency, `import charts.<name>`) and `pkgs` (one stub
- * per Akua-Package dependency, `import pkgs.<name>`). KCL-module
- * dependencies are mounted as they are (`import <name>`). Generated per
- * render, never written into the Package.
+ * per Akua-Package dependency, `import pkgs.<name>`) and `crds` (the
+ * generated CRD schemas, `import crds.<name>.<group>.<version>`). KCL-module
+ * dependencies are mounted as they are (`import <name>`). `charts` and
+ * `pkgs` are generated per render, never written into the Package; `crds`
+ * comes from `.akua/crds/` when that is current.
  */
 
 const encoder = new TextEncoder()
@@ -71,6 +75,43 @@ export const packageStubs = Effect.fn("packageStubs")(function*(dependencies: Re
     const source = decoder.decode(dependency.files.get("package.k") ?? new Uint8Array())
     // The stub keeps the raw dependency name: `pkg.render` looks the package up by it.
     files.set(`${kclIdent(dependency.name)}.k`, encoder.encode(stubModule(dependency.name, source)))
+  }
+  return files satisfies Snapshot
+})
+
+/**
+ * The schema tree of one CRD dependency, keyed relative to `crds/<ident>/`:
+ * as `.akua/crds/` holds it, or generated from the source.
+ */
+export const crdTree = Effect.fn("crdTree")(function*(dependency: ResolvedDependency) {
+  if (Option.isNone(dependency.crds)) return { files: new Map<string, Uint8Array>(), modules: [] }
+  const { generated, selector } = dependency.crds.value
+  if (Option.isSome(generated)) return { files: generated.value, modules: [] }
+  return yield* crdSchemaTree(dependency.name, dependency.files, selector).pipe(
+    Effect.mapError((error) =>
+      new DependencyUnresolved({
+        dependency: dependency.name,
+        code: "E_CRDS_INVALID",
+        message: `dependency \`${dependency.name}\`: ${error.message}`
+      })
+    )
+  )
+})
+
+/** The `crds` package: one directory per CRD dependency. */
+export const crdsPackage = Effect.fn("crdsPackage")(function*(dependencies: ReadonlyArray<ResolvedDependency>) {
+  const crds = dependencies.filter((dependency) => dependency.kind === "crds")
+  if (crds.length === 0) return undefined
+  yield* identifiers(crds.map((dependency) => dependency.name), "crds pkg")
+  const shadowed = dependencies.find((dependency) => dependency.kind === "kcl" && kclIdent(dependency.name) === "crds")
+  if (shadowed !== undefined) {
+    return yield* new RenderError({
+      message: `dependency \`${shadowed.name}\` imports as \`crds\`, which the CRD dependencies use - rename it`
+    })
+  }
+  const files = new Map<string, Uint8Array>([["kcl.mod", encoder.encode(CRDS_KCL_MOD)]])
+  for (const dependency of crds) {
+    for (const [name, data] of (yield* crdTree(dependency)).files) files.set(`${kclIdent(dependency.name)}/${name}`, data)
   }
   return files satisfies Snapshot
 })

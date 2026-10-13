@@ -3,20 +3,13 @@ name    = "10-kcl-ecosystem"
 version = "0.1.0"
 edition = "akua.dev/v1alpha1"
 # kpm-published artifacts under `ghcr.io/kcl-lang/*` are not cosign-
-# signed today. Production workspaces pulling from a signed registry
-# should leave the default (`true`) on.
+# signed. strict_signing is off by default without a [signing] key; the
+# explicit `false` keeps `verify` passing even if a key is added later.
 strict_signing = false
 
 [dependencies]
-# Pull a real KCL ecosystem package — kpm publishes `kcl-lang/k8s` as a
-# typed schema bundle for every Kubernetes 1.x release. Same dep
-# machinery as Helm charts: digest-pinned in akua.lock, signature-
-# verified on pull, imported as `import k8s.api.<group>.<version>`
-# inside package.k.
-#
-# This example deliberately uses the live OCI ref (no `replace`) — the
-# render+golden test pulls from ghcr.io on first run and caches under
-# `$XDG_CACHE_HOME/akua/oci/sha256/<digest>/`. Subsequent runs are
-# cache hits with no network. akua.lock pins the canonical digest so
-# CI rejects any registry-side drift.
+# The `kcl-lang/k8s` module: typed schemas for one Kubernetes release,
+# pinned by digest in akua.lock and imported as
+# `import k8s.api.<group>.<version>` in package.k. The first render pulls
+# it from ghcr.io; later renders use the cache.
 k8s = { oci = "oci://ghcr.io/kcl-lang/k8s", version = "1.31.2" }

@@ -1,0 +1,73 @@
+--- a/rust/private/repository_utils.bzl
++++ b/rust/private/repository_utils.bzl
+@@ -45,8 +45,9 @@
+             "bin/*{dylib_ext}",
+             "lib/*{dylib_ext}*",
+             "lib/rustlib/{target_triple}/codegen-backends/*{dylib_ext}",
+             "lib/rustlib/{target_triple}/bin/gcc-ld/*",
+             "lib/rustlib/{target_triple}/bin/rust-lld{binary_ext}",
++            "lib/rustlib/{target_triple}/bin/rust-objcopy{binary_ext}",
+             "lib/rustlib/{target_triple}/lib/*{dylib_ext}*",
+             "lib/rustlib/{target_triple}/lib/*.rmeta",
+         ],
+@@ -54,6 +54,22 @@
+     visibility = ["//visibility:public"],
+ )
+
++# Final Darwin Rust links use the linker supplied by this pinned rustc archive.
++filegroup(
++    name = "rust_lld",
++    srcs = glob(["lib/rustlib/{target_triple}/bin/rust-lld{binary_ext}"], allow_empty = True),
++    visibility = ["//visibility:public"],
++)
++
++filegroup(
++    name = "rust_lld_runtime_libs",
++    srcs = glob(["lib/libLLVM.so*"], allow_empty = True),
++    visibility = ["//visibility:public"],
++)
++
+ filegroup(
+     name = "rustdoc",
+     srcs = ["bin/rustdoc{binary_ext}"],
+@@ -239,6 +239,7 @@
+     srcs = glob(
+         [
+             "lib/rustlib/{target_triple}/lib/*.rlib",
++            {rmeta_glob}
+             "lib/rustlib/{target_triple}/lib/*{dylib_ext}*",
+             "lib/rustlib/{target_triple}/lib/*{staticlib_ext}",
+             "lib/rustlib/{target_triple}/lib/self-contained/**",
+@@ -257,17 +258,19 @@
+ )
+ """
+ 
+-def BUILD_for_stdlib(target_triple):
++def BUILD_for_stdlib(target_triple, include_rmeta = False):
+     """Emits a BUILD file the stdlib archive.
+ 
+     Args:
+         target_triple (triple): The triple of the target platform
++        include_rmeta (bool): Declare full stdlib metadata for cross-target Rust 1.95+.
+ 
+     Returns:
+         str: The contents of a BUILD file
+     """
+     return _build_file_for_stdlib_template.format(
+         binary_ext = system_to_binary_ext(target_triple.system),
++        rmeta_glob = '"lib/rustlib/{}/lib/*.rmeta",'.format(target_triple.str) if include_rmeta else "",
+         staticlib_ext = system_to_staticlib_ext(target_triple.system),
+         dylib_ext = system_to_dylib_ext(target_triple.system),
+         target_triple = target_triple.str,
+@@ -673,7 +676,10 @@
+         version = version,
+     )
+ 
+-    return BUILD_for_stdlib(target_triple), sha256
++    # Rust 1.95+ cross-target rlibs contain metadata stubs; the matching full
++    # .rmeta files must be present in the remote action's declared sysroot.
++    include_rmeta = version == "1.98.1" and target_triple.str != "x86_64-unknown-linux-gnu"
++    return BUILD_for_stdlib(target_triple, include_rmeta = include_rmeta), sha256
+ 
+ def load_rustc_dev_nightly(ctx, target_triple, version, iso_date = None):
+     """Loads the nightly rustc dev component

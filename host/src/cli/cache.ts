@@ -10,11 +10,12 @@ import { emit, universal } from "./universal"
 /**
  * `cache` reports and reclaims what `add`, `lock` and `render` fetched:
  * OCI artifacts under `<oci>/sha256/<hex>`, git repositories and checkouts
- * under `<git>/{repos,checkouts}/<name>`, Helm charts under `<helm>/<hex>`.
+ * under `<git>/{repos,checkouts}/<name>`, Helm charts under `<helm>/<hex>`,
+ * single-file (`url`) dependencies under `<url>/<hex>`.
  */
 
 interface CacheEntry {
-  readonly kind: "oci-blob" | "git-repo" | "git-checkout" | "helm-chart"
+  readonly kind: "oci-blob" | "git-repo" | "git-checkout" | "helm-chart" | "url-file"
   readonly id: string
   readonly path: string
   readonly size_bytes: number
@@ -65,7 +66,12 @@ const entriesUnder = Effect.fnUntraced(function*(
 })
 
 const roots = Effect.gen(function*() {
-  return { oci_root: yield* cacheRoot("oci"), git_root: yield* cacheRoot("git"), helm_root: yield* cacheRoot("helm") }
+  return {
+    oci_root: yield* cacheRoot("oci"),
+    git_root: yield* cacheRoot("git"),
+    helm_root: yield* cacheRoot("helm"),
+    url_root: yield* cacheRoot("url")
+  }
 })
 
 const ociEntries = (root: string) =>
@@ -80,6 +86,8 @@ const gitEntries = (root: string) =>
   ))
 
 const helmEntries = (root: string) => entriesUnder(root, "helm-chart", (hex) => `helm:${hex}`)
+
+const urlEntries = (root: string) => entriesUnder(root, "url-file", (hex) => `url:${hex}`)
 
 /** `540 B`, `2.0 KiB`, `1.2 MiB`: one decimal, ties to even, as the previous release printed sizes. */
 export const humanBytes = (bytes: number) => {
@@ -98,11 +106,9 @@ export const humanBytes = (bytes: number) => {
   return `${(rounded / 10).toFixed(1)} ${units[unit]}`
 }
 
-const rootLines = (body: { readonly oci_root: string; readonly git_root: string; readonly helm_root: string }) => [
-  `oci: ${body.oci_root}`,
-  `git: ${body.git_root}`,
-  `helm: ${body.helm_root}`
-]
+const rootLines = (
+  body: { readonly oci_root: string; readonly git_root: string; readonly helm_root: string; readonly url_root: string }
+) => [`oci: ${body.oci_root}`, `git: ${body.git_root}`, `helm: ${body.helm_root}`, `url: ${body.url_root}`]
 
 const cacheList = () =>
   Command.make(
@@ -115,7 +121,8 @@ const cacheList = () =>
         const entries = [
           ...(yield* ociEntries(where.oci_root)),
           ...(yield* gitEntries(where.git_root)),
-          ...(yield* helmEntries(where.helm_root))
+          ...(yield* helmEntries(where.helm_root)),
+          ...(yield* urlEntries(where.url_root))
         ].toSorted((a, b) => comparePaths(a.path, b.path))
         const total = entries.reduce((sum, entry) => sum + entry.size_bytes, 0)
         yield* emit(
@@ -133,7 +140,9 @@ const cacheList = () =>
         )
       })
     )
-  ).pipe(Command.withDescription("Enumerate every OCI blob, git repo/checkout and Helm chart with its size"))
+  ).pipe(
+    Command.withDescription("Enumerate every OCI blob, git repo/checkout, Helm chart and url file with its size")
+  )
 
 const cacheClear = () =>
   Command.make(
@@ -145,13 +154,17 @@ const cacheClear = () =>
         Flag.withDefault(false),
         Flag.withDescription("Only wipe the git repo and checkout cache")
       ),
-      helm: Flag.Boolean("helm").pipe(Flag.withDefault(false), Flag.withDescription("Only wipe the Helm chart cache"))
+      helm: Flag.Boolean("helm").pipe(Flag.withDefault(false), Flag.withDescription("Only wipe the Helm chart cache")),
+      url: Flag.Boolean("url").pipe(
+        Flag.withDefault(false),
+        Flag.withDescription("Only wipe the cache of single-file (url) dependencies")
+      )
     },
     verb(
       "akuapkg.cache.clear",
       Effect.fnUntraced(function*(flags, mode) {
         const fs = yield* FileSystem.FileSystem
-        const kinds: ReadonlyArray<"oci" | "git" | "helm"> = ["oci", "git", "helm"]
+        const kinds: ReadonlyArray<"oci" | "git" | "helm" | "url"> = ["oci", "git", "helm", "url"]
         const chosen = kinds.filter((kind) => flags[kind])
         const first = chosen.at(0)
         const second = chosen.at(1)
@@ -163,7 +176,8 @@ const cacheClear = () =>
         const scoped = [
           { kind: "oci", root: where.oci_root, entries: ociEntries },
           { kind: "git", root: where.git_root, entries: gitEntries },
-          { kind: "helm", root: where.helm_root, entries: helmEntries }
+          { kind: "helm", root: where.helm_root, entries: helmEntries },
+          { kind: "url", root: where.url_root, entries: urlEntries }
         ].filter(({ kind }) => scope === "all" || scope === kind)
         let removed = 0
         let freed = 0
@@ -181,7 +195,7 @@ const cacheClear = () =>
         )
       })
     )
-  ).pipe(Command.withDescription("Wipe the caches; all three by default, or one with --oci, --git or --helm"))
+  ).pipe(Command.withDescription("Wipe the caches; all of them by default, or one with --oci, --git, --helm or --url"))
 
 const cachePath = () =>
   Command.make(
@@ -198,6 +212,6 @@ const cachePath = () =>
 
 export const cache = () =>
   Command.make("cache").pipe(
-    Command.withDescription("Manage the on-disk OCI, git and Helm caches"),
+    Command.withDescription("Manage the on-disk OCI, git, Helm and url caches"),
     Command.withSubcommands([cacheList(), cacheClear(), cachePath()])
   )

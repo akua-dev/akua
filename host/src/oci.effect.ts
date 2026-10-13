@@ -1,8 +1,9 @@
 import { Config, Context, Duration, Effect, FileSystem, Layer, Option, Path, Schema } from "effect"
+import { CliName } from "./cli-name"
 import { HttpClient, HttpClientRequest, type HttpClientResponse } from "effect/http"
 import * as TOML from "smol-toml"
 import { gunzip, untar } from "./archive"
-import { verifyKeyed } from "./cosign"
+import { keyedSignatureRef, verifyKeyed } from "./cosign"
 import { cacheRoot as defaultCacheRoot, readBounded, sha256, unpackInto } from "./downloads.effect"
 
 /**
@@ -58,6 +59,8 @@ export const publishDigests = (tarball: Uint8Array, akuaVersion: string) => {
 export const sidecarTag = (manifestDigest: string, suffix: "sig" | "att") =>
   `${manifestDigest.replace(/^sha256:/, "sha256-")}.${suffix}`
 const KCL_LAYER = "application/vnd.oci.image.layer.v1.tar"
+/** kpm publishes newer modules (`kcl-lang/k8s` 1.33 and later) gzip-compressed. */
+const KCL_LAYER_GZIP = "application/vnd.oci.image.layer.v1.tar+gzip"
 const KCL_ANNOTATIONS = ["org.kcllang.package.name", "org.kclpkg.package.name", "dev.akua.package.name"]
 const MANIFEST_TYPES = [
   "application/vnd.oci.image.manifest.v1+json",
@@ -136,6 +139,13 @@ export interface PullRequest {
   /** No network: the pinned digest must already be cached. */
   readonly offline: boolean
   readonly cosignPublicKey: Option.Option<string>
+  /** The `akua.lock` `signature` recorded with `pin`: a cached copy it vouches for needs no re-verification. */
+  readonly lockedSignature: Option.Option<string>
+  /**
+   * Accept any single tar or tar+gzip layer when no package layer is found:
+   * CRD sources, released as plain OCI artifacts.
+   */
+  readonly anyArchive?: boolean
 }
 
 export interface Pulled {
@@ -143,6 +153,8 @@ export interface Pulled {
   readonly directory: string
   /** The layer (blob) digest: what `akua.lock` pins. */
   readonly digest: string
+  /** The `cosign:key:...` reference of the configured key that verified these bytes, when one is configured. */
+  readonly signature: Option.Option<string>
 }
 
 export class OciRegistry extends Context.Service<OciRegistry, {
@@ -339,8 +351,8 @@ export class OciRegistry extends Context.Service<OciRegistry, {
       const cached = Effect.fnUntraced(function*(digest: string) {
         const slot = cacheSlot(path, cacheRoot, digest)
         return (yield* fs.exists(slot).pipe(Effect.orElseSucceed(() => false)))
-          ? Option.some({ directory: slot, digest } satisfies Pulled)
-          : Option.none<Pulled>()
+          ? Option.some(slot)
+          : Option.none<string>()
       })
 
       const pull = Effect.fn("OciRegistry.pull")(function*(request: PullRequest) {
@@ -348,17 +360,33 @@ export class OciRegistry extends Context.Service<OciRegistry, {
         if (parsed === undefined) {
           return yield* failed(`invalid OCI reference \`${request.reference}\`: expected \`oci://<registry>/<repo>\``)
         }
+        const signature = yield* Effect.transposeOption(Option.map(request.cosignPublicKey, keyedSignatureRef)).pipe(
+          Effect.mapError((error) => failed(`cosign public key: ${error.message}`, "E_COSIGN_VERIFY"))
+        )
         if (Option.isSome(request.pin)) {
           const hit = yield* cached(request.pin.value)
-          if (Option.isSome(hit)) return hit.value
+          // With a key configured, a cached copy is only as good as the lock's
+          // record that this key verified it; otherwise verify it again online.
+          const vouched = Option.isNone(signature) || Option.contains(request.lockedSignature, signature.value)
+          if (Option.isSome(hit) && vouched) {
+            return { directory: hit.value, digest: request.pin.value, signature } satisfies Pulled
+          }
+          if (Option.isSome(hit) && request.offline) {
+            return yield* new OciPullFailed({
+              code: "E_COSIGN_SIG_MISSING",
+              offline: true,
+              message: `akua.lock does not record \`${request.reference}@${request.pin.value}\` as verified by ` +
+                `\`[signing].cosign_public_key\`, and offline mode can't fetch its signature - run \`${yield* CliName} lock\` online`
+            })
+          }
         }
         if (request.offline) {
           return yield* new OciPullFailed({
             code: "E_DEP_RESOLVE",
             offline: true,
             message: Option.isSome(request.pin)
-              ? "offline mode and the OCI cache doesn't have this dep - run `akua add` online first"
-              : "offline mode needs a lockfile-pinned digest - run `akua add` first"
+              ? `offline mode and the OCI cache doesn't have this dep - run \`${yield* CliName} add\` online first`
+              : `offline mode needs a lockfile-pinned digest - run \`${yield* CliName} add\` first`
           })
         }
         const base = `${scheme(parsed.registry)}://${parsed.registry}/v2/${parsed.repository}`
@@ -384,11 +412,11 @@ export class OciRegistry extends Context.Service<OciRegistry, {
             token
           })
         }
-        const layer = packageLayer(manifest)
+        const layer = packageLayer(manifest) ?? (request.anyArchive === true ? archiveLayer(manifest) : undefined)
         if (layer === undefined) {
           return yield* failed(
             `manifest for \`${request.reference}:${request.version}\` has no recognised package layer - expected helm ` +
-              `\`${HELM_LAYER}\`, akua \`${AKUA_LAYER}\`, or KCL \`${KCL_LAYER}\` with \`org.kcllang.package.*\` / ` +
+              `\`${HELM_LAYER}\`, akua \`${AKUA_LAYER}\`, or KCL \`${KCL_LAYER}\` (or \`+gzip\`) with \`org.kcllang.package.*\` / ` +
               "`org.kclpkg.package.*` / `dev.akua.package.*` annotations"
           )
         }
@@ -418,11 +446,11 @@ export class OciRegistry extends Context.Service<OciRegistry, {
               `\`${request.reference}:${request.version}\``
           })
         }
-        const tar = layer.mediaType === KCL_LAYER ? blob : yield* gunzip(blob)
+        const tar = layer.mediaType === KCL_LAYER || layer.mediaType.endsWith(".tar") ? blob : yield* gunzip(blob)
         const entries = yield* untar(tar)
         const slot = cacheSlot(path, cacheRoot, digest)
         yield* unpack(slot, entries)
-        return { directory: slot, digest } satisfies Pulled
+        return { directory: slot, digest, signature } satisfies Pulled
       }, Effect.catchTag("ArchiveInvalid", (error) => Effect.fail(failed(`extracting chart tarball: ${error.message}`))))
 
       const unpack = (slot: string, entries: ReadonlyArray<{ path: string; data: Uint8Array }>) =>
@@ -750,8 +778,14 @@ const packageLayer = (manifest: Manifest) =>
   manifest.layers.find((layer) => layer.mediaType === HELM_LAYER) ??
     manifest.layers.find((layer) => layer.mediaType === AKUA_LAYER) ??
     (KCL_ANNOTATIONS.some((key) => manifest.annotations?.[key] !== undefined)
-      ? manifest.layers.find((layer) => layer.mediaType === KCL_LAYER)
+      ? manifest.layers.find((layer) => layer.mediaType === KCL_LAYER || layer.mediaType === KCL_LAYER_GZIP)
       : undefined)
+
+/** The artifact's only layer, when it is a tar or tar+gzip archive. */
+const archiveLayer = (manifest: Manifest) =>
+  manifest.layers.length === 1 && /(\.|\+|\/)tar(\+gzip|\.gz)?$/.test(manifest.layers[0]?.mediaType ?? "")
+    ? manifest.layers[0]
+    : undefined
 
 /** `WWW-Authenticate: Bearer realm="...",service="...",scope="..."`. */
 const bearerChallenge = (header: string | undefined) => {

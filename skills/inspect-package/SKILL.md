@@ -1,121 +1,62 @@
 ---
 name: inspect-package
-description: Audit a published akua Package or Helm chart before deploying it — schema, sources, cosign signature, SLSA attestation chain, rendered output with sample inputs. Use when evaluating a third-party package, checking signatures, verifying supply-chain provenance, or inspecting a chart from ArtifactHub, GHCR, or any OCI registry.
+description: Audit an akuapkg Package or a Helm chart before using it - its input schema, dependencies and their digests, signatures, and what it renders with sample inputs. Use when evaluating a third-party Package, reviewing a dependency upgrade, checking whether a dependency is signed, or looking at what a chart from Artifact Hub, GHCR or another registry would deploy.
 license: Apache-2.0
 ---
 
-# Inspect and audit a package before using it
+# Inspect a Package before using it
 
-Before consuming any package — first-party, community, or vendor — know what you're getting. This skill runs the full audit: schema, sources, signatures, attestation, rendered output.
-
-## When to use
-
-- Evaluating a package before adding it as a dependency
-- Checking that a published package is signed by the expected publisher
-- Verifying a chart's claimed behavior matches its actual rendered output
-- Comparing a package version against another before upgrading
-- Reviewing a third-party package in a browser tab with no local install
+Rendering is sandboxed, so it is safe to render an untrusted Package to see
+what it produces. Applying the output is not automatically safe: review it.
 
 ## Steps
 
-### 1. Basic inspection
+1. Get the Package:
+   - published: `akuapkg inspect --oci oci://REGISTRY/REPO --tag TAG`
+     prints its metadata and input schema without unpacking it;
+     `akuapkg pull --ref oci://REGISTRY/REPO --tag TAG --out ./pkg`
+     downloads it;
+   - packed tarball: `akuapkg inspect --tarball PKG.tar.gz`;
+   - a chart: create a scratch Package (`akuapkg init scratch`) and
+     `akuapkg add` the chart.
 
-```sh
-akuapkg inspect oci://pkg.example.com/webapp:3.2 --json
-```
+2. Read the input contract:
 
-Returns:
+   ```sh
+   akuapkg export --package ./pkg/package.k
+   ```
 
-- The package's schema (required/optional inputs, types, defaults)
-- Source list (Helm charts, RGDs, KCL modules consumed)
-- Cosign signature + signer identity
-- SLSA attestation predicate
-- Declared output formats
+3. List dependencies, their sources and digests, and whether they are
+   signed:
 
-Look at the `signer` field — it should match an identity you trust (a GitHub Actions workflow URL, a known team keyring, etc.). Unsigned packages are rejected by default unless `--insecure` is passed.
+   ```sh
+   akuapkg tree --workspace ./pkg
+   akuapkg verify --workspace ./pkg
+   ```
 
-### 2. Show rendered output with sample inputs
+   `verify` warns about unsigned dependencies, or fails on them when the
+   Package configures a cosign key.
 
-```sh
-akuapkg inspect oci://pkg.example.com/webapp:3.2 \
-  --inputs '{"appName":"demo","hostname":"demo.example.com"}' \
-  --show=manifests
-```
+4. Render with sample inputs, without the network:
 
-Renders the package with your inputs and prints the resulting Kubernetes YAML. This is exactly what would deploy. Audit it before committing.
+   ```sh
+   akuapkg render --package ./pkg/package.k --inputs sample.yaml --stdout
+   ```
 
-### 3. Verify signatures directly
+   Add `--offline` once dependencies are cached, and `--strict` to refuse
+   charts referenced by raw path.
 
-```sh
-akuapkg verify oci://pkg.example.com/webapp:3.2
-```
+5. Review the output for privileged containers, host mounts, RBAC
+   (especially `ClusterRole` and `*` verbs), webhooks, CRDs and Helm hook
+   resources (`helm.sh/hook` annotations).
 
-Output includes:
+## Report
 
-- Signature valid / invalid
-- Certificate identity (who signed)
-- Certificate issuer (root of trust — Sigstore, custom CA)
-- Attestation subjects and predicates
+Summarize: inputs, dependencies with source, digest and signature status,
+the kinds and counts rendered, and every finding from step 5.
 
-### 4. Browser audit (no install required)
+## References
 
-If the package is on a public OCI registry, open it in the akua playground:
-
-```
-https://akua.dev/inspect?ref=oci://pkg.example.com/webapp:3.2
-```
-
-The playground renders in the browser using WASM — zero install, zero cluster, zero backend. Useful for sharing an audit link in a PR review or security ticket.
-
-### 5. Diff against another version
-
-```sh
-akuapkg diff oci://pkg.example.com/webapp:3.1 oci://pkg.example.com/webapp:3.2 --json
-```
-
-Shows structural changes: schema fields added/removed/type-changed, source version bumps, policy-compatibility verdict. Non-zero exit if any structural change present.
-
-## Expected output
-
-On `akuapkg inspect --json`:
-
-```json
-{
-  "ref": "oci://pkg.example.com/webapp:3.2",
-  "digest": "sha256:…",
-  "signed": true,
-  "signer": "https://github.com/example/webapp/.github/workflows/release.yml",
-  "schema": {
-    "required": ["appName", "hostname"],
-    "optional": ["replicas", "database"],
-    "fields": 6
-  },
-  "sources": [
-    {"kind": "helm", "chart": "cnpg-cluster", "version": "0.20.0"}
-  ],
-  "attestation": {
-    "slsa_level": 3,
-    "builder": "github.com/example/webapp/.github/workflows/release.yml"
-  }
-}
-```
-
-## Red flags to look for
-
-- **`signed: false`** — unsigned. Do not deploy to any production environment.
-- **`signer` unexpected** — a different GitHub workflow or identity than the project's known pipeline. Possible compromise or confusion attack.
-- **`slsa_level` below 2** — no provenance recorded. Reduced trust.
-- **Undocumented sources** — sources listed that the package's README doesn't mention. Could be legitimate; could be supply-chain injection.
-- **`policy_compat: deny`** in a diff — upgrading this version would violate your current policy tier. Investigate before proceeding.
-
-## Failure modes
-
-- **`E_SIG_VERIFY_FAILED`** — signature does not verify. Either the artifact is tampered with, or the verification key is wrong. Do not proceed.
-- **`E_FETCH_FAILED`** — cannot fetch the artifact. Check the OCI ref, check `akuapkg whoami` for registry auth.
-- **`E_ATTESTATION_MISSING`** — no SLSA predicate attached. Rendered output is unverifiable against a build pipeline. May be acceptable for community packages but is a red flag for production dependencies.
-
-## Reference
-
-- [cli.md — akuapkg inspect](../../docs/cli.md#akua-inspect)
-- [cli.md — akuapkg verify](../../docs/cli.md#akuapkg-verify)
-- [cli.md — akuapkg diff](../../docs/cli.md#akua-diff)
+- [docs/security-model.md](../../docs/security-model.md): what the sandbox
+  does and does not protect
+- [docs/lockfile-format.md](../../docs/lockfile-format.md)

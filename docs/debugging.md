@@ -1,160 +1,61 @@
-# Debugging akua
+# Debugging a render
 
-How to make the render pipeline cough up useful diagnostics when
-something goes wrong. This is the playbook the maintainer uses; agents
-should reach for it before guessing.
+When `akuapkg render` fails or produces something unexpected, start from the
+error code: every failure has one, and each code has a page at
+[docs.akua.dev/akua/errors](https://docs.akua.dev/akua/errors) with causes
+and fixes.
 
-## TL;DR
+## Narrow it down
 
 ```sh
-akuapkg render --package package.k --inputs ... --log=json --log-level=debug 2>&1 | head -20
+akuapkg check                        # akua.toml, akua.lock and package.k parse and resolve
+akuapkg lint                         # KCL syntax and imports only
+akuapkg render --dry-run             # evaluate everything, write nothing
+akuapkg render --stdout              # print the manifests instead of writing files
+akuapkg render --json --debug        # add the resources before YAML normalization
 ```
 
-Three knobs cover almost every case:
+`--debug` puts the raw evaluation result in the JSON output
+(`evalResult`), which helps when a value looks different in the YAML than in
+KCL.
 
-| knob | what it adds |
-|---|---|
-| `--log=json` | structured stderr lines you can `jq` over |
-| `--log-level=debug` | host + worker spans, every plugin-bridge call |
-| `RUST_LOG=...` | full `EnvFilter` syntax, lights up transitive crates |
+## Common failures
 
-## Sources of truth
+| Code | Usually means | Next step |
+|---|---|---|
+| `E_RENDER_KCL` | a type error, a failed `check:` or `assert`, or an error from Helm or Kustomize | read the `File package.k:LINE:COL` line; for engine errors the message names `helm` or `kustomize-engine` |
+| `E_DEP_RESOLVE` | a dependency could not be fetched, or its bytes do not match `akua.lock` | check the version exists; run `akuapkg update --dep NAME` if the change is intended |
+| `E_LOCK_DRIFT`, `E_CRDS_STALE` | `akua.toml`, `akua.lock` or `.akua/crds/` disagree | run `akuapkg lock` and commit the result |
+| `E_RENDER_BUDGET_DEADLINE` | the render ran out of CPU budget (exit 6) | look for a runaway comprehension, or an unusually large chart or overlay |
+| `E_RENDER_BUDGET_MEMORY` | a sandbox hit its memory cap, or an engine returned more than 64 MiB | reduce what one call renders |
+| `E_PATH_ESCAPE` | a symlink or path leaves the Package directory | replace the symlink with the file, or declare the content as a dependency |
 
-- **CLI contract §9** — [docs/cli-contract.md](cli-contract.md#9-logging) — flag semantics, JSON line shape, target taxonomy.
-- **CLI contract §9.1** — OpenTelemetry env-var surface.
-- **`crates/akuapkg-cli/src/observability.rs`** — host-side subscriber wiring.
-- **`crates/akua-render-worker/src/observability.rs`** — worker-side subscriber.
+## Engine errors
 
-## What you'll see
-
-Successful render at `--log-level=debug`:
-
-```json
-{"level":"DEBUG","fields":{"message":"worker.invoke.start"},"target":"akua","span":{...,"name":"worker.invoke"}}
-{"level":"DEBUG","fields":{"message":"bridge.call","method":"kcl_plugin.helm.template","args_len":131,"kwargs_len":2},"target":"akua::bridge",...}
-{"level":"DEBUG","fields":{"message":"bridge.response","response_len":203,...},"target":"akua::bridge",...}
-{"level":"DEBUG","fields":{"message":"kcl eval ok","worker_target":"akua::worker","fields_json":"{...,\"yaml_size\":272}"},"target":"akua::worker",...}
-```
-
-Three target namespaces:
-
-- `akua` — host pipeline (verbs, render-worker.invoke span, chart resolver).
-- `akua::worker` — events the worker emitted, replayed under the host's live `worker.invoke` span. The original target is preserved as `worker_target`.
-- `akua::bridge` — KCL-plugin host-function calls (`bridge.call`, `bridge.response`).
-
-## When wasmtime traps
-
-The worker runs inside a wasip1 sandbox. Without the right config, traps surface as `wasm function NNNN` with no symbols. akua already enables symbolication globally; you just have to read it.
+Helm and Kustomize errors are passed through with their original text,
+prefixed with the engine:
 
 ```text
-worker trapped: error while executing at wasm backtrace:
-   11: 0x389a8a - type_pack_and_check
-                    at .../kcl/d584c0b/crates/evaluator/src/ty.rs:184:9
-   12: 0x37a6c8 - walk_assign_stmt
-                    at .../kcl/d584c0b/crates/evaluator/src/node.rs:110:21
+error[E_RENDER_KCL]: kustomize-engine: kustomize build: accumulating resources: ...
 ```
 
-Frame names + file:line resolve via:
+Remember what the engines cannot do inside the sandbox (see
+[embedded-engines.md](embedded-engines.md)): no remote Kustomize bases, no
+Helm `lookup` against a cluster, no plugins. An error mentioning `git`,
+`dial tcp` or a DNS lookup means the overlay or chart tried to reach the
+network.
 
-- `Config::wasm_backtrace_details(Enable)` + `Config::generate_address_map(true)` in `engine_host_wasm::shared_config`. Backtrace capture itself is on by default in wasmtime 43.
-- The worker `.wasm`'s `name` section preserved by overriding the workspace `[profile.release]` strip via the `task build:render-worker` `--config` flags (see `Taskfile.yml`).
+## Reproducing a failure
 
-If a trap shows bare `wasm function NNNN`:
+A failing render depends only on the Package directory, the inputs file,
+`akua.lock` and the akuapkg version (`akuapkg version`). To report or bisect
+a failure, copy those and render with `--offline` after one online run, so
+the cache holds every dependency. When you open an issue, include the
+command, the full error and the akuapkg version.
 
-1. The worker `.wasm` is stale or stripped — run `task build:render-worker` and verify the file size grew.
-2. The `.cwasm` AOT artifact may be cached — `cargo clean -p akuapkg-cli && cargo build -p akuapkg-cli` to force a re-bake against the current Config.
+## Wasm traps
 
-## When a plugin handler fails
-
-KCL plugin calls (`pkg.render`, `helm.template`, `kustomize.build`) cross from inside-the-sandbox guest code to host functions. Failures look like:
-
-```json
-{"code":"E_RENDER_KCL","message":"plugin panic: pkg.render: <details>"}
-```
-
-Workflow:
-
-1. Run with `--log-level=debug`. The `bridge.call` event right before the failure shows the method, `args_len`, `kwargs_len`. Method names match the registered handler in `akua-core/src/{pkg_render,helm,kustomize}.rs`.
-2. If the panic message is opaque (e.g. `i/o resolving \`\``), the handler probably hit an unexpected empty value — add a `tracing::debug!` near the failing read in the handler. Recompile, re-run.
-3. The `bridge.response` event tells you whether the handler returned (envelope size) or trapped (no `bridge.response` follows the `bridge.call`).
-
-`AKUA_BRIDGE_TRACE=1` is a back-compat env-var shortcut for `--log-level=debug` filtered to `akua::bridge`.
-
-## Distinguishing host vs worker failures
-
-| symptom | side | next step |
-|---|---|---|
-| `worker trapped: …` + symbolicated backtrace | worker (KCL eval, plugin reentry) | read the top frames; `kcl-evaluator/src/ty.rs:184` is `type_pack_and_check` panicking on a schema-vs-value mismatch |
-| `plugin panic: <plugin-name>: <message>` | host (the plugin handler returned `Err`) | grep the message in `crates/akua-core/src/{pkg_render,helm,kustomize}.rs` |
-| Structured error envelope only, no logs | host pre-render (chart resolve, lockfile, auth) | the verb's `RenderError` path; logs would have a `target = "akua"` event before the envelope if the verb itself emitted one |
-
-## Replicating a failing render minimally
-
-If a render fails inside an example:
-
-```sh
-cd examples/<name>
-cargo run -q -p akuapkg-cli -- render \
-    --package package.k \
-    --inputs inputs.example.yaml \
-    --log=json --log-level=debug 2>&1 | tail -30
-```
-
-Tail (not head) grabs the failing event + envelope; head grabs the warm-up traffic. Pipe through `jq -c 'select(.level=="ERROR" or .target=="akua::bridge")'` to narrow to the salient lines.
-
-## When the worker is the wrong version
-
-A persistent gotcha: `cargo build -p akuapkg-cli` does **not** rebuild the render-worker `.wasm`. The build script emits a warning when sources are newer than the staged `.wasm`:
-
-```
-warning: akuapkg-cli@0.7.0: akua-render-worker.wasm is older than crates/akua-core/... — run `task build:render-worker`
-```
-
-Rebuild explicitly:
-
-```sh
-task build:render-worker
-```
-
-Worker-side changes that need this:
-
-- Edits under `crates/akua-render-worker/`
-- Edits under `crates/akua-core/` (the worker depends on it)
-- Edits to bundled stdlib files under `crates/akua-core/stdlib/akua/*.k` (they're `include_str!`-embedded at compile time)
-- Edits to `crates/akua-core/src/pkg_stub.rs` (the schema extractor for synthesized `pkgs.<alias>` stubs)
-
-## Adding new spans + events
-
-Convention used elsewhere in the codebase:
-
-- Top-level verb work: `tracing::info_span!(target: "akua", "verb.<name>", …)`.
-- Plugin / engine boundary: `tracing::debug!(target: "akua::bridge", "<event>", …)`.
-- Worker-internal: `target: "akua::worker"`. The host's stderr-replay path forwards them under the live `worker.invoke` span.
-
-Field hygiene:
-
-- Names go in span fields (small, structured): `package_filename`, `chart_dep_count`, `kind`, `outcome`.
-- Free-form text goes in the `message` (the macro positional arg).
-- **Never log raw KCL inputs at info or warn** — they're user data. Log sizes (`source_size`, `inputs_kind`) instead. Full args are fine at debug for local repro.
-
-## OpenTelemetry export
-
-For cross-render or production traces, set `OTEL_EXPORTER_OTLP_ENDPOINT`. Example with a local collector:
-
-```sh
-docker run --rm -p 4317:4317 -p 16686:16686 jaegertracing/all-in-one
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
-  OTEL_SERVICE_NAME=akua-dev \
-  cargo run -q -p akuapkg-cli -- render --package examples/00-helm-hello/package.k
-```
-
-The same trace tree (`worker.invoke → bridge.call → kcl eval`) shows up at `http://localhost:16686`. The OTel layer is gated on the `otel` cargo feature — on by default for the CLI binary, off for the napi distribution. cli-contract §9.1 lists every honored `OTEL_*` env var.
-
-## Anti-patterns
-
-Things that don't work and aren't worth trying:
-
-- **Running KCL outside the worker for "easier debugging."** The worker preopens a curated filesystem slice; running `kcl run` directly against a Package will fail to import `akua.helm` / `akua.pkg` (the stdlib lives at `/akua-stdlib` only inside the worker). Reproduce inside the sandbox.
-- **`println!` / `eprintln!` in plugin handlers.** They land on the host's stderr, but interleave unpredictably with the JSON-line subscriber. Use `tracing::debug!(target: "akua::bridge", …)` instead — same diagnostic, parented under the active span.
-- **Quietly catching panics in plugin handlers.** The bridge already converts panics into a typed envelope (see `kcl_plugin::panic_envelope`); adding a second layer hides the wasm backtrace.
-- **Filter directives leading with `debug` / `trace`.** Transitive crates (`kcl-evaluator`, `salsa`, `rustc_span`, `wasmtime_wasi`) emit hundreds of events per render. The default filter (`warn,akua=info,…`) keeps them silent. Override via `RUST_LOG` only when you need that context.
+A message starting `trapped: error while executing at wasm backtrace` means
+a guest stopped abnormally instead of reporting an error. This is a bug in
+akuapkg, not in your Package, even when your Package triggered it. Please
+report it with the Package (or a reduced copy) that reproduces it.

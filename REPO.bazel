@@ -1,0 +1,7 @@
+"""Directories excluded from Bazel package loading."""
+
+ignore_directories([
+    "**/node_modules",
+    "bazel-*",
+    "third_party/kcl/vendor",
+])

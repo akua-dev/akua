@@ -1,4 +1,5 @@
 import { Effect, Option, Schema } from "effect"
+import { sha256 } from "./downloads.effect"
 
 /**
  * Keyed cosign verification (`[signing].cosign_public_key`): the simple-signing
@@ -86,6 +87,20 @@ export const verifyKeyed = Effect.fn("verifyKeyed")(function*(request: {
     catch: (cause) => invalid(`signature does not verify against the supplied public key: ${String(cause)}`)
   })
   if (!verified) return yield* invalid("signature does not verify against the supplied public key")
+})
+
+/**
+ * How `akua.lock` records a signature verified against `publicKeyPem`:
+ * `cosign:key:<identity>`, the identity being `sha256:<hex>` of the key's DER
+ * SubjectPublicKeyInfo (its key id). It names the key, not one signature, so
+ * a re-signed artifact keeps its lock entry, and `verify` can check it.
+ */
+export const keyedSignatureRef = Effect.fn("keyedSignatureRef")(function*(publicKeyPem: string) {
+  const der = yield* Effect.try({
+    try: () => Uint8Array.fromBase64(pemBody(publicKeyPem)),
+    catch: (cause) => new CosignInvalid({ message: `public key is not valid PEM: ${String(cause)}` })
+  })
+  return `cosign:key:${sha256(der)}`
 })
 
 const encoder = new TextEncoder()

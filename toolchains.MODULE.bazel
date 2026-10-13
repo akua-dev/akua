@@ -1,0 +1,108 @@
+# Toolchain configuration only a root module may declare: the release Rust
+# toolchains (rules_rust honors repository sets of the root module alone) and
+# the Linux-executed Zig C toolchains (hermetic_cc_toolchain's exec_platform
+# tag). MODULE.bazel includes this file when this repository is the root; the
+# cnap monorepo includes the same file into its own root module, so both
+# build with one definition.
+#
+# Labels name this repository as @akua: an included file resolves `//`
+# against whichever repository is the root. Repositories are imported by
+# MODULE.bazel (and by the monorepo's root) rather than here, since a root
+# module may import a repository name only once.
+
+# Rust 1.98.1, executed on Linux x86_64, for every release target. The
+# target_settings keep it out of toolchain resolution except inside the
+# package Rust transitions (bazel/rust/rust_artifact.bzl).
+package_rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+package_rust.repository_set(
+    name = "akua_rust_linux_x64",
+    edition = "2021",
+    exec_triple = "x86_64-unknown-linux-gnu",
+    rustfmt_version = "1.98.1",
+    sha256s = {
+        "cargo-1.98.1-x86_64-unknown-linux-gnu.tar.xz": "ea1de9f9e23107d97ee2b41a72c552f34064a593da503789218387aee59f3ba4",
+        "clippy-1.98.1-x86_64-unknown-linux-gnu.tar.xz": "e167f333be24e1d5eea56ea563c7def0aa0bd613f5ce3445976c93b0288799d1",
+        "llvm-tools-1.98.1-x86_64-unknown-linux-gnu.tar.xz": "56d58ca2dfa848359ab23c872791509c6f592448d2f6c146ed530ec50ee45371",
+        "rust-std-1.98.1-aarch64-apple-darwin.tar.xz": "2de831ef563ce772519a4d18ba2659f0f7428d497ef66dad24b5a35e8f8cd177",
+        "rust-std-1.98.1-aarch64-unknown-linux-gnu.tar.xz": "9bf796a6ec5b004813ebd0b650775a7c6a4f3aae97ad362ae294798dca4f3b23",
+        "rust-std-1.98.1-wasm32-wasip1.tar.xz": "b5e91be9ed75c632a4c576d3c4c725ab143cd48c27c345133b97ccdf217b23e7",
+        "rust-std-1.98.1-x86_64-apple-darwin.tar.xz": "48b9835058a8baa4ff5e4387f3772c572a017a2b13393c46e151615c54e322e9",
+        "rust-std-1.98.1-x86_64-pc-windows-msvc.tar.xz": "42727764a01a54db7423e43db08a9c818405679af6a9a677068e8cd4b8361242",
+        "rust-std-1.98.1-x86_64-unknown-linux-gnu.tar.xz": "fa3ff450172a16c026944030230c5069947af93c728d9179971d44e5e0cfb561",
+        "rustc-1.98.1-x86_64-unknown-linux-gnu.tar.xz": "e974f036b28565f37c0f3bd92ddefa809bee16c04f9dcf07b9ed96e05aaaf7c4",
+        "rustfmt-1.98.1-x86_64-unknown-linux-gnu.tar.xz": "b29a1addcbf2aa8f5785075605700e63cbe131b08c8334b50c09cfca8bbc51dc",
+    },
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+    target_settings = ["@akua//bazel/platforms:package_rust_198"],
+    target_triple = "x86_64-unknown-linux-gnu",
+    versions = ["1.98.1"],
+)
+package_rust.repository_set(
+    name = "akua_rust_linux_x64",
+    target_compatible_with = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:linux",
+    ],
+    target_triple = "aarch64-unknown-linux-gnu",
+)
+package_rust.repository_set(
+    name = "akua_rust_linux_x64",
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:osx",
+    ],
+    target_triple = "x86_64-apple-darwin",
+)
+package_rust.repository_set(
+    name = "akua_rust_linux_x64",
+    target_compatible_with = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:osx",
+    ],
+    target_triple = "aarch64-apple-darwin",
+)
+package_rust.repository_set(
+    name = "akua_rust_linux_x64",
+    target_compatible_with = [
+        "@platforms//cpu:wasm32",
+        "@platforms//os:wasi",
+        "@rules_rust//rust/platform:wasi_preview_1",
+    ],
+    target_triple = "wasm32-wasip1",
+)
+package_rust.repository_set(
+    name = "akua_rust_linux_x64",
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:windows",
+    ],
+    target_triple = "x86_64-pc-windows-msvc",
+)
+
+register_toolchains(
+    "@rust_toolchains//:akua_rust_linux_x64__aarch64-apple-darwin__stable",
+    "@rust_toolchains//:akua_rust_linux_x64__aarch64-unknown-linux-gnu__stable",
+    "@rust_toolchains//:akua_rust_linux_x64__wasm32-wasip1__stable",
+    "@rust_toolchains//:akua_rust_linux_x64__x86_64-apple-darwin__stable",
+    "@rust_toolchains//:akua_rust_linux_x64__x86_64-unknown-linux-gnu__stable",
+    "@rust_toolchains//:akua_rust_linux_x64__x86_64-pc-windows-msvc__stable",
+)
+
+# Zig, executed on Linux x86_64, for the C dependencies of the macOS, WASI and
+# Linux targets. The repository is lazy: a client that never selects one of
+# these toolchains never fetches the SDK.
+package_zig = use_extension("@hermetic_cc_toolchain//toolchain:ext.bzl", "toolchains")
+package_zig.exec_platform(
+    arch = "amd64",
+    os = "linux",
+)
+
+register_toolchains(
+    "@akua//bazel/toolchains:render_worker_wasi_cc_toolchain",
+    "@akua//bazel/toolchains:package_rust_darwin_x64_cc_toolchain",
+    "@akua//bazel/toolchains:package_rust_darwin_arm64_cc_toolchain",
+    "@akua//bazel/toolchains:package_rust_windows_cc_toolchain",
+)
