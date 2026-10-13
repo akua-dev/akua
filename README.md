@@ -1,156 +1,204 @@
 <div align="center">
-  <!-- Large Hero Image -->
   <img src="assets/logo.png" height="300" alt="Akuapkg" />
-  
+
   <h1>Akuapkg</h1>
 
-  <!-- Airy Technical Description -->
   <p>
     <samp>
-      Cloud-native packaging in one binary &bull; Typed packages<br>
-      Sandboxed renders &bull; Signed by default
+      Typed Kubernetes packages &bull; Sandboxed Helm and Kustomize<br>
+      Digest-locked dependencies &bull; One binary
     </samp>
   </p>
 
-  <br>
-  
-  <!-- Badges -->
   <p>
-    <a href="https://github.com/akua-dev/akuapkg/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/akua-dev/akuapkg?label=release&style=flat-square"></a>
+    <a href="https://github.com/akua-dev/akua/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/akua-dev/akua?label=release&style=flat-square"></a>
     <a href="https://docs.akua.dev/akua/cli"><img alt="Docs" src="https://img.shields.io/badge/docs-docs.akua.dev-blue?style=flat-square"></a>
     <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square"></a>
   </p>
-  
 </div>
-
-
-  <br>
-
-<p align="center">
-  <a href="docs/assets/hero.mp4" title="Watch the 1080p MP4 (52 s)">
-    <img src="docs/assets/hero.gif" alt="akua — Typed. Signed. Sandboxed." width="900" />
-  </a>
-</p>
 
 ---
 
-Akuapkg authors, renders, tests and publishes cloud-native application packages. Its standalone binary is `akuapkg`. The Akua platform CLI is a separate binary named `akua`; it embeds the same package command surface under `akua pkg`.
+akuapkg builds Kubernetes packages that are typed, rendered in a sandbox and
+pinned by digest. You write a Package in [KCL](https://kcl-lang.io); it can
+call existing Helm charts and Kustomize overlays, and every resource it
+emits is checked against the schemas of the Kubernetes version and the CRDs
+you depend on.
 
-Packages are authored in [KCL](https://kcl-lang.io). Existing Helm charts and Kustomize bases are callable inside KCL programs. The CLI is a Bun + [Effect](https://effect.website) program; the KCL runtime and the Helm and Kustomize engines are WebAssembly modules it runs inside [Wasmtime](https://wasmtime.dev), each render in its own sandbox.
+## Why akuapkg
+
+- **Typed packages instead of YAML templates.** Helm values are an untyped
+  tree (only about a quarter of the 300 most-starred charts on Artifact Hub
+  ship a values schema) parsed as YAML 1.1, where `NO` becomes `false`.
+  In akuapkg, inputs, Kubernetes resources, Custom Resources and chart
+  values are schemas: a typo, a wrong type or an API your cluster version
+  does not serve fails the render, with the file and line.
+- **Sandboxed engines, because charts are programs.** Rendering a Helm chart
+  or a Kustomize overlay can read host files, make network requests and,
+  through plugins, run executables with your credentials. Advisories keep
+  coming, most recently two critical Argo CD advisories in October 2026
+  where a kustomization ran commands on the repo server. akuapkg runs Helm,
+  Kustomize and KCL as WebAssembly in [Wasmtime](https://wasmtime.dev),
+  with no filesystem, network, environment or process access, under memory
+  and CPU budgets.
+- **A locked supply chain.** Every dependency (OCI artifact, git tag, Helm
+  repository chart, URL) is pinned by digest in `akua.lock`. With a cosign
+  key configured, dependencies must be signed by it, and `akuapkg publish`
+  signs and attests what you push.
+- **One binary.** No `helm`, `kustomize`, `kcl` or `kubectl` on the
+  machine; nothing is looked up on `$PATH`.
+
+The evidence and the limits are in [docs/why.md](docs/why.md).
 
 ## Install
 
 ```sh
-# macOS and Linux, through the Akua platform CLI (as `akua pkg`)
-brew install akua-dev/tap/akua
-
-# The standalone `akuapkg` binary
+# The standalone akuapkg binary (macOS, Linux); installs to ~/.akuapkg/bin
 curl -fsSL https://cli.akua.dev/install | sh
+
+# Or with Homebrew
+brew install akua-dev/tap/akuapkg
 ```
 
-On Windows, run `irm https://cli.akua.dev/install.ps1 | iex` in PowerShell, or download an archive from [the releases](https://github.com/akua-dev/akuapkg/releases).
+On Windows, run `irm https://cli.akua.dev/install.ps1 | iex` in PowerShell,
+or download an archive from [the releases](https://github.com/akua-dev/akua/releases).
 
-```sh
-# Standalone package tool
-akuapkg render --inputs inputs.yaml --out ./deploy
-
-# The same operation through the Akua platform CLI
-akua pkg render --inputs inputs.yaml --out ./deploy
-```
+The Akua CLI (`brew install akua-dev/tap/akua`, source in [`cli/`](cli/))
+embeds the same toolchain: every command in this README also works as
+`akua pkg <command>`.
 
 ## Quick start
 
-A real Package: typed inputs, an OCI-fetched Helm chart with **typed values**, and a KCL overlay across every rendered resource. No `helm` binary on the machine; no shell-out anywhere.
+Scaffold a Package. It is typed by default: `akua.toml` declares the
+Kubernetes 1.35 schemas and `akua.lock` pins them by digest.
 
-```toml
-# akua.toml — deps are typed; resolver pins them in akua.lock with cosign verification
-[package]
-name    = "blog"
-version = "0.1.0"
-edition = "akua.dev/v1alpha1"
-
-[dependencies]
-nginx = { oci = "oci://registry-1.docker.io/bitnamicharts/nginx", version = "18.2.0" }
+```sh
+akuapkg init hello
+cd hello
 ```
 
+Add a CRD dependency. `add` downloads cert-manager's CRDs, pins their
+`sha256` and generates KCL schemas into `.akua/crds/`:
+
+```sh
+akuapkg add cert-manager --url https://github.com/cert-manager/cert-manager/releases/download/v1.16.0/cert-manager.crds.yaml
+```
+
+Write `package.k` with a typed Kubernetes resource and a typed Custom
+Resource:
+
 ```kcl
-# package.k
 import akua.ctx
-import charts.nginx as nginx
+import k8s.api.core.v1 as corev1
+import crds.cert_manager.cert_manager_io.v1 as certmanager
 
 schema Input:
-    name:     str = "blog"
+    appName: str
     replicas: int = 2
-    tenant:   str
+    host: str = "hello.example.com"
 
     check:
-        replicas >= 1, "replicas must be >= 1"
+        replicas >= 1, "replicas must be at least 1"
 
 input: Input = ctx.input()
 
-# Helm chart called as an alias-method. `nginx.Values` is a generated
-# schema, not an untyped dict — typos surface as KCL compile errors.
-_workload = nginx.template(nginx.TemplateOpts {
-    values = nginx.Values {
-        replicaCount     = input.replicas
-        fullnameOverride = input.name
+resources = [
+    corev1.ConfigMap {
+        metadata.name = input.appName
+        data.replicas = str(input.replicas)
     }
-    release = input.name
-})
-
-# Overlay every rendered resource with a tenant label.
-resources = [r | {
-    metadata.labels = { "app.cnap.tech/tenant" = input.tenant }
-} for r in _workload]
+    certmanager.Certificate {
+        metadata.name = input.appName
+        spec = {
+            secretName = "${input.appName}-tls"
+            dnsNames = [input.host]
+            issuerRef = {name = "letsencrypt", kind = "ClusterIssuer"}
+            privateKey.algorithm = "ECDSA"
+        }
+    }
+]
 ```
+
+Render it in the sandbox:
 
 ```sh
-akuapkg render --inputs prod.yaml --out ./deploy   # sandboxed render → raw manifests
-akuapkg publish .                                  # cosign-signed OCI artifact + SLSA attestation
+akuapkg render --inputs inputs.example.yaml
 ```
 
-For cross-Package composition (install one Akua package on top of another, with overlays, filters, and extras), see [`examples/11-install-as-package/`](examples/11-install-as-package/). The [`examples/`](examples/) directory covers Helm, Kustomize, multi-engine, package composition, and the KCL ecosystem.
+```text
+rendered: 2 manifest(s) → ./deploy (sha256:1c57f0b8610c340703c79f9aebdfd850c3d7a27eb4921c8b21c429a3b006e0e0)
+```
 
-## Why Akuapkg
+Now break it. Change `secretName` to `secretname`, or `"ECDSA"` to
+`"ECDSB"`, and render again:
 
-- **Sandboxed by default.** Every render runs in a Wasmtime WASI sandbox with a memory cap and a CPU (fuel) budget. No shell-out, no `$PATH` lookup, no ambient filesystem. Untrusted Packages are safe to render on shared hosts. Adversarial test suite proves each invariant. See [`docs/security-model.md`](docs/security-model.md).
-- **Typed packages, not YAML templates.** KCL has real schemas, real types, real imports. Drift between the value the operator wrote and the value the chart consumed becomes a compile error, not a 3am incident.
-- **Embedded engines.** Helm v4 + Kustomize compiled to `wasm32-wasip1` and hosted inside akua. `helm.template(...)` works without a `helm` binary anywhere on your machine. See [`docs/embedded-engines.md`](docs/embedded-engines.md).
-- **Signed + attested.** `akuapkg publish` emits cosign signatures and SLSA v1 attestations by default. On pull, the `akua.lock` digest is always verified; cosign + SLSA verification engages, fail-closed, when a `[signing] cosign_public_key` is configured. ECDSA P-256 keyed cosign today; keyless on the v0.3 roadmap.
-- **Deterministic.** Same inputs + same lockfile + same akuapkg version → byte-identical output. No `now()`, no `random()`, no env reads in the render pipeline.
-- **Compose with the ecosystem.** kpm-published KCL packages (`oci://ghcr.io/kcl-lang/*`) drop straight into `[dependencies]` — `import k8s.api.apps.v1` resolves against the upstream schema bundle. See [`examples/10-kcl-ecosystem/`](examples/10-kcl-ecosystem/).
-- **Agent-aware.** Auto-detects supported agent environments, emits `--json`, uses typed exit codes, and ships skill manifests under [`skills/`](skills/) conforming to the [Agent Skills Specification](https://agentskills.io). See [`docs/agent-usage.md`](docs/agent-usage.md).
+```text
+error[E2L23]: CompileError
+---> File package.k:23:13: Cannot add member 'secretname' to schema 'CertificateSpec', did you mean '["secretTemplate", "secretName"]'?
+```
 
-## Distribution
+```text
+error[E2G22]: TypeError
+---> File package.k:26:24: expected str(RSA) | str(ECDSA) | str(Ed25519), got str(ECDSB)
+```
 
-Published binaries belong to [Akuapkg releases](https://github.com/akua-dev/akuapkg/releases). Verify that the version you need is published before relying on release assets; a source tag alone does not publish them.
+Target another Kubernetes version with `akuapkg add k8s --k8s 1.33 --force`;
+the next render type-checks the Package against it. CRDs can also come from
+a git tag, an OCI artifact, a Helm chart or a local directory: see
+[docs/typed-resources.md](docs/typed-resources.md).
 
-Bazel in cnap builds Akuapkg (`bazel build //tools/akuapkg:akuapkg_<target>`, e.g. `akuapkg_darwin_arm64`): the render worker and engines to WebAssembly, precompiled per target, and the Bun executable that embeds them, from checksum-pinned sources with every toolchain pinned. Release publication follows [`docs/releasing.md`](docs/releasing.md).
+Helm charts are dependencies too, called through a typed alias. When the
+chart ships a `values.schema.json`, as Traefik's does, `traefik.Values` is
+generated from it:
 
-npm publishing of the TypeScript SDK is discontinued; see [`docs/sdk.md`](docs/sdk.md) for building `@akua-dev/sdk` from source.
+```sh
+akuapkg add traefik --oci oci://ghcr.io/traefik/helm/traefik --version 37.1.1
+```
 
-Agent-specific setup: [`docs/agent-usage.md`](docs/agent-usage.md).
+```kcl
+import charts.traefik
+
+resources = traefik.template(traefik.TemplateOpts {
+    values = traefik.Values {deployment.replicas = 2}
+})
+```
+
+A misspelled value is then a compile error as well:
+
+```text
+error[E2L23]: CompileError
+---> File package.k:4:41: Cannot add member 'replica' to schema 'ValuesDeployment', did you mean '["replicas"]'?
+```
 
 ## Documentation
 
 | | |
 |---|---|
-| **Authors** | [Package format](docs/package-format.md) · [Lockfile format](docs/lockfile-format.md) · [Examples](examples/) · [Skills](skills/) |
-| **Operators** | [CLI reference](https://docs.akua.dev/akua/cli) · [Error codes](https://docs.akua.dev/akua/errors) · [CLI contract](docs/cli-contract.md) · [SDK](docs/sdk.md) · [Agent usage](docs/agent-usage.md) |
-| **Internals** | [Architecture](docs/architecture.md) · [Embedded engines](docs/embedded-engines.md) · [Security model](docs/security-model.md) · [Performance](docs/performance.md) |
-| **Project** | [Roadmap](docs/roadmap.md) · [Use cases](docs/use-cases.md) · [Changelog](CHANGELOG.md) |
+| **Start here** | [Why akuapkg](docs/why.md) · [Typed resources](docs/typed-resources.md) · [Examples](examples/) |
+| **Authoring** | [Package format](docs/package-format.md) · [`akua.toml` and `akua.lock`](docs/lockfile-format.md) · [Agent usage and skills](docs/agent-usage.md) |
+| **Reference** | [Commands](https://docs.akua.dev/akua/cli) · [Error codes](https://docs.akua.dev/akua/errors) · [CLI contract](docs/cli-contract.md) · [SDK](docs/sdk.md) |
+| **Internals** | [Security model](docs/security-model.md) · [Architecture](docs/architecture.md) · [Embedded engines](docs/embedded-engines.md) · [Debugging](docs/debugging.md) |
+| **Project** | [Roadmap](docs/roadmap.md) · [Building](docs/building.md) · [Releasing](docs/releasing.md) · [Changelog](CHANGELOG.md) |
 
 ## Status
 
-**Alpha.** Interfaces may change before v1.0. The live command surface is authoritative in `akuapkg --help`; planned work remains in [`docs/roadmap.md`](docs/roadmap.md).
+Alpha. The Package format, the JSON output and the error and exit codes are
+stable enough to build on; interfaces can still change before 1.0.
+`akuapkg --help` is the authoritative command list.
 
 ## Security
 
-The render path is structurally hardened: no shell-out, no `$PATH`, every engine runs inside wasmtime with memory / epoch / filesystem-capability caps. Threat model and disclosure process: [`SECURITY.md`](SECURITY.md). Implementation detail and adversarial-test catalogue: [`docs/security-model.md`](docs/security-model.md).
+Threat model and guarantees: [docs/security-model.md](docs/security-model.md).
+Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
 ## Contributing
 
-Issues and small focused PRs are welcome — typos, doc clarity, test coverage, security findings. For larger changes, open an issue first so we can align on shape. See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+Issues are welcome: bug reports, reproductions, root-cause analysis and
+design feedback. External code pull requests are not accepted yet:
+development happens in Akua's internal monorepo, the source of truth that
+this repository projects; a reviewed import path for pull requests may come
+later. See [CONTRIBUTING.md](CONTRIBUTING.md) and
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ## License
 

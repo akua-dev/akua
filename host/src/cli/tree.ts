@@ -2,7 +2,7 @@ import { Effect, Option } from "effect"
 import { Command, Flag } from "effect/cli"
 import { ExitCode, fail } from "../contract"
 import { type Lock, parseLock } from "../lockfile"
-import { dependencies, type Dependency, parseManifest } from "../manifest"
+import { crdSelector, dependencies, type Dependency, parseManifest } from "../manifest"
 import { NOT_FOUND, readOptional } from "./files"
 import { verb } from "./report"
 import { emit, universal } from "./universal"
@@ -13,6 +13,8 @@ interface DependencyRow {
   readonly source: string
   readonly source_ref: string
   readonly version?: string
+  /** A CRD dependency's `crds` selector. */
+  readonly crds?: string
   readonly locked?: { readonly digest: string; readonly signature?: string; readonly replaced_by?: string }
 }
 
@@ -25,6 +27,8 @@ const sourceOf = (dependency: Dependency): readonly [string, string] =>
     ? ["path", dependency.path]
     : dependency.repo !== undefined
     ? ["helm", dependency.repo]
+    : dependency.url !== undefined
+    ? ["url", dependency.url]
     : ["unknown", ""]
 
 const row = (name: string, dependency: Dependency, lock: Option.Option<Lock>): DependencyRow => {
@@ -35,6 +39,7 @@ const row = (name: string, dependency: Dependency, lock: Option.Option<Lock>): D
     source,
     source_ref: sourceRef,
     ...(dependency.version === undefined ? {} : { version: dependency.version }),
+    ...Option.match(Option.fromUndefinedOr(crdSelector(dependency)), { onNone: () => ({}), onSome: (crds) => ({ crds }) }),
     ...Option.match(entry, {
       onNone: () => ({}),
       onSome: (p) => ({
@@ -62,7 +67,8 @@ const text = (
         ? ""
         : ` [locked ${shortDigest(dep.locked.digest)} (${dep.locked.signature === undefined ? "unsigned" : "signed"})]`
       const replaced = dep.locked?.replaced_by === undefined ? "" : ` [replace -> ${dep.locked.replaced_by}]`
-      return `  - ${dep.name}${dep.version === undefined ? "" : `@${dep.version}`} (${dep.source} ${dep.source_ref})${locked}${replaced}`
+      const crds = dep.crds === undefined ? "" : ` [crds ${dep.crds}]`
+      return `  - ${dep.name}${dep.version === undefined ? "" : `@${dep.version}`} (${dep.source} ${dep.source_ref})${crds}${locked}${replaced}`
     }))
   ].join("\n")
 

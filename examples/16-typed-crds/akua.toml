@@ -1,0 +1,13 @@
+[package]
+name = "16-typed-crds"
+version = "0.1.0"
+edition = "akua.dev/v1alpha1"
+
+[dependencies.cert-manager]
+git = "https://github.com/cert-manager/cert-manager"
+tag = "v1.16.0"
+crds = "deploy/crds/crd-certificates.yaml"
+
+[dependencies.k8s]
+oci = "oci://ghcr.io/kcl-lang/k8s"
+version = "1.35"

@@ -4,6 +4,14 @@ import { CliFailure, type StructuredError, toCliFailure, usageFailure } from "..
 import { HostError } from "../errors"
 import { type OutputMode, outputMode } from "./universal"
 
+/**
+ * KCL formats its diagnostics with ANSI colour codes whatever the output is.
+ * Errors leave this CLI as JSON or plain text, never coloured, so the codes
+ * are dropped (a pipe, a log file, `NO_COLOR` or an agent never sees them).
+ */
+const ansi = new RegExp(String.raw`\u001b\[[0-9;?]*[ -/]*[@-~]`, "g")
+const plain = (error: StructuredError): StructuredError => ({ ...error, message: error.message.replace(ansi, "") })
+
 /** A structured error as people read it: `error[CODE]: message` and its details. */
 const errorText = (error: StructuredError) =>
   [
@@ -21,7 +29,7 @@ export const reportedAs = (mode: OutputMode) => <A, E, R>(effect: Effect.Effect<
   effect.pipe(
     Effect.tapError((failure) =>
       failure instanceof CliFailure
-        ? Console.error(mode === "json" ? JSON.stringify(failure.error) : errorText(failure.error))
+        ? Console.error(mode === "json" ? JSON.stringify(plain(failure.error)) : errorText(plain(failure.error)))
         : Effect.void
     )
   )

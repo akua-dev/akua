@@ -1,0 +1,134 @@
+"""C/C++ toolchains for the package Rust crates' C dependencies.
+
+Every release target cross-compiles on Linux x86_64 executors: Zig (from
+hermetic_cc_toolchain) for Linux, macOS and WASI targets, and clang-cl with
+the pinned Windows SDK for Windows.
+"""
+
+load("@rules_cc//cc:defs.bzl", "cc_toolchain")
+load("//bazel:source_build.bzl", "package_windows_sdk")
+load(":windows_cc_toolchain.bzl", "windows_cc_toolchain_config")
+
+_LINUX_X64_EXEC = [
+    "@platforms//cpu:x86_64",
+    "@platforms//os:linux",
+]
+
+toolchain(
+    name = "render_worker_wasi_cc_toolchain",
+    exec_compatible_with = _LINUX_X64_EXEC,
+    target_compatible_with = [
+        "@platforms//cpu:wasm32",
+        "@platforms//os:wasi",
+        "@zig_sdk//libc:unconstrained",
+    ],
+    toolchain = "@zig_config-linux-amd64//:wasm32-wasi-musl_cc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+# The plain Zig registration follows the invoking host, while package Rust
+# cross-compiles on Linux executors. Select the pinned Zig SDK's Linux
+# executable toolchain for Darwin C dependencies.
+[
+    toolchain(
+        name = "package_rust_darwin_" + name + "_cc_toolchain",
+        exec_compatible_with = _LINUX_X64_EXEC,
+        target_compatible_with = [
+            "@platforms//cpu:" + cpu,
+            "@platforms//os:osx",
+        ],
+        toolchain = "@zig_config-linux-amd64//:{}-macos-none_cc".format(cpu),
+        toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+        visibility = ["//visibility:public"],
+    )
+    for name, cpu in [
+        ("x64", "x86_64"),
+        ("arm64", "aarch64"),
+    ]
+]
+
+# Linux targets for a standalone checkout. A workspace that consumes this
+# repository as a module registers its own Linux C toolchains; the module
+# file registers these only when this repository is the root.
+[
+    toolchain(
+        name = "linux_{}_cc_toolchain".format(name),
+        exec_compatible_with = _LINUX_X64_EXEC,
+        target_compatible_with = [
+            "@platforms//cpu:" + cpu,
+            "@platforms//os:linux",
+            "@zig_sdk//libc:unconstrained",
+        ],
+        toolchain = "@zig_config-linux-amd64//:{}-linux-gnu.2.28_cc".format(cpu),
+        toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+        visibility = ["//visibility:public"],
+    )
+    for name, cpu in [
+        ("x64", "x86_64"),
+        ("arm64", "aarch64"),
+    ]
+]
+
+package_windows_sdk(
+    name = "windows_sdk",
+    exec_properties = {
+        "cpu_count": "2",
+        "memory_kb": "2097152",
+    },
+    visibility = ["//visibility:public"],
+)
+
+windows_cc_toolchain_config(
+    name = "package_rust_windows_cc_config",
+    build_tools = "@windows_build_tools//:files",
+    clang_cl = "@llvm//:bin/clang-cl",
+    lld_link = "@llvm//:bin/lld-link",
+    llvm_lib = "@llvm//:bin/llvm-lib",
+    sdk = ":windows_sdk",
+)
+
+filegroup(
+    name = "package_rust_windows_cc_files",
+    srcs = [
+        ":windows_sdk",
+        "@llvm//:windows_tools",
+        "@windows_build_tools//:files",
+    ],
+)
+
+cc_toolchain(
+    name = "package_rust_windows_cc",
+    all_files = ":package_rust_windows_cc_files",
+    ar_files = ":package_rust_windows_cc_files",
+    compiler_files = ":package_rust_windows_cc_files",
+    dwp_files = ":package_rust_windows_cc_files",
+    linker_files = ":package_rust_windows_cc_files",
+    objcopy_files = ":package_rust_windows_cc_files",
+    strip_files = ":package_rust_windows_cc_files",
+    toolchain_config = ":package_rust_windows_cc_config",
+)
+
+toolchain(
+    name = "package_rust_windows_cc_toolchain",
+    exec_compatible_with = _LINUX_X64_EXEC,
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:windows",
+    ],
+    toolchain = ":package_rust_windows_cc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "starlark_sources",
+    srcs = glob(
+        [
+            "*.bazel",
+            "*.bzl",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//bazel:__pkg__"],
+)

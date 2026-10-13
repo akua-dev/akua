@@ -26,6 +26,8 @@ export declare class Instance {
   call(name: string, args: Array<number>): Outcome
   /** Fuel available to the following calls (roughly one unit per wasm instruction). */
   setFuel(fuel: number): void
+  /** Fuel left after the calls so far: what a caller spending one budget across calls charges. */
+  fuel(): number
   /** Copy `len` bytes out of the guest's exported memory. */
   read(ptr: number, len: number): Buffer
   /** Copy `data` into the guest's exported memory at `ptr`. */

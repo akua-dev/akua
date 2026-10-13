@@ -1,0 +1,53 @@
+exports_files([
+    "bin/clang",
+    "bin/clang-cl",
+    "bin/lld-link",
+    "bin/llvm-cov",
+    "bin/llvm-lib",
+    "bin/llvm-nm",
+    "bin/llvm-objcopy",
+    "bin/llvm-objdump",
+    "bin/llvm-strip",
+    "lib/libclang.so",
+])
+
+filegroup(
+    name = "windows_tools",
+    srcs = [
+        "bin/clang-cl",
+        "bin/lld-link",
+        "bin/llvm-cov",
+        "bin/llvm-lib",
+        "bin/llvm-nm",
+        "bin/llvm-objcopy",
+        "bin/llvm-objdump",
+        "bin/llvm-strip",
+    ] + glob([
+        "lib/clang/18/include/**",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "clang",
+    actual = "bin/clang",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "libclang",
+    actual = "lib/libclang.so",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "libraries",
+    srcs = glob(["lib/libclang*.so*"]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "resource_headers",
+    srcs = glob(["lib/clang/18/include/**"]),
+    visibility = ["//visibility:public"],
+)

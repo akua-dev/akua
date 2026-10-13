@@ -1,8 +1,8 @@
 import { Context, Effect, Layer, Schema } from "effect"
-import YAML from "yaml"
 import { gzip, tar } from "./archive"
 import { HelmEngine, KustomizeEngine } from "./engines.effect"
 import { PluginError } from "./errors"
+import type { EngineBudget } from "./host"
 import { HelmTemplateArgs, KustomizeBuildArgs, PkgRenderArgs } from "./schemas"
 import type { ResolvedDependency } from "./dependencies.effect"
 import { resolveInSnapshot, type Snapshot, subtree } from "./snapshot.effect"
@@ -29,6 +29,8 @@ export interface PluginScope {
   readonly charts: ReadonlyMap<string, ResolvedDependency>
   /** Reject raw-string chart paths; charts must be typed `akua.toml` deps. */
   readonly strict: boolean
+  /** What the render's engine calls have spent, shared with the renders nested in it. */
+  readonly budget: EngineBudget
   /** `pkg.render`: render the Akua-Package dependency `name` with `inputs`. */
   readonly renderPackage: (name: string, inputs: unknown) => Effect.Effect<ReadonlyArray<unknown>, PluginError>
 }
@@ -104,8 +106,9 @@ export class KclPlugins extends Context.Service<KclPlugins, {
         const chart = yield* chartFiles(opts.chart, scope)
         const manifests = yield* helm.render({
           chartTarGz: tarGz(chart.files, chart.name),
-          valuesYaml: YAML.stringify(opts.values ?? {}),
-          release: { name: opts.release ?? "release", namespace: opts.namespace ?? "default" }
+          values: opts.values ?? {},
+          release: { name: opts.release ?? "release", namespace: opts.namespace ?? "default" },
+          budget: scope.budget
         })
         const resources: Array<unknown> = []
         // Sorted like the Rust host's BTreeMap; NOTES.txt is prose, not a manifest.
@@ -123,7 +126,8 @@ export class KclPlugins extends Context.Service<KclPlugins, {
         const parent = overlay.prefix.split("/").slice(0, -1).join("/")
         const yaml = yield* kustomize.build({
           treeTarGz: tarGz(subtree(scope.files, parent), "pkg"),
-          entrypoint: `pkg/${lastSegment(overlay.prefix, "overlay")}`
+          entrypoint: `pkg/${lastSegment(overlay.prefix, "overlay")}`,
+          budget: scope.budget
         })
         return yield* parseManifests("kustomize.build", yaml)
       })

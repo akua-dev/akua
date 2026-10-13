@@ -1,32 +1,17 @@
 # 13-subpackage-helm
 
-> Composes an Akua sub-package that owns its own Helm chart dependency.
-> The root package passes typed inputs down through `pkgs.webserver`
-> while the sub-package resolves and renders its chart.
+A root Package renders a sub-package that has its own Helm chart
+dependency. The root passes typed inputs down; the sub-package resolves and
+renders its chart from its own `akua.toml`.
 
-This example shows package composition across a local path dependency.
-The root `package.k` imports `pkgs.webserver` and calls
-`webserver.render(webserver.Input{...})`; the `webserver` sub-package
-declares a Helm chart dependency in its own `akua.toml`. At render time,
-Akua resolves the sub-package chart context and exposes it to the
-sub-package implementation.
-
-## What's here
-
-| file | purpose |
+| File | Purpose |
 |---|---|
-| `package.k` | Root package that delegates rendering to `pkgs.webserver`. |
-| `akua.toml` | Declares `webserver = { path = "./deps/webserver" }`. |
-| `deps/webserver/` | Sub-package with its own Helm chart dependency. |
-| `inputs.example.yaml` | Namespace input passed from the root to the sub-package. |
-| `rendered/` | Reference output committed for integration tests. |
-
-## Render
+| `akua.toml` | declares `webserver = { path = "./deps/webserver" }` |
+| `package.k` | `ws.render(ws.Input {namespace = input.namespace})` |
+| `deps/webserver/` | the sub-package and its chart dependency |
 
 ```sh
-akuapkg render --out ./rendered
+akuapkg render --out ./out
 ```
 
-The interesting part is the import boundary: root package inputs remain
-typed at the call site, and chart resolution stays local to the
-sub-package that declared the chart.
+This writes `000-deployment-web-nginx.yaml`, the same as `rendered/`.

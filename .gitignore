@@ -90,3 +90,7 @@ coverage/
 # Bazel contributor preparation outputs
 bazel-*
 third_party/kcl/vendor/
+
+# Agent session scratch
+.superpowers/
+.bazelrc.user

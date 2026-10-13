@@ -1,208 +1,76 @@
 ---
 name: test-and-lint
-description: Set up tests, linting, formatting, coverage, and tracing for an akua workspace — for Packages (KCL) and Policies (Rego) together. Use when bootstrapping CI for a new platform repo, adding test coverage to an untested package, debugging a policy that denies unexpectedly, configuring a format/lint pre-commit hook, or when asked "add tests" / "set up CI gates" / "why is this policy failing?"
+description: Set up and run akuapkg's checks for a Package - check, lint, fmt, assertion tests, golden snapshot tests, lockfile and signature verification - locally and in CI. Use when bootstrapping CI for a Package repository, adding tests to an untested Package, configuring a pre-commit hook, or when asked to "add tests" or "set up CI gates".
 license: Apache-2.0
 ---
 
-# Test, lint, format, trace
+# Tests and checks for a Package
 
-akua embeds the full testing and debugging surface from its host engines (KCL, OPA/Rego, Regal, Kyverno converter, CEL) into one binary. No `opa` or `kcl` or `regal` on `$PATH` required. See [docs/embedded-engines.md](../../docs/embedded-engines.md) for details.
+## The commands
 
-## When to use
+| Command | Catches |
+|---|---|
+| `akuapkg fmt --check` | unformatted `package.k` |
+| `akuapkg lint` | KCL syntax and import errors |
+| `akuapkg check` | `akua.toml`, `akua.lock` and `package.k` problems |
+| `akuapkg lock --check` | `akua.lock` or `.akua/crds/` out of date with `akua.toml` |
+| `akuapkg verify` | undeclared or unlocked dependencies, path drift, missing signatures under strict signing |
+| `akuapkg test` | failing `assert` or `check:` in `test_*.k` / `*_test.k` |
+| `akuapkg test --golden` | rendered output that differs from `snapshots/` |
 
-- Bootstrapping CI for a new akua workspace
-- Adding test coverage to an existing Package or Policy that shipped without tests
-- Configuring pre-commit hooks for formatting and linting
-- Debugging why a specific policy denies (or doesn't)
-- Setting up a benchmark gate for high-throughput policies (admission, CI at scale)
+All are embedded in akuapkg; nothing else needs installing.
 
 ## Steps
 
-### 1. Add test files
+1. Add assertion tests. A test file is a standalone KCL program; it does not
+   see the Package's dependencies:
 
-Test naming conventions (discovered automatically by `akuapkg test`):
+   ```kcl
+   # test_naming.k
+   _name = "hello"
+   assert len(_name) <= 63, "names fit a DNS label"
+   ```
 
-- **KCL**: `test_*.k` or `*_test.k` anywhere under a Package
-- **Rego**: `*_test.rego` next to the policy files
-- **Golden**: `expected.golden.yaml` next to inputs in `tests/<case>/`
+2. Add golden tests. Put one or more `inputs*.yaml` files next to
+   `package.k` (for example `inputs.example.yaml`, `inputs.prod.yaml`), then
+   record the snapshots and commit `snapshots/`:
 
-Minimum: one happy-path test and one negative-path test per rule / schema.
+   ```sh
+   akuapkg test --update-snapshots
+   ```
 
-Example Rego test:
+3. Run everything as CI would:
 
-```rego
-# policies/production_test.rego
-package akua.policies.my_production
+   ```sh
+   akuapkg fmt --check
+   akuapkg check
+   akuapkg lock --check
+   akuapkg verify
+   akuapkg test --golden
+   ```
 
-import future.keywords
+   Each exits non-zero on failure; with `--json` each prints one JSON
+   result.
 
-test_deny_missing_team_label {
-    deny[_] with input as {
-        "resource": {"kind": "Deployment", "metadata": {"name": "api", "labels": {}}}
-    }
-}
+4. When a golden test fails, render the same inputs and compare with the
+   snapshot, then decide whether the change is intended:
 
-test_allow_with_team_label {
-    count(deny) == 0 with input as {
-        "resource": {"kind": "Deployment", "metadata": {"name": "api", "labels": {"team": "payments"}}}
-    }
-}
-```
+   ```sh
+   akuapkg render --inputs inputs.example.yaml --out /tmp/render
+   akuapkg diff snapshots/inputs.example /tmp/render
+   ```
 
-Example KCL test:
+   If it is, run `akuapkg test --update-snapshots` and commit the new
+   snapshots with the change that caused them.
 
-```python
-# test_schema.k
-import package as pkg
+## Notes
 
-_default_sample = pkg.Input {
-    appName:  "test"
-    hostname: "test.example.com"
-}
+- A chart that uses Helm's `randAlphaNum` or `genCA` renders differently
+  every time; golden tests cannot pin it.
+- Type errors in `package.k` fail `render` and the golden tests; they are
+  the cheapest test you have, so type resources instead of writing dicts.
 
-assert _default_sample.replicas == 3, "default replicas should be 3"
-```
+## References
 
-### 2. Run tests locally
-
-```sh
-akuapkg test                       # runs everything
-akuapkg test --coverage            # with coverage report
-akuapkg test --watch               # TDD; re-runs on file change
-akuapkg test --filter=<regex>      # only matching tests
-```
-
-Confirm all tests pass before committing. Coverage below 80% on policies is a smell.
-
-### 3. Format + lint
-
-```sh
-akuapkg fmt                        # in-place format
-akuapkg lint                       # style + correctness
-akuapkg check                      # syntax/type-only, fastest gate
-```
-
-Expected output on a clean workspace: zero issues. Any lint warnings include the `rule` name and usually a `fix` suggestion; apply with `akuapkg lint --fix` where auto-fixable.
-
-### 4. Wire pre-commit hooks
-
-`.pre-commit-config.yaml`:
-
-```yaml
-repos:
-  - repo: local
-    hooks:
-      - id: akua-fmt
-        name: akuapkg fmt
-        entry: akuapkg fmt --check
-        language: system
-        pass_filenames: false
-      - id: akua-lint
-        name: akuapkg lint
-        entry: akuapkg lint --severity=error
-        language: system
-        pass_filenames: false
-      - id: akua-check
-        name: akuapkg check
-        entry: akuapkg check
-        language: system
-        pass_filenames: false
-```
-
-Fast feedback at commit time. `akuapkg check` is the cheapest syntax/type pass; runs in under 100 ms for typical workspaces.
-
-### 5. Wire CI gates
-
-`.github/workflows/akua-test.yml`:
-
-```yaml
-name: akuapkg test
-on: [pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install akua
-        run: curl -fsSL https://cli.akua.dev/install | sh
-      - name: Check + lint
-        run: |
-          akuapkg check
-          akuapkg lint --severity=error
-          akuapkg fmt --check
-      - name: Test with coverage
-        run: akuapkg test --coverage --min=80
-      - name: Verify lockfile
-        run: akuapkg verify
-      - name: Integration test — render + policy
-        run: |
-          akuapkg render --filter=spec.env=production --out ./rendered
-          akua policy check --tier tier/production --target ./rendered
-```
-
-The integration step catches cases a unit test misses — the full render + policy pipeline in production mode.
-
-### 6. Debug a policy that denies unexpectedly
-
-When a policy denies and it's not obvious why:
-
-```sh
-akua trace 'data.akua.policies.my_production.deny' --input=./deploy/api.yaml --depth=full
-```
-
-Shows every rule evaluated, every boolean at each step, which rule fired and why. Read top-down.
-
-Common patterns:
-
-- "Expected rule to fire but didn't" — check that every condition in the rule body is `TRUE` in the trace; any `FALSE` short-circuits the rule.
-- "Unexpected denial" — find the rule that fired (marked `ALLOW` / result-producing); work through its conditions.
-- "Different verdict in CI than local" — check `akuapkg version --json` on both; embedded engine version mismatch is a common cause.
-
-### 7. Benchmark if latency matters
-
-For admission webhooks or high-throughput evaluators:
-
-```sh
-akua bench --policy=tier/production --input=./rendered --iterations=1000
-```
-
-Target: p99 under 10 ms for tier/production. If above, profile the failing rules — usually one poorly-written aggregation is responsible.
-
-### 8. Enforce minimums in CI
-
-Set minimum thresholds for policy quality:
-
-```yaml
-- name: Coverage gate
-  run: akua cov --min=80
-- name: Benchmark gate
-  run: akua bench --policy=tier/production --p99-max-ms=10
-- name: Ratio of tests-to-rules
-  run: akuapkg lint --severity=error  # fails if any rule has no test coverage
-```
-
-## Agent-specific guidance
-
-When an agent is asked to fix a failing policy or add tests:
-
-1. **Always `akuapkg test --json` first** to see the failure shape in structured form.
-2. **Use `akua trace --json`** for any unexplained denial before proposing a fix; don't guess.
-3. **Add a regression test** before fixing — the test should fail in the current state and pass after the fix. This is verifiable by running `akuapkg test` before and after.
-4. **Prefer `akuapkg lint --fix`** for auto-fixable style issues rather than editing manually.
-5. **Update `akua.lock`** via `akuapkg verify --update` if signatures or digests drifted after a dep bump.
-
-## Failure modes
-
-- **`E_TEST_FILE_NOT_FOUND`** — pattern `*_test.rego` or `test_*.k` matched nothing. Probably misnamed files.
-- **`E_COVERAGE_BELOW_MIN`** (exit 1) — CI gate failed. Add tests for uncovered rules; re-run with `--coverage` to see which.
-- **`E_FMT_NEEDED`** (exit 1 under `--check`) — run `akuapkg fmt` to auto-apply.
-- **`E_LINT_ERROR`** — severity:error issues. Not auto-fixable; author must address.
-- **`E_BENCH_REGRESSION`** — p99 exceeded threshold. Policy added a slow rule; profile and optimize.
-
-## Reference
-
-- [cli.md — akuapkg test / fmt / lint / check / bench / trace / cov / repl / eval](../../docs/cli.md)
-- [package-format.md §11 — Testing Packages](../../docs/package-format.md)
-- [policy-format.md §11 — Testing, linting, tracing](../../docs/policy-format.md)
-- [embedded-engines.md](../../docs/embedded-engines.md) — which engines drive which verbs
-- [diff-gate](../diff-gate/SKILL.md) — complementary CI gate for upgrade compatibility
+- [docs/package-format.md](../../docs/package-format.md#tests)
+- [docs/cli-contract.md](../../docs/cli-contract.md)

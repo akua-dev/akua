@@ -8,6 +8,7 @@ exports_files([
     "Cargo.toml",
     "build.rs",
     "index.d.ts",
+    "package.json",
     "src/config.rs",
     "src/lib.rs",
 ])

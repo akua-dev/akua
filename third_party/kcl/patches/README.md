@@ -63,7 +63,7 @@ porting (see "Verified" below for the last known-clean state).
 ## Applying
 
 `kcl-parser`, `kcl-language-server`, and `kcl-runtime` need patching (see the
-table below); `tools/akuapkg/source/Cargo.toml`'s
+table below); `Cargo.toml`'s
 `[patch."https://github.com/kcl-lang/kcl"]` block points just those three
 crates at `path = "third_party/kcl/vendor/<crate>"`. No other `kcl-*` crate
 gets a `[patch]` entry - Cargo rejects a patch whose source is the exact
@@ -76,21 +76,20 @@ materialized by Bazel from the pinned, patched archive:
 
 1. The shared `../repositories.bzl` module extension fetches
    `https://github.com/kcl-lang/kcl/archive/<rev>.tar.gz`, verifies its
-   `sha256`, and applies all three patches below (`patch_args = ["-p1"]`) at
+   `sha256`, and applies every patch below (`patch_args = ["-p1"]`) at
    fetch time. A drifted hash or a patch that no longer applies fails the
    fetch outright.
-2. `tools/akuapkg/source/third_party/kcl/BUILD.bazel` exposes the three
+2. `third_party/kcl/BUILD.bazel` exposes the three
    patched crate subtrees from that archive as `copy_to_directory` targets,
    rerooted so each crate's own directory content lands at the destination
    root (matching Cargo's `[patch] path =` expectations).
-3. `bazel run //tools/akuapkg:write_kcl_vendor` writes those three
+3. `bazel run //third_party/kcl:write_vendor` writes those three
    directories into `third_party/kcl/vendor/kcl-parser`,
-   `kcl-language-server`, and `kcl-runtime`. This step is **required before
-   any `cargo build`/`test`/`check`/`clippy` invocation on a clean
-   checkout** - akuapkg's own Rust build is not part of Bazel's build graph
-   (Bazel only downloads prebuilt `akuapkg` release binaries), so nothing
-   runs this automatically as a side effect of a cargo command.
-4. `//tools/akuapkg/source/third_party/kcl:kcl_vendor_pin_check` is
+   `kcl-language-server`, and `kcl-runtime`. This step is only needed
+   before running `cargo` by hand on a clean checkout: Bazel's render-worker
+   build applies the patches to the crates itself, through `crate.annotation`
+   entries in `MODULE.bazel`.
+4. `//third_party/kcl:kcl_vendor_pin_check` is
    registered as the `kcl_vendor_pin` gate in root `BUILD.bazel`'s
    `core_verification_roots(...)`, part of `//:ci_build` - building it forces
    the same fetch+patch, so a broken pin fails CI even though nothing else
@@ -113,16 +112,15 @@ versions of crate kcl_ast in the dependency graph").
 
 The `.patch` files here are the source of truth and audit trail; Bazel
 applies them fresh from the pin on every `bazel run
-//tools/akuapkg:write_kcl_vendor`, so `vendor/` never drifts from them.
+//third_party/kcl:write_vendor`, so `vendor/` never drifts from them.
 
 ### Standalone source preparation
 
 The public source repository and canonical Bazel workspace load the same
 `../repositories.bzl` extension. It reads the source-owned revision and archive
-checksum, applies these three patches, and exposes the same upstream crate inputs.
-Run `task kcl:prepare` in the public checkout, or
-`bazel run //tools/akuapkg:write_kcl_vendor` in the canonical repository, to
-materialize Cargo's three gitignored vendor paths. Both callers share the
+checksum, applies these patches, and exposes the same upstream crate inputs.
+Run `bazel run //third_party/kcl:write_vendor` to materialize Cargo's three
+gitignored vendor paths. Both callers share the
 `../vendor.bzl` recipes; no prepared snapshot is committed.
 
 ## Patch list
@@ -132,6 +130,9 @@ materialize Cargo's three gitignored vendor paths. Both callers share the
 | 0001 | `0001-parser-trust-caller-registered-external_pkgs-without.patch` | `kcl-parser` | `is_external_pkg` skips the redundant `Path::exists()` probe for pkgs the caller explicitly registered via `opts.package_maps` - on `wasm32-wasip1`, `Path::exists()` on an absolute path through a WASI preopen is unreliable in Rust's current std and silently discards the caller's registration. | [kcl-lang/kcl#2206](https://github.com/kcl-lang/kcl/pull/2206), open, review feedback (format CI) addressed 2026-09-30. | Upstream merges #2206 or an equivalent fix, or `std`'s WASI `path_filestat_get` starts resolving preopens correctly for absolute paths. |
 | 0002 | `0002-parser-probe-preopen-paths-via-read_dir-open-on-wasm.patch` | `kcl-parser` | Adds `path_exists_or_file`, which falls back to `read_dir`/`File::open` (uses WASI's `path_open`, which does walk preopens) instead of `Path::exists()` on `wasm32`. Also short-circuits `is_internal_pkg` when `pkg_root` is empty. | [kcl-lang/kcl#2206](https://github.com/kcl-lang/kcl/pull/2206), open, review feedback (format CI) addressed 2026-09-30 (combined with 0001 - same root cause, one upstream PR). | Upstream merges #2206 or an equivalent fix. |
 | 0003 | `0003-vendor-standalone-manifests-for-the-three-patched-cr.patch` | `kcl-parser`, `kcl-language-server`, `kcl-runtime` | Rewrites each crate's `Cargo.toml` to a standalone manifest (concrete `version`/`edition`, empty `[workspace]` table, plain unpinned `git` sibling deps) so it can be vendored outside kcl-lang/kcl's own workspace. Cargo/build-only, not an upstream-relevant behavior change. | N/A, akuapkg-vendoring mechanics, not a kcl fix. | Never carried upstream; regenerate whenever the pin moves or a vendored crate's own dependency list changes. |
+| 0004 | `0004-runtime-record-missing-required-attribute-on-wasm32.patch` | `kcl-runtime` | `schema_check_attr_optional` records "attribute 'x' of S is required" in the runtime context and returns on `wasm32` instead of `panic!` (which aborts there and traps the WASI instance), as `schema_assert` already does; the evaluator bails out with the recorded error. Hit by a required attribute missing from a dict literal assigned to a schema-typed attribute. Applied to the Bazel worker build through a `crate.annotation` in `MODULE.bazel` (`-p3`) as well as here. | Not filed yet. | Upstream stops panicking in `schema_check_attr_optional` on wasm32. |
+| 0005 | `0005-loader-skip-unresolved-identifiers-when-listing-options.patch` | `kcl-loader` | `list_options` skips a called identifier without a resolved symbol instead of `unwrap()`-panicking (an abort and trap on `wasm32`): `akuapkg inspect` lists options without dependencies, so `str(...)` inside a config of a `k8s` schema (the `init` scaffold) has none. Applied to the Bazel worker build through a `crate.annotation` in `MODULE.bazel` (`-p3`); `kcl-loader` is not one of the Cargo-vendored crates, so a standalone Cargo build does not carry it. | Not filed yet. | Upstream stops unwrapping there. |
+| 0006 | `0006-evaluator-record-a-failed-type-check-on-wasm32.patch` | `kcl-evaluator` | `type_pack_and_check` records "expect S, got dict" (with the missing attributes) in the runtime context and returns on `wasm32` instead of `panic!` (an abort and trap there), as 0004 does; while a recorded error is pending, `update_ctx_panic_info` no longer moves the reported location. Hit by `input: Input = ctx.input()` rendered without a required input (the `init` scaffold with no inputs file). Applied to the Bazel worker build through a `crate.annotation` in `MODULE.bazel` (`-p3`); `kcl-evaluator` is not one of the Cargo-vendored crates. | Not filed yet. | Upstream stops panicking in `type_pack_and_check` on wasm32. |
 
 Dropped from the old fork (superseded by upstream, not carried forward):
 
@@ -161,8 +162,8 @@ Dropped from the old fork (superseded by upstream, not carried forward):
   `kcl-runtime`'s own unit test suites pass 100% (200/200), and `kcl-runtime`
   additionally checks clean for `wasm32-unknown-unknown` once paired with a
   one-line `uuid` feature addition (`features = ["js", "v4"]`, a separate,
-  pre-existing, orthogonal gap tracked in akuapkg's own
-  `docs/spikes/kcl-wasm-feasibility.md`, not part of this patch series).
+  pre-existing, orthogonal gap that akuapkg's `wasm32-wasip1` target does
+  not hit, not part of this patch series).
   `kcl-language-server`'s own test suite has 2 pre-existing failures
   (`tests::pkg_mod_test`, `completion::tests::complete_unimport_schemas`) that
   reproduce identically against the pristine, unpatched pin, confirmed not

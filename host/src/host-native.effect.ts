@@ -1,7 +1,7 @@
 import { Effect, FileSystem, Layer, Path } from "effect"
 import type { CompiledModule, Instance, Outcome } from "@akua-dev/wasm-sandbox"
 import { EngineError, GuestFailure, RenderError, WasmLoadError } from "./errors"
-import { type CommandRun, type MountedTree, type ReactorSpec, WasmHost } from "./host"
+import { type CommandRun, type EngineBudget, type MountedTree, type ReactorSpec, WasmHost } from "./host"
 import { NativeSandbox } from "./native"
 import type { Snapshot } from "./snapshot.effect"
 
@@ -12,17 +12,17 @@ export interface SandboxLimits {
   readonly engineMemoryBytes: number
   /** Fuel for one worker run: the Package's own KCL (roughly one unit per wasm instruction). */
   readonly workerFuel: number
-  /** Fuel for each engine call (one Helm chart or Kustomize build). */
+  /** Fuel for all engine calls (Helm charts, Kustomize builds) of one render together. */
   readonly engineFuel: number
-  /** Cap on stdout and stderr each. */
+  /** Cap on stdout and stderr each, and on an engine call's result. */
   readonly maxOutputBytes: number
 }
 
 /**
  * Defaults: the previous release's memory caps. Fuel is spent at roughly 4e10
- * units per second: a Package's own KCL gets a fraction of a second, one
- * engine call about 25 seconds (the previous release's 30-second engine
- * deadline; Cilium, the largest chart in use, renders in about one).
+ * units per second: a Package's own KCL gets a fraction of a second, its
+ * engine calls together about 25 seconds (the previous release's 30-second
+ * engine deadline; Cilium, the largest chart in use, renders in about one).
  */
 export const DEFAULT_LIMITS: SandboxLimits = {
   workerMemoryBytes: 256 * 1024 * 1024,
@@ -109,8 +109,24 @@ export const NativeWasmHost = (limits: SandboxLimits = DEFAULT_LIMITS) =>
         return { _tag: "HostDirectory", path: dir } satisfies MountedTree
       })
 
-      /** Instantiate a Go wasip1 reactor and run its package inits once. */
-      const startReactor = Effect.fn("NativeWasmHost.startReactor")(function*(spec: ReactorSpec, module: CompiledModule) {
+      /**
+       * Instantiate a Go wasip1 reactor and run its package inits once. The
+       * inits run on the render's engine budget like any call, so a render
+       * that keeps failing (and so re-instantiating) still has one CPU cap.
+       */
+      const startReactor = Effect.fn("NativeWasmHost.startReactor")(function*(
+        spec: ReactorSpec,
+        module: CompiledModule,
+        budget: EngineBudget
+      ) {
+        const allowance = limits.engineFuel - budget.fuelSpent
+        if (allowance <= 0) {
+          return yield* new GuestFailure({
+            module: spec.name,
+            reason: "OutOfFuel",
+            detail: "the engine calls of one render share one CPU budget"
+          })
+        }
         const instance = yield* Effect.try({
           try: () =>
             module.instantiate({
@@ -118,34 +134,66 @@ export const NativeWasmHost = (limits: SandboxLimits = DEFAULT_LIMITS) =>
               preopens: [],
               maxOutputBytes: limits.maxOutputBytes,
               memoryBytes: limits.engineMemoryBytes,
-              fuel: limits.engineFuel,
+              fuel: allowance,
               stringImports: []
             }),
           catch: (cause) => new EngineError({ engine: spec.name, message: `instantiate: ${String(cause)}` })
         })
-        yield* returned(spec.name, instance.call("_initialize", []))
+        yield* returned(spec.name, instance.call("_initialize", [])).pipe(
+          Effect.ensuring(Effect.sync(() => {
+            budget.fuelSpent += allowance - instance.fuel()
+          }))
+        )
         return instance
       })
 
       /**
        * One JSON request over the reactor ABI: `<prefix>_malloc` the input,
        * call the entry point, `<prefix>_result_len` the result, read it back
-       * and free both buffers. Each request gets a full fuel budget.
+       * and free both buffers. The request gets the fuel the render has
+       * left and is charged what it burns, whether or not it succeeds.
        */
       const request = Effect.fn("NativeWasmHost.request")(function*(
         spec: ReactorSpec,
         instance: Instance,
-        input: Uint8Array
+        input: Uint8Array,
+        budget: EngineBudget
       ) {
-        instance.setFuel(limits.engineFuel)
-        const inPtr = yield* returnedI32(spec.name, instance.call(`${spec.prefix}_malloc`, [input.length]))
-        instance.write(inPtr, Buffer.from(input))
-        const outPtr = yield* returnedI32(spec.name, instance.call(spec.entry, [inPtr, input.length]))
-        const outLen = yield* returnedI32(spec.name, instance.call(`${spec.prefix}_result_len`, [outPtr]))
-        const output = instance.read(outPtr, outLen)
-        yield* returned(spec.name, instance.call(`${spec.prefix}_free`, [inPtr]))
-        yield* returned(spec.name, instance.call(`${spec.prefix}_free`, [outPtr]))
-        return output
+        const outOfFuel = new GuestFailure({
+          module: spec.name,
+          reason: "OutOfFuel",
+          detail: "the engine calls of one render share one CPU budget"
+        })
+        const allowance = limits.engineFuel - budget.fuelSpent
+        if (allowance <= 0) return yield* outOfFuel
+        instance.setFuel(allowance)
+        return yield* Effect.gen(function*() {
+          const inPtr = yield* returnedI32(spec.name, instance.call(`${spec.prefix}_malloc`, [input.length]))
+          instance.write(inPtr, Buffer.from(input))
+          const outPtr = yield* returnedI32(spec.name, instance.call(spec.entry, [inPtr, input.length]))
+          const outLen = yield* returnedI32(spec.name, instance.call(`${spec.prefix}_result_len`, [outPtr]))
+          // The length is the guest's word: bound it before the host copies
+          // and parses that many bytes.
+          if (outLen < 0 || outLen > limits.maxOutputBytes) {
+            return yield* new EngineError({
+              engine: spec.name,
+              code: "E_RENDER_BUDGET_MEMORY",
+              message: `result of ${outLen} bytes exceeds the ${limits.maxOutputBytes}-byte output cap`
+            })
+          }
+          const output = yield* Effect.try({
+            try: () => instance.read(outPtr, outLen),
+            catch: (cause) => new EngineError({ engine: spec.name, message: `reading the result: ${String(cause)}` })
+          })
+          yield* returned(spec.name, instance.call(`${spec.prefix}_free`, [inPtr]))
+          yield* returned(spec.name, instance.call(`${spec.prefix}_free`, [outPtr]))
+          return output
+        }).pipe(
+          Effect.mapError((error) => error._tag === "GuestFailure" && error.reason === "OutOfFuel" ? outOfFuel : error),
+          Effect.ensuring(Effect.sync(() => {
+            budget.fuelSpent += allowance - instance.fuel()
+          }))
+        )
       })
 
       return WasmHost.of({
@@ -155,16 +203,41 @@ export const NativeWasmHost = (limits: SandboxLimits = DEFAULT_LIMITS) =>
         reactor: Effect.fn("NativeWasmHost.reactor")(function*(spec: ReactorSpec, compressed: Uint8Array) {
           // Loaded and instantiated on first use, synchronously (inside the KCL
           // bridge): Packages that never call this engine never pay for it.
-          const session = yield* Effect.cached(
+          const module = yield* Effect.cached(
             load(spec.name, compressed).pipe(
-              Effect.mapError((error) => new EngineError({ engine: spec.name, message: `loading engine: ${String(error.cause)}` })),
-              Effect.flatMap((module) => startReactor(spec, module))
+              Effect.mapError((error) => new EngineError({ engine: spec.name, message: `loading engine: ${String(error.cause)}` }))
+            )
+          )
+          // A failed call can leave the guest's runtime mid-operation (a
+          // trap, exhausted fuel, a denied allocation): the next call gets a
+          // fresh instance. The discarded one is dropped here; its Wasmtime
+          // store (up to the engine memory cap) is freed by the addon's
+          // finalizer when Bun collects it. The addon exports no explicit
+          // dispose: that needs a `dispose` method and a regenerated
+          // `native/index.d.ts` (napi build), which the tree has no pinned
+          // path for yet.
+          let live: Instance | undefined
+          const session = (budget: EngineBudget) => Effect.suspend(() =>
+            live !== undefined ? Effect.succeed(live) : module.pipe(
+              Effect.flatMap((compiled) => startReactor(spec, compiled, budget)),
+              Effect.tap((instance) =>
+                Effect.sync(() => {
+                  live = instance
+                })
+              )
             )
           )
           return {
-            call: Effect.fn("NativeWasmHost.call")(function*(input: Uint8Array) {
-              return yield* request(spec, yield* session, input)
-            })
+            call: Effect.fn("NativeWasmHost.call")(
+              function*(input: Uint8Array, budget: EngineBudget) {
+                return yield* request(spec, yield* session(budget), input, budget)
+              },
+              Effect.tapError(() =>
+                Effect.sync(() => {
+                  live = undefined
+                })
+              )
+            )
           }
         }),
 

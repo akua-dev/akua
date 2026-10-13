@@ -1,0 +1,8 @@
+--- a/build.rs
++++ b/build.rs
+@@ -1,1 +1,4 @@
+-    let dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
++    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
++    let repository = std::path::Path::new(&manifest_dir).file_name().unwrap();
++    let dir = std::path::Path::new("external").join(repository);
++    // The library files are declared inputs under their Bazel repository path.

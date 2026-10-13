@@ -346,6 +346,15 @@ impl Instance {
     self.with(|inner| inner.store.set_fuel(fuel.max(0) as u64).map_err(|e| host_error("fuel", e)))
   }
 
+  /// Fuel left after the calls so far: what a caller spending one budget across calls charges.
+  #[napi]
+  pub fn fuel(&self) -> Result<i64> {
+    self.with(|inner| {
+      let fuel = inner.store.get_fuel().map_err(|e| host_error("fuel", e))?;
+      Ok(i64::try_from(fuel).unwrap_or(i64::MAX))
+    })
+  }
+
   /// Copy `len` bytes out of the guest's exported memory.
   #[napi]
   pub fn read(&self, ptr: u32, len: u32) -> Result<Buffer> {

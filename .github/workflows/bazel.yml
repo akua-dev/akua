@@ -1,0 +1,22 @@
+name: Bazel
+
+# Advisory: the Bazel build from a clone, as docs/building.md describes. The
+# release archives are built and published by the canonical repository's
+# pipeline, never here.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # GitHub's Ubuntu images ship Bazelisk as `bazel`; it reads .bazelversion.
+      - run: bazel test //bazel:cli_unit_test //bazel:cli_typecheck_test //bazel:host_typecheck_test //bazel:render_worker_stamp_contract_test

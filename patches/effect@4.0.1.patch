@@ -1,0 +1,215 @@
+diff --git a/dist/http-api/internal/path.js b/dist/http-api/internal/path.js
+index cb2c3306079054effcf4b78b1715854ecf98ce71..2fbddbef8220a90e35b4b521ec0f0862cf0d3183 100644
+--- a/dist/http-api/internal/path.js
++++ b/dist/http-api/internal/path.js
+@@ -12,9 +12,14 @@ export function getParamNames(schema) {
+  * @internal
+  */
+ export function toRouterPath(path, schema) {
+-  // Preserve undeclared params for raw RouteContext consumers.
+-  if (schema === undefined || !path.includes(":")) return path;
+-  const paramNames = getParamNames(schema);
++  if (!path.includes(":")) return path;
++  // A schema of `undefined` declares zero path parameters (this differs from
++  // `getParamNames` returning `undefined`, which means "declared but its
++  // names cannot be determined" and is handled by the fallthrough below) - so
++  // every `:word` in the path is undeclared and must be escaped, matching an
++  // endpoint that has no params schema at all (e.g. an AIP collection-level
++  // custom method like `/resources:action`).
++  const paramNames = schema === undefined ? emptyParamNames : getParamNames(schema);
+   if (paramNames === undefined) return path;
+   let out = "";
+   let depth = 0;
+diff --git a/src/http-api/internal/path.ts b/src/http-api/internal/path.ts
+index f72a7e07d43ffedc075981269d3bc3b950007153..8f30c0c412864965e001a13bcbbbdb55cda8c5be 100644
+--- a/src/http-api/internal/path.ts
++++ b/src/http-api/internal/path.ts
+@@ -18,9 +18,14 @@ export function getParamNames(schema: Schema.Constraint | undefined): ReadonlySe
+  * @internal
+  */
+ export function toRouterPath(path: string, schema: Schema.Constraint | undefined): string {
+-  // Preserve undeclared params for raw RouteContext consumers.
+-  if (schema === undefined || !path.includes(":")) return path
+-  const paramNames = getParamNames(schema)
++  if (!path.includes(":")) return path
++  // A schema of `undefined` declares zero path parameters (this differs from
++  // `getParamNames` returning `undefined`, which means "declared but its
++  // names cannot be determined" and is handled by the fallthrough below) - so
++  // every `:word` in the path is undeclared and must be escaped, matching an
++  // endpoint that has no params schema at all (e.g. an AIP collection-level
++  // custom method like `/resources:action`).
++  const paramNames = schema === undefined ? emptyParamNames : getParamNames(schema)
+   if (paramNames === undefined) return path
+ 
+   let out = ""
+diff --git a/dist/http/HttpClient.js b/dist/http/HttpClient.js
+--- a/dist/http/HttpClient.js
++++ b/dist/http/HttpClient.js
+@@ -758,13 +758,14 @@ const responseRegistry = /*#__PURE__*/(() => {
+   if ("FinalizationRegistry" in globalThis && globalThis.FinalizationRegistry) {
+-    const registry = /*#__PURE__*/new FinalizationRegistry(controller => {
++    let registry;
++    const getRegistry = () => registry ??= new FinalizationRegistry(controller => {
+       controller.abort();
+     });
+     return {
+       register(response, controller) {
+-        registry.register(response, controller, response);
++        getRegistry().register(response, controller, response);
+       },
+       unregister(response) {
+-        registry.unregister(response);
++        registry?.unregister(response);
+       }
+     };
+   }
+diff --git a/src/http/HttpClient.ts b/src/http/HttpClient.ts
+--- a/src/http/HttpClient.ts
++++ b/src/http/HttpClient.ts
+@@ -2215,13 +2215,15 @@ const responseRegistry = (() => {
+   if ("FinalizationRegistry" in globalThis && globalThis.FinalizationRegistry) {
+-    const registry = new FinalizationRegistry((controller: AbortController) => {
+-      controller.abort()
+-    })
++    let registry: FinalizationRegistry<AbortController> | undefined
++    const getRegistry = () =>
++      registry ??= new FinalizationRegistry((controller: AbortController) => {
++        controller.abort()
++      })
+     return {
+       register(response: HttpClientResponse.HttpClientResponse, controller: AbortController) {
+-        registry.register(response, controller, response)
++        getRegistry().register(response, controller, response)
+       },
+       unregister(response: HttpClientResponse.HttpClientResponse) {
+-        registry.unregister(response)
++        registry?.unregister(response)
+       }
+     }
+   }
+diff --git a/dist/http-api/HttpApiClient.js b/dist/http-api/HttpApiClient.js
+index 58ac6fd7e5d40f489b9da85d68021700d8d6b6e8..6caa8cd220c6a1aab1a3e2d03acfbbeeaf6f6e42 100644
+--- a/dist/http-api/HttpApiClient.js
++++ b/dist/http-api/HttpApiClient.js
+@@ -318,14 +318,16 @@ export const urlBuilder = (api, options) => {
+   return builder;
+ };
+ // ----------------------------------------------------------------------------
+-const paramsRegExp = /(\/?):(\w+)(\?)?/g;
++const paramsRegExp = /(\/?):(\w+)(\?)?|\{([\w-]+)(:\*)?\}/g;
+ const compilePath = (path, schema) => {
+-  if (schema === undefined || !path.includes(":")) {
++  if (schema === undefined || (!path.includes(":") && !path.includes("{"))) {
+     return _ => path;
+   }
+   const paramNames = HttpApiPath.getParamNames(schema);
+   return params => {
+-    return path.replace(paramsRegExp, (match, slash, key, optional) => {
++    return path.replace(paramsRegExp, (match, slash, colonKey, optional, templateKey, wildcard) => {
++      const key = templateKey ?? colonKey;
++      if (key === undefined) return match;
+       if (paramNames !== undefined && !paramNames.has(key)) {
+         return match;
+       }
+@@ -336,7 +338,8 @@ const compilePath = (path, schema) => {
+         }
+         throw new Error(`Missing path parameter: ${key}`);
+       }
+-      return `${slash}${encodeURIComponent(value)}`;
++      const encoded = wildcard === undefined ? encodeURIComponent(value) : value.split("/").map(encodeURIComponent).join("/");
++      return `${slash ?? ""}${encoded}`;
+     });
+   };
+ };
+@@ -580,6 +583,7 @@ function getEncodePayloadSchemaFromBody(schema, method) {
+       }, input, options));
+     },
+     encode(t, options) {
++      if (HttpApiSchema.isNoContent(ast)) return Effect.succeed(HttpBody.empty);
+       switch (encoding._tag) {
+         case "Multipart":
+           return Effect.fail(new SchemaIssue.Forbidden({
+diff --git a/src/http-api/HttpApiClient.ts b/src/http-api/HttpApiClient.ts
+index abfed1134ccf70d03046c4002f1623137df820d5..3f8e93f2dc5a57ba4fbae47706c30f440168e482 100644
+--- a/src/http-api/HttpApiClient.ts
++++ b/src/http-api/HttpApiClient.ts
+@@ -755,15 +755,17 @@ export const urlBuilder = <Api extends HttpApi.Constraint>(api: Api, options?: {
+ 
+ // ----------------------------------------------------------------------------
+ 
+-const paramsRegExp = /(\/?):(\w+)(\?)?/g
++const paramsRegExp = /(\/?):(\w+)(\?)?|\{([\w-]+)(:\*)?\}/g
+ 
+ const compilePath = (path: string, schema: Schema.Top | undefined) => {
+-  if (schema === undefined || !path.includes(":")) {
++  if (schema === undefined || (!path.includes(":") && !path.includes("{"))) {
+     return (_: any) => path
+   }
+   const paramNames = HttpApiPath.getParamNames(schema)
+   return (params: Record<string, string | undefined>) => {
+-    return path.replace(paramsRegExp, (match, slash: string, key: string, optional: string | undefined) => {
++    return path.replace(paramsRegExp, (match, slash: string | undefined, colonKey: string | undefined, optional: string | undefined, templateKey: string | undefined, wildcard: string | undefined) => {
++      const key = templateKey ?? colonKey
++      if (key === undefined) return match
+       if (paramNames !== undefined && !paramNames.has(key)) {
+         return match
+       }
+@@ -774,7 +776,8 @@ const compilePath = (path: string, schema: Schema.Top | undefined) => {
+         }
+         throw new Error(`Missing path parameter: ${key}`)
+       }
+-      return `${slash}${encodeURIComponent(value)}`
++      const encoded = wildcard === undefined ? encodeURIComponent(value) : value.split("/").map(encodeURIComponent).join("/")
++      return `${slash ?? ""}${encoded}`
+     })
+   }
+ }
+@@ -1156,6 +1159,7 @@ function getEncodePayloadSchemaFromBody(
+         )
+       },
+       encode(t, options) {
++        if (HttpApiSchema.isNoContent(ast)) return Effect.succeed(HttpBody.empty)
+         switch (encoding._tag) {
+           case "Multipart":
+             return Effect.fail(
+diff --git a/src/http-api/HttpApiEndpoint.ts b/src/http-api/HttpApiEndpoint.ts
+--- a/src/http-api/HttpApiEndpoint.ts
++++ b/src/http-api/HttpApiEndpoint.ts
+@@ -534,12 +534,13 @@
+   & ([Params["Type"]] extends [never] ? {} : { readonly params: Params["Type"] })
+   & ([Query["Type"]] extends [never] ? {} : { readonly query: Query["Type"] })
+   & ([Headers["Type"]] extends [never] ? {} : { readonly headers: Headers["Type"] })
+-  & ([Payload["Type"]] extends [never] ? {}
+-    : Payload["Type"] extends infer P ?
+-      P extends Brand<HttpApiSchema.MultipartTypeId> | Brand<HttpApiSchema.MultipartStreamTypeId>
+-        ? { readonly payload: FormData }
+-      : { readonly payload: Payload["Type"] }
+-    : { readonly payload: Payload["Type"] })
++  & ([Payload["Type"]] extends [never] ? {} : {
++    readonly payload: Payload["Type"] extends infer P
++      ? P extends Brand<HttpApiSchema.MultipartTypeId> | Brand<HttpApiSchema.MultipartStreamTypeId>
++        ? FormData
++        : P
++      : never
++  })
+ ) extends infer Req ? keyof Req extends never ? (void | {
+       readonly responseMode?: ResponseMode
+       readonly sseOptions?: Sse.DecodeOptions | undefined
+diff --git a/dist/http-api/HttpApiEndpoint.d.ts b/dist/http-api/HttpApiEndpoint.d.ts
+--- a/dist/http-api/HttpApiEndpoint.d.ts
++++ b/dist/http-api/HttpApiEndpoint.d.ts
+@@ -308,12 +308,8 @@
+     readonly query: Query["Type"];
+ }) & ([Headers["Type"]] extends [never] ? {} : {
+     readonly headers: Headers["Type"];
+-}) & ([Payload["Type"]] extends [never] ? {} : Payload["Type"] extends infer P ? P extends Brand<HttpApiSchema.MultipartTypeId> | Brand<HttpApiSchema.MultipartStreamTypeId> ? {
+-    readonly payload: FormData;
+-} : {
+-    readonly payload: Payload["Type"];
+-} : {
+-    readonly payload: Payload["Type"];
++}) & ([Payload["Type"]] extends [never] ? {} : {
++    readonly payload: Payload["Type"] extends infer P ? P extends Brand<HttpApiSchema.MultipartTypeId> | Brand<HttpApiSchema.MultipartStreamTypeId> ? FormData : P : never;
+ })) extends infer Req ? keyof Req extends never ? (void | {
+     readonly responseMode?: ResponseMode;
+     readonly sseOptions?: Sse.DecodeOptions | undefined;

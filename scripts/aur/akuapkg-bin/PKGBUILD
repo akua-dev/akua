@@ -21,14 +21,14 @@ pkgver=0.1.0
 pkgrel=1
 pkgdesc="Cloud-native package build, transform, and preview toolkit"
 arch=('x86_64' 'aarch64')
-url="https://github.com/akua-dev/akuapkg"
+url="https://github.com/akua-dev/akua"
 license=('Apache-2.0')
 provides=('akuapkg')
 conflicts=('akuapkg')
 
 # Per-arch sources — each tag publishes both amd64 and arm64 tarballs.
-source_x86_64=("https://github.com/akua-dev/akuapkg/releases/download/v${pkgver}/${_pkgname}-v${pkgver}-x86_64-unknown-linux-gnu.tar.gz")
-source_aarch64=("https://github.com/akua-dev/akuapkg/releases/download/v${pkgver}/${_pkgname}-v${pkgver}-aarch64-unknown-linux-gnu.tar.gz")
+source_x86_64=("https://github.com/akua-dev/akua/releases/download/v${pkgver}/${_pkgname}-v${pkgver}-x86_64-unknown-linux-gnu.tar.gz")
+source_aarch64=("https://github.com/akua-dev/akua/releases/download/v${pkgver}/${_pkgname}-v${pkgver}-aarch64-unknown-linux-gnu.tar.gz")
 
 # SHA256 checksums — bump alongside pkgver. The release workflow
 # writes each tarball's sha256 next to it as `<file>.tar.gz.sha256`;

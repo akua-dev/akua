@@ -1,0 +1,247 @@
+"""The Rust crates of the package toolchain: the render worker (wasm32-wasip1),
+the Wasmtime sandbox addon (napi-rs, per release target) and the build-time
+Wasmtime precompiler."""
+
+load("@akua_precompile_crates//:defs.bzl", precompile_aliases = "aliases", precompile_deps = "all_crate_deps")
+load("@akua_sandbox_crates//:defs.bzl", sandbox_aliases = "aliases", sandbox_deps = "all_crate_deps")
+load("@akua_worker_crates//:defs.bzl", "aliases", "crate_deps")
+load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_shared_library")
+load("@source_version//:version.bzl", "PACKAGE_SOURCE_VERSION")
+load("//bazel:source_paths.bzl", "source_directory")
+load(":rust_artifact.bzl", "package_rust_tool")
+load(":sdk_link_inputs.bzl", "darwin_link_inputs", "sdk_link_inputs")
+load(":sdk_paths.bzl", "PACKAGE_DARWIN_ARM64_RUST_LIB", "PACKAGE_DARWIN_X64_RUST_LIB", "PACKAGE_MACOS_SDK_ROOT")
+
+_DARWIN_RUSTC_FLAGS = [
+    "-Csplit-debuginfo=off",
+    "-Clink-arg=-syslibroot",
+    "-Clink-arg=" + PACKAGE_MACOS_SDK_ROOT,
+]
+
+sdk_link_inputs(
+    name = "sdk_link_inputs",
+    sdk = "@macos_sdk//:files",
+)
+
+# The final link needs the SDK's stubs and settings, not its 23k C headers.
+_DARWIN_LINK_INPUTS = darwin_link_inputs(":sdk_link_inputs")
+
+# buildifier: disable=canonical-repository
+_DARWIN_LINKER = select({
+    "//bazel/platforms:darwin_x64": [
+        "-Clinker=$(execpath @@rules_rust++rust+akua_rust_linux_x64__x86_64-apple-darwin__stable_tools//:rust_lld)",
+    ] + _DARWIN_RUSTC_FLAGS,
+    "//bazel/platforms:darwin_arm64": [
+        "-Clinker=$(execpath @@rules_rust++rust+akua_rust_linux_x64__aarch64-apple-darwin__stable_tools//:rust_lld)",
+    ] + _DARWIN_RUSTC_FLAGS,
+    "//conditions:default": [],
+})
+
+# The crate extension exposes aggregate repos, not these generated per-crate source labels.
+# buildifier: disable=canonical-repository
+rust_library(
+    name = "core_worker",
+    srcs = ["//crates/akua-core:rust_compile_sources"],
+    aliases = aliases(
+        package_name = "crates/akua-core",
+        normal = True,
+    ),
+    compile_data = ["//crates/akua-core:rust_compile_data"],
+    crate_features = ["engine-kcl"],
+    crate_name = "akua_core",
+    crate_root = "//crates/akua-core:src/lib.rs",
+    edition = "2021",
+    rustc_env = {
+        "CARGO_MANIFEST_DIR": "$${pwd}/" + source_directory("crates/akua-core"),
+        "CARGO_PKG_NAME": "akua-core",
+        "CARGO_PKG_VERSION": PACKAGE_SOURCE_VERSION,
+    },
+    visibility = ["//visibility:public"],
+    deps = [
+        "@@rules_rust++crate+akua_worker_crates__kcl-lang-0.13.0//:kcl_lang",
+        "@@rules_rust++crate+akua_worker_crates__sha2-0.10.9//:sha2",
+        "@@rules_rust++crate+akua_worker_crates__tempfile-3.27.0//:tempfile",
+    ] + crate_deps(
+        [
+            "base64",
+            "serde",
+            "serde_json",
+            "serde_yaml",
+            "thiserror",
+            "toml",
+        ],
+        package_name = "crates/akua-core",
+    ),
+)
+
+# akua-render-worker
+rust_binary(
+    name = "render_worker",
+    srcs = ["//crates/akua-render-worker:rust_compile_sources"],
+    aliases = aliases(
+        package_name = "crates/akua-render-worker",
+        normal = True,
+    ),
+    crate_name = "akua_render_worker",
+    crate_root = "//crates/akua-render-worker:src/main.rs",
+    edition = "2021",
+    exec_properties = {
+        "memory_kb": "4194304",
+    },
+    rustc_env = {
+        "CARGO_MANIFEST_DIR": "$${pwd}/" + source_directory("crates/akua-render-worker"),
+        "CARGO_PKG_NAME": "akua-render-worker",
+        "CARGO_PKG_VERSION": PACKAGE_SOURCE_VERSION,
+    },
+    # KCL's runtime calls the host plugin bridge (kcl_plugin_invoke_json_wasm)
+    # through a plain extern; it must stay an import of the worker module.
+    # Rust 1.96+ no longer links wasm targets with --allow-undefined by default.
+    rustc_flags = ["-Clink-arg=--allow-undefined"],
+    # The release identity is carried by source_build_identity; this runtime
+    # WASM embeds only its package version.
+    stamp = 0,
+    visibility = ["//visibility:public"],
+    deps = [":core_worker"] + crate_deps(
+        [
+            "serde",
+            "serde_json",
+            "serde_yaml",
+            "tracing",
+            "tracing-subscriber",
+        ],
+        package_name = "crates/akua-render-worker",
+    ),
+)
+
+# aarch64 Linux links go through zig without the Cortex-A53 erratum flag that
+# Rust 1.98 adds and zig rejects (see zig_link.rs).
+rust_binary(
+    name = "zig_link",
+    srcs = ["zig_link.rs"],
+    edition = "2024",
+)
+
+package_rust_tool(
+    name = "zig_link_exec",
+    tool = ":zig_link",
+)
+
+_LINUX_ARM64_LINKER = select({
+    "//bazel/platforms:linux_arm64": ["-Clinker=$(execpath :zig_link_exec)"],
+    "//conditions:default": [],
+})
+
+# wasm-sandbox: the generic, runtime-only Wasmtime addon (napi-rs) embedded in
+# the akuapkg executable. Built once per target platform through
+# //bazel:sandbox_addon_*.
+cargo_build_script(
+    name = "sandbox_build_script",
+    srcs = ["//native:build.rs"],
+    build_script_env = {"CARGO_MANIFEST_DIR": source_directory("native")},
+    crate_root = "//native:build.rs",
+    data = ["//native:Cargo.toml"],
+    edition = "2024",
+    pkg_name = "wasm-sandbox",
+    version = "0.1.0",
+    deps = sandbox_deps(
+        package_name = "native",
+        build = True,
+    ),
+)
+
+rust_shared_library(
+    name = "sandbox_addon",
+    srcs = ["//native:rust_sources"],
+    aliases = sandbox_aliases(
+        package_name = "native",
+        normal = True,
+    ),
+    compile_data = _DARWIN_LINK_INPUTS + select({
+        "//bazel/platforms:linux_arm64": [":zig_link_exec"],
+        "//conditions:default": [],
+    }),
+    crate_name = "wasm_sandbox",
+    crate_root = "//native:src/lib.rs",
+    edition = "2024",
+    features = select({
+        "//bazel/platforms:darwin": [
+            "-default_linker_flags",
+            "-fastbuild",
+            "-opt",
+            "-supports_dynamic_linker",
+        ],
+        "//conditions:default": [],
+    }),
+    proc_macro_deps = sandbox_deps(
+        package_name = "native",
+        proc_macro = True,
+    ),
+    rustc_env = select({
+        "//bazel/platforms:darwin_x64": {
+            "LD_LIBRARY_PATH": PACKAGE_DARWIN_X64_RUST_LIB,
+            "SDKROOT": PACKAGE_MACOS_SDK_ROOT,
+        },
+        "//bazel/platforms:darwin_arm64": {
+            "LD_LIBRARY_PATH": PACKAGE_DARWIN_ARM64_RUST_LIB,
+            "SDKROOT": PACKAGE_MACOS_SDK_ROOT,
+        },
+        "//bazel/platforms:linux_arm64": {
+            # The driver rules_rust would otherwise pass as -Clinker; its zig
+            # SDK is already an input of the link.
+            "PACKAGE_ZIG_LINKER": "external/hermetic_cc_toolchain++toolchains+zig_config-linux-amd64/tools/aarch64-linux-gnu.2.28/c++",
+        },
+        "//conditions:default": {},
+    }),
+    rustc_flags = _DARWIN_LINKER + _LINUX_ARM64_LINKER + select({
+        "//bazel/platforms:darwin": [
+            # napi-build's cargo:rustc-cdylib-link-arg is not applied by pinned rules_rust.
+            "-Clink-arg=-undefined",
+            "-Clink-arg=dynamic_lookup",
+        ],
+        "//bazel/platforms:windows": [
+            # Node and Bun resolve napi_* exports when the addon loads.
+            "-Clink-arg=/FORCE:UNRESOLVED",
+        ],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [":sandbox_build_script"] + sandbox_deps(
+        package_name = "native",
+        normal = True,
+    ),
+)
+
+# Build-time precompiler: Cranelift with every backend, run on the executors
+# to turn each wasm module into compressed machine code per target. Never
+# shipped; its own crate repo keeps Cranelift out of the addon.
+rust_binary(
+    name = "precompile",
+    srcs = [
+        "//native:src/config.rs",
+        "//native/precompile:src/main.rs",
+    ],
+    aliases = precompile_aliases(
+        package_name = "native/precompile",
+        normal = True,
+    ),
+    crate_root = "//native/precompile:src/main.rs",
+    edition = "2024",
+    visibility = ["//visibility:public"],
+    deps = precompile_deps(
+        package_name = "native/precompile",
+        normal = True,
+    ),
+)
+
+filegroup(
+    name = "starlark_sources",
+    srcs = glob(
+        [
+            "*.bazel",
+            "*.bzl",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//bazel:__pkg__"],
+)

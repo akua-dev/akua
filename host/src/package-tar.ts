@@ -1,5 +1,6 @@
 import { Effect, FileSystem, Option, Path, Schema } from "effect"
 import { gunzip, gzip, tar, type TarFile, untar } from "./archive"
+import { CRDS_DIR } from "./crds.effect"
 import { sha256 } from "./downloads.effect"
 import { osMessage } from "./errors"
 import { formatManifest, parseManifest } from "./manifest"
@@ -11,7 +12,8 @@ import { collectFiles, comparePaths } from "./walk.effect"
  *
  * - Included: everything the workspace walk keeps (akua.toml, akua.lock,
  *   `*.k`, `vendor/`, README, inputs.example.yaml, ...), then each vendored
- *   dependency under `.akua/vendor/<name>/`.
+ *   dependency under `.akua/vendor/<name>/` and the generated CRD schemas
+ *   under `.akua/crds/`.
  * - Excluded: hidden files and directories, render outputs (`deploy/`,
  *   `rendered/`, `out/`, `dist/`), `target/`, `node_modules/`, and the
  *   consumer's own `inputs.yaml`.
@@ -95,6 +97,10 @@ export const packWorkspace = Effect.fn("packWorkspace")(function*(
     for (const file of yield* collectFiles(directory, () => true).pipe(Effect.mapError(io(directory)))) {
       vendorFiles.push(yield* readFile(path.join(directory, file), `.akua/vendor/${name}/${file}`))
     }
+  }
+  const crds = path.join(root, CRDS_DIR)
+  for (const file of yield* collectFiles(crds, () => true).pipe(Effect.mapError(io(crds)))) {
+    vendorFiles.push(yield* readFile(path.join(crds, file), `${CRDS_DIR}/${file}`))
   }
   return gzip(tar([...files, ...vendorFiles.toSorted((a, b) => comparePaths(a.path, b.path))]))
 })

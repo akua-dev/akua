@@ -116,13 +116,30 @@ export const JsWasmHost = Layer.succeed(
         try: () => WebAssembly.compile(wasm),
         catch: (cause) => new WasmLoadError({ module: spec.name, cause })
       })
-      const session = yield* Effect.cached(instantiateReactor(spec, module))
+      // A failed call can leave the guest's runtime mid-operation: the next
+      // call gets a fresh instance. There is no fuel here, so the render's
+      // engine budget is not charged.
+      let live: ((input: Uint8Array) => Effect.Effect<Uint8Array, EngineError>) | undefined
+      const session = Effect.suspend(() =>
+        live !== undefined ? Effect.succeed(live) : instantiateReactor(spec, module).pipe(
+          Effect.tap((call) =>
+            Effect.sync(() => {
+              live = call
+            })
+          )
+        )
+      )
       return {
         call: Effect.fn("JsWasmHost.call")(
           function*(input: Uint8Array) {
             const call = yield* session
             return yield* call(input)
           },
+          Effect.tapError(() =>
+            Effect.sync(() => {
+              live = undefined
+            })
+          ),
           Effect.catchTag("WasmLoadError", (error) =>
             Effect.fail(new EngineError({ engine: spec.name, message: `loading engine: ${String(error.cause)}` })))
         )

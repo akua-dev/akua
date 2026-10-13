@@ -1,12 +1,13 @@
 import { Effect, Option } from "effect"
 import { Argument, Command, Flag } from "effect/cli"
 import { ExitCode, fail } from "../contract"
+import type { VerbContext } from "./context"
 import { verb } from "./report"
 import { emit, universal } from "./universal"
-import { loadLock, loadManifest, manifestFailure, saveLock, saveManifest } from "./workspace"
+import { loadLock, loadManifest, manifestFailure, removeGeneratedCrds, saveLock, saveManifest } from "./workspace"
 
-/** Drop a dependency from `akua.toml` and its entries from `akua.lock`. */
-export const remove = () =>
+/** Drop a dependency from `akua.toml`, its entries from `akua.lock` and its generated CRD schemas. */
+export const remove = (context: VerbContext) =>
   Command.make(
     "remove",
     {
@@ -45,8 +46,9 @@ export const remove = () =>
           if (Option.isSome(lock)) {
             const packages = lock.value.package ?? []
             const kept = packages.filter((entry) => entry.name !== flags.name)
-            if (kept.length !== packages.length) yield* saveLock(flags.workspace, { ...lock.value, package: kept })
+            if (kept.length !== packages.length) yield* saveLock(flags.workspace, { ...lock.value, package: kept }, context.name)
           }
+          yield* removeGeneratedCrds(flags.workspace, flags.name)
         }
         yield* emit(
           mode,

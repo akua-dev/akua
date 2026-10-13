@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>E_CRDS_STALE</title>
+<link rel="canonical" href="https://docs.akua.dev/akua/errors/E_CRDS_STALE">
+<meta http-equiv="refresh" content="0; url=https://docs.akua.dev/akua/errors/E_CRDS_STALE">
+<h1>E_CRDS_STALE</h1>
+<p>The generated schemas under .akua/crds/&lt;name&gt;/ were made from another source, version, crds path or digest than akua.toml and akua.lock declare now, typically after editing akua.toml by hand, or their files no longer match the crds_digest akua.lock records (an edited schema, or a lock written before that field). Rendering refuses them instead of typing resources against the wrong schemas; akua pkg lock --check also reports a directory that is missing or differs from what lock would write.</p>
+<p><a href="https://docs.akua.dev/akua/errors/E_CRDS_STALE">https://docs.akua.dev/akua/errors/E_CRDS_STALE</a></p>

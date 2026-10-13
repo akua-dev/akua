@@ -1,20 +1,40 @@
 import { Config, Effect, FileSystem, Option, Path } from "effect"
+import { CliName } from "./cli-name"
 import { agentDetected } from "./agent"
 import { DependencyUnresolved } from "./errors"
-import { parseLock, pinnedDigests } from "./lockfile"
-import { dependencies, type Dependency, type DependencySpec, dependencySpec, type Manifest, parseManifest } from "./manifest"
+import { keyedSignatureRef } from "./cosign"
+import { readGeneratedCrds } from "./crds.effect"
+import { type Lock, type LockedPackage, parseLock, pinnedEntries } from "./lockfile"
+import {
+  crdSelector,
+  dependencies,
+  type Dependency,
+  type DependencySpec,
+  dependencySpec,
+  type Manifest,
+  parseManifest
+} from "./manifest"
 import { GitRemote } from "./git.effect"
 import { HelmRepository } from "./helm-repository.effect"
 import { OciRegistry } from "./oci.effect"
-import { loadSnapshot, type Snapshot } from "./snapshot.effect"
-import { comparePaths } from "./walk.effect"
+import { loadSnapshot, type Snapshot, treeDigest } from "./snapshot.effect"
+import { UrlSource } from "./url-source.effect"
 
 /**
  * What a resolved dependency is, from the files at its root: a Helm chart
  * (`Chart.yaml`), a KCL module (`kcl.mod`), or an Akua Package (`akua.toml`
- * and `package.k`).
+ * and `package.k`). A dependency declared with `crds` is a CRD source,
+ * whatever its files.
  */
-export type DependencyKind = "helm" | "kcl" | "package"
+export type DependencyKind = "helm" | "kcl" | "package" | "crds"
+
+/** Where a CRD dependency's schemas come from. */
+export interface CrdSource {
+  /** The `crds` selector: a file or directory in the source, `.` for all of it. */
+  readonly selector: string
+  /** The schemas already generated under `.akua/crds/`, when they still match the manifest and lock. */
+  readonly generated: Option.Option<Snapshot>
+}
 
 export interface ResolvedDependency {
   /** The key in `[dependencies]`. */
@@ -26,19 +46,23 @@ export interface ResolvedDependency {
   /** `sha256:<hex>` of the tree, or `git:<commit>`. */
   readonly digest: string
   readonly locked: LockRecord
+  /** Set for a CRD dependency (`crds` in `akua.toml`). */
+  readonly crds: Option.Option<CrdSource>
 }
 
 /** A dependency's files, before it is known how `akua.lock` records it. */
-type DependencyTree = Omit<ResolvedDependency, "locked">
+type DependencyTree = Omit<ResolvedDependency, "locked" | "crds">
 
 /** How `akua.lock` records a dependency, besides its digest. */
 export interface LockRecord {
-  readonly kind: "path" | "oci" | "git" | "helm"
-  /** `oci://...`, `git+<url>@<ref>`, `helm+<repo>#<chart>` or `path+file://<path>`. */
+  readonly kind: "path" | "oci" | "git" | "helm" | "url"
+  /** `oci://...`, `git+<url>@<ref>`, `helm+<repo>#<chart>`, `url+<url>` or `path+file://<path>`. */
   readonly source: string
   readonly version: string
   /** The local fork a `replace` directive substituted. */
   readonly replaced: Option.Option<string>
+  /** `cosign:key:...`: the configured key verified these bytes (OCI only). */
+  readonly signature: Option.Option<string>
 }
 
 /**
@@ -77,22 +101,26 @@ const lockRecord = (
   }
 ): LockRecord => {
   const replaced = Option.fromUndefinedOr(options.replaced)
+  const signature = Option.none<string>()
   switch (spec._tag) {
     case "Path":
-      return { kind: "path", source: `path+file://${spec.path}`, version: "local", replaced }
+      return { kind: "path", source: `path+file://${spec.path}`, version: "local", replaced, signature }
     case "Oci":
-      return { kind: "oci", source: spec.oci, version: spec.version, replaced }
+      return { kind: "oci", source: spec.oci, version: spec.version, replaced, signature }
     case "Git": {
       const ref = Option.getOrElse(Option.orElse(spec.tag, () => spec.rev), () => options.gitFallback)
-      return { kind: "git", source: `git+${canonicalGitUrl(spec.git)}@${ref}`, version: ref, replaced }
+      return { kind: "git", source: `git+${canonicalGitUrl(spec.git)}@${ref}`, version: ref, replaced, signature }
     }
     case "Helm":
       return {
         kind: "helm",
         source: `helm+${spec.repo}#${spec.chart}`,
         version: options.helmVersion ?? spec.version,
-        replaced
+        replaced,
+        signature
       }
+    case "Url":
+      return { kind: "url", source: `url+${spec.url}`, version: "url", replaced, signature }
   }
 }
 
@@ -106,9 +134,9 @@ export interface ResolveOptions {
   /** The resolver may not touch the network. */
   readonly offline: boolean
   /**
-   * Check OCI signatures against `[signing].cosign_public_key` (default).
-   * Manifest edits (`add`, `lock`, `update`) pin digests without it, as
-   * before; renders and `verify` check them.
+   * Check OCI signatures against `[signing].cosign_public_key` (default), so
+   * renders and lockfile writes (`add`, `lock`, `update`) only take signed
+   * bytes and the lock records which key verified them.
    */
   readonly verifySignatures?: boolean
   /**
@@ -117,27 +145,15 @@ export interface ResolveOptions {
    * (`update`, which records whatever upstream now serves).
    */
   readonly pins?: "all" | "oci" | "none"
+  /**
+   * Resolve CRD dependencies from their sources even when `.akua/crds/`
+   * holds matching schemas: the verbs that rewrite that directory.
+   */
+  readonly regenerateCrds?: boolean
 }
 
 /** Pre-vendored dependencies live here, and are used before any other source. */
 export const VENDOR_DIR = ".akua/vendor"
-
-const encoder = new TextEncoder()
-
-/**
- * `sha256` over every file, sorted by path, as `<path>\0<bytes>\n`: the
- * previous release's tree digest, so `akua.lock` entries stay valid.
- */
-export const treeDigest = (files: Snapshot) => {
-  const hasher = new Bun.CryptoHasher("sha256")
-  for (const name of Array.from(files.keys()).toSorted(comparePaths)) {
-    hasher.update(encoder.encode(name))
-    hasher.update(new Uint8Array([0]))
-    hasher.update(files.get(name) ?? new Uint8Array())
-    hasher.update(new Uint8Array([10]))
-  }
-  return `sha256:${hasher.digest("hex")}`
-}
 
 const MARKERS: ReadonlyArray<readonly [DependencyKind, ReadonlyArray<string>]> = [
   ["helm", ["Chart.yaml"]],
@@ -187,42 +203,157 @@ export const resolvePackage = Effect.fn("resolvePackage")(function*(workspace: s
   }
   const manifest = yield* parseManifest(yield* fs.readFileString(manifestPath), manifestPath)
   const lockPath = path.join(workspace, "akua.lock")
+  const lock = (yield* fs.exists(lockPath))
+    ? yield* fs.readFileString(lockPath).pipe(Effect.flatMap((text) => parseLock(text, lockPath)), Effect.option)
+    : Option.none<Lock>()
   const pinScope = options.pins ?? "all"
-  const pins = pinScope !== "none" && (yield* fs.exists(lockPath))
-    ? yield* fs.readFileString(lockPath).pipe(
-      Effect.flatMap((text) => parseLock(text, lockPath)),
-      Effect.map((lock) => pinnedDigests(lock, pinScope === "oci")),
-      Effect.orElseSucceed((): ReadonlyMap<string, string> => new Map())
-    )
-    : new Map<string, string>()
+  const entries = Option.match(lock, { onNone: (): ReadonlyArray<LockedPackage> => [], onSome: (lock) => lock.package ?? [] })
+  const pins = Option.match(lock, {
+    onNone: (): ReadonlyArray<LockedPackage> => [],
+    onSome: (lock) => pinScope === "none" ? [] : pinnedEntries(lock, pinScope === "oci")
+  })
   const rejectReplace = yield* replaceRejected
-  const cosignPublicKey = options.verifySignatures === false ? Option.none<string>() : yield* cosignKey(workspace, manifest)
+  const cosignPublicKey = options.verifySignatures === false
+    ? Option.none<string>()
+    : yield* configuredCosignKey(workspace, manifest)
+  const trustedSignature = yield* Effect.transposeOption(Option.map(cosignPublicKey, keyedSignatureRef)).pipe(
+    Effect.mapError((error) =>
+      new DependencyUnresolved({ dependency: "[signing]", code: "E_COSIGN_VERIFY", message: error.message })
+    )
+  )
   const resolved = yield* Effect.forEach(dependencies(manifest), ([name, dependency]) =>
     resolveDependency({
       workspace,
       name,
       dependency,
-      pin: Option.fromUndefinedOr(pins.get(name)),
+      pinned: lockEntryFor(pins, name, dependency),
+      locked: lockEntryFor(entries, name, dependency),
       rejectReplace,
       cosignPublicKey,
+      trustedSignature,
       options
     }))
   return { manifest: Option.some(manifest), dependencies: resolved } satisfies ResolvedPackage
 })
 
-const resolveDependency = Effect.fnUntraced(function*(request: {
+interface DependencyRequest {
   readonly workspace: string
   readonly name: string
   readonly dependency: Dependency
-  readonly pin: Option.Option<string>
+  /** The `akua.lock` entry pinning this dependency's fetch. */
+  readonly pinned: Option.Option<LockedPackage>
+  /** Its `akua.lock` entry, pinned or not. */
+  readonly locked: Option.Option<LockedPackage>
   readonly rejectReplace: boolean
   readonly cosignPublicKey: Option.Option<string>
+  /** How `akua.lock` records a signature from `cosignPublicKey`. */
+  readonly trustedSignature: Option.Option<string>
   readonly options: ResolveOptions
-}) {
+}
+
+/**
+ * The `akua.lock` entry of a dependency, if it is for the source and
+ * version `akua.toml` declares now: after a version change the old entry
+ * pins nothing and vouches for nothing. A Helm requirement is matched by
+ * source alone (the lock records the version it selected).
+ */
+const lockEntryFor = (entries: ReadonlyArray<LockedPackage>, name: string, dependency: Dependency) => {
+  const spec = dependencySpec(dependency)
+  const declared = lockRecord(spec, { gitFallback: "vendored" })
+  return Option.fromUndefinedOr(
+    entries.find((entry) =>
+      entry.name === name && entry.source === declared.source &&
+      (spec._tag === "Helm" || entry.version === declared.version)
+    )
+  )
+}
+
+/**
+ * A dependency as rendering uses it. A CRD dependency is its source tree,
+ * unscoped for git, path and url sources (the `crds` selector is relative
+ * to the repository or directory as declared), or its schemas from
+ * `.akua/crds/` when they were generated from what `akua.toml` and
+ * `akua.lock` still pin: then the source is not touched at all. With a
+ * cosign key configured, schemas from an OCI source are used only when the
+ * lock records that key verified the bytes they came from; git and url
+ * sources have no signing layer, as git dependencies never had.
+ */
+const resolveDependency = Effect.fnUntraced(function*(request: DependencyRequest) {
+  const selector = crdSelector(request.dependency)
+  if (selector === undefined) return { ...(yield* resolveSourceTree(request, true)), crds: Option.none() }
+  const spec = dependencySpec(request.dependency)
+  if (spec._tag !== "Path" && request.dependency.replace === undefined && request.options.regenerateCrds !== true) {
+    const generated = yield* readGeneratedCrds(request.workspace, request.name).pipe(
+      Effect.mapError((error) =>
+        new DependencyUnresolved({
+          dependency: request.name,
+          code: error._tag === "CrdsInvalid" ? "E_CRDS_INVALID" : "E_DEP_RESOLVE",
+          message: `dependency \`${request.name}\`: ${error.message}`
+        })
+      )
+    )
+    if (Option.isSome(generated)) {
+      const { directory, files, provenance } = generated.value
+      const locked = lockRecord(spec, { gitFallback: "vendored" })
+      // The directory is used only as akua.lock records it: from the pinned
+      // source bytes, and with the file digest `lock` wrote (`crds_digest`),
+      // so an edited or unlocked schema tree never renders.
+      const stale = provenance.dependency !== request.name || provenance.source !== locked.source ||
+        (spec._tag !== "Helm" && provenance.version !== locked.version) || provenance.crds !== selector ||
+        !Option.exists(
+          request.locked,
+          (entry) => entry.digest === provenance.digest && entry.crds_digest === treeDigest(files)
+        )
+      if (stale) {
+        return yield* new DependencyUnresolved({
+          dependency: request.name,
+          code: "E_CRDS_STALE",
+          message: `dependency \`${request.name}\`: the schemas in ${directory} (generated from ` +
+            `\`${provenance.source}\`, version \`${provenance.version}\`, crds = "${provenance.crds}", ` +
+            `${provenance.digest}) are not what akua.toml and akua.lock pin, or differ from the \`crds_digest\` ` +
+            `akua.lock records for them - run \`${yield* CliName} lock\` to regenerate them`
+        })
+      }
+      const signature = Option.flatMapNullishOr(request.locked, (entry) => entry.signature)
+      if (spec._tag === "Oci" && Option.isSome(request.trustedSignature)) {
+        if (!Option.contains(signature, request.trustedSignature.value)) {
+          return yield* new DependencyUnresolved({
+            dependency: request.name,
+            code: "E_COSIGN_SIG_MISSING",
+            message: `dependency \`${request.name}\`: akua.lock does not record the source of ${directory} as ` +
+              `verified by \`[signing].cosign_public_key\` - run \`${yield* CliName} lock\` online to verify and regenerate it`
+          })
+        }
+      }
+      return {
+        name: request.name,
+        kind: "crds",
+        root: directory,
+        files,
+        digest: provenance.digest,
+        locked: { ...locked, version: provenance.version, signature },
+        crds: Option.some({ selector, generated: Option.some(files) })
+      } satisfies ResolvedDependency
+    }
+  }
+  const tree = yield* resolveSourceTree(request, spec._tag === "Oci" || spec._tag === "Helm")
+  return {
+    ...tree,
+    kind: "crds",
+    crds: Option.some({ selector, generated: Option.none() })
+  } satisfies ResolvedDependency
+})
+
+/**
+ * The dependency's files from its source. `scoped`: an archive that unpacks
+ * into one directory holding a chart, module or Package is entered.
+ */
+const resolveSourceTree = Effect.fnUntraced(function*(request: DependencyRequest, scoped: boolean) {
   const { dependency, name, workspace } = request
   const fs = yield* FileSystem.FileSystem
   const path = yield* Path.Path
   const spec = dependencySpec(dependency)
+  const pin = Option.map(request.pinned, (entry) => entry.digest)
   if (dependency.replace !== undefined) {
     if (request.rejectReplace) {
       return yield* new DependencyUnresolved({
@@ -233,32 +364,50 @@ const resolveDependency = Effect.fnUntraced(function*(request: {
       })
     }
     return {
-      ...(yield* fromWorkspacePath(workspace, name, dependency.replace.path)),
+      ...(yield* fromWorkspacePath(workspace, name, dependency.replace.path, scoped)),
       locked: lockRecord(spec, { gitFallback: "HEAD", replaced: dependency.replace.path })
-    } satisfies ResolvedDependency
+    }
   }
   // Vendored first, for every source but Helm repositories: installs and
   // pulled Packages arrive with their dependencies under `.akua/vendor`.
   const vendored = path.join(workspace, VENDOR_DIR, name)
   if (spec._tag !== "Helm" && (yield* isDirectory(fs, vendored))) {
-    const dependencyTree = yield* fromDirectory(name, vendored)
+    const dependencyTree = yield* fromDirectory(name, vendored, scoped)
     const locked = lockRecord(spec, { gitFallback: "vendored" })
-    return spec._tag === "Git"
-      ? { ...dependencyTree, digest: `git:${dependencyTree.digest.slice("sha256:".length)}`, locked }
-      : { ...dependencyTree, locked }
+    const entry = Option.getOrUndefined(request.locked)
+    // A tree `vendor add` pinned (`vendor_digest`) keeps the source digest it came from.
+    const sourceDigest = entry?.vendor_digest === dependencyTree.digest ? entry.digest : undefined
+    const digest = sourceDigest ??
+      (spec._tag === "Git" ? `git:${dependencyTree.digest.slice("sha256:".length)}` : dependencyTree.digest)
+    if (spec._tag === "Oci" && Option.isSome(request.trustedSignature)) {
+      // As for the OCI cache: a vendored copy is trusted only when akua.lock
+      // records that the configured key verified exactly these bytes.
+      if (entry?.signature !== request.trustedSignature.value || entry.digest !== digest) {
+        return yield* new DependencyUnresolved({
+          dependency: name,
+          code: "E_COSIGN_SIG_MISSING",
+          message: `dependency \`${name}\`: akua.lock does not record the vendored tree \`${dependencyTree.digest}\` ` +
+            `as verified by \`[signing].cosign_public_key\` - run \`${yield* CliName} vendor add\` to re-vendor it from the registry`
+        })
+      }
+      return { ...dependencyTree, digest, locked: { ...locked, signature: request.trustedSignature } }
+    }
+    return { ...dependencyTree, digest, locked }
   }
   const locked = lockRecord(spec, { gitFallback: "vendored" })
   switch (spec._tag) {
     case "Path":
-      return { ...(yield* fromWorkspacePath(workspace, name, spec.path)), locked }
+      return { ...(yield* fromWorkspacePath(workspace, name, spec.path, scoped)), locked }
     case "Oci": {
       const registry = yield* OciRegistry
       const pulled = yield* registry.pull({
         reference: spec.oci,
         version: spec.version,
-        pin: request.pin,
+        pin,
         offline: request.options.offline,
-        cosignPublicKey: request.cosignPublicKey
+        cosignPublicKey: request.cosignPublicKey,
+        lockedSignature: Option.flatMapNullishOr(request.pinned, (entry) => entry.signature),
+        anyArchive: crdSelector(dependency) !== undefined
       }).pipe(
         Effect.mapError((error) =>
           new DependencyUnresolved({
@@ -272,7 +421,11 @@ const resolveDependency = Effect.fnUntraced(function*(request: {
         )
       )
       // The lockfile pins the blob, not the unpacked tree.
-      return { ...(yield* fromDirectory(name, pulled.directory)), digest: pulled.digest, locked }
+      return {
+        ...(yield* fromDirectory(name, pulled.directory, scoped)),
+        digest: pulled.digest,
+        locked: { ...locked, signature: pulled.signature }
+      }
     }
     case "Helm": {
       const repository = yield* HelmRepository
@@ -280,7 +433,7 @@ const resolveDependency = Effect.fnUntraced(function*(request: {
         repository: spec.repo,
         chart: spec.chart,
         version: spec.version,
-        pin: request.pin,
+        pin,
         offline: request.options.offline
       }).pipe(
         Effect.mapError((error) =>
@@ -294,7 +447,7 @@ const resolveDependency = Effect.fnUntraced(function*(request: {
         )
       )
       return {
-        ...(yield* fromDirectory(name, fetched.directory)),
+        ...(yield* fromDirectory(name, fetched.directory, scoped)),
         digest: fetched.digest,
         locked: lockRecord(spec, { gitFallback: "vendored", helmVersion: fetched.version })
       }
@@ -308,7 +461,7 @@ const resolveDependency = Effect.fnUntraced(function*(request: {
           onSome: (tag) => ({ _tag: "Tag", tag }),
           onNone: () => ({ _tag: "Rev", rev: Option.getOrElse(spec.rev, () => "") })
         }),
-        pin: Option.map(Option.filter(request.pin, (pin) => pin.startsWith("git:")), (pin) => pin.slice("git:".length)),
+        pin: Option.map(Option.filter(pin, (digest) => digest.startsWith("git:")), (git) => git.slice("git:".length)),
         offline: request.options.offline
       }).pipe(
         Effect.mapError((error) =>
@@ -321,13 +474,29 @@ const resolveDependency = Effect.fnUntraced(function*(request: {
           })
         )
       )
-      return { ...(yield* fromDirectory(name, fetched.directory)), digest: `git:${fetched.commit}`, locked }
+      return { ...(yield* fromDirectory(name, fetched.directory, scoped)), digest: `git:${fetched.commit}`, locked }
+    }
+    case "Url": {
+      const source = yield* UrlSource
+      const fetched = yield* source.fetch({ url: spec.url, pin, offline: request.options.offline }).pipe(
+        Effect.mapError((error) =>
+          new DependencyUnresolved({
+            dependency: name,
+            code: "E_DEP_RESOLVE",
+            ...(error.drift === true ? { drift: true } : {}),
+            message: error.offline
+              ? `dependency \`${name}\`: url source not resolvable in the current mode - ${error.message}`
+              : `dependency \`${name}\`: url fetch failed: ${error.message}`
+          })
+        )
+      )
+      return { ...(yield* fromDirectory(name, fetched.directory, scoped)), digest: fetched.digest, locked }
     }
   }
 })
 
 /** `[signing].cosign_public_key`, relative to the workspace: every OCI pull must carry its signature. */
-const cosignKey = Effect.fnUntraced(function*(workspace: string, manifest: Manifest) {
+export const configuredCosignKey = Effect.fnUntraced(function*(workspace: string, manifest: Manifest) {
   const fs = yield* FileSystem.FileSystem
   const path = yield* Path.Path
   const configured = manifest.signing?.cosign_public_key
@@ -353,7 +522,12 @@ const isDirectory = (fs: FileSystem.FileSystem, target: string) =>
  * A user-authored `path` or `replace.path`: relative, and inside the
  * workspace after resolving symlinks.
  */
-const fromWorkspacePath = Effect.fnUntraced(function*(workspace: string, name: string, requested: string) {
+const fromWorkspacePath = Effect.fnUntraced(function*(
+  workspace: string,
+  name: string,
+  requested: string,
+  scoped = true
+) {
   const fs = yield* FileSystem.FileSystem
   const path = yield* Path.Path
   const unresolved = (message: string, code = "E_DEP_RESOLVE") =>
@@ -379,11 +553,11 @@ const fromWorkspacePath = Effect.fnUntraced(function*(workspace: string, name: s
     )
   }
   if (!(yield* isDirectory(fs, target))) return yield* unresolved(`path-dep target \`${target}\` is not a directory`)
-  return yield* fromDirectory(name, target)
+  return yield* fromDirectory(name, target, scoped)
 })
 
-/** Read a dependency tree into memory and classify it. */
-const fromDirectory = Effect.fnUntraced(function*(name: string, directory: string) {
+/** Read a dependency tree into memory and classify it; `scoped` enters an archive's package directory. */
+const fromDirectory = Effect.fnUntraced(function*(name: string, directory: string, scoped = true) {
   const path = yield* Path.Path
   const files = yield* loadSnapshot(directory).pipe(
     Effect.catchTag("PathEscape", (escape) =>
@@ -395,8 +569,10 @@ const fromDirectory = Effect.fnUntraced(function*(name: string, directory: strin
         })
       ))
   )
-  const { kind, prefix } = detectKind(files)
-  const scoped = prefix === "" ? files : new Map(
+  const detected = detectKind(files)
+  const { kind } = detected
+  const prefix = scoped ? detected.prefix : ""
+  const inside = prefix === "" ? files : new Map(
     Array.from(files)
       .filter(([key]) => key.startsWith(`${prefix}/`))
       .map(([key, bytes]) => [key.slice(prefix.length + 1), bytes])
@@ -405,7 +581,7 @@ const fromDirectory = Effect.fnUntraced(function*(name: string, directory: strin
     name,
     kind,
     root: prefix === "" ? directory : path.join(directory, prefix),
-    files: scoped,
+    files: inside,
     digest: treeDigest(files)
   } satisfies DependencyTree
 })

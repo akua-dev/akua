@@ -13,7 +13,7 @@ export const sha256 = (bytes: Uint8Array) => `sha256:${new Bun.CryptoHasher("sha
  * `$XDG_CACHE_HOME/akua/<kind>`, else `$HOME/.cache/akua/<kind>`, else
  * `.akua/cache/<kind>` (sandboxes without either).
  */
-export const cacheRoot = Effect.fnUntraced(function*(kind: "oci" | "helm" | "git") {
+export const cacheRoot = Effect.fnUntraced(function*(kind: "oci" | "helm" | "git" | "url") {
   const path = yield* Path.Path
   const env = (name: string) =>
     Config.String(name).pipe(Config.option, Effect.orDie, Effect.map(Option.filter((value) => value !== "")))

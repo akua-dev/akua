@@ -1,5 +1,6 @@
 import { Effect, FileSystem, Path } from "effect"
 import { PathEscape } from "./errors"
+import { comparePaths } from "./walk.effect"
 
 /**
  * Immutable in-memory copy of a directory tree, keyed by POSIX path
@@ -56,3 +57,20 @@ export const subtree = (snapshot: Snapshot, prefix: string): Snapshot =>
         .filter(([key]) => key.startsWith(`${prefix}/`))
         .map(([key, bytes]) => [key.slice(prefix.length + 1), bytes])
     )
+
+const encoder = new TextEncoder()
+
+/**
+ * `sha256` over every file, sorted by path, as `<path>\0<bytes>\n`: the
+ * previous release's tree digest, so `akua.lock` entries stay valid.
+ */
+export const treeDigest = (files: Snapshot) => {
+  const hasher = new Bun.CryptoHasher("sha256")
+  for (const name of Array.from(files.keys()).toSorted(comparePaths)) {
+    hasher.update(encoder.encode(name))
+    hasher.update(new Uint8Array([0]))
+    hasher.update(files.get(name) ?? new Uint8Array())
+    hasher.update(new Uint8Array([10]))
+  }
+  return `sha256:${hasher.digest("hex")}`
+}

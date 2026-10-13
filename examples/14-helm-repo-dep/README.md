@@ -1,29 +1,30 @@
 # 14-helm-repo-dep
 
-> Renders a Helm chart from a classic HTTPS Helm repository, pinned in
-> `akua.lock` by chart version and tarball digest.
+A chart from a classic HTTPS Helm repository (an `index.yaml`, not OCI):
+podinfo 6.12.0 from `https://stefanprodan.github.io/podinfo`.
 
-This example covers `repo` dependencies: charts published through an
-`index.yaml` rather than OCI or a local path. `akuapkg add` resolves the
-repository index, pins the selected chart archive digest in `akua.lock`,
-and registers the chart as `charts.podinfo` for KCL rendering. Render
-uses Akua's embedded Helm engine; no Helm binary or shell-out is needed.
-
-## What's here
-
-| file | purpose |
-|---|---|
-| `package.k` | Imports `charts.podinfo` and renders it with typed values. |
-| `akua.toml` | Declares the `podinfo` chart from `https://stefanprodan.github.io/podinfo`. |
-| `akua.lock` | Pins chart version `6.12.0` and the fetched archive digest. |
-| `rendered/` | Reference output committed for integration tests. |
-
-## Render
-
-```sh
-akuapkg render --out ./rendered
+```toml
+[dependencies.podinfo]
+repo = "https://stefanprodan.github.io/podinfo"
+chart = "podinfo"
+version = "6.12.0"
 ```
 
-Classic Helm repositories are useful when an upstream chart has not
-moved to OCI yet. The lockfile still gives the same reproducibility
-contract: exact chart version, exact digest, repeatable render.
+`akua.lock` pins the chart archive's `sha256`. The first render downloads
+the archive and checks it against that digest; later renders use the cache.
+
+```sh
+akuapkg render --out ./out
+```
+
+This writes five manifests. podinfo ships no `values.schema.json`, so its
+values are an open map here. Its test-hook Pods get names from Helm's
+`randAlphaNum`, which uses real randomness, so they differ on every render;
+that is why this example has no committed `rendered/`. The same dependency from the command line:
+
+```sh
+akuapkg add podinfo --repo https://stefanprodan.github.io/podinfo --chart podinfo --version 6.12.0
+```
+
+`version` can also be a semver requirement such as `">=6.0, <7"`; the
+highest matching version is locked.

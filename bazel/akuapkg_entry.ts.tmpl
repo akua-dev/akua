@@ -1,0 +1,12 @@
+// Entry point of the `akuapkg` executable for {TARGET}, generated from
+// bazel/akuapkg_entry.ts.tmpl. The host itself (host/) is target-independent;
+// akuapkg_embedded_{TARGET}.ts carries the target's assets.
+import { BunRuntime, BunServices } from "@effect/platform-bun"
+import { Effect } from "effect"
+import { AKUAPKG_VERSION, embeddedAssets } from "./akuapkg_embedded_{TARGET}.ts"
+import { runAkuapkg } from "../host/src/cli.ts"
+
+runAkuapkg(AKUAPKG_VERSION, embeddedAssets).pipe(
+  Effect.provide(BunServices.layer),
+  BunRuntime.runMain
+)

@@ -5,7 +5,15 @@ import { mergeIntoLock } from "../lockfile"
 import type { VerbContext } from "./context"
 import { verb } from "./report"
 import { emit, universal } from "./universal"
-import { loadManifestForLock, lockUpdates, priorLock, resolveForLock, saveLock } from "./workspace"
+import {
+  generateCrds,
+  loadManifestForLock,
+  lockUpdates,
+  priorLock,
+  resolveForLock,
+  saveLock,
+  syncGeneratedCrds
+} from "./workspace"
 
 interface UpdatedEntry {
   readonly name: string
@@ -81,7 +89,10 @@ export const update = (context: VerbContext) =>
             })
           }
         }
-        yield* saveLock(flags.workspace, mergeIntoLock(prior, lockUpdates(selected)))
+        const generation = yield* generateCrds(selected)
+        yield* saveLock(flags.workspace, mergeIntoLock(prior, lockUpdates(selected, generation)), context.name)
+        // `--dep` leaves the other entries pinned as they were, and so their schemas.
+        yield* syncGeneratedCrds(flags.workspace, generation, Option.isNone(flags.dep))
         const byName = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
         const output = {
           updated: updated.toSorted((a, b) => byName(a.name, b.name)),

@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Robin=20Br=C3=A4mer?= <robin.braemer@web.de>
+Date: Mon, 12 Oct 2026 10:30:00 +0200
+Subject: [PATCH 5/5] loader: skip unresolved identifiers when listing options
+
+`OptionHelpExtractor::walk_call_expr` unwrapped the symbol of every
+called identifier. A call whose identifier has no resolved symbol, such
+as `str(x)` inside a config literal of a schema from a package the
+loader did not resolve, panicked; on wasm32 (panic=abort) that traps the
+whole instance, so `list_options` failed for an ordinary Package such as
+`corev1.ConfigMap { data.replicas = str(input.replicas) }`. Such an
+identifier cannot be the builtin `option`: skip it.
+---
+diff --git a/crates/loader/src/option.rs b/crates/loader/src/option.rs
+--- a/crates/loader/src/option.rs
++++ b/crates/loader/src/option.rs
+@@ -22,8 +22,15 @@
+                 pkgpath: self.pkgpath.clone(),
+                 id: identifier.names[0].id.clone(),
+             };
+-            let symbol_ref = self.packages.node_symbol_map.get(&node_key).unwrap();
+-            let symbol = self.packages.symbols.get(symbol_ref).unwrap();
++            // An identifier without a resolved symbol (inside a config whose
++            // schema type did not resolve, say) cannot be the builtin
++            // `option`: skip it instead of panicking, which aborts on wasm32.
++            let Some(symbol_ref) = self.packages.node_symbol_map.get(&node_key) else {
++                return;
++            };
++            let Some(symbol) = self.packages.symbols.get(symbol_ref) else {
++                return;
++            };
+             let binding = &BUILTIN_FUNCTIONS;
+             let builtin_option_type = binding.get("option").unwrap();
+             if !symbol.is_global

@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Robin=20Br=C3=A4mer?= <robin.braemer@web.de>
+Date: Mon, 12 Oct 2026 14:00:00 +0200
+Subject: [PATCH 6/6] evaluator: record a failed runtime type check on wasm32
+ instead of panicking
+
+`type_pack_and_check` raised "expect S, got dict" (with the missing or
+unknown attributes as details) with `panic!`. Native targets catch it in
+the runner (`catch_unwind`) and report it as an EvaluationError; wasm32
+builds use panic=abort, so the panic trapped the whole WASI instance and
+the caller only saw a wasm backtrace. This happens when a value that cannot
+become the expected schema is assigned to a schema-typed name, for example
+`input: Input = ctx.input()` rendered without the Package's required
+inputs.
+
+Do what schema checks and patch 0004 already do on wasm32: record the
+error in the runtime context (first one wins) and return the unconverted
+value; the evaluator bails out with the recorded error after the run.
+While a recorded error is pending, the walk no longer moves the runtime
+location, so the report points at the statement that failed rather than
+wherever the walk stopped (this also fixes the location of the errors
+recorded by schema checks and patch 0004).
+---
+diff --git a/crates/evaluator/src/context.rs b/crates/evaluator/src/context.rs
+--- a/crates/evaluator/src/context.rs
++++ b/crates/evaluator/src/context.rs
+@@ -39,6 +39,12 @@
+     #[inline]
+     pub(crate) fn update_ctx_panic_info<T>(&self, node: &'ctx ast::Node<T>) {
+         let mut ctx = self.runtime_ctx.borrow_mut();
++        // On wasm32 the walk goes on after a recorded error (no unwinding):
++        // keep the location of that first error for the report.
++        #[cfg(target_arch = "wasm32")]
++        if ctx.has_panic_info() {
++            return;
++        }
+         ctx.panic_info.kcl_file = node.filename.clone();
+         ctx.panic_info.kcl_line = node.line as i32;
+     }
+diff --git a/crates/evaluator/src/ty.rs b/crates/evaluator/src/ty.rs
+--- a/crates/evaluator/src/ty.rs
++++ b/crates/evaluator/src/ty.rs
+@@ -181,7 +181,7 @@
+                 }
+             }
+         }
+-        panic!(
++        let msg = format!(
+             "expect {expected_type}, got {}{}",
+             val_plan::type_of(value, true),
+             if error_msgs.is_empty() {
+@@ -190,6 +190,19 @@
+                 format!(". For details:\n{}", error_msgs.join("\n"))
+             }
+         );
++        // On wasm32 a panic would trap the whole WASI instance (the build
++        // uses panic=abort): record the error (the first one wins) and let
++        // the evaluator bail out with it after the run, as schema checks do.
++        #[cfg(target_arch = "wasm32")]
++        {
++            let mut runtime_ctx = s.runtime_ctx.borrow_mut();
++            if !runtime_ctx.has_panic_info() {
++                runtime_ctx.record_runtime_error_message(msg);
++            }
++            return value.clone();
++        }
++        #[cfg(not(target_arch = "wasm32"))]
++        panic!("{}", msg);
+     }
+     converted_value
+ }

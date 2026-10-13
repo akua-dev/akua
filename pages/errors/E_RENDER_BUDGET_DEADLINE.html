@@ -5,5 +5,5 @@
 <link rel="canonical" href="https://docs.akua.dev/akua/errors/E_RENDER_BUDGET_DEADLINE">
 <meta http-equiv="refresh" content="0; url=https://docs.akua.dev/akua/errors/E_RENDER_BUDGET_DEADLINE">
 <h1>E_RENDER_BUDGET_DEADLINE</h1>
-<p>The render ran out of its CPU budget (the Package's own KCL, or an engine call) before finishing. The command exits 6, the timeout exit code.</p>
+<p>The render ran out of its CPU budget before finishing: the Package's own KCL, or its Helm and Kustomize calls, which share one budget per render however many there are. The command exits 6, the timeout exit code.</p>
 <p><a href="https://docs.akua.dev/akua/errors/E_RENDER_BUDGET_DEADLINE">https://docs.akua.dev/akua/errors/E_RENDER_BUDGET_DEADLINE</a></p>

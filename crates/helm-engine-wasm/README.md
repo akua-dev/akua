@@ -1,67 +1,47 @@
 # helm-engine-wasm
 
-Embedded Helm v4 template engine — a tiny Go program wrapping
-`helm.sh/helm/v4/pkg/engine.Render`, compiled to `wasip1`, hosted via
-[Extism](https://extism.org) from Rust.
+The Helm template engine akuapkg embeds: a small Go program (`go-src/`)
+around `helm.sh/helm/v4/pkg/engine.Render`, compiled to `wasip1` and run by
+akuapkg's host inside Wasmtime. No `helm` binary is involved.
 
-Same plugin ABI family as Helm 4's HIP-0026. Lets `akua render` work
-without a `helm` CLI on `$PATH`.
-
-## Build
-
-```bash
-task build:helm-engine-wasm
-```
-
-Produces `assets/helm-engine.wasm` (~70 MB, ~12 MB gzipped). Embedded into
-the akua binary via `include_bytes!`.
-
-## Binary size
-
-The wasm is large because Go's linker can't prune types exposed by a
-package's public API. `pkg/engine.New(*rest.Config)` and
-`pkg/chart/common.DefaultCapabilities = makeDefaultCapabilities()` (which
-init-calls `k8s.io/client-go/kubernetes/scheme`) drag the entire k8s.io
-dep tree (~267 packages) even though our call path never touches them.
-
-### Option 2: fork + strip (future optimisation)
-
-A future optimisation: vendor `pkg/engine/engine.go` + `funcs.go` +
-`files.go` + a minimal `common.Capabilities` into this module, remove the
-`rest.Config` import + `RenderWithClient*` functions + the
-`k8s.io/client-go/kubernetes/scheme` init in capabilities. Expected size:
-**~15 MB wasm (~3 MB gzipped)**, a 5× reduction. Cost: ~1500 LOC to
-vendor, resync against upstream Helm tags every release (~quarterly).
-
-Not done yet — the current bundled wasm works. Track as a size-optimisation
-backlog item for when download size is user-complained.
+Bazel builds it as `//bazel:helm_engine_wasm`: it downloads Helm v4.1.4
+(checksum-pinned in `bazel/source_dependencies.bzl`), applies
+[`fork/helm-v4.1.4.patch`](fork/README.md), vendors the Go modules pinned by
+`go-src/go.sum` and compiles `helm-engine.wasm`. The build then precompiles it
+to machine code for every release target and embeds it in the `akuapkg`
+and `akua` executables.
 
 ## ABI
 
-The plugin exports a single Extism function `render` that takes a JSON
-input and returns a JSON output:
+The module is a Go `wasip1` reactor. The host calls `_initialize` once, then
+for each render:
 
-**Input**
+| Export | Purpose |
+|---|---|
+| `helm_malloc(size) -> ptr` | allocate the input buffer |
+| `helm_render(ptr, len) -> ptr` | render; returns a NUL-terminated JSON result |
+| `helm_result_len(ptr) -> len` | length of that result |
+| `helm_free(ptr)` | free a buffer |
 
-```json
-{
-  "chart_tar_gz_b64": "<base64 of chart tarball>",
-  "values_yaml": "<yaml string>",
-  "release": { "name": "demo", "namespace": "default", "revision": 1 }
-}
-```
-
-**Output**
+Input:
 
 ```json
 {
-  "manifests": { "mychart/templates/cm.yaml": "<rendered yaml>" },
-  "error": ""
+  "chart_tar_gz_b64": "<base64 of the chart archive>",
+  "values_yaml": "<values, serialized as JSON>",
+  "release": { "name": "demo", "namespace": "default", "revision": 1, "service": "Helm" }
 }
 ```
 
-## Sandbox
+The host always sends values as JSON (valid YAML with every string quoted),
+because the engine parses them as YAML 1.1. Output:
 
-Extism's defaults deny filesystem, network, env, and exec. This plugin
-never does I/O — the Rust host pre-fetches any chart deps into
-`charts/` before tarring the chart for this plugin.
+```json
+{ "manifests": { "mychart/templates/cm.yaml": "<rendered yaml>" }, "error": "" }
+```
+
+The engine processes subchart conditions, tags and import-values like
+`helm install`, then renders. It does no I/O: the chart arrives as an
+in-memory archive, and it runs without preopened directories, environment,
+network or a Kubernetes client. See
+[docs/security-model.md](../../docs/security-model.md).

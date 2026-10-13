@@ -1,0 +1,16 @@
+--- a/rust/private/rustc.bzl
++++ b/rust/private/rustc.bzl
+@@ -454,7 +454,13 @@
+     link_args = cc_common.get_memory_inefficient_command_line(
+         feature_configuration = feature_configuration,
+         action_name = action_name,
+         variables = link_variables,
+     )
++    # Rust LLD handles Darwin cdylib mode itself; -shared is a C-driver flag.
++    if crate_type == "cdylib" and any(
++        [":rust_lld)" in flag for flag in getattr(ctx.attr, "rustc_flags", [])]
++    ):
++        link_args = [arg for arg in link_args if arg != "-shared"]
++
+     link_env = cc_common.get_environment_variables(
+         feature_configuration = feature_configuration,

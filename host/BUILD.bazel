@@ -1,6 +1,18 @@
-"""The Bun/Effect host: CLI, render pipeline and the Wasmtime sandbox adapter."""
+"""The Bun/Effect host: CLI, render pipeline and the Wasmtime sandbox adapter.
+
+Keep this file to source groups and local labels: the cnap monorepo also
+loads it as an ordinary package of its own workspace.
+"""
 
 load("@aspect_rules_js//js:defs.bzl", "js_library")
+
+exports_files(
+    [
+        "package.json",
+        "tsconfig.json",
+    ],
+    visibility = ["//visibility:public"],
+)
 
 filegroup(
     name = "srcs",

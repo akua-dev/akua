@@ -1,0 +1,10 @@
+// Entry point of the released `akua` executable for {TARGET}, generated from
+// bazel/akua_entry.ts.tmpl. It runs the CLI with `akua pkg` served in this
+// process by the package toolchain (@akua-dev/sdk), over the Wasmtime addon
+// and precompiled engines akuapkg_embedded_{TARGET}.ts embeds.
+import { AKUAPKG_VERSION, embeddedAssets } from './akuapkg_embedded_{TARGET}.ts';
+import { BunRuntime } from '@effect/platform-bun';
+import { akuaProgram } from '../cli/src/bin/akua.ts';
+import { EmbeddedPackageCli } from '../cli/src/runtime/services-live.ts';
+
+BunRuntime.runMain(akuaProgram(EmbeddedPackageCli(embeddedAssets, AKUAPKG_VERSION)));

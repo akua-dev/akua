@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Robin=20Br=C3=A4mer?= <robin.braemer@web.de>
+Date: Mon, 12 Oct 2026 10:00:00 +0200
+Subject: [PATCH 4/5] runtime: record a missing required attribute on wasm32
+ instead of panicking
+
+`schema_check_attr_optional` raised "attribute 'x' of S is required and
+can't be None or Undefined" with `panic!`. Native targets catch it in the
+runner (`catch_unwind`) and report it as an EvaluationError; wasm32 builds
+use panic=abort, so the panic trapped the whole WASI instance and the
+caller only saw a wasm backtrace. This happens for a required attribute
+missing from a dict literal assigned to a schema-typed attribute, which
+the resolver cannot see statically.
+
+Do what `schema_assert` and assert statements already do on wasm32: record
+the error in the runtime context (first one wins), keep the location info,
+and return; the evaluator bails out with the recorded panic info after the
+run.
+---
+diff --git a/crates/runtime/src/value/val_schema.rs b/crates/runtime/src/value/val_schema.rs
+--- a/crates/runtime/src/value/val_schema.rs
++++ b/crates/runtime/src/value/val_schema.rs
+@@ -235,11 +235,24 @@
+                     let undefined = ValueRef::undefined();
+                     let value = attr_map.get(attr).unwrap_or(&undefined);
+                     if is_required && value.is_none_or_undefined() {
++                        // On wasm32 the walk goes on after a recorded error
++                        // (no unwinding): keep only the first one.
++                        #[cfg(target_arch = "wasm32")]
++                        if ctx.has_panic_info() {
++                            return;
++                        }
+                         let msg = format!(
+                             "attribute '{}' of {} is required and can't be None or Undefined",
+                             attr,
+                             self.schema_name()
+                         );
++                        // On wasm32, record the error instead of panicking
++                        // below: the WASM build uses panic=abort, so a panic
++                        // would trap and destroy the whole WASI instance. The
++                        // evaluator bails out with it after finishing, as for
++                        // `schema_assert`.
++                        #[cfg(target_arch = "wasm32")]
++                        ctx.record_runtime_error_message(msg.clone());
+                         // Surface a data-file position (sibling attribute or
+                         // schema-instance level) as the primary diagnostic
+                         // location, so the user is pointed at the file where
+@@ -253,6 +266,9 @@
+                             data_line,
+                             data_col,
+                         );
++                        #[cfg(target_arch = "wasm32")]
++                        return;
++                        #[cfg(not(target_arch = "wasm32"))]
+                         panic!("{}", msg);
+                     }
+                 }

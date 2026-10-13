@@ -1,0 +1,37 @@
+"""The pinned Bun compiler, selected for the execution platform."""
+
+load(":defs.bzl", "bun_toolchain")
+
+toolchain_type(
+    name = "toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+[
+    bun_toolchain(
+        name = "bun_" + name,
+        exec_compatible_with = [
+            "@platforms//cpu:" + cpu,
+            "@platforms//os:" + os,
+        ],
+        executable = "@bun_compiler_{}//:bun".format(name),
+    )
+    for name, os, cpu in [
+        ("darwin_arm64", "macos", "arm64"),
+        ("darwin_x64", "macos", "x86_64"),
+        ("linux_arm64", "linux", "arm64"),
+        ("linux_x64", "linux", "x86_64"),
+    ]
+]
+
+filegroup(
+    name = "starlark_sources",
+    srcs = glob(
+        [
+            "*.bazel",
+            "*.bzl",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//bazel:__pkg__"],
+)

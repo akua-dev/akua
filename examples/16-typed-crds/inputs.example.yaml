@@ -1,0 +1,3 @@
+name: web
+replicas: 2
+host: web.example.com

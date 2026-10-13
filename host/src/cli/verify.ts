@@ -2,7 +2,7 @@ import { Effect, FileSystem, Option, Schema } from "effect"
 import { osMessage } from "../errors"
 import { Command, Flag } from "effect/cli"
 import { ExitCode, ExitWith, fail } from "../contract"
-import { verifyDsse, verifyKeyed } from "../cosign"
+import { keyedSignatureRef, verifyDsse, verifyKeyed } from "../cosign"
 import { pathDependencyTree } from "../dependencies.effect"
 import { type LockedPackage, parseLock } from "../lockfile"
 import { OciRegistry, publishDigests } from "../oci.effect"
@@ -17,6 +17,19 @@ type Violation =
   | { readonly kind: "unlocked_dep"; readonly name: string }
   | { readonly kind: "orphan_locked"; readonly name: string; readonly version: string }
   | { readonly kind: "missing_signature"; readonly name: string; readonly version: string }
+  | {
+    readonly kind: "signature_unverifiable"
+    readonly name: string
+    readonly version: string
+    readonly signature: string
+  }
+  | {
+    readonly kind: "signature_mismatch"
+    readonly name: string
+    readonly version: string
+    readonly expected: string
+    readonly actual: string
+  }
   | { readonly kind: "path_digest_drift"; readonly name: string; readonly expected: string; readonly actual: string }
   | { readonly kind: "path_missing"; readonly name: string; readonly path: string }
   | { readonly kind: "attestation_missing"; readonly name: string; readonly oci_ref: string }
@@ -28,6 +41,16 @@ type Violation =
     readonly claimed: string
   }
 
+/** Reported without failing: what `strict_signing` would reject when it is off. */
+interface Warning {
+  readonly kind: "unsigned_dep"
+  readonly name: string
+  readonly version: string
+}
+
+const warningText = (w: Warning) =>
+  `  - unsigned: ${w.name}@${w.version} (no cosign signature; its akua.lock digest pins it)`
+
 const violationText = (v: Violation) => {
   switch (v.kind) {
     case "unlocked_dep":
@@ -36,6 +59,12 @@ const violationText = (v: Violation) => {
       return `  - orphan-locked: ${v.name}@${v.version}`
     case "missing_signature":
       return `  - missing-signature: ${v.name}@${v.version}`
+    case "signature_unverifiable":
+      return `  - signature-unverifiable: ${v.name}@${v.version} records \`${v.signature}\`, but akua.toml has no ` +
+        "[signing].cosign_public_key to check it against"
+    case "signature_mismatch":
+      return `  - signature-mismatch: ${v.name}@${v.version}\n      expected ${v.expected}\n` +
+        `      locked   ${v.actual}\n      run \`akuapkg lock\` to re-verify against [signing].cosign_public_key`
     case "path_digest_drift":
       return `  - path-digest-drift: ${v.name}\n      expected ${v.expected}\n      actual   ${v.actual}\n` +
         `      run \`akuapkg add --force ${v.name} --path <current_path>\` to refresh`
@@ -138,8 +167,11 @@ const workspaceVerify = (context: VerbContext, workspace: string, mode: "json" |
     )
     const declared = manifest.dependencies ?? {}
     const packages = lock.package ?? []
-    const strictSigning = manifest.package.strict_signing ?? true
+    // Signatures are required by default only when there is a key to check
+    // them against; an explicit `strict_signing = true` without one still fails.
+    const strictSigning = manifest.package.strict_signing ?? manifest.signing?.cosign_public_key !== undefined
     const violations: Array<Violation> = []
+    const warnings: Array<Warning> = []
     for (const name of Object.keys(declared).toSorted()) {
       if (!packages.some((entry) => entry.name === name)) violations.push({ kind: "unlocked_dep", name })
     }
@@ -148,12 +180,40 @@ const workspaceVerify = (context: VerbContext, workspace: string, mode: "json" |
         violations.push({ kind: "orphan_locked", name: entry.name, version: entry.version })
       }
     }
+    const keyFile = Option.map(
+      Option.fromUndefinedOr(manifest.signing?.cosign_public_key),
+      (relative) => joinPath(workspace, relative)
+    )
+    const publicKey = yield* Effect.transposeOption(Option.map(keyFile, (file) =>
+      fs.readFileString(file).pipe(
+        Effect.mapError((error) =>
+          fail(
+            "E_IO",
+            osMessage(error),
+            ExitCode.userError,
+            file,
+            "akua.toml [signing].cosign_public_key must resolve to a PEM-encoded public key file."
+          )
+        )
+      )))
     const isPath = (entry: LockedPackage) => entry.source.startsWith("path+file://")
     if (strictSigning) {
-      for (const entry of packages) {
-        if (!isPath(entry) && entry.signature === undefined) {
-          violations.push({ kind: "missing_signature", name: entry.name, version: entry.version })
+      // A recorded signature counts only if it names the configured key: that
+      // key verified these bytes when they were locked.
+      const trusted = yield* Effect.transposeOption(Option.map(publicKey, keyedSignatureRef)).pipe(
+        Effect.mapError((error) => fail("E_COSIGN_VERIFY", error.message, ExitCode.userError, Option.getOrUndefined(keyFile)))
+      )
+      for (const entry of packages.filter((p) => !isPath(p))) {
+        const { name, version, signature } = entry
+        if (signature === undefined) violations.push({ kind: "missing_signature", name, version })
+        else if (Option.isNone(trusted)) violations.push({ kind: "signature_unverifiable", name, version, signature })
+        else if (signature !== trusted.value) {
+          violations.push({ kind: "signature_mismatch", name, version, expected: trusted.value, actual: signature })
         }
+      }
+    } else {
+      for (const { name, signature, version } of packages.filter((p) => !isPath(p))) {
+        if (signature === undefined) warnings.push({ kind: "unsigned_dep", name, version })
       }
     }
     for (const entry of packages.filter(isPath)) {
@@ -166,22 +226,9 @@ const workspaceVerify = (context: VerbContext, workspace: string, mode: "json" |
         violations.push({ kind: "path_digest_drift", name: entry.name, expected: entry.digest, actual: tree.value.digest })
       }
     }
-    const keyPath = manifest.signing?.cosign_public_key
-    if (keyPath !== undefined) {
-      const file = joinPath(workspace, keyPath)
-      const publicKey = yield* fs.readFileString(file).pipe(
-        Effect.mapError((error) =>
-          fail(
-            "E_IO",
-            osMessage(error),
-            ExitCode.userError,
-            file,
-            "akua.toml [signing].cosign_public_key must resolve to a PEM-encoded public key file."
-          )
-        )
-      )
+    if (Option.isSome(publicKey)) {
       for (const entry of packages.filter((p) => p.source.startsWith("oci://"))) {
-        const violation = yield* attestationViolation(entry, publicKey).pipe(Effect.provide(context.fetchers))
+        const violation = yield* attestationViolation(entry, publicKey.value).pipe(Effect.provide(context.fetchers))
         if (Option.isSome(violation)) violations.push(violation.value)
       }
     }
@@ -192,12 +239,14 @@ const workspaceVerify = (context: VerbContext, workspace: string, mode: "json" |
         locked_packages: packages.length,
         strict_signing: strictSigning
       },
-      violations
+      violations,
+      warnings
     }
     yield* emit(mode, output, () =>
       [
         `verify: ${output.summary.declared_deps} declared, ${output.summary.locked_packages} locked, ` +
         `strict_signing=${strictSigning}`,
+        ...(warnings.length === 0 ? [] : [`warning: ${warnings.length} unsigned dependency(ies)`, ...warnings.map(warningText)]),
         ...(violations.length === 0 ? ["ok"] : [`fail: ${violations.length} violation(s)`, ...violations.map(violationText)])
       ].join("\n"))
     if (violations.length > 0) return yield* new ExitWith({ exitCode: ExitCode.userError })

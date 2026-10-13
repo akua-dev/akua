@@ -1,0 +1,26 @@
+// The akuapkg assets for {TARGET}, generated from
+// bazel/akuapkg_embedded.ts.tmpl. `bun build --compile` embeds every
+// file imported here into the executable that imports this module (akuapkg,
+// and akua for `akua pkg`): this target's precompiled engines, its Wasmtime
+// addon and the `akua` KCL stdlib: the host's `HostAssets`.
+import helm from "./host_assets/{TARGET}/helm-engine.cwasm.zst" with { type: "file" }
+import kustomize from "./host_assets/{TARGET}/kustomize-engine.cwasm.zst" with { type: "file" }
+import worker from "./host_assets/{TARGET}/akua-render-worker.cwasm.zst" with { type: "file" }
+import ctx from "../crates/akua-core/stdlib/akua/ctx.k" with { type: "file" }
+import helmK from "../crates/akua-core/stdlib/akua/helm.k" with { type: "file" }
+import kustomizeK from "../crates/akua-core/stdlib/akua/kustomize.k" with { type: "file" }
+import pkgK from "../crates/akua-core/stdlib/akua/pkg.k" with { type: "file" }
+import type * as Addon from "../native/index.js"
+
+export const AKUAPKG_VERSION = "{VERSION}"
+
+export const embeddedAssets = {
+  artifacts: {
+    worker,
+    helm,
+    kustomize,
+    stdlib: new Map([["ctx.k", ctx], ["helm.k", helmK], ["kustomize.k", kustomizeK], ["pkg.k", pkgK]])
+  },
+  /** Bun writes the addon to TMPDIR to load it: the host calls this only to render. */
+  loadAddon: (): typeof Addon => require("./host_assets/{TARGET}/wasm-sandbox.node")
+}

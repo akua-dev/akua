@@ -39,7 +39,7 @@ main() {
 
     local base="${AKUAPKG_DOWNLOAD_BASE:-https://github.com}"
     local asset="akuapkg-${resolved_version}-${triple}.tar.gz"
-    local url="${base}/akua-dev/akuapkg/releases/download/${resolved_version}/${asset}"
+    local url="${base}/akua-dev/akua/releases/download/${resolved_version}/${asset}"
 
     local install_root="${AKUAPKG_INSTALL:-$HOME/.akuapkg}"
     local bin_dir="${install_root}/bin"
@@ -138,7 +138,7 @@ resolve_version() {
     # redirect on `/releases/latest` itself.
     local location
     location="$(curl -fsSLI -o /dev/null -w '%{url_effective}\n' \
-        https://github.com/akua-dev/akuapkg/releases/latest)"
+        https://github.com/akua-dev/akua/releases/latest)"
     # URL ends with .../tag/vX.Y.Z.
     echo "$location" | sed -e 's|.*/tag/||'
 }

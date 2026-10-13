@@ -1,4 +1,5 @@
 import { Context, Effect, FileSystem, Layer, Option, Path, Redacted, Schema } from "effect"
+import { CliName } from "./cli-name"
 import git from "isomorphic-git"
 import http from "isomorphic-git/http/web"
 import { cacheRoot, unpackInto } from "./downloads.effect"
@@ -83,8 +84,8 @@ export class GitRemote extends Context.Service<GitRemote, {
           return yield* new GitFetchFailed({
             offline: true,
             message: Option.isSome(request.pin)
-              ? "offline mode and the git cache doesn't have this commit - run `akua add` online first"
-              : "offline mode needs a lockfile-pinned commit - run `akua add` first"
+              ? `offline mode and the git cache doesn't have this commit - run \`${yield* CliName} add\` online first`
+              : `offline mode needs a lockfile-pinned commit - run \`${yield* CliName} add\` first`
           })
         }
         if (request.ref._tag === "Rev" && !FULL_SHA.test(request.ref.rev)) {

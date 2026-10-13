@@ -63,13 +63,23 @@ pub struct PackageSection {
     pub version: String,
     pub edition: String,
 
-    /// When `false`, unsigned deps are permitted in `akua.lock`. Default `true`.
-    #[serde(default = "default_strict_signing")]
-    pub strict_signing: bool,
+    /// Whether every remote dep in `akua.lock` must record a verifying
+    /// signature. Absent: true exactly when `[signing].cosign_public_key`
+    /// is set (see [`AkuaManifest::strict_signing`]), as the akuapkg host
+    /// decides it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub strict_signing: Option<bool>,
 }
 
-fn default_strict_signing() -> bool {
-    true
+impl AkuaManifest {
+    /// `[package].strict_signing`, or whether a cosign public key is configured.
+    pub fn strict_signing(&self) -> bool {
+        self.package.strict_signing.unwrap_or_else(|| {
+            self.signing
+                .as_ref()
+                .is_some_and(|signing| signing.cosign_public_key.is_some())
+        })
+    }
 }
 
 /// `[workspace]` table, present in monorepos.
@@ -602,7 +612,7 @@ from-git  = { git = "https://github.com/foo/bar", tag = "v1.2.3" }
         assert_eq!(m.package.name, "01-hello-webapp");
         assert_eq!(m.package.version, "0.1.0");
         assert_eq!(m.package.edition, "akua.dev/v1alpha1");
-        assert!(m.package.strict_signing);
+        assert!(!m.strict_signing());
         assert!(m.workspace.is_none());
         assert_eq!(m.dependencies.len(), 1);
         let nginx = m.dependencies.get("nginx").expect("nginx dep");
@@ -852,9 +862,24 @@ edition = "akua.dev/v1alpha1"
     }
 
     #[test]
-    fn strict_signing_defaults_to_true() {
+    fn strict_signing_defaults_to_whether_a_key_is_configured() {
         let m = AkuaManifest::parse(EXAMPLE_01).expect("parse");
-        assert!(m.package.strict_signing);
+        assert_eq!(m.package.strict_signing, None);
+        assert!(!m.strict_signing());
+        let keyed = r#"
+[package]
+name    = "keyed"
+version = "0.1.0"
+edition = "akua.dev/v1alpha1"
+
+[signing]
+cosign_public_key = "./cosign.pub"
+
+[dependencies]
+"#;
+        assert!(AkuaManifest::parse(keyed).expect("parse").strict_signing());
+        let unkeyed = keyed.replace("[signing]\ncosign_public_key = \"./cosign.pub\"\n", "");
+        assert!(!AkuaManifest::parse(&unkeyed).expect("parse").strict_signing());
     }
 
     #[test]
@@ -869,7 +894,8 @@ strict_signing = false
 [dependencies]
 "#;
         let m = AkuaManifest::parse(s).expect("parse");
-        assert!(!m.package.strict_signing);
+        assert_eq!(m.package.strict_signing, Some(false));
+        assert!(!m.strict_signing());
     }
 
     #[test]

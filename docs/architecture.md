@@ -1,79 +1,88 @@
 # Architecture
 
-akua is one binary, end-to-end. Every verb is a transformation on typed inputs producing typed, signed, deterministic outputs. No hidden services, no control plane, no required cluster. The CLI does the work; the SDK exposes the same work to library consumers; the browser runs the same work in WebAssembly.
+akuapkg is one executable that turns a typed Package into Kubernetes
+manifests. There is no service, control plane or cluster connection: every
+command works on files and on the dependencies `akua.toml` names.
 
-This document describes the **target architecture**. Implementation is tracked in [`roadmap.md`](./roadmap.md) and the masterplan.
+## The pipeline
 
-## The shape
-
-```
-    author                  compile                   consume
-    ──────                  ───────                   ───────
-
-    KCL Package      ──▶   akuapkg render    ──▶   reconcilers:
-    (*.k + akua.toml)        │                     ArgoCD / Flux / kro
-                            │                     Helm release lifecycle
-    Rego Policy      ──▶    ├─ embedded           kubectl / Crossplane
-    (*.rego)                │  engines:
-                            │   KCL
-    @ui decorators   ──▶   │   Helm v4
-    (on KCL schemas)        │   OPA + Regal
-                            │
-                            │   Kyverno→Rego
-    akua.toml + akua.lock ──▶ │   CEL
-    (human intent +         │   Kustomize
-     digest-pinned ledger)  │   kro (offline)
-                            │
-                            └─ akuapkg publish  ──▶  OCI registry
-                                (signed + SLSA)     (cosign + SLSA v1)
+```text
+author                       akuapkg                           consume
+------                       -------                           -------
+package.k   (KCL)      -->   resolve deps (host)          -->  raw YAML in ./deploy
+akua.toml   (deps)           render (sandbox):                 applied by Argo CD,
+akua.lock   (digests)          KCL worker                      Flux, kubectl, ...
+inputs.yaml                    + Helm engine
+.akua/crds  (CRD types)        + Kustomize engine         -->  OCI artifact
+                             publish (host)                    (cosign, SLSA v1)
 ```
 
-Three stages, each independently pluggable. See [`docs/package-format.md`](./package-format.md) and [`docs/policy-format.md`](./policy-format.md) for the authoring shape; [`docs/cli.md`](./cli.md) for every verb; [`docs/sdk.md`](./sdk.md) for library-consumer shape.
+1. **Resolve.** The host reads `akua.toml` and `akua.lock`, fetches or reuses
+   each dependency (OCI registries, git, HTTPS Helm repositories, URLs, local
+   paths), checks it against its pinned digest, and turns it into something
+   KCL can import: a `charts.<name>` module for a Helm chart, a `pkgs.<name>`
+   module for another Package, the KCL module itself for a KCL dependency
+   such as `k8s`, and `crds.<name>.*` schemas for a CRD source.
+2. **Render.** The KCL render worker evaluates `package.k` inside the
+   sandbox. Calls to `helm.template`, `kustomize.build` and `pkg.render`
+   leave the worker through one host import; the host runs the Helm or
+   Kustomize engine (also in the sandbox) or a nested render, and returns the
+   resources.
+3. **Write.** The host writes each entry of `resources` as its own YAML file,
+   `NNN-<kind>-<name>.yaml`, and prints a summary with a `sha256` over the
+   output.
 
-## Three consumers, one core
+`akuapkg export` is a different operation: it reads the Package's `Input`
+schema and emits JSON Schema or OpenAPI without rendering anything.
 
-| consumer | surface | when used |
-|---|---|---|
-| **CLI** — `akua` binary | 27 shipped verbs + ~10 planned (see [`cli.md`](./cli.md)) | developers, CI, agents in sandboxes |
-| **SDK** — `@akua-dev/sdk` | same capabilities, Node/Bun-native | backend services that embed akua in-process |
-| **Browser** — playground at `akua.dev` + local `akuapkg dev` UI | subset that compiles to WebAssembly | authoring, review, live-preview |
+## Components
 
-**Trust contract:** the binary, the SDK, and the browser produce byte-identical output for the same inputs. No "the real thing is behind the paywall." A backend service calling `@akua-dev/sdk.render()` gets the same bytes a developer gets from `akuapkg render` in their terminal.
+| Path | What it is |
+|---|---|
+| `host/` | The Bun + Effect host (`@akua-dev/sdk`): the command tree, dependency resolution, the render pipeline and the sandbox adapter |
+| `native/` | The Wasmtime addon (napi-rs, `@akua-dev/wasm-sandbox`) and its build-time precompiler. It owns the sandbox guarantees and knows nothing about KCL or Helm |
+| `crates/akua-render-worker`, `crates/akua-core` | The KCL render worker, Rust compiled to `wasm32-wasip1`, and the `akua.*` KCL standard library it embeds |
+| `crates/helm-engine-wasm`, `crates/kustomize-engine-wasm` | Helm v4.1.4 and Kustomize api v0.21.3, wrapped in small Go programs compiled to `wasip1` |
+| `cli/` | The `akua` CLI. Its `akua pkg` command runs this host in-process |
 
-See [`docs/cli-contract.md`](./cli-contract.md) for the universal contract every consumer honors.
+Bazel builds everything from source, precompiles each wasm module to machine
+code for every release target, and embeds the modules and the addon in the
+executable. See [building.md](building.md).
 
-## Embedded engines
+## One host, three ways to run it
 
-All engines bundled into the binary via wasmtime. `$PATH` is never required and there is no shell-out escape hatch — CLAUDE.md's "No shell-out, ever" invariant holds across the render pipeline.
-
-See [`docs/embedded-engines.md`](./embedded-engines.md) for the embedding contract, version pinning, and size budget.
-
-## Canonical form is typed code
-
-- **Packages** — authored in **KCL** (`Package.k` with three regions: imports / schema / body). Published as signed OCI artifacts. `akuapkg render` emits raw YAML, one file per resource. See [`docs/package-format.md`](./package-format.md).
-- **Policies** — authored in **Rego**. Kyverno / CEL / foreign Rego modules are consumed as compile-resolved imports via `akua.toml`, not runtime string lookups.
-- **Higher-level workspace concepts** (App, Environment, Cluster, Secret, Gateway, Workspace, PolicySet, …) — **user-defined KCL schemas** in the consumer's own workspace, shaped to their deployment reality. akua does not ship a KRM vocabulary. Reconcilers (ArgoCD / Flux / kro) consume the raw-Kubernetes output of `akuapkg render`; they don't need akua-specific kinds.
+- **`akuapkg`**, the standalone executable.
+- **`akua pkg`**: the `akua` CLI embeds the same host, so both print the same
+  output and error codes.
+- **A child process** from a long-lived service: `@akua-dev/sdk/process`
+  runs the `akuapkg` executable with a wall-clock deadline, so CPU, memory
+  and any host-side bug stay in the child. See [sdk.md](sdk.md).
 
 ## Determinism
 
-Same inputs + same `akua.lock` + same akuapkg version → byte-identical output. No `now()`, no `random()`, no env reads, no filesystem reads, no cluster reads inside the render pipeline.
+The same Package, inputs, `akua.lock` and akuapkg version produce
+byte-identical output. Dependencies are pinned by digest, the sandbox's wall
+clock is fixed at the Unix epoch, non-cryptographic randomness is seeded, and
+output is serialized in a stable order. One deliberate exception: Helm's
+random functions (`randAlphaNum` and the other `rand*` functions, `genCA`,
+`genSignedCert`, `genPrivateKey`) draw real cryptographic randomness,
+because a fixed seed would give every user of a chart the same private key.
+Renders that use none of them stay byte-identical; a chart that does, such
+as podinfo with its test hooks ([examples/14](../examples/14-helm-repo-dep/)),
+differs on every render.
 
-See [`design-notes.md §engine-determinism`](./design-notes.md#10-engine-determinism-reality-check) for the pragmatic trade-offs (why Helm stays non-pure even though pure-functional would be cleaner).
+## What akuapkg is not
 
-## Signing + attestation by default
+- **Not a reconciler.** Argo CD, Flux and `kubectl` apply what akuapkg
+  renders.
+- **Not a control plane.** It runs no controllers and installs nothing in a
+  cluster.
+- **Not a package catalog.** Packages, charts and CRDs come from the
+  registries and repositories their authors publish to.
 
-`akuapkg publish` emits a cosign signature plus a SLSA v1 predicate unless the caller explicitly opts out. On pull, the `akua.lock` digest is verified before any bytes touch disk (always — the universal integrity gate); cosign signature + SLSA attestation verification engages, fail-closed, when a `[signing] cosign_public_key` is configured. See [`docs/lockfile-format.md`](./lockfile-format.md) and [`docs/cli.md`](./cli.md) `publish` / `verify`.
+## Related topics
 
-## What akua is not
-
-- **Not a reconciler.** ArgoCD, Flux, kro, kubectl own the cluster side.
-- **Not a Kubernetes control plane.** No controllers, no CRDs of our own running against customer clusters.
-- **Not a non-Kubernetes deploy target.** We emit formats Kubernetes-ecosystem reconcilers consume. Fly Machines / Cloudflare Workers / AWS Lambda are out of scope.
-- **Not a curated package catalog.** Upstream projects publish their own signed packages; we ship the substrate.
-
-## See also
-
-- [CLI reference](./cli.md) · [CLI contract](./cli-contract.md) · [SDK](./sdk.md)
-- [Package format](./package-format.md) · [Policy format](./policy-format.md)
-- [Lockfile format](./lockfile-format.md) · [Embedded engines](./embedded-engines.md)
-- [Agent usage](./agent-usage.md) · [Design notes](./design-notes.md) · [Roadmap](./roadmap.md)
+- [Security model](security-model.md): the sandbox and its limits
+- [Embedded engines](embedded-engines.md): the KCL, Helm and Kustomize engines
+- [Package format](package-format.md) and [lockfile format](lockfile-format.md)
+- [CLI contract](cli-contract.md): output, errors and exit codes

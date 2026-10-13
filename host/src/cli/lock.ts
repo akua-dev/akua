@@ -7,7 +7,16 @@ import type { VerbContext } from "./context"
 import { joinPath, readOptional } from "./files"
 import { verb } from "./report"
 import { emit, universal } from "./universal"
-import { loadManifestForLock, lockUpdates, priorLock, resolveForLock, saveLock } from "./workspace"
+import {
+  checkGeneratedCrds,
+  generateCrds,
+  loadManifestForLock,
+  lockUpdates,
+  priorLock,
+  resolveForLock,
+  saveLock,
+  syncGeneratedCrds
+} from "./workspace"
 
 /** The roots of the leading `import` lines (`import a.b` gives `a`), as the previous release scanned them. */
 export const importRoots = (source: string) => {
@@ -66,7 +75,8 @@ const text = (output: { readonly wrote: boolean; readonly drift: boolean; readon
 
 /**
  * Regenerate `akua.lock` from `akua.toml`: every dependency resolved online,
- * merged into the existing lock (unchanged digests keep their signatures).
+ * merged into the existing lock (unchanged digests keep their signatures),
+ * and the CRD schemas under `.akua/crds/` with it.
  * OCI digest drift against the lock fails; `update` is the verb that accepts
  * it. `--check` compares instead of writing.
  */
@@ -78,7 +88,7 @@ export const lock = (context: VerbContext) =>
       workspace: Flag.String("workspace").pipe(Flag.withDefault("."), Flag.withDescription("Workspace root")),
       check: Flag.Boolean("check").pipe(
         Flag.withDefault(false),
-        Flag.withDescription("Exit 1 if akua.lock would change; don't write")
+        Flag.withDescription("Exit 1 if akua.lock or .akua/crds/ would change; don't write")
       )
     },
     verb(
@@ -101,7 +111,8 @@ export const lock = (context: VerbContext) =>
             "Remove the `import` for this alias, or replace the dep with a path/OCI reference to a KCL or Akua package (akua.toml + package.k, or kcl.mod)."
           )
         }
-        const next = mergeIntoLock(prior, lockUpdates(resolved))
+        const generation = yield* generateCrds(resolved)
+        const next = mergeIntoLock(prior, lockUpdates(resolved, generation))
         const drift = lockBody(prior) !== lockBody(next)
         const locked_packages = lockedSummaries(resolved)
         if (flags.check) {
@@ -114,9 +125,10 @@ export const lock = (context: VerbContext) =>
               ExitCode.userError
             )
           }
-          return
+          return yield* checkGeneratedCrds(flags.workspace, generation)
         }
-        yield* saveLock(flags.workspace, next)
+        yield* saveLock(flags.workspace, next, context.name)
+        yield* syncGeneratedCrds(flags.workspace, generation)
         const output = { wrote: true, drift, locked_packages }
         yield* emit(mode, output, () => text(output))
       })

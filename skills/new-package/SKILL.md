@@ -1,160 +1,69 @@
 ---
 name: new-package
-description: Scaffold a new akua Package in KCL with a typed input schema and Helm/KCL/kro sources. Use when the user wants to start a new cloud-native package, create a new app definition, set up akua for a project, or compose multiple upstream sources into one reusable package.
+description: Scaffold a new akuapkg Package in KCL, typed against a Kubernetes version and any CRDs it uses, optionally wrapping Helm charts. Use when the user wants to start a new Kubernetes package, package an application, replace a hand-written Helm chart or YAML with typed KCL, or add typed Custom Resources such as cert-manager Certificates or Prometheus ServiceMonitors.
 license: Apache-2.0
 ---
 
-# Create a new akua Package
-
-An akua Package is a typed, reusable definition authored in KCL. One Package is published to OCI once; many Apps reference it with different inputs. This skill walks through scaffolding one from scratch.
-
-## Prerequisites
-
-- `akua` CLI installed (`akua --version` should succeed)
-- A target directory for the new package
-- Decision on the source engine(s) needed: Helm chart(s), KCL modules, kro RGDs, kustomize bases, or a mix
+# Scaffold a typed Package
 
 ## Steps
 
-### 1. Scaffold
+1. Scaffold. The Package is typed against Kubernetes 1.35 from the start:
 
-```sh
-akuapkg init <package-name>
-cd <package-name>
-```
+   ```sh
+   akuapkg init my-app
+   cd my-app
+   ```
 
-This creates:
+   For an older cluster, pass the oldest Kubernetes minor you must support:
+   `akuapkg init my-app --k8s 1.33`, then `akuapkg lock`.
 
-- `package.k` — the KCL Package definition with a starter schema
-- `inputs.example.yaml` — sample inputs satisfying the schema
-- `.akua/` — metadata directory
-- `README.md`
+2. Add a CRD dependency for every Custom Resource kind you will emit. Pick
+   the source the project publishes:
 
-### 2. Add source engines
+   ```sh
+   akuapkg add cert-manager --url https://github.com/cert-manager/cert-manager/releases/download/v1.16.0/cert-manager.crds.yaml
+   akuapkg add prometheus --git https://github.com/prometheus-operator/prometheus-operator --tag v0.80.0 --crds example/prometheus-operator-crd
+   ```
 
-For each external source, use `akuapkg add`. This generates a typed KCL subpackage under `./sources/` so you get autocomplete + validation on the source's native values.
+   `add` prints the import path of each generated module, for example
+   `import crds.cert_manager.cert_manager_io.v1 (Certificate, ...)`.
 
-Helm chart:
+3. Add Helm charts the Package wraps:
 
-```sh
-akuapkg add chart oci://ghcr.io/cloudnative-pg/charts/cluster --version 0.20.0
-```
+   ```sh
+   akuapkg add traefik --oci oci://ghcr.io/traefik/helm/traefik --version 37.1.1
+   ```
 
-kro RGD:
+4. Write `package.k`: a `schema Input` with defaults and `check:` rules,
+   `input: Input = ctx.input()`, and `resources = [...]` built from typed
+   schemas (`corev1.ConfigMap {...}`, `certmanager.Certificate {...}`) and
+   chart calls (`traefik.template(traefik.TemplateOpts {...})`). Prefer
+   typed schemas over plain dicts: a dict is not checked.
 
-```sh
-akuapkg add rgd oci://pkg.example.com/glue-rgd:1.0
-```
+5. Put sample inputs in `inputs.example.yaml`, then check and render:
 
-Kustomize base:
+   ```sh
+   akuapkg check
+   akuapkg render --inputs inputs.example.yaml
+   ```
 
-```sh
-akuapkg add kustomize ./local/overlay
-```
+6. Fix every `E_RENDER_KCL` error at the reported `package.k:LINE:COL`.
+   Errors such as `Cannot add member 'x' to schema 'Y', did you mean ...`
+   name the fix.
 
-Another KCL package:
+7. Commit `akua.toml`, `akua.lock`, `package.k`, `inputs.example.yaml` and
+   `.akua/crds/`. Do not commit `deploy/` unless the repository tracks
+   rendered output.
 
-```sh
-akuapkg add kcl oci://ghcr.io/kcl-lang/k8s --version 1.31.2
-```
+## Done when
 
-### 3. Edit the schema
+- `akuapkg check` and `akuapkg lock --check` pass;
+- `akuapkg render` writes the expected files under `./deploy`;
+- every emitted resource comes from a typed schema or a chart call.
 
-Open `package.k`. The top defines the public input contract:
+## References
 
-```python
-schema Input:
-    """What callers of this package must provide."""
-    appName:  str
-    hostname: str
-    replicas: int = 3
-    database: { user: str = "app" }
-
-input: Input
-```
-
-Rules for good schemas:
-
-- Required fields have no default (`appName`, `hostname` above).
-- Optional fields get sensible defaults (`replicas: int = 3`).
-- Nested schemas for structured inputs (`database`).
-- Descriptions go in docstrings — agents and humans both read them.
-- No cross-field logic in the schema — that goes in the package body.
-
-### 4. Wire sources to schema
-
-Below the schema, call the engine functions with the typed inputs:
-
-```python
-import akua.helm
-import charts.cnpg as cnpg
-
-_pg = helm.template(cnpg.Chart {
-    values = cnpg.Values {
-        cluster.name      = "${input.appName}-pg"
-        cluster.instances = 3
-    }
-})
-
-resources = _pg
-```
-
-Each call returns a list of typed Kubernetes resources. Concatenate them with `[*_pg, *_app, ...]`.
-
-### 5. Render output
-
-`akuapkg render --out ./deploy` writes every entry in `resources` as its own
-YAML file under `./deploy/`. No output-kind declaration — raw manifests
-is the single render shape. Ecosystem-specific shapes come either from
-in-body transformation functions (`kro.rgd(...)`, `crossplane.composition(...)`
-that produce K8s manifests joined into `resources`) or from future
-distribution verbs like `akuapkg publish --as <format>`. See [docs/cli.md — akuapkg render](../../docs/cli.md#akua-render).
-
-### 6. Validate
-
-```sh
-akuapkg lint
-```
-
-Catches: schema errors, unresolved source references, policy violations (if `--policy` is set).
-
-### 7. Render with sample inputs
-
-```sh
-akuapkg render --inputs inputs.example.yaml --out ./rendered
-```
-
-Inspect `./rendered/` — this is the exact YAML that would deploy. Committable to git.
-
-### 8. Dev loop (optional)
-
-If you have a local Kubernetes available:
-
-```sh
-akuapkg dev
-```
-
-Opens `http://localhost:5173`, applies rendered manifests to a kind cluster, hot-reloads on every edit.
-
-## Expected output
-
-After `akuapkg render`, `./rendered/` contains well-formed Kubernetes YAML, one file per resource, sorted by `kind/name`. The output is byte-deterministic: the same inputs always produce identical bytes.
-
-## Failure modes
-
-- **`E_SCHEMA_INVALID`** — schema definition has invalid KCL. The error includes line and field; fix the schema.
-- **`E_SOURCE_UNRESOLVED`** — a source reference in `akuapkg add` failed to fetch. Check the OCI ref; verify credentials with `akuapkg whoami`.
-- **`E_POLICY_DENY`** (exit 3) — rendered manifests violate the configured policy tier. The error lists the failing rule and a suggested fix.
-- **`E_RENDER_FAILED`** — an engine function (helm.template, rgd.instantiate) raised an error. Usually a values-validation failure; check the source engine's own schema.
-
-## Next steps
-
-- Publish: use the [publish-signed](../publish-signed/SKILL.md) skill.
-- Set up a CI gate: use the [diff-gate](../diff-gate/SKILL.md) skill.
-- Apply a policy tier: use the [apply-policy-tier](../apply-policy-tier/SKILL.md) skill.
-
-## Reference
-
-- Full CLI: [docs/cli.md](../../docs/cli.md)
-- Examples: [examples/](../../examples/)
-- Package format spec: `docs/package-format.md` (forthcoming)
+- [docs/typed-resources.md](../../docs/typed-resources.md)
+- [docs/package-format.md](../../docs/package-format.md)
+- [examples/16-typed-crds](../../examples/16-typed-crds/)
