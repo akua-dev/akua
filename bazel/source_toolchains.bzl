@@ -16,7 +16,7 @@ def _source_compilers_impl(rctx):
         url = pin["url"],
         sha256 = pin["sha256"],
         output = "go",
-        stripPrefix = "go",
+        stripPrefix = pin.get("strip_prefix", "go"),
     )
     rctx.file("BUILD.bazel", """
 exports_files(["go/bin/go"], visibility = ["//visibility:public"])

@@ -1,4 +1,4 @@
-"""Pinned upstream Go 1.27.2 archives."""
+"""Pinned upstream Go 1.27.2 archives (Linux ZIP verified via Go's checksum database)."""
 
 SOURCE_TOOLCHAIN_PINS = {
     "go": {
@@ -11,8 +11,9 @@ SOURCE_TOOLCHAIN_PINS = {
             "url": "https://go.dev/dl/go1.27.2.darwin-amd64.tar.gz",
         },
         "x86_64-unknown-linux-gnu": {
-            "sha256": "ecbadb99091a3f46e31f5f934b068b1864eafa7995211b39eaddf76996045fe5",
-            "url": "https://go.dev/dl/go1.27.2.linux-amd64.tar.gz",
+            "sha256": "3a467ed067f27cd55bf3a702f8e2bf12479f53c9d8ae0de548f48ebcb3c67796",
+            "strip_prefix": "golang.org/toolchain@v0.0.1-go1.27.2.linux-amd64",
+            "url": "https://proxy.golang.org/golang.org/toolchain/@v/v0.0.1-go1.27.2.linux-amd64.zip",
         },
     },
 }
