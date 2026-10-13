@@ -15,7 +15,7 @@ import {
 	writeFileString
 } from './fs-test';
 import { BunServices } from '@effect/platform-bun';
-import { Console, Crypto, Effect, FileSystem, Layer, Path, Stream } from 'effect';
+import { Config, Console, Crypto, Effect, FileSystem, Layer, Option, Path, Stream } from 'effect';
 import { Command } from 'effect/cli';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 
@@ -29,7 +29,20 @@ import { cliTestLayer } from './cli-test-layer';
 const TEST_SOURCE_SHA = '0123456789abcdef0123456789abcdef01234567';
 
 function runRelease<A, E>(program: Effect.Effect<A, E, ReleaseHost>): Promise<A> {
-	return Effect.runPromise(Effect.provide(program, makeReleaseHostLive()));
+	return Effect.runPromise(
+		Effect.gen(function* () {
+			const zipper = yield* Config.option(Config.String('PLATFORM_CLI_TEST_ZIPPER'));
+			const zipperPath = Option.getOrUndefined(zipper);
+			return yield* Effect.gen(function* () {
+				const host = yield* ReleaseHost;
+				return yield* Effect.provideService(program, ReleaseHost, {
+					...host,
+					packageExistingExecutables: (input) =>
+						host.packageExistingExecutables({ ...input, zipperPath })
+				});
+			}).pipe(Effect.provide(makeReleaseHostLive(zipperPath)));
+		})
+	);
 }
 
 // Shared runner for the handful of independent-oracle/verification host
@@ -733,7 +746,7 @@ describe('release target contract', () => {
 			const smokeLog = joinPath(root, 'smoke.log');
 			await writeFileString(
 				source,
-				`#!/bin/sh\nprintf '%s\\n' "$*" >> '${smokeLog}'\ncase "$1" in\n  --version) echo '{"status":"ok","data":{"version":"1.2.3"}}' ;;\n  --help) echo 'Usage: akua' ;;\n  commands) echo 'commands[1]' ;;\n  pkg)\n    case "$2" in\n      version) echo '{"version":"0.8.26"}' ;;\n      render) mkdir -p deploy; echo manifest > deploy/manifest.yaml; echo '{}' ;;\n      *) exit 2 ;;\n    esac\n    ;;\n  *) exit 2 ;;\nesac\n`
+				`#!/bin/sh\nprintf '%s\\n' "$*" >> '${smokeLog}'\ncase "$1" in\n  --version) echo '{"status":"ok","data":{"version":"1.2.3"}}' ;;\n  --help) echo 'Usage: akua' ;;\n  commands) echo 'commands[1]' ;;\n  pkg)\n    case "$2" in\n      version) echo '{"version":"0.8.26"}' ;;\n      init) mkdir -p \"$3\"; echo fixture > \"$3/inputs.example.yaml\"; echo '{}' ;;\n      check|inspect) test -f inputs.example.yaml || exit 2; echo '{}' ;;\n      render) test -f inputs.example.yaml || exit 2; mkdir -p deploy; echo manifest > deploy/manifest.yaml; echo '{}' ;;\n      *) exit 2 ;;\n    esac\n    ;;\n  *) exit 2 ;;\nesac\n`
 			);
 			await chmodPath(source, 0o755);
 			await runRelease(
@@ -771,7 +784,10 @@ describe('release target contract', () => {
 				'--help',
 				'commands --limit 1',
 				'pkg version --json',
-				'pkg render --out deploy --json'
+				'pkg init demo --json',
+				'pkg check --json',
+				'pkg render --inputs inputs.example.yaml --out deploy --json',
+				'pkg inspect --json'
 			]);
 		} finally {
 			await removePath(root, { recursive: true, force: true });
