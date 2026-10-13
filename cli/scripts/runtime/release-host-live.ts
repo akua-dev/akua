@@ -505,6 +505,12 @@ const smokeReleaseArtifact = Effect.fn('smokeReleaseArtifact')(function* (input:
 		const pinnedCache: Record<string, string> =
 			input.ociCache === undefined ? {} : { XDG_CACHE_HOME: path.resolve(input.ociCache) };
 		const offline = input.ociCache === undefined ? [] : ['--offline'];
+		// Resolve the scaffold's pinned dependencies before its offline type check.
+		yield* runCommand(
+			[executable, 'pkg', 'lock', '--check', '--json'],
+			pinnedCache,
+			packageDirectory
+		);
 		yield* runCommand([executable, 'pkg', 'check', '--json'], pinnedCache, packageDirectory);
 		yield* runCommand(
 			[

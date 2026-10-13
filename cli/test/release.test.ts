@@ -722,77 +722,60 @@ describe('release target contract', () => {
 		}).pipe(Effect.provide(makeReleaseHostLive()))
 	);
 
-	test('extracts and executes all install-smoke commands for the native artifact', async () => {
-		const targets = release.RELEASE_TARGETS;
-		const hostTargetId = release.hostTargetId as () => Effect.Effect<string, Error, ReleaseHost>;
-		const packageExistingExecutables = release.packageExistingExecutables as (input: {
-			version: string;
-			outputDir: string;
-			binaries: Record<string, string>;
-			packageVersion: string;
-			sourceSha: string;
-		}) => Effect.Effect<void, Error>;
-		const smokeReleaseArtifact = release.smokeReleaseArtifact as (input: {
-			version: string;
-			outputDir: string;
-			targetId: string;
-			archiveSha256: string;
-		}) => Effect.Effect<void, Error>;
-		const root = await makeReleaseTempDir();
+	it.effect('resolves pinned dependencies before checking a fresh native install', () =>
+		Effect.gen(function* () {
+			const fs = yield* FileSystem.FileSystem;
+			const zipper = yield* Config.option(Config.String('PLATFORM_CLI_TEST_ZIPPER'));
+			const targets = release.RELEASE_TARGETS;
+			const releaseRoot = joinPath(process.cwd(), 'dist', 'release');
+			yield* fs.makeDirectory(releaseRoot, { recursive: true });
+			const root = yield* fs.makeTempDirectoryScoped({
+				directory: releaseRoot,
+				prefix: '.tmp-native-smoke-'
+			});
 
-		try {
 			const source = joinPath(root, 'akua-fixture');
 			const outputDir = joinPath(root, 'release');
 			const smokeLog = joinPath(root, 'smoke.log');
-			await writeFileString(
+			yield* fs.writeFileString(
 				source,
-				`#!/bin/sh\nprintf '%s\\n' "$*" >> '${smokeLog}'\ncase "$1" in\n  --version) echo '{"status":"ok","data":{"version":"1.2.3"}}' ;;\n  --help) echo 'Usage: akua' ;;\n  commands) echo 'commands[1]' ;;\n  pkg)\n    case "$2" in\n      version) echo '{"version":"0.8.26"}' ;;\n      init) mkdir -p \"$3\"; echo fixture > \"$3/inputs.example.yaml\"; echo '{}' ;;\n      check|inspect) test -f inputs.example.yaml || exit 2; echo '{}' ;;\n      render) test -f inputs.example.yaml || exit 2; mkdir -p deploy; echo manifest > deploy/manifest.yaml; echo '{}' ;;\n      *) exit 2 ;;\n    esac\n    ;;\n  *) exit 2 ;;\nesac\n`
+				`#!/bin/sh\nprintf '%s\\n' "$*" >> '${smokeLog}'\ncase "$1" in\n  --version) echo '{"status":"ok","data":{"version":"1.2.3"}}' ;;\n  --help) echo 'Usage: akua' ;;\n  commands) echo 'commands[1]' ;;\n  pkg)\n    case "$2" in\n      version) echo '{"version":"0.8.26"}' ;;\n      init) mkdir -p \"$3\"; echo fixture > \"$3/inputs.example.yaml\"; echo '{}' ;;\n      lock) test "$3" = --check || exit 2; touch dependencies-ready; echo '{}' ;;\n      check|inspect) test -f dependencies-ready || exit 1; test -f inputs.example.yaml || exit 2; echo '{}' ;;\n      render) test -f dependencies-ready || exit 1; test -f inputs.example.yaml || exit 2; mkdir -p deploy; echo manifest > deploy/manifest.yaml; echo '{}' ;;\n      *) exit 2 ;;\n    esac\n    ;;\n  *) exit 2 ;;\nesac\n`
 			);
-			await chmodPath(source, 0o755);
-			await runRelease(
-				packageExistingExecutables({
-					version: '1.2.3',
-					outputDir,
-					binaries: Object.fromEntries(targets.map((target) => [target.id, source])),
-					packageVersion: '0.9.6',
-					sourceSha: TEST_SOURCE_SHA
-				})
-			);
+			yield* fs.chmod(source, 0o755);
+			yield* release.packageExistingExecutables({
+				version: '1.2.3',
+				outputDir,
+				binaries: Object.fromEntries(targets.map((target) => [target.id, source])),
+				packageVersion: '0.9.6',
+				sourceSha: TEST_SOURCE_SHA,
+				zipperPath: Option.getOrUndefined(zipper)
+			});
 
-			const targetId = await runRelease(hostTargetId());
-			expect(
-				await runRelease(
-					smokeReleaseArtifact({
-						version: '1.2.3',
-						outputDir,
-						targetId,
-						archiveSha256: await runRelease(
-							Effect.gen(function* () {
-								const fs = yield* FileSystem.FileSystem;
-								const target = RELEASE_TARGETS.find((candidate) => candidate.id === targetId);
-								if (target === undefined) return yield* Effect.die('Missing native release target');
-								return yield* release.sha256(
-									yield* fs.readFile(joinPath(outputDir, release.artifactName('1.2.3', target)))
-								);
-							}).pipe(Effect.provide(BunServices.layer))
-						)
-					})
-				)
-			).toBeUndefined();
-			expect((await readFileString(smokeLog)).trim().split('\n')).toEqual([
+			const targetId = yield* release.hostTargetId();
+			const target = RELEASE_TARGETS.find((candidate) => candidate.id === targetId);
+			if (target === undefined) return yield* Effect.die('Missing native release target');
+			const archiveSha256 = yield* release.sha256(
+				yield* fs.readFile(joinPath(outputDir, release.artifactName('1.2.3', target)))
+			);
+			yield* release.smokeReleaseArtifact({
+				version: '1.2.3',
+				outputDir,
+				targetId,
+				archiveSha256
+			});
+			expect((yield* fs.readFileString(smokeLog)).trim().split('\n')).toEqual([
 				'--version --json',
 				'--help',
 				'commands --limit 1',
 				'pkg version --json',
 				'pkg init demo --json',
+				'pkg lock --check --json',
 				'pkg check --json',
 				'pkg render --inputs inputs.example.yaml --out deploy --json',
 				'pkg inspect --json'
 			]);
-		} finally {
-			await removePath(root, { recursive: true, force: true });
-		}
-	});
+		}).pipe(Effect.scoped, Effect.provide(makeReleaseHostLive()), Effect.provide(BunServices.layer))
+	);
 
 	test('rejects an install-smoke executable whose longer version contains the expected version', async () => {
 		const targets = release.RELEASE_TARGETS;
