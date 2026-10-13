@@ -1,36 +1,23 @@
 name: pages
 
-# Publishes akua.dev. Composition:
+# Publishes cli.akua.dev: the install scripts, and forwarding pages to the
+# akua pkg documentation on docs.akua.dev. Every structured error's `docs`
+# link is https://cli.akua.dev/errors/<CODE>, served from pages/errors/.
 #
-#   site/index.html      → /                                (landing)
-#   site/errors/index    → /errors/                         (error code index)
-#   site/errors/<CODE>   → /errors/<CODE>                   (per-code error doc)
-#   scripts/install.sh   → /install                         (no extension, Bun-style)
-#   scripts/install.ps1  → /install.ps1                     (Windows)
+#   pages/**             -> /                (generated; never edit by hand)
+#   scripts/install.sh   -> /install         (curl -fsSL https://cli.akua.dev/install | sh)
+#   scripts/install.ps1  -> /install.ps1
 #
-# The curl one-liner users paste is `curl -fsSL https://cli.akua.dev/install | sh`.
-# `curl | sh` doesn't care about Content-Type, so hosting the script at a
-# no-extension path is fine — and keeps the URL clean.
-#
-# Error pages are regenerated from `crates/akua-core/src/cli_contract/{codes,error}.rs`
-# at deploy time so the live site can't drift from the source-of-truth contract.
+# pages/ is generated in the canonical repository from the CLI's error
+# catalog (`bazel run //:write_akua_reference_docs`), so this job only copies.
 
 on:
   push:
     branches: [main]
     paths:
-      - 'site/**'
+      - 'pages/**'
       - 'scripts/install.sh'
       - 'scripts/install.ps1'
-      - 'scripts/gen-*.ts'
-      - 'scripts/check-site-links.ts'
-      - 'scripts/site/**'
-      - 'crates/akua-core/src/cli_contract/codes.rs'
-      - 'crates/akua-core/src/cli_contract/error.rs'
-      - 'docs/**'
-      - 'examples/**/README.md'
-      - 'examples/**/package.k'
-      - 'examples/**/rendered/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -39,7 +26,6 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one in-flight deploy at a time; queue the next, skip the rest.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -49,39 +35,20 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: akua-heavy-ci-v2
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
-      - uses: jdx/mise-action@v4
-        with:
-          install: true
-          cache: true
-
-      - name: Regenerate every site page from its source-of-truth
-        # Sources: codes.rs + error.rs (errors), docs/cli.md (cli), docs/*.md
-        # (concepts), examples/* (examples). Committed HTML under site/
-        # is for local preview; deploy regenerates so the live site can
-        # never drift from the underlying data.
-        run: mise exec -- task site:gen
 
       - name: Assemble site
         run: |
           set -eu
           mkdir -p _site
-          cp -r site/. _site/
+          cp -R pages/. _site/
           cp scripts/install.sh _site/install
           cp scripts/install.ps1 _site/install.ps1
-          # sanity check — fail loud if the site is empty or missing key pages
-          test -s _site/index.html
-          test -s _site/install
-          test -s _site/install.ps1
-          test -s _site/start/index.html
-          test -s _site/cli/index.html
-          test -s _site/concepts/index.html
-          test -s _site/examples/index.html
-          test -s _site/errors/index.html
-          test -s _site/errors/E_PUBLISH_FAILED.html
+          for page in index.html 404.html errors/index.html errors/E_IO.html install install.ps1; do
+            test -s "_site/$page"
+          done
 
       - uses: actions/configure-pages@v6
 

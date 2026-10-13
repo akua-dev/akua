@@ -68,16 +68,12 @@ pub mod duration_parse;
 pub mod export;
 #[cfg(feature = "git-fetch")]
 pub mod git_fetcher;
-#[cfg(all(feature = "engine-kcl", feature = "engine-helm"))]
-pub mod helm;
 #[cfg(feature = "helm-fetch")]
 pub mod helm_repo_fetcher;
 pub(crate) mod hex;
 pub mod host_auth;
 #[cfg(feature = "engine-kcl")]
 pub mod kcl_plugin;
-#[cfg(all(feature = "engine-kcl", feature = "engine-kustomize"))]
-pub mod kustomize;
 pub mod lock_file;
 pub mod mod_file;
 #[cfg(feature = "oci-fetch")]
@@ -134,7 +130,7 @@ pub use mod_file::{
 #[cfg(feature = "engine-kcl")]
 pub use package_k::{
     eval_source, eval_source_full, eval_source_full_with_pkgs, eval_source_with_inputs, format_kcl,
-    lint_kcl, lint_kcl_source, list_options_kcl, list_options_kcl_source, parse_rendered_yaml,
+    lint_kcl, lint_kcl_source, lint_kcl_source_with_pkgs, list_options_kcl, list_options_kcl_source, parse_rendered_yaml,
     LintIssue, OptionInfo, PackageK, PackageKError, RenderedPackage,
 };
 #[cfg(feature = "engine-kcl")]
@@ -145,23 +141,6 @@ pub use tree::{
     tree_from_parsed, tree_from_sources, DepRow, LockedInfo, PackageInfo, TreeOutput,
     TreeSourceError,
 };
-/// Point the embedded helm/kustomize engines at a directory holding
-/// their `.wasm`/`.cwasm` artifacts, overriding `AKUA_NATIVE_ENGINES_DIR`.
-///
-/// The napi addon calls this from its JS loader so the engines load
-/// under runtimes (Bun) that don't propagate `process.env` writes to
-/// the OS environment `std::env` reads. Must be called before the
-/// first render — the engine crates cache the resolved bytes on first
-/// use. A no-op for any engine whose feature is disabled.
-pub fn set_native_engines_dir(dir: &str) {
-    #[cfg(feature = "engine-helm")]
-    helm_engine_wasm::set_engines_dir(dir);
-    #[cfg(feature = "engine-kustomize")]
-    kustomize_engine_wasm::set_engines_dir(dir);
-    // Silence unused-arg warning when neither engine feature is on.
-    let _ = dir;
-}
-
 #[cfg(feature = "engine-kcl")]
 pub use vendor::{
     VendorAddOutput, VendorCheckEntry, VendorCheckOutput, VendorError, VendorListEntry,

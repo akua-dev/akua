@@ -2,8 +2,7 @@
   "name": "akua-monorepo",
   "private": true,
   "workspaces": [
-    "packages/*",
-    "crates/akua-napi",
-    "crates/akua-native-engines-npm"
+    "host",
+    "native"
   ]
 }

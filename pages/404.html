@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>akua pkg docs</title>
+<script>
+  const code = location.pathname.match(/^/errors/(E_[A-Z0-9_]+)/);
+  location.replace(code ? "https://docs.akua.dev/akua/errors/" + code[1] : "https://docs.akua.dev/akua");
+</script>
+<p>The akua pkg documentation lives at <a href="https://docs.akua.dev/akua">https://docs.akua.dev/akua</a>.</p>

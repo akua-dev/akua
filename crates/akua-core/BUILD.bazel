@@ -1,0 +1,48 @@
+"""Declared source inputs for the package core crate."""
+
+exports_files([
+    "BUILD.bazel",
+    "Cargo.toml",
+])
+
+# Build scripts and declarations are optional across the pinned crate inputs.
+# buildifier: disable=constant-glob
+filegroup(
+    name = "rust_sources",
+    srcs = ["Cargo.toml"] + glob(
+        [
+            "src/**",
+            "stdlib/**",
+            "build.rs",
+            "index.d.ts",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)
+
+exports_files(["src/lib.rs"])
+
+filegroup(
+    name = "rust_compile_sources",
+    srcs = glob(["src/**/*.rs"]),
+    visibility = ["//visibility:public"],
+)
+
+# The fixture remains optional alongside the stdlib source inputs.
+# buildifier: disable=constant-glob
+filegroup(
+    name = "rust_compile_data",
+    srcs = glob([
+        "stdlib/**/*.k",
+        "tests/fixtures/helm-multidoc.yaml",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+# The `akua` KCL stdlib the akuapkg host preopens into the render worker.
+filegroup(
+    name = "akua_stdlib",
+    srcs = glob(["stdlib/akua/*.k"]),
+    visibility = ["//visibility:public"],
+)

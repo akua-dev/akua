@@ -51,7 +51,8 @@ main() {
     mkdir -p "$bin_dir" || error "cannot create ${bin_dir}"
     local tmpdir
     tmpdir="$(mktemp -d 2>/dev/null || mktemp -d -t 'akuapkg')"
-    trap 'rm -rf "$tmpdir"' EXIT
+    # Expanded now: `tmpdir` is local and gone when the EXIT trap runs.
+    trap "rm -rf '$tmpdir'" EXIT
 
     curl -fsSL "$url" -o "$tmpdir/akuapkg.tar.gz" \
         || error "download failed from ${url}"
@@ -90,7 +91,7 @@ detect_triple() {
             # bail rather than give them a broken glibc binary that fails
             # at runtime with a confusing dynamic-linker error.
             if [ -f /etc/alpine-release ]; then
-                error "Alpine/musl not yet supported. Build from source:\n\n    cargo install --git https://github.com/akua-dev/akuapkg akuapkg-cli\n"
+                error "Alpine/musl is not supported yet; use a glibc-based image."
             fi
             case "$machine" in
                 x86_64|amd64)  triple="x86_64-unknown-linux-gnu" ;;

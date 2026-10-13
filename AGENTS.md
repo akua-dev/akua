@@ -32,7 +32,7 @@ Akuapkg is the **bun/deno pattern applied to cloud-native packages**. One binary
 
 | concern | authoritative doc |
 |---|---|
-| CLI verbs + flags + exit codes | [docs/cli.md](docs/cli.md) |
+| CLI verbs + flags + exit codes | generated: [docs.akua.dev/akua/cli](https://docs.akua.dev/akua/cli), from `host/src/cli.ts` |
 | CLI invariants (universal contract) | [docs/cli-contract.md](docs/cli-contract.md) |
 | Package authoring shape | [docs/package-format.md](docs/package-format.md) |
 | Policy authoring shape | [docs/policy-format.md](docs/policy-format.md) |
@@ -88,17 +88,9 @@ That's it. akua does **not** specify `App`, `Environment`, `Cluster`, `Secret`, 
 
 ## Shipping checklists
 
-**New CLI verb — one PR moves all of these together** (binary/SDK/docs are one contract):
+**New CLI verb**: the host (`host/`, [host/AGENTS.md](host/AGENTS.md)) owns it in TypeScript: `host/src/cli.ts` (command), its logic beside `render.effect.ts`, a golden or contract case if it operates on a Package, and a category in `../reference-docs.bazel.ts`; new error codes go in `host/src/error-catalog.ts`. `bazel run //:write_akua_reference_docs` refreshes the published reference. `akua pkg` gets it automatically: the akua CLI embeds this host.
 
-- `crates/akua-core/src/<verb>.rs` (logic) → `crates/akuapkg-cli/src/verbs/<verb>.rs` (verb wrapper) → `main.rs` (clap dispatch)
-- `crates/akua-napi/src/lib.rs` (`#[napi]` wrapper calling `verbs::<verb>::run`) → `packages/sdk/src/mod.ts` (`Akua.<verb>()` method routes through `loadNapi()` + `callNapi`). The napi surface is declared in **three** hand-maintained places that must stay in sync: the `#[napi]` fn, `crates/akua-napi/index.d.ts` (committed despite its "auto-generated" header), and the `NapiAddon` interface in `packages/sdk/src/napi.ts` — a missing entry fails `task sdk:build` (`tsc`), not local `cargo`. Don't rely on `process.env` reaching the addon (Bun doesn't `setenv` on assignment) — pass values through napi args.
-- Tests at every layer; integration golden under `crates/akuapkg-cli/tests/` if the verb operates on a Package
-- `docs/cli.md` section, verb-count bump (grep for the current count across docs/README), 🚧 → ✅
-- `CHANGELOG.md` entry; `task release:validate` still green
-
-**Touching `eval_kcl` or anything called from it:** `cargo build` doesn't rebuild `akua-render-worker.cwasm` (the worker is compiled separately to `wasm32-wasip1` by `task build:render-worker`). `crates/akuapkg-cli/build.rs` watches `crates/akua-render-worker/src` and `crates/akua-core/src` and emits a `cargo:warning=` when sources are newer than the staged `.wasm` — heed it and run `task build:render-worker` before re-running `cargo build`.
-
-**Embedded-engine builds + feature wiring** (these cost real time when missed): the engine wasm assets (`crates/{helm,kustomize}-engine-wasm/assets/*.wasm`) are **gitignored** — a fresh clone or `git worktree` can't compile `akua-core` until `task build:engines` runs (or you copy the built assets in). The Go engine source (`crates/helm-engine-wasm/go-src/`) rebuilds via `task build:helm-engine-wasm` (Go→wasip1) — a *different* artifact from the Rust render-worker's `task build:render-worker`; when you change Go engine code, rebuild the engine, not the worker. And a new `akua-core` feature is **dead in the shipped binary/SDK** unless it's added to the `akua-core` dep `features = [...]` in **both** `crates/akuapkg-cli/Cargo.toml` and `crates/akua-napi/Cargo.toml` — otherwise it silently compiles to its `#[cfg(not(feature))]` stub there even though `cargo test -p akua-core --features …` passes.
+**Touching `eval_kcl` or the Go engines**: the render worker (Rust to `wasm32-wasip1`) and the Helm/Kustomize engines (Go to `wasip1`) are wasm modules the executable embeds precompiled; Bazel rebuilds and re-precompiles them for every target. Verify with the host's contract test, which renders the committed goldens.
 
 **Releases use admitted Bazel artifacts.** Review a committed Cargo version bump, then let the canonical Main pipeline build once and publish the fixed source projection, immutable tag, and verified assets. Public CI is advisory; public workflows never publish releases. Never move a tag or replace an asset. See [docs/releasing.md](docs/releasing.md).
 

@@ -1,0 +1,29 @@
+"""The sandboxed render worker for the package runtime."""
+
+exports_files([
+    "BUILD.bazel",
+    "Cargo.toml",
+])
+
+# Build scripts and declarations are optional across the pinned crate inputs.
+# buildifier: disable=constant-glob
+filegroup(
+    name = "rust_sources",
+    srcs = ["Cargo.toml"] + glob(
+        [
+            "src/**",
+            "build.rs",
+            "index.d.ts",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)
+
+exports_files(["src/main.rs"])
+
+filegroup(
+    name = "rust_compile_sources",
+    srcs = glob(["src/**/*.rs"]),
+    visibility = ["//visibility:public"],
+)

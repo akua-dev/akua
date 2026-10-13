@@ -1,0 +1,37 @@
+# Generic Wasmtime sandbox for the akuapkg host (napi-rs addon). A standalone
+# workspace: it shares nothing with the crates that compile the render worker
+# to wasm.
+
+[package]
+name = "wasm-sandbox"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+license = "Apache-2.0"
+publish = false
+
+# The precompiler is its own workspace (own Cargo.lock): sharing one with the
+# addon would unify wasmtime features and pull Cranelift into the addon.
+[workspace]
+exclude = ["precompile"]
+
+[lib]
+crate-type = ["cdylib"]
+
+# Runtime only: no Cranelift. The addon loads machine code precompiled at
+# build time by `precompile/` and never compiles wasm itself.
+[dependencies]
+napi = { version = "=3.13.0", default-features = false, features = ["napi6"] }
+napi-derive = "=3.6.9"
+wasmtime = { version = "=49.0.1", default-features = false, features = ["runtime", "std", "gc", "gc-drc", "addr2line", "demangle"] }
+wasmtime-wasi = { version = "=49.0.1", default-features = false, features = ["p1"] }
+send_wrapper = "=0.6.0"
+# The guests' seeded randomness (StdRng: ChaCha12); the version wasmtime-wasi uses.
+rand = { version = "=0.10.3", default-features = false, features = ["std_rng"] }
+
+[build-dependencies]
+napi-build = "=2.5.0"
+
+[profile.release]
+lto = "thin"
+strip = "symbols"

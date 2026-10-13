@@ -8,15 +8,9 @@ This is the Akua Package SDK, not the Akua Cloud REST SDK. It works without an A
 
 ## Install
 
-Akuapkg no longer publishes new SDK versions to npm (akua-dev/cnap#2348); `@akua-dev/sdk` on npm is frozen at its last published version and receives no further updates. To use the current SDK, build it from source:
+Akuapkg no longer publishes new SDK versions to npm (akua-dev/cnap#2348); `@akua-dev/sdk` on npm is frozen at its last published version and receives no further updates. The current SDK is the Bun + Effect host in cnap (`tools/akuapkg/source/host`), consumed as a workspace package (`"@akua-dev/sdk": "workspace:*"`); Bazel builds its Wasmtime addon and engines.
 
-```sh
-git clone https://github.com/akua-dev/akuapkg
-cd akuapkg
-mise exec -- task sdk:build
-```
-
-`package.json`'s `exports` resolve to the built `dist/`, not `src/`: a Node.js consumer cannot type-strip a `.ts` file under `node_modules`, so `dist/` (both `*.js` and `*.d.ts`) stays the package's public contract. Workspace consumers (e.g. `akua-dev/cnap`) build `dist/` hermetically via Bazel and commit the result as a drift-checked artifact.
+`package.json`'s `exports` resolve to the TypeScript sources (`src/*.ts`): the SDK runs on Bun, which loads them directly.
 
 The actively maintained distribution channel for Akuapkg is the `akuapkg` CLI binary, installed via the [install script](https://cli.akua.dev/install) or [GitHub Releases](https://github.com/akua-dev/akuapkg/releases).
 

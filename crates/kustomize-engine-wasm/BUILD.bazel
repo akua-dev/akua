@@ -1,0 +1,8 @@
+"""Go source of the embedded Kustomize engine, compiled to wasip1."""
+
+exports_files([
+    "BUILD.bazel",
+    "go-src/go.mod",
+    "go-src/go.sum",
+    "go-src/main.go",
+])

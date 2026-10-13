@@ -8,26 +8,7 @@ repository.workspace = true
 authors.workspace = true
 
 [features]
-default = ["engine-kcl", "engine-helm", "engine-kustomize", "oci-fetch", "git-fetch", "cosign-verify", "dev-watch", "precompile-engines", "embed-engines"]
-# `precompile-engines` (default on): forwards to the engine shim
-# crates' `precompile` features. With it OFF, helm/kustomize embed
-# source `.wasm` and JIT at first call — used by the napi
-# distribution to keep binary size manageable.
-precompile-engines = [
-    "helm-engine-wasm?/precompile",
-    "kustomize-engine-wasm?/precompile",
-]
-# `embed-engines` (default on): forwards to the engine shim crates'
-# `embed-engines` features. With it OFF, the engine wasm bytes
-# aren't `include_bytes!`-ed — the consumer must point
-# `AKUA_NATIVE_ENGINES_DIR` at a directory holding the engine
-# files. Set OFF on the napi build so the 7 per-platform
-# `@akua-dev/native-*` packages don't each duplicate ~93 MB of
-# engine bytes; ships once via `@akua-dev/native-engines`. See #482.
-embed-engines = [
-    "helm-engine-wasm?/embed-engines",
-    "kustomize-engine-wasm?/embed-engines",
-]
+default = ["engine-kcl", "oci-fetch", "git-fetch", "cosign-verify", "dev-watch"]
 # SDK type emission — off by default. `ts-export` makes the CLI
 # contract types `derive(ts_rs::TS)` so they can be exported as TS
 # sources for `@akua-dev/sdk`. `schema-export` does the same for
@@ -38,13 +19,6 @@ ts-export = ["dep:ts-rs"]
 schema-export = ["dep:schemars"]
 # KCL engine — native Rust via kcl-lang/lib (git dep).
 engine-kcl = ["dep:kcl-lang", "dep:sha2", "dep:tempfile"]
-# Embedded Helm v4 template engine. Go source in crates/helm-engine-wasm/
-# compiled to wasm32-wasip1, hosted via wasmtime. No shell-out: CLAUDE.md
-# "Sandboxed by default. No shell-out, ever."
-engine-helm = ["dep:helm-engine-wasm"]
-# Embedded kustomize engine. Same shape as engine-helm — Go source in
-# crates/kustomize-engine-wasm/ compiled to wasip1.
-engine-kustomize = ["dep:kustomize-engine-wasm"]
 # OCI chart fetch. Pulls Helm charts from registries (ghcr.io,
 # registry-1.docker.io, public-only for now). Synchronous reqwest
 # client — no tokio runtime injection into the render path. Disable
@@ -103,8 +77,6 @@ semver = { version = "1", optional = true }
 #   - reqwest/gix need TCP which wasip1 doesn't have.
 #   - cosign crypto + dev-watch filesystem notifiers are host-level.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-helm-engine-wasm = { path = "../helm-engine-wasm", optional = true, default-features = false }
-kustomize-engine-wasm = { path = "../kustomize-engine-wasm", optional = true, default-features = false }
 
 # OCI chart fetch. `rustls-tls` avoids the openssl dep chain.
 reqwest = { workspace = true, optional = true }

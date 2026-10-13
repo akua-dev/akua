@@ -1,0 +1,9 @@
+"""Go source of the embedded Helm engine, compiled to wasip1."""
+
+exports_files([
+    "BUILD.bazel",
+    "fork/helm-v4.1.4.patch",
+    "go-src/go.mod",
+    "go-src/go.sum",
+    "go-src/main.go",
+])

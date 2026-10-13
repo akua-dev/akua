@@ -2,17 +2,11 @@
 resolver = "2"
 members = [
 	"crates/akua-core",
-	"crates/akuapkg-cli",
-	"crates/akua-napi",
 	"crates/akua-render-worker",
-	"crates/engine-host-wasm",
-	"crates/helm-engine-wasm",
-	"crates/kustomize-engine-wasm",
-	"crates/source-hash",
 ]
 
 [workspace.package]
-version = "0.9.6"
+version = "0.10.1"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/akua-dev/akuapkg"

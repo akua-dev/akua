@@ -1,0 +1,36 @@
+"""Sources of the generic Wasmtime sandbox addon (napi-rs)."""
+
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+
+exports_files([
+    "BUILD.bazel",
+    "Cargo.lock",
+    "Cargo.toml",
+    "build.rs",
+    "index.d.ts",
+    "src/config.rs",
+    "src/lib.rs",
+])
+
+filegroup(
+    name = "rust_sources",
+    srcs = glob(["src/**/*.rs"]),
+    visibility = ["//visibility:public"],
+)
+
+# Monorepo consumers resolve `@akua-dev/wasm-sandbox` (the addon's types)
+# through a package store built from these sources.
+js_library(
+    name = "workspace_verification_package_store_src",
+    srcs = [
+        "index.d.ts",
+        "package.json",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "workspace_verification_production_package_src",
+    actual = ":workspace_verification_package_store_src",
+    visibility = ["//visibility:public"],
+)
