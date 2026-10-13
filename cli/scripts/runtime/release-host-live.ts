@@ -753,7 +753,7 @@ const runCommand = Effect.fn('runCommand')(function* (
 	).pipe(Effect.mapError(toReleaseFailure('run release command')));
 	yield* check(
 		exitCode === ChildProcessSpawner.ExitCode(0),
-		`${command[0]} failed (${exitCode}): ${stderr.trim()}`
+		`${JSON.stringify(command)} failed (${exitCode}):\nstdout:\n${stdout.trim()}\nstderr:\n${stderr.trim()}`
 	);
 	return stdout;
 });

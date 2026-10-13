@@ -722,7 +722,7 @@ describe('release target contract', () => {
 		}).pipe(Effect.provide(makeReleaseHostLive()))
 	);
 
-	it.effect('resolves pinned dependencies before checking a fresh native install', () =>
+	it.effect('reports a failed native check after resolving pinned dependencies', () =>
 		Effect.gen(function* () {
 			const fs = yield* FileSystem.FileSystem;
 			const zipper = yield* Config.option(Config.String('PLATFORM_CLI_TEST_ZIPPER'));
@@ -739,7 +739,7 @@ describe('release target contract', () => {
 			const smokeLog = joinPath(root, 'smoke.log');
 			yield* fs.writeFileString(
 				source,
-				`#!/bin/sh\nprintf '%s\\n' "$*" >> '${smokeLog}'\ncase "$1" in\n  --version) echo '{"status":"ok","data":{"version":"1.2.3"}}' ;;\n  --help) echo 'Usage: akua' ;;\n  commands) echo 'commands[1]' ;;\n  pkg)\n    case "$2" in\n      version) echo '{"version":"0.8.26"}' ;;\n      init) mkdir -p \"$3\"; echo fixture > \"$3/inputs.example.yaml\"; echo '{}' ;;\n      lock) test "$3" = --check || exit 2; touch dependencies-ready; echo '{}' ;;\n      check|inspect) test -f dependencies-ready || exit 1; test -f inputs.example.yaml || exit 2; echo '{}' ;;\n      render) test -f dependencies-ready || exit 1; test -f inputs.example.yaml || exit 2; mkdir -p deploy; echo manifest > deploy/manifest.yaml; echo '{}' ;;\n      *) exit 2 ;;\n    esac\n    ;;\n  *) exit 2 ;;\nesac\n`
+				`#!/bin/sh\nprintf '%s\\n' "$*" >> '${smokeLog}'\ncase "$1" in\n  --version) echo '{"status":"ok","data":{"version":"1.2.3"}}' ;;\n  --help) echo 'Usage: akua' ;;\n  commands) echo 'commands[1]' ;;\n  pkg)\n    case "$2" in\n      version) echo '{"version":"0.8.26"}' ;;\n      init) mkdir -p \"$3\"; echo fixture > \"$3/inputs.example.yaml\"; echo '{}' ;;\n      lock) test "$3" = --check || exit 2; touch dependencies-ready; echo '{}' ;;\n      check|inspect) if test "$2" = check && test -f '${smokeLog}.fail-check'; then echo '{"status":"fail","checks":[{"error":"fixture check failed"}]}'; echo 'fixture stderr diagnostic' >&2; exit 1; fi; test -f dependencies-ready || exit 1; test -f inputs.example.yaml || exit 2; echo '{}' ;;\n      render) test -f dependencies-ready || exit 1; test -f inputs.example.yaml || exit 2; mkdir -p deploy; echo manifest > deploy/manifest.yaml; echo '{}' ;;\n      *) exit 2 ;;\n    esac\n    ;;\n  *) exit 2 ;;\nesac\n`
 			);
 			yield* fs.chmod(source, 0o755);
 			yield* release.packageExistingExecutables({
@@ -774,6 +774,21 @@ describe('release target contract', () => {
 				'pkg render --inputs inputs.example.yaml --out deploy --json',
 				'pkg inspect --json'
 			]);
+
+			yield* fs.writeFileString(`${smokeLog}.fail-check`, '');
+			const failure = yield* release
+				.smokeReleaseArtifact({
+					version: '1.2.3',
+					outputDir,
+					targetId,
+					archiveSha256
+				})
+				.pipe(Effect.flip);
+			expect(failure.message).toContain(',"pkg","check","--json"] failed (1):');
+			expect(failure.message).toContain(
+				'{"status":"fail","checks":[{"error":"fixture check failed"}]}'
+			);
+			expect(failure.message).toContain('fixture stderr diagnostic');
 		}).pipe(Effect.scoped, Effect.provide(makeReleaseHostLive()), Effect.provide(BunServices.layer))
 	);
 
