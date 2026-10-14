@@ -98,13 +98,13 @@ The successful canonical Main pipeline projects the fixed public source tree,
 scans its full Git history, and hands public-only inputs to a dedicated writer.
 That writer fast-forwards public main, creates the immutable `v<version>` tag,
 and publishes the exact stamped Bazel assets. It downloads and re-verifies all
-published assets before sending the verified manifest through Access Proxy to
+published assets before rendering the Homebrew formulas and publishing
 `akua-dev/homebrew-tap`. No vendor token is mounted in the build or writer.
 Public CI provides read-only advisory build and install checks.
 
-`akua-dev/homebrew-tap` owns the `akua` formula, formula tests, and the reviewed
-formula-update PR. The publisher dispatches the verified manifest contract; the
-tap reviews and tests its generated formula change.
+The tap is a published source view. Its templates, formula rendering, audits,
+and install tests are owned by the same canonical Main pipeline; public tap
+workflows do not generate or publish changes.
 
 `bun run release:package` remains a local packaging tool.
 `bun run release:verify` re-verifies the files in `dist/release`.

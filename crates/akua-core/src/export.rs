@@ -87,9 +87,17 @@ type SchemaAstMap = BTreeMap<String, SchemaAst>;
 /// Emit JSON Schema 2020-12 for the `Input` schema in `source`.
 /// Filename is used for KCL diagnostic rendering only; KCL doesn't
 /// touch it on disk when sources are provided in-memory.
-pub fn export_input_schema(filename: &str, source: &str) -> Result<Value, ExportError> {
-    let mapping = get_schema_mapping(filename, source)?;
-    let ast = parse_schemas(filename, source)?;
+pub fn export_input_schema(
+    filename: &str,
+    source: &str,
+    charts_pkg_dir: Option<&std::path::Path>,
+    kcl_pkgs: &BTreeMap<String, std::path::PathBuf>,
+    pkgs_pkg_dir: Option<&std::path::Path>,
+) -> Result<Value, ExportError> {
+    let external_pkgs =
+        crate::package_k::render_external_pkgs(charts_pkg_dir, kcl_pkgs, pkgs_pkg_dir);
+    let mapping = get_schema_mapping(filename, source, external_pkgs.clone())?;
+    let ast = parse_schemas(filename, source, external_pkgs)?;
     let input = mapping
         .get(INPUT_SCHEMA_NAME)
         .ok_or_else(|| ExportError::NoInputSchema {
@@ -111,8 +119,14 @@ pub fn export_input_schema(filename: &str, source: &str) -> Result<Value, Export
 /// Schema 2020-12 (OpenAPI 3.1 unified its schema dialect with JSON
 /// Schema). `components.schemas.Input` carries the actual schema;
 /// callers reference it as `#/components/schemas/Input`.
-pub fn export_input_openapi(filename: &str, source: &str) -> Result<Value, ExportError> {
-    let mut schema = export_input_schema(filename, source)?;
+pub fn export_input_openapi(
+    filename: &str,
+    source: &str,
+    charts_pkg_dir: Option<&std::path::Path>,
+    kcl_pkgs: &BTreeMap<String, std::path::PathBuf>,
+    pkgs_pkg_dir: Option<&std::path::Path>,
+) -> Result<Value, ExportError> {
+    let mut schema = export_input_schema(filename, source, charts_pkg_dir, kcl_pkgs, pkgs_pkg_dir)?;
     if let Some(obj) = schema.as_object_mut() {
         obj.remove("$schema");
     }
@@ -134,6 +148,7 @@ pub fn export_input_openapi(filename: &str, source: &str) -> Result<Value, Expor
 fn get_schema_mapping(
     filename: &str,
     source: &str,
+    external_pkgs: Vec<kcl_lang::ExternalPkg>,
 ) -> Result<BTreeMap<String, kcl_lang::KclType>, ExportError> {
     use kcl_lang::{ExecProgramArgs, GetSchemaTypeMappingArgs, API};
 
@@ -141,7 +156,7 @@ fn get_schema_mapping(
     let exec_args = ExecProgramArgs {
         k_filename_list: vec![filename.to_string()],
         k_code_list: vec![source.to_string()],
-        external_pkgs: crate::package_k::akua_external_pkgs(),
+        external_pkgs,
         compile_only: true,
         ..Default::default()
     };
@@ -157,7 +172,11 @@ fn get_schema_mapping(
 
 /// Parse the Package source and walk every top-level schema to
 /// recover docstrings + `@ui` decorators that the resolver drops.
-fn parse_schemas(filename: &str, source: &str) -> Result<SchemaAstMap, ExportError> {
+fn parse_schemas(
+    filename: &str,
+    source: &str,
+    external_pkgs: Vec<kcl_lang::ExternalPkg>,
+) -> Result<SchemaAstMap, ExportError> {
     use kcl_lang::{ParseProgramArgs, API};
 
     let api = API::default();
@@ -165,6 +184,7 @@ fn parse_schemas(filename: &str, source: &str) -> Result<SchemaAstMap, ExportErr
         .parse_program(&ParseProgramArgs {
             paths: vec![filename.to_string()],
             sources: vec![source.to_string()],
+            external_pkgs,
             ..Default::default()
         })
         .map_err(|e| ExportError::Kcl(e.to_string()))?;
@@ -529,7 +549,7 @@ mod tests {
     use super::*;
 
     fn export(source: &str) -> Value {
-        export_input_schema("package.k", source).expect("export")
+        export_input_schema("package.k", source, None, &BTreeMap::new(), None).expect("export")
     }
 
     #[test]
@@ -676,6 +696,9 @@ schema Input:
 
 resources = []
 "#,
+            None,
+            &BTreeMap::new(),
+            None,
         )
         .expect("export openapi");
         assert_eq!(doc["openapi"], json!("3.1.0"));
@@ -700,6 +723,9 @@ schema NotTheInput:
 
 resources = []
 "#,
+            None,
+            &BTreeMap::new(),
+            None,
         )
         .unwrap_err();
         assert!(matches!(err, ExportError::NoInputSchema { .. }));
