@@ -26969,6 +26969,32 @@
         ],
         "additionalProperties": false
       },
+      "WorkspaceFeatureFlags": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "flags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          }
+        },
+        "required": [
+          "workspace_id",
+          "flags"
+        ],
+        "additionalProperties": false
+      },
       "SubscriptionChangeRequest": {
         "type": "object",
         "properties": {
