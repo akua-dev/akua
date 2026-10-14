@@ -19,7 +19,7 @@ The writable source of truth is the canonical repository's `oss/akua` subtree. T
 
 Review and merge a version bump (`Cargo.toml`, `host/package.json`, `cli/package.json` and `cli/src/bin/akua.ts`, plus the regenerated lockfiles) with the intended code changes. The canonical Main pipeline builds both products' native archives with Bazel, from this repository's `//bazel:release_archives` and `//bazel:cli_release_archive`, and records their exact source SHA. One public writer then fast-forwards `main` to the matching projected commit, creates the `v<version>` tag and draft Release, uploads all twenty-six admitted assets, and publishes the Release as latest, without rebuilding at the public boundary.
 
-The release consumer downloads and verifies every asset of the published Release before it dispatches the existing tap workflow once per formula: `akuapkg-release-published` for `akuapkg` and `akua-cli-release-published` for `akua`, each with `{version, tag, release_url, homebrew_manifest_url}` pointing at this Release. That workflow proposes a reviewed formula update in `akua-dev/homebrew-tap`.
+The release consumer downloads and verifies every published asset, renders the `akuapkg` and `akua` formulas from the verified Homebrew manifests, and non-force publishes the canonical tap source plus those formulas to `akua-dev/homebrew-tap`. Formula audits and install tests belong to canonical Bazel CI; the public tap does not run GitHub Actions or accept direct source changes.
 
 No new npm or container publication is part of this pipeline. The canonical repository consumes the source SDK and native build outputs directly; existing npm versions remain available.
 

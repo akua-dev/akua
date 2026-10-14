@@ -314,10 +314,10 @@ here: it builds the five archives with Bazel, fast-forwards akua-dev/akua's
 `main` to the admitted projected commit, creates the immutable `v<version>`
 tag and the one release of that version (marked latest) with the package
 toolchain's assets, uploads the CLI's thirteen assets beside them, downloads and
-re-verifies every asset, and only then dispatches the Homebrew manifest URL to
-`akua-dev/homebrew-tap`. The
-tap owns formula validation and its reviewed PR; this repository never pushes
-formula commits, and no credential reaches a public workflow. The Release
+re-verifies every asset, then renders both Homebrew formulas from those verified
+manifests and non-force publishes the canonical tap source to
+`akua-dev/homebrew-tap`. Formula audits and install tests run in the canonical
+CI pipeline; the public tap has no workflows or independent writer. The Release
 Please files remain as version metadata only. See
 [../../docs/releasing.md](../../docs/releasing.md).
 
