@@ -1,6 +1,6 @@
 {
 	"name": "@akua-dev/cli",
-	"version": "0.13.0",
+	"version": "0.13.1",
 	"private": false,
 	"type": "module",
 	"description": "Akua Cloud CLI",
@@ -30,7 +30,7 @@
 		"bun": ">=1.3.7"
 	},
 	"dependencies": {
-		"@akua-dev/sdk": "0.13.0",
+		"@akua-dev/sdk": "0.13.1",
 		"@effect/platform-bun": "4.0.1",
 		"effect": "4.0.1"
 	}

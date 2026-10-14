@@ -213,7 +213,7 @@ impl CompiledModule {
       define_string_import(&mut linker, &self.engine, import)?;
     }
     let instance = linker.instantiate(&mut store, &self.module).map_err(|e| host_error("instantiate", e))?;
-    Ok(Instance { inner: RefCell::new(Inner { store, instance, stdout, stderr }) })
+    Ok(Instance { inner: RefCell::new(Some(Inner { store, instance, stdout, stderr })) })
   }
 }
 
@@ -280,18 +280,27 @@ struct Inner {
 /// call into this instance from inside one of its own imports is an error.
 #[napi]
 pub struct Instance {
-  inner: RefCell<Inner>,
+  inner: RefCell<Option<Inner>>,
 }
 
 impl Instance {
   fn with<T>(&self, f: impl FnOnce(&mut Inner) -> Result<T>) -> Result<T> {
     let mut inner = self.inner.try_borrow_mut().map_err(|_| host_error("instance", "re-entrant call"))?;
-    f(&mut inner)
+    f(inner.as_mut().ok_or_else(|| host_error("instance", "disposed"))?)
   }
 }
 
 #[napi]
 impl Instance {
+  /// Release the store and its WASI handles immediately. Safe to call again;
+  /// disposal from inside this instance's own import is a re-entrant error.
+  #[napi]
+  pub fn dispose(&self) -> Result<()> {
+    let mut inner = self.inner.try_borrow_mut().map_err(|_| host_error("instance", "re-entrant call"))?;
+    inner.take();
+    Ok(())
+  }
+
   /// Call an export with i32/i64 arguments.
   #[napi]
   pub fn call(&self, name: String, args: Vec<f64>) -> Result<Outcome> {

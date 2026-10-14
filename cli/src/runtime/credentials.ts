@@ -12,18 +12,24 @@ export function optionalEnv(name: string): Effect.Effect<Option.Option<string>> 
 	);
 }
 
-/** `~/.config/akua/config.json`, or none when `HOME` is unset. */
-export const configPath: Effect.Effect<Option.Option<string>> = optionalEnv('HOME').pipe(
-	Effect.map(Option.map((home) => `${home}/.config/akua/config.json`))
-);
+/** One config for both credentials and workspace context; never fall back across profiles. */
+export const configPath: Effect.Effect<Option.Option<string>> = Effect.gen(function* () {
+	const explicit = yield* optionalEnv('AKUA_CONFIG_DIR');
+	if (Option.isSome(explicit)) return Option.some(`${explicit.value}/config.json`);
+	const xdg = yield* optionalEnv('XDG_CONFIG_HOME');
+	if (Option.isSome(xdg)) return Option.some(`${xdg.value}/akua/config.json`);
+	return Option.map(yield* optionalEnv('HOME'), (home) => `${home}/.config/akua/config.json`);
+});
 
-/** The config file path for commands that write it; fails with a usage error without `HOME`. */
+/** Commands that write config require a directory override or `HOME`. */
 export const requiredConfigPath: Effect.Effect<string, UsageFailure> = configPath.pipe(
 	Effect.flatMap(
 		Option.match({
 			onNone: () =>
 				Effect.fail(
-					new UsageFailure({ message: 'HOME is required to locate ~/.config/akua/config.json.' })
+					new UsageFailure({
+						message: 'Set AKUA_CONFIG_DIR, XDG_CONFIG_HOME, or HOME to locate the config file.'
+					})
 				),
 			onSome: Effect.succeed
 		})

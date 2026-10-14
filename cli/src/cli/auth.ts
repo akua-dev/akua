@@ -138,7 +138,10 @@ export const status: Effect.Effect<RenderEnvelope, CliFailure, SecureConfig> = E
 		return {
 			command: 'akua auth status',
 			observations: [statusObservation(credential.source)],
-			human: [statusObservation(credential.source)],
+			human: [
+				statusObservation(credential.source),
+				...Option.toArray(credential.configPath).map((path) => `Config: ${path}`)
+			],
 			data: {
 				authenticated,
 				source: credential.source,

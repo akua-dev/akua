@@ -438,11 +438,6 @@ bun_test(
         "--bun",
         "../node_modules/vitest/vitest.mjs",
         "run",
-        # Packages and smokes the host's archives with the host's zip and tar,
-        # which hermetic workers do not ship; :cli_release_archive builds the
-        # release.
-        "--exclude",
-        "test/release.test.ts",
     ],
     chdir = "cli",
     data = ["@bazel_tools//tools/zip:zipper"],

@@ -505,6 +505,12 @@ const smokeReleaseArtifact = Effect.fn('smokeReleaseArtifact')(function* (input:
 		const pinnedCache: Record<string, string> =
 			input.ociCache === undefined ? {} : { XDG_CACHE_HOME: path.resolve(input.ociCache) };
 		const offline = input.ociCache === undefined ? [] : ['--offline'];
+		// Resolve the scaffold's pinned dependencies before its offline type check.
+		yield* runCommand(
+			[executable, 'pkg', 'lock', '--check', '--json'],
+			pinnedCache,
+			packageDirectory
+		);
 		yield* runCommand([executable, 'pkg', 'check', '--json'], pinnedCache, packageDirectory);
 		yield* runCommand(
 			[
@@ -747,7 +753,7 @@ const runCommand = Effect.fn('runCommand')(function* (
 	).pipe(Effect.mapError(toReleaseFailure('run release command')));
 	yield* check(
 		exitCode === ChildProcessSpawner.ExitCode(0),
-		`${command[0]} failed (${exitCode}): ${stderr.trim()}`
+		`${JSON.stringify(command)} failed (${exitCode}):\nstdout:\n${stdout.trim()}\nstderr:\n${stderr.trim()}`
 	);
 	return stdout;
 });

@@ -10,7 +10,7 @@ import {
 	writeFileString
 } from './fs-test';
 import { BunServices } from '@effect/platform-bun';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, FileSystem, Layer, Path } from 'effect';
 
 import { main, VERSION } from '../src/bin/akua';
 import { renderSuccess } from '../src/runtime/render';
@@ -21,6 +21,164 @@ import { runAkua } from './run-akua';
 
 /** An empty environment, so the test runner's own variables do not pick the output mode. */
 const noEnvironment = ConfigProvider.layer(ConfigProvider.fromEnvRecord({}));
+
+describe('config directory selection', () => {
+	const run = Effect.fn('configCommand')(function* (
+		argv: readonly string[],
+		env: Record<string, string>
+	) {
+		const stdout: string[] = [];
+		const exitCode = yield* main(argv).pipe(
+			Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord(env))),
+			Effect.provideService(Console, {
+				stdoutIsTTY: true,
+				stdinIsTTY: false,
+				writeStderr: () => Effect.void,
+				writeStdout: (value) =>
+					Effect.sync(() => {
+						stdout.push(value);
+					})
+			}),
+			Effect.provide(CliLive(VERSION).pipe(Layer.provide(BunServices.layer)))
+		);
+		return { stdout: stdout.join(''), exitCode };
+	});
+
+	const cases: ReadonlyArray<{
+		name: string;
+		env: Record<string, string>;
+		selected: string;
+	}> = [
+		{ name: 'keeps the HOME default', env: { HOME: 'home' }, selected: 'home/.config/akua' },
+		{
+			name: 'uses XDG before HOME',
+			env: { HOME: 'home', XDG_CONFIG_HOME: 'xdg' },
+			selected: 'xdg/akua'
+		},
+		{
+			name: 'uses the explicit directory before XDG and HOME',
+			env: { HOME: 'home', XDG_CONFIG_HOME: 'xdg', AKUA_CONFIG_DIR: 'profile' },
+			selected: 'profile'
+		},
+		{ name: 'uses XDG without HOME', env: { XDG_CONFIG_HOME: 'xdg' }, selected: 'xdg/akua' },
+		{
+			name: 'uses the explicit directory without HOME',
+			env: { AKUA_CONFIG_DIR: 'profile' },
+			selected: 'profile'
+		},
+		{
+			name: 'ignores empty overrides',
+			env: { HOME: 'home', XDG_CONFIG_HOME: '', AKUA_CONFIG_DIR: '' },
+			selected: 'home/.config/akua'
+		},
+		{
+			name: 'uses XDG when the explicit override is empty',
+			env: { XDG_CONFIG_HOME: 'xdg', AKUA_CONFIG_DIR: '' },
+			selected: 'xdg/akua'
+		}
+	];
+
+	for (const { name, env, selected } of cases) {
+		it.effect(name, () =>
+			Effect.gen(function* () {
+				const fs = yield* FileSystem.FileSystem;
+				const path = yield* Path.Path;
+				const root = yield* fs.makeTempDirectoryScoped();
+				const environment = Object.fromEntries(
+					Object.entries(env).map(([key, value]) => [
+						key,
+						value === '' ? '' : path.join(root, value)
+					])
+				);
+				const selectedPath = path.join(root, selected, 'config.json');
+				for (const directory of ['home/.config/akua', 'xdg/akua', 'profile']) {
+					yield* fs.makeDirectory(path.join(root, directory), { recursive: true });
+					yield* fs.writeFileString(
+						path.join(root, directory, 'config.json'),
+						JSON.stringify({
+							token: `fixture-${directory}`,
+							workspace: { id: 'ws_fixture', name: directory },
+							profile: directory
+						})
+					);
+				}
+				const status = yield* run(['auth', 'status', '--json'], environment);
+				expect(status.exitCode).toBe(0);
+				expect(JSON.parse(status.stdout)).toMatchObject({
+					data: { authenticated: true, source: 'config', config_path: selectedPath }
+				});
+				expect(status.stdout).not.toContain('fixture-');
+				const workspace = yield* run(['workspaces', 'current', '--json'], environment);
+				expect(workspace.exitCode).toBe(0);
+				expect(JSON.parse(workspace.stdout)).toMatchObject({
+					data: { id: 'ws_fixture', name: selected, source: 'config' }
+				});
+				const human = yield* run(['auth', 'status', '--output', 'human'], environment);
+				expect(human.exitCode).toBe(0);
+				expect(human.stdout).toContain(selectedPath);
+				expect(human.stdout).not.toContain('fixture-');
+
+				const login = yield* run(
+					['auth', 'login', '--token', 'fixture-new-token', '--json'],
+					environment
+				);
+				expect(login.exitCode).toBe(0);
+				expect(JSON.parse(yield* fs.readFileString(selectedPath))).toEqual({
+					token: 'fixture-new-token',
+					workspace: { id: 'ws_fixture', name: selected },
+					profile: selected
+				});
+				const logout = yield* run(['auth', 'logout', '--json'], environment);
+				expect(logout.exitCode).toBe(0);
+				expect(JSON.parse(yield* fs.readFileString(selectedPath))).toEqual({
+					workspace: { id: 'ws_fixture', name: selected },
+					profile: selected
+				});
+				for (const directory of ['home/.config/akua', 'xdg/akua', 'profile'].filter(
+					(value) => value !== selected
+				)) {
+					expect(
+						JSON.parse(yield* fs.readFileString(path.join(root, directory, 'config.json')))
+					).toMatchObject({ token: `fixture-${directory}` });
+				}
+			}).pipe(Effect.scoped, Effect.provide(BunServices.layer))
+		);
+	}
+
+	it.effect('does not fall back to another login when the selected config is missing', () =>
+		Effect.gen(function* () {
+			const fs = yield* FileSystem.FileSystem;
+			const path = yield* Path.Path;
+			const home = yield* fs.makeTempDirectoryScoped();
+			const legacy = path.join(home, '.config', 'akua');
+			yield* fs.makeDirectory(legacy, { recursive: true });
+			yield* fs.writeFileString(
+				path.join(legacy, 'config.json'),
+				JSON.stringify({ token: 'fixture-legacy-token' })
+			);
+			const env = { HOME: home, AKUA_CONFIG_DIR: path.join(home, 'new-profile') };
+			const result = yield* run(['auth', 'status', '--json'], env);
+			expect(result.exitCode).toBe(0);
+			expect(JSON.parse(result.stdout)).toMatchObject({
+				data: {
+					authenticated: false,
+					source: 'none',
+					config_path: path.join(env.AKUA_CONFIG_DIR, 'config.json')
+				}
+			});
+			const human = yield* run(['auth', 'status', '--output', 'human'], env);
+			expect(human.stdout).toContain(path.join(env.AKUA_CONFIG_DIR, 'config.json'));
+			const overridden = yield* run(['auth', 'status', '--json'], {
+				...env,
+				AKUA_API_TOKEN: 'fixture-env-token'
+			});
+			expect(JSON.parse(overridden.stdout)).toMatchObject({
+				data: { authenticated: true, source: 'env' }
+			});
+			expect(overridden.stdout).not.toContain('fixture-env-token');
+		}).pipe(Effect.scoped, Effect.provide(BunServices.layer))
+	);
+});
 
 describe('akua entrypoint', () => {
 	it.effect('embeds package help under the akua pkg invocation', () =>

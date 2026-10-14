@@ -210,12 +210,8 @@ export const NativeWasmHost = (limits: SandboxLimits = DEFAULT_LIMITS) =>
           )
           // A failed call can leave the guest's runtime mid-operation (a
           // trap, exhausted fuel, a denied allocation): the next call gets a
-          // fresh instance. The discarded one is dropped here; its Wasmtime
-          // store (up to the engine memory cap) is freed by the addon's
-          // finalizer when Bun collects it. The addon exports no explicit
-          // dispose: that needs a `dispose` method and a regenerated
-          // `native/index.d.ts` (napi build), which the tree has no pinned
-          // path for yet.
+          // fresh instance. Reactors have no preopens; discarded stores are
+          // freed by the addon's finalizer when Bun collects them.
           let live: Instance | undefined
           const session = (budget: EngineBudget) => Effect.suspend(() =>
             live !== undefined ? Effect.succeed(live) : module.pipe(
@@ -252,34 +248,36 @@ export const NativeWasmHost = (limits: SandboxLimits = DEFAULT_LIMITS) =>
                 }
                 mounts.push({ hostPath: tree.path, guestPath })
               }
-              const instance = yield* Effect.try({
-                try: () =>
-                  module.instantiate(
-                    {
-                      args: [name],
-                      stdin: Buffer.from(stdin),
-                      preopens: mounts,
-                      maxOutputBytes: limits.maxOutputBytes,
-                      memoryBytes: limits.workerMemoryBytes,
-                      fuel: limits.workerFuel,
-                      stringImports: [KCL_PLUGIN_IMPORT]
-                    },
-                    (_import, [method = "", argsJson = ""]) => kclPlugin(method, argsJson || "[]")
-                  ),
-                catch: (cause) => new RenderError({ message: `${name}: instantiate: ${String(cause)}` })
-              })
-              const outcome = instance.call("_start", [])
-              switch (outcome._tag) {
-                case "Ok":
-                case "Exited":
-                  return {
-                    exitCode: outcome._tag === "Exited" ? outcome.code : 0,
-                    stdout: instance.stdout(),
-                    stderr: instance.stderr()
-                  }
-                default:
-                  return yield* guestFailure(name, outcome)
-              }
+              return yield* Effect.scoped(Effect.gen(function*() {
+                const instance = yield* Effect.acquireRelease(Effect.try({
+                  try: () =>
+                    module.instantiate(
+                      {
+                        args: [name],
+                        stdin: Buffer.from(stdin),
+                        preopens: mounts,
+                        maxOutputBytes: limits.maxOutputBytes,
+                        memoryBytes: limits.workerMemoryBytes,
+                        fuel: limits.workerFuel,
+                        stringImports: [KCL_PLUGIN_IMPORT]
+                      },
+                      (_import, [method = "", argsJson = ""]) => kclPlugin(method, argsJson || "[]")
+                    ),
+                  catch: (cause) => new RenderError({ message: `${name}: instantiate: ${String(cause)}` })
+                }), (instance) => Effect.sync(() => instance.dispose()))
+                const outcome = instance.call("_start", [])
+                switch (outcome._tag) {
+                  case "Ok":
+                  case "Exited":
+                    return {
+                      exitCode: outcome._tag === "Exited" ? outcome.code : 0,
+                      stdout: instance.stdout(),
+                      stderr: instance.stderr()
+                    }
+                  default:
+                    return yield* guestFailure(name, outcome)
+                }
+              }))
             }
           )
           return { run }

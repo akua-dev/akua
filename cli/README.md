@@ -83,11 +83,39 @@ akua auth status
 akua auth logout
 ```
 
-`AKUA_API_TOKEN` takes precedence over a stored token. Login writes
-`~/.config/akua/config.json`; the directory is forced to `0700` and the file to
+`AKUA_API_TOKEN` takes precedence over a stored token. Login writes to the
+selected config file, defaulting to `~/.config/akua/config.json`.
+The directory is forced to `0700` and the file to
 `0600`. Login replaces only `token` and preserves unknown config keys. Logout
 removes only the stored `token`, also preserving unknown config keys, and cannot
 clear `AKUA_API_TOKEN` from the parent process.
+
+### Keep separate logins
+
+Set `AKUA_CONFIG_DIR` to keep a login and its saved Workspace in a separate
+directory, without changing `HOME`. Use the same directory for every command
+that should use that login:
+
+```sh
+export AKUA_CONFIG_DIR="$HOME/.config/akua-work"
+akua auth login
+akua auth status
+akua workspaces list
+```
+
+Switch to another login by setting `AKUA_CONFIG_DIR` to another directory.
+Unset it to use the XDG or HOME configuration. Config file selection follows
+this order (empty environment variables count as unset):
+
+1. `$AKUA_CONFIG_DIR/config.json`
+2. `$XDG_CONFIG_HOME/akua/config.json`
+3. `$HOME/.config/akua/config.json`
+
+Either override works without `HOME`. The CLI reads only the selected file;
+if it doesn't exist, you're signed out unless `AKUA_API_TOKEN` is set.
+`AKUA_API_TOKEN` still overrides every stored login. `akua auth status` shows
+the selected path in human output and as `data.config_path` in JSON output.
+Login, logout, and saved Workspace context all use that file.
 
 ## Choose a workspace
 
@@ -103,7 +131,8 @@ akua workspaces use --clear     # forget it
 
 Workspace-scoped commands send the workspace as the `Akua-Context` header for
 you, chosen in this order: the `--workspace` (`-w`) flag, then
-`AKUA_WORKSPACE`, then the workspace saved in `~/.config/akua/config.json`.
+`AKUA_WORKSPACE`, then the workspace saved in the selected config file (see
+[Keep separate logins](#keep-separate-logins)).
 
 ## Built for humans, CI, and agents
 

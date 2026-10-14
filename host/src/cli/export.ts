@@ -34,9 +34,16 @@ export const exportSchema = (context: VerbContext) =>
           )
         )
         const schema = yield* RenderWorker.pipe(
-          Effect.flatMap((worker) =>
-            worker.exportSchema({ filename: path.basename(flags.packagePath), source, format: flags.format })
-          ),
+          Effect.flatMap((worker) => Effect.scoped(Effect.gen(function*() {
+            const filename = path.basename(flags.packagePath)
+            const tree = yield* worker.prepare({
+              workspace: path.dirname(path.resolve(flags.packagePath)),
+              filename,
+              files: new Map([[filename, new TextEncoder().encode(source)]]),
+              options: { offline: true }
+            })
+            return yield* worker.exportSchema({ filename, tree, format: flags.format })
+          }))),
           Effect.catchTag("RenderError", (error) => Effect.fail(fail("E_RENDER_KCL", error.message, ExitCode.userError))),
           Effect.provide(context.services),
           Effect.mapError((error) => error._tag === "CliFailure" ? error : reportable(error))

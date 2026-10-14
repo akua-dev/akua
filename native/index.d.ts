@@ -22,6 +22,11 @@ export declare class CompiledModule {
  * call into this instance from inside one of its own imports is an error.
  */
 export declare class Instance {
+  /**
+   * Release the store and its WASI handles immediately. Safe to call again;
+   * disposal from inside this instance's own import is a re-entrant error.
+   */
+  dispose(): void
   /** Call an export with i32/i64 arguments. */
   call(name: string, args: Array<number>): Outcome
   /** Fuel available to the following calls (roughly one unit per wasm instruction). */
