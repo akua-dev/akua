@@ -340,7 +340,7 @@ pub fn lint_kcl_source_with_pkgs(
 
 /// The `akua` stdlib plus a render's dependency packages: `charts`,
 /// `pkgs`, and one entry per KCL-module dependency.
-fn render_external_pkgs(
+pub(crate) fn render_external_pkgs(
     charts_pkg_dir: Option<&Path>,
     kcl_pkgs: &std::collections::BTreeMap<String, std::path::PathBuf>,
     pkgs_pkg_dir: Option<&Path>,

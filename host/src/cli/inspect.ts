@@ -5,7 +5,7 @@ import { ExitCode, fail, usageFailure } from "../contract"
 import { OciRegistry } from "../oci.effect"
 import { inspectTarball, type TarballInspection } from "../package-tar"
 import type { OptionInfo } from "../schemas"
-import { RenderWorker } from "../worker.effect"
+import { bareTree, RenderWorker } from "../worker.effect"
 import type { VerbContext } from "./context"
 import { missingPackage, NOT_FOUND, readOptional } from "./files"
 import { reportable, verb } from "./report"
@@ -74,7 +74,11 @@ export const inspect = (context: VerbContext) =>
           }
           const source = inspection.packageSource.value
           const schema = yield* RenderWorker.pipe(
-            Effect.flatMap((worker) => worker.exportSchema({ filename: "package.k", source, format: "json-schema" })),
+            Effect.flatMap((worker) => worker.exportSchema({
+              filename: "package.k",
+              tree: bareTree("package.k", new Map([["package.k", new TextEncoder().encode(source)]])),
+              format: "json-schema"
+            })),
             Effect.catchTag("RenderError", (error) => Effect.fail(fail("E_INSPECT_FAIL", error.message, ExitCode.userError))),
             Effect.provide(context.services),
             Effect.mapError((error) => error._tag === "CliFailure" ? error : reportable(error))
