@@ -38871,7 +38871,8 @@
           "values_yaml": {
             "type": "string",
             "description": "Raw chart values YAML"
-          }
+          },
+          "form": {}
         },
         "required": [
           "values",
