@@ -117,6 +117,12 @@ enum Request {
         package_filename: String,
         source: String,
         format: ExportFormat,
+        #[serde(default)]
+        charts_pkg_path: Option<String>,
+        #[serde(default)]
+        kcl_pkgs: std::collections::BTreeMap<String, String>,
+        #[serde(default)]
+        pkgs_pkg_path: Option<String>,
     },
     /// The `option(...)` calls a Package reads (its input surface).
     Options {
@@ -278,14 +284,29 @@ fn run() -> Result<(), WorkerError> {
             package_filename,
             source,
             format,
+            charts_pkg_path,
+            kcl_pkgs,
+            pkgs_pkg_path,
         } => {
+            let kcl_pkgs = kcl_pkgs
+                .into_iter()
+                .map(|(name, path)| (name, path.into()))
+                .collect();
             let result = match format {
-                ExportFormat::JsonSchema => {
-                    akua_core::export::export_input_schema(&package_filename, &source)
-                }
-                ExportFormat::Openapi => {
-                    akua_core::export::export_input_openapi(&package_filename, &source)
-                }
+                ExportFormat::JsonSchema => akua_core::export::export_input_schema(
+                    &package_filename,
+                    &source,
+                    charts_pkg_path.as_deref().map(std::path::Path::new),
+                    &kcl_pkgs,
+                    pkgs_pkg_path.as_deref().map(std::path::Path::new),
+                ),
+                ExportFormat::Openapi => akua_core::export::export_input_openapi(
+                    &package_filename,
+                    &source,
+                    charts_pkg_path.as_deref().map(std::path::Path::new),
+                    &kcl_pkgs,
+                    pkgs_pkg_path.as_deref().map(std::path::Path::new),
+                ),
             };
             let (status, schema, message) = outcome(result, serde_json::Value::Null);
             Response::Export {

@@ -159,7 +159,7 @@ export class RenderWorker extends Context.Service<RenderWorker, {
   /** The `Input` schema of a Package as JSON Schema 2020-12 or OpenAPI 3.1. */
   exportSchema(request: {
     readonly filename: string
-    readonly source: string
+    readonly tree: PackageTree
     readonly format: "json-schema" | "openapi"
   }): Effect.Effect<unknown, RenderError | GuestFailure>
   /** The `option(...)` calls a Package reads. */
@@ -310,11 +310,12 @@ export class RenderWorker extends Context.Service<RenderWorker, {
       })
 
       const exportSchema = Effect.fn("RenderWorker.exportSchema")(function*(
-        { filename, format, source }: Parameters<RenderWorker["Service"]["exportSchema"]>[0]
+        { filename, format, tree }: Parameters<RenderWorker["Service"]["exportSchema"]>[0]
       ) {
         return (yield* exchange(
-          { kind: "export", package_filename: filename, source, format },
-          Schema.fromJsonString(ExportResponse)
+          { kind: "export", package_filename: filename, source: tree.source, format, ...dependencyFields(tree) },
+          Schema.fromJsonString(ExportResponse),
+          tree
         )).schema
       })
 
