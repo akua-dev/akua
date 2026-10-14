@@ -7,7 +7,7 @@
     },
     "cli": {
       "name": "@akua-dev/cli",
-      "version": "0.13.0",
+      "version": "0.13.1",
       "bin": {
         "akua": "./src/bin/akua.ts",
       },
@@ -26,7 +26,7 @@
     },
     "host": {
       "name": "@akua-dev/sdk",
-      "version": "0.13.0",
+      "version": "0.13.1",
       "dependencies": {
         "@akua-dev/wasm-sandbox": "0.1.0",
         "@bjorn3/browser_wasi_shim": "0.4.2",
