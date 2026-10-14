@@ -30,9 +30,9 @@ guide doesn't cover, search through the source code in `node_modules/effect/src`
 - This CLI repository owns the canonical `akua` executable and release artifacts.
 - `skills/effect-v4/SKILL.md` is the only repository-local skill; it governs
   production CLI and script changes.
-- `akua-dev/homebrew-tap` owns the `akua` formula, formula tests, and the reviewed
-  formula-update PR. CLI automation sends only the verified release manifest
-  contract.
+- Homebrew rendering, formula verification, and publication belong to the
+  canonical Main publisher. See [../../docs/releasing.md](../../docs/releasing.md);
+  the public tap is a source view, never an independent writer.
 
 ## Validation
 
