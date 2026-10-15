@@ -22,11 +22,6 @@ packages/sdk/coverage/
 # TypeScript
 *.tsbuildinfo
 
-# ts-rs auto-generated TypeScript bindings — regenerated on every
-# `cargo test --all-features` from `#[ts(export)]` types in the Rust
-# crates. Source of truth is the Rust definitions.
-crates/*/bindings/
-
 # Editors
 .vscode/
 .idea/
