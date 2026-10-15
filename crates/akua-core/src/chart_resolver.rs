@@ -12,14 +12,10 @@
 //! `nginx` dep in `akua.toml` resolves to. That path + a content-addressed
 //! digest of the chart tree is exactly what this module computes.
 //!
-//! Local-path deps + `replace` directives
-//! and OCI/git remote fetches. Remote resolution without a `replace`
-//! override still returns [`ChartResolveError::UnsupportedSource`] until
-//! the OCI pull path lands.
+//! Resolves local-path deps, vendored trees and `replace` directives.
+//! The host fetches remote dependencies before rendering; unresolved remote
+//! sources return [`ChartResolveError::UnsupportedSource`].
 
-// `ChartResolveError` wraps the OCI/git fetcher errors by value so callers
-// can pattern-match without a `Box::deref`. The enum sits at ~128 bytes,
-// which is fine in the cold error path.
 #![allow(clippy::result_large_err)]
 
 use std::collections::BTreeMap;
@@ -31,8 +27,7 @@ use crate::hex::hex_encode;
 use crate::lock_file::VENDORED_LOCK_FALLBACK;
 use crate::mod_file::{AkuaManifest, Dependency, DependencySource, DependencySpec};
 
-/// Stand-in for non-oci-fetch builds so resolver consumers can name
-/// the kind unconditionally. Same shape as the oci_fetcher version.
+/// The kind of package materialized on disk for rendering.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PackageKind {
     HelmChart,
@@ -75,10 +70,9 @@ pub struct ResolvedChart {
 }
 
 impl ResolvedChart {
-    /// `true` when the resolved tree is an Akua Package — it has both
-    /// `akua.toml` (which `oci_fetcher::detect_kind` already keyed off)
-    /// and a top-level `package.k`. Used by the render path to mount
-    /// these via the `pkgs.<alias>` stub umbrella instead of as raw
+    /// `true` when the resolved tree is a KCL module with a top-level
+    /// `package.k`. Used by the render path to mount these via the
+    /// `pkgs.<alias>` stub umbrella instead of as raw
     /// `kcl_pkgs` ExternalPkg entries (which would fire the upstream's
     /// body at consumer-import time).
     pub fn is_akua_package(&self) -> bool {
@@ -114,8 +108,8 @@ pub enum ResolvedSource {
         replace_path: String,
     },
 
-    /// Git-sourced dep, fetched via `git_fetcher`. `commit_sha` is
-    /// the resolved full 40-hex git SHA-1; lockfile stores it under
+    /// Git-sourced dep. `commit_sha` is the resolved full 40-hex git SHA-1;
+    /// the lockfile stores it under
     /// `digest` with a `git:` prefix so it doesn't collide with OCI's
     /// `sha256:` scheme.
     Git {
@@ -133,8 +127,8 @@ pub enum ResolvedSource {
         replace_path: String,
     },
 
-    /// Helm-repo-sourced dep, fetched via `helm_repo_fetcher`. `digest`
-    /// is the `.tgz` sha256 (same value used as the cache key and the
+    /// Helm-repo-sourced dep. `digest` is the `.tgz` sha256
+    /// (same value used as the cache key and the
     /// lockfile pin), mirroring how OCI uses its blob digest.
     Helm {
         repo: String,
@@ -265,15 +259,12 @@ pub enum ChartResolveError {
         source: std::io::Error,
     },
 
-    /// Source isn't supported by this resolver path. Caller either
-    /// passed [`ResolverOptions::offline = true`] or the source is
-    /// still roadmap-pending (git).
+    /// A remote source cannot be resolved inside the offline worker.
     #[error("chart `{name}`: {} source not resolvable in the current mode — {reason}", source_kind_label(*kind))]
     UnsupportedSource {
         name: String,
         kind: DependencySource,
-        /// Context for the user: which gate blocked resolution
-        /// (offline modeb slice C git support, etc).
+        /// Explains the required host-side materialization.
         reason: &'static str,
     },
 
@@ -313,34 +304,21 @@ pub enum ChartResolveError {
     ReplaceRejected { name: String },
 }
 
-/// Resolve every dep in `manifest` against `workspace_root` and return
-/// a [`ResolvedCharts`] suitable for threading into
-/// `package_k::render_with_charts`.
-///
-/// `workspace_root` is the directory `akua.toml` sits in. Relative
-/// path deps resolve against it.
-/// Options controlling how much network the resolver is allowed to do
-/// + where it caches fetched artifacts.
+/// Options passed to the offline render-worker resolver.
+/// `reject_replace` controls local overrides. The remaining fields are
+/// retained but do not enable fetching, caching or verification here.
 #[derive(Debug, Clone, Default)]
 pub struct ResolverOptions {
-    /// When `true`, OCI deps return [`ChartResolveError::UnsupportedSource`]
-    /// rather than attempting a network fetch. `akua verify` / tests
-    /// turn this on to guarantee determinism without a network.
+    /// Retained offline-mode setting; this resolver always runs offline.
     pub offline: bool,
 
-    /// Where OCI blobs live on disk. None → resolver uses the default
-    /// cache (`$XDG_CACHE_HOME/akua/oci` or `$HOME/.cache/akua/oci`).
+    /// Retained artifact-cache location.
     pub cache_root: Option<PathBuf>,
 
-    /// Lockfile-pinned digests keyed by dep name. When present, the
-    /// fetcher verifies the pulled blob matches; a mismatch fails the
-    /// resolve hard. Populated from `akua.lock` by the CLI.
+    /// Retained lockfile-pinned digests keyed by dependency name.
     pub expected_digests: BTreeMap<String, String>,
 
-    /// PEM-encoded cosign public key. When `Some`, every OCI dep
-    /// pulls its `.sig` sidecar and verifies the signature before
-    /// the chart is unpacked. Populated from
-    /// `akua.toml [signing] cosign_public_key` by the CLI.
+    /// Retained PEM-encoded cosign public key.
     pub cosign_public_key_pem: Option<String>,
 
     /// Refuse to apply `replace = { path = "..." }` directives. Set
@@ -350,19 +328,13 @@ pub struct ResolverOptions {
     /// `path` deps are workspace-local".
     pub reject_replace: bool,
 
-    /// Caller-supplied credentials for private git remotes. Keyed by
-    /// URL prefix (longest match wins); see [`crate::host_auth`] for
-    /// the resolution rules. `None` means anonymous fetches; private
-    /// remotes will then 401 with a typed error rather than reading
-    /// any ambient credential file.
+    /// Retained caller-supplied credentials keyed by URL prefix.
     pub auth: Option<crate::host_auth::HostAuthMap>,
 }
 
 impl ResolverOptions {
-    /// Online resolve with a given set of expected digests (from
-    /// prior lockfile). Matches the shape `akua add` + `akua lock`
-    /// use. `cosign_public_key_pem` stays `None` — those verbs
-    /// don't perform signature verification.
+    /// Construct options with expected digests and the local replace policy.
+    /// This does not enable remote resolution inside the worker.
     pub fn online_with(expected_digests: BTreeMap<String, String>) -> Self {
         Self {
             offline: false,
@@ -384,9 +356,8 @@ pub fn replace_rejected_from_env() -> bool {
     std::env::var("AKUA_REJECT_REPLACE").is_ok_and(|v| v == "1")
 }
 
-/// Offline resolve — path + replace only, OCI/git surface as
-/// [`ChartResolveError::UnsupportedSource`]. The simplest callers
-/// (tests, pure-local workflows) use this.
+/// Resolve with default options. Remote dependencies must already be
+/// materialized locally.
 pub fn resolve(
     manifest: &AkuaManifest,
     workspace_root: &Path,
@@ -401,9 +372,9 @@ pub fn resolve(
     )
 }
 
-/// Full resolver — handles path, replace, OCI, and git. Helm-repo
-/// (`repo`) deps return [`ChartResolveError::UnsupportedSource`] until
-/// the helm fetcher is wired.
+/// Resolve local paths, vendored trees and permitted replace overrides.
+/// Remote sources without local materialization return
+/// [`ChartResolveError::UnsupportedSource`].
 pub fn resolve_with_options(
     manifest: &AkuaManifest,
     workspace_root: &Path,
@@ -431,10 +402,9 @@ pub fn resolve_with_options(
             continue;
         }
         let spec = dep.spec();
-        // Vendor-first across path/oci/git — install repos GC canonical
-        // sources post-vendor; pulled Packages arrive pre-vendored. Helm
-        // skips this: vendored-helm embedding is a follow-up, so a `repo`
-        // dep always fetches directly from its source.
+        // Prefer vendored trees for path/OCI/git dependencies because
+        // pulled Packages may no longer contain their canonical sources.
+        // Helm-repo dependencies do not support this vendor layout.
         let vendored = if matches!(spec, DependencySpec::Helm { .. }) {
             None
         } else {
@@ -495,9 +465,9 @@ enum VendorKind<'a> {
 }
 
 /// If a dep has been pre-vendored at `<workspace>/.akua/vendor/<name>/`,
-/// resolve from there instead of calling the network fetcher.
-/// Returns `Ok(None)` when the vendor dir is absent — the caller
-/// falls through to the normal fetch path. Mirrors
+/// resolve from there without network access.
+/// Returns `Ok(None)` when the vendor dir is absent; remote sources then
+/// return [`ChartResolveError::UnsupportedSource`]. Mirrors
 /// `ResolvedSource::Oci` / `::Git` so the lockfile shape is
 /// unchanged; the digest is the recomputed tree sha256 (for Oci) or
 /// the `git:<tree-sha>` blend (for Git) — trade-off for offline pulls.
@@ -632,7 +602,7 @@ fn resolved_source_for_replace(
              validation (dep `{name}`)"
         ),
         // Helm-repo deps have no resolver yet, so a replace on one is
-        // likewise unsupported until the helm fetcher lands.
+        // likewise unsupported by this offline resolver.
         DependencySpec::Helm { .. } => Err(ChartResolveError::UnsupportedSource {
             name: name.to_string(),
             kind: DependencySource::Helm,
@@ -825,8 +795,7 @@ enum PathOrigin {
     /// `akua.toml`. Absolute and escape paths are rejected — see
     /// CLAUDE.md "`replace` and `path` deps are workspace-local".
     UserManifest,
-    /// Internal akua-managed path (vendor materialization, OCI cache
-    /// extraction). Already absolute; trusted by construction.
+    /// Resolver-managed vendor path, rather than a user-declared path.
     Internal,
 }
 
@@ -951,10 +920,8 @@ fn resolve_path(
             }
         }
         PathOrigin::Internal => {
-            // Internal akua-managed paths (vendor materialization,
-            // OCI cache extraction) are absolute by construction and
-            // legitimately live outside the workspace. Skip the
-            // escape guard; just canonicalize.
+            // This path is constructed by the resolver, rather than supplied
+            // by the manifest. Canonicalize without the user-path escape guard.
             let rel = PathBuf::from(requested);
             let joined = if rel.is_absolute() {
                 rel
@@ -1256,10 +1223,8 @@ edition = "akua.dev/v1alpha1"
 
     #[test]
     fn helm_dep_skips_vendor_first_and_needs_a_pinned_digest_offline() {
-        // Helm-repo deps don't go through vendor-first (vendored-helm
-        // embedding is deferred). Offline with no lockfile-pinned digest,
-        // the resolver can't fetch, so it surfaces a clear
-        // UnsupportedSource(Helm) — even if a vendor dir happens to exist.
+        // Helm-repo deps do not use this vendor layout and remain unsupported
+        // inside the worker even if a vendor directory happens to exist.
         let ws = tempfile::tempdir().unwrap();
         write_minimal_chart(&ws.path().join(".akua/vendor/temporal"));
         let manifest = minimal_manifest(
@@ -1396,17 +1361,14 @@ alpha = { path = "./charts/alpha" }
             ),
             "got: {err:?}"
         );
-        // Reason text must mention offline so agents know which knob
-        // to turn.
+        // Explain the worker's offline boundary in the error.
         assert!(err.to_string().contains("offline"), "got: {err}");
     }
 
     #[test]
     fn git_dep_surfaces_typed_error_in_offline_mode() {
-        // Default `resolve()` is offline-mode. A git dep with no
-        // lockfile-pinned commit can't be satisfied without the
-        // network, so the resolver refuses — distinct from the
-        // `GitFetch` error path (which requires a real clone).
+        // A Git dependency without local materialization is unsupported
+        // inside the offline worker.
         let ws = tempfile::tempdir().unwrap();
         let manifest =
             minimal_manifest(r#"libs = { git = "https://github.com/foo/bar", tag = "v1.0.0" }"#);
@@ -1650,10 +1612,6 @@ alpha = { path = "./charts/alpha" }
 
     #[test]
     fn resolver_options_carry_cosign_public_key() {
-        // Just the construction-site sanity check: nothing else tests
-        // this field setter yet since the actual verify path needs a
-        // live registry. Unit coverage for `verify_keyed` lives in
-        // `cosign` and OCI wiring lives in `oci_fetcher`.
         let opts = ResolverOptions {
             cosign_public_key_pem: Some(
                 "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----\n".into(),
@@ -1673,9 +1631,6 @@ alpha = { path = "./charts/alpha" }
             r#"nginx = { oci = "oci://ghcr.io/acme/charts/nginx", version = "1.0.0" }"#,
         );
 
-        // `resolve` defaults to `offline = true`, so a fetcher call
-        // would fail. If the vendor path works, no fetch attempt is
-        // made and we get a clean ResolvedChart.
         let resolved = resolve(&manifest, ws.path()).expect("vendor resolves offline");
         let nginx = resolved.entries.get("nginx").unwrap();
         assert!(nginx.abs_path.ends_with(".akua/vendor/nginx"));
@@ -1747,8 +1702,7 @@ alpha = { path = "./charts/alpha" }
 
     #[test]
     fn missing_vendor_dir_falls_through_to_normal_resolver() {
-        // Without vendor + offline mode, the normal offline-mode
-        // OCI rejection fires.
+        // An unmaterialized OCI dependency is rejected by the offline worker.
         let ws = tempfile::tempdir().unwrap();
         let manifest = minimal_manifest(r#"nginx = { oci = "oci://r/n", version = "1.0.0" }"#);
         let err = resolve(&manifest, ws.path()).unwrap_err();

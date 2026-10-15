@@ -144,9 +144,7 @@ pub enum VendorError {
     #[error("vendor tree drift detected")]
     Drift { output: VendorCheckOutput },
 
-    /// Dep source kind not yet supported by the vendor path (helm-repo
-    /// deps, until the helm fetcher lands); surfaces a clear error
-    /// rather than silently misbehaving.
+    /// Dependency source kind unsupported by this vendor path.
     #[error("dep `{name}`: {kind} source not yet supported by `akua vendor`")]
     UnsupportedSource { name: String, kind: &'static str },
 }
@@ -381,9 +379,7 @@ fn vendor_lock_source(dep: &Dependency, lock_digest: &str) -> (ResolvedSource, S
                 format!("{GIT_DIGEST_PREFIX}{raw}"),
             )
         }
-        // This function is only called after a dep has been resolved +
-        // vendored, which for a helm-repo dep requires the (not-yet-wired)
-        // helm fetcher; it cannot be reached until then.
+        // Helm-repo dependencies are rejected before lock-source construction.
         DependencySpec::Helm { .. } => {
             unreachable!("helm dep reaches vendor_lock_source before the helm fetcher exists")
         }
@@ -649,8 +645,7 @@ fn resolve_source(
         DependencySpec::Git { git, tag, rev } => {
             resolve_git_source(workspace, name, git, tag, rev, auth)
         }
-        // Until the helm fetcher lands, `akua vendor add` for a helm-repo
-        // dep surfaces a clear error rather than mishandling it.
+        // Helm-repo dependencies are unsupported by this vendor path.
         DependencySpec::Helm { .. } => Err(VendorError::UnsupportedSource {
             name: name.to_string(),
             kind: "helm",
@@ -666,7 +661,7 @@ fn resolve_oci_source(
 ) -> Result<SourceResolution, VendorError> {
     let _ = name;
     Err(VendorError::SourceMissing {
-        path: PathBuf::from("oci-fetch feature disabled"),
+        path: PathBuf::from("OCI fetching is handled by the host"),
     })
 }
 
@@ -680,7 +675,7 @@ fn resolve_git_source(
 ) -> Result<SourceResolution, VendorError> {
     let _ = name;
     Err(VendorError::SourceMissing {
-        path: PathBuf::from("git-fetch feature disabled"),
+        path: PathBuf::from("Git fetching is handled by the host"),
     })
 }
 
@@ -1012,10 +1007,8 @@ upstream = { git = "https://example.com/acme/app", tag = "v1.0.0" }
     }
 
     /// The git `source_ref` in `VendorAddOutput` must not expose a raw
-    /// URL that might carry userinfo or default ports. `resolve_git_source`
-    /// applies `canonicalize_url` before formatting `source_ref`; this
-    /// test validates the canonicalization contract directly so it runs
-    /// unconditionally (not gated on `git-fetch`).
+    /// URL that might carry userinfo or default ports. This test exercises
+    /// the URL canonicalization contract without fetching a remote.
     #[test]
     fn resolve_git_source_ref_strips_default_port_and_dot_git() {
         // canonicalize_url is applied to `git` before formatting source_ref.
