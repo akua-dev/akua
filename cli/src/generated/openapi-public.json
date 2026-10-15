@@ -27286,6 +27286,9 @@
               {
                 "type": "object",
                 "properties": {
+                  "code": {
+                    "type": "integer"
+                  },
                   "message": {
                     "type": "string"
                   }
@@ -43228,6 +43231,9 @@
               {
                 "type": "object",
                 "properties": {
+                  "code": {
+                    "type": "integer"
+                  },
                   "message": {
                     "type": "string"
                   }
@@ -43647,6 +43653,32 @@
               }
             ]
           },
+          "observation_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "sync_observation_unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Safe reason for unavailable sync observation; null for other states."
+          },
+          "observed_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Time the stored workload status last changed, independent of route freshness."
+          },
           "updated_at": {
             "anyOf": [
               {
@@ -43684,6 +43716,8 @@
           "revision",
           "resources",
           "operation_phase",
+          "observation_reason",
+          "observed_at",
           "updated_at",
           "state",
           "reconciling"
