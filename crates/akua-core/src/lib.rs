@@ -1,6 +1,7 @@
 //! # akua-core
 //!
-//! Library surface for the `akua` CLI. Typed primitives for:
+//! The KCL side of akuapkg, compiled into the sandboxed render worker
+//! (`crates/akua-render-worker`). Typed primitives for:
 //!
 //! - [`cli_contract`] — universal flags, exit codes, structured errors,
 //!   agent-context detection.
@@ -14,92 +15,39 @@
 
 #![allow(dead_code)]
 
-/// Apply the SDK-export derives to a contract type. Avoids hand-repeating
-/// `#[cfg_attr]` attributes (and the `export_to` path, where a typo
-/// silently drops the type from the bundle).
-///
-/// Usage:
-/// ```ignore
-/// akua_core::contract_type! {
-///     #[derive(Debug, Serialize, Deserialize)]
-///     pub struct Foo { ... }
-/// }
-/// ```
-///
-/// Workspace-internal by intent: `akuapkg-cli` reuses it for verbs that
-/// define their own response types (e.g. `VersionOutput`). External
-/// consumers don't need it — they're not writing to `sdk-types/` or
-/// the bundle. `#[macro_export]` is the mechanism that makes the
-/// macro reachable across crates in the same workspace, so it's
-/// public by mechanism; `#[doc(hidden)]` keeps it out of the rendered
-/// API docs.
+/// Marks a CLI contract type definition. Expands to the item unchanged.
 #[macro_export]
 #[doc(hidden)]
 macro_rules! contract_type {
     ($item:item) => {
-        // ts-rs 11: `export_to` is concatenated with `TS_RS_EXPORT_DIR`
-        // (when set), so we keep `export_to` empty and rely on the
-        // caller setting `TS_RS_EXPORT_DIR=packages/sdk/src/types/`
-        // (wired up by `task sdk:gen-types`).
-        #[cfg_attr(feature = "ts-export", derive(::ts_rs::TS))]
-        #[cfg_attr(feature = "ts-export", ts(export))]
-        #[cfg_attr(feature = "schema-export", derive(::schemars::JsonSchema))]
         $item
     };
 }
 
-#[cfg(any(feature = "oci-fetch", feature = "git-fetch"))]
-pub mod cache_inventory;
 #[cfg(feature = "engine-kcl")]
 pub mod chart_resolver;
 #[cfg(feature = "engine-kcl")]
 pub mod check;
 pub mod cli_contract;
-#[cfg(feature = "cosign-verify")]
-pub mod cosign;
-#[cfg(feature = "cosign-verify")]
-pub mod cosign_sidecar;
-#[cfg(feature = "dev-watch")]
-pub mod dev;
 #[cfg(feature = "engine-kcl")]
 pub mod dir_diff;
 pub mod duration_parse;
 #[cfg(feature = "engine-kcl")]
 pub mod export;
-#[cfg(feature = "git-fetch")]
-pub mod git_fetcher;
-#[cfg(feature = "helm-fetch")]
-pub mod helm_repo_fetcher;
 pub(crate) mod hex;
 pub mod host_auth;
 #[cfg(feature = "engine-kcl")]
 pub mod kcl_plugin;
 pub mod lock_file;
 pub mod mod_file;
-#[cfg(feature = "oci-fetch")]
-pub mod oci_auth;
-#[cfg(feature = "oci-fetch")]
-pub mod oci_fetcher;
-#[cfg(feature = "oci-fetch")]
-pub mod oci_media_types;
-#[cfg(feature = "oci-fetch")]
-pub mod oci_puller;
-#[cfg(feature = "oci-fetch")]
-pub mod oci_pusher;
-#[cfg(feature = "oci-fetch")]
-pub mod oci_transport;
 #[cfg(feature = "engine-kcl")]
 pub mod package_k;
 #[cfg(feature = "engine-kcl")]
 pub mod package_render;
-#[cfg(feature = "oci-fetch")]
-pub mod package_tar;
 #[cfg(feature = "engine-kcl")]
 pub mod pkg_render;
 #[cfg(feature = "engine-kcl")]
 pub mod pkg_stub;
-#[cfg(feature = "cosign-verify")]
-pub mod slsa;
 #[cfg(feature = "engine-kcl")]
 pub mod stdlib;
 #[cfg(feature = "engine-kcl")]
@@ -130,8 +78,9 @@ pub use mod_file::{
 #[cfg(feature = "engine-kcl")]
 pub use package_k::{
     eval_source, eval_source_full, eval_source_full_with_pkgs, eval_source_with_inputs, format_kcl,
-    lint_kcl, lint_kcl_source, lint_kcl_source_with_pkgs, list_options_kcl, list_options_kcl_source, parse_rendered_yaml,
-    LintIssue, OptionInfo, PackageK, PackageKError, RenderedPackage,
+    lint_kcl, lint_kcl_source, lint_kcl_source_with_pkgs, list_options_kcl,
+    list_options_kcl_source, parse_rendered_yaml, LintIssue, OptionInfo, PackageK, PackageKError,
+    RenderedPackage,
 };
 #[cfg(feature = "engine-kcl")]
 pub use package_render::{

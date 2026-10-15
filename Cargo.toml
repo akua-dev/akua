@@ -22,18 +22,8 @@ toml = "1.0"
 # Error handling
 thiserror = "2"
 
-# CLI
-clap = { version = "4", features = ["derive", "env"] }
-reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
-
-# Observability — tracing is the universal emitter (libraries depend on it
-# only); tracing-subscriber + the opentelemetry stack live in the host (cli).
+# Observability: the worker emits tracing events that the host replays.
 tracing = { version = "0.1", default-features = false, features = ["std", "attributes"] }
-tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "json", "env-filter", "ansi", "registry"] }
-tracing-opentelemetry = "0.27"
-opentelemetry = "0.26"
-opentelemetry_sdk = { version = "0.26", features = ["rt-tokio-current-thread"] }
-opentelemetry-otlp = { version = "0.26", features = ["grpc-tonic"] }
 
 # kcl-lang (crates/akua-core's engine-kcl dependency, from
 # https://github.com/kcl-lang/lib) declares every kcl-* crate as a
@@ -62,11 +52,3 @@ kcl-runtime = { path = "third_party/kcl/vendor/kcl-runtime" }
 lto = true
 codegen-units = 1
 strip = true
-
-[profile.ci-release]
-inherits = "release"
-lto = false
-codegen-units = 16
-strip = "symbols"
-debug = "line-tables-only"
-incremental = false

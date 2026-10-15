@@ -8,40 +8,10 @@ repository.workspace = true
 authors.workspace = true
 
 [features]
-default = ["engine-kcl", "oci-fetch", "git-fetch", "cosign-verify", "dev-watch"]
-# SDK type emission — off by default. `ts-export` makes the CLI
-# contract types `derive(ts_rs::TS)` so they can be exported as TS
-# sources for `@akua-dev/sdk`. `schema-export` does the same for
-# schemars (JSON Schema bundle). Both are build-time only; zero
-# cost in production builds. Triggered by the emission test in
-# akuapkg-cli (`cargo test -p akuapkg-cli --features schema-export,ts-export`).
-ts-export = ["dep:ts-rs"]
-schema-export = ["dep:schemars"]
-# KCL engine — native Rust via kcl-lang/lib (git dep).
+default = ["engine-kcl"]
+# KCL engine: native Rust via kcl-lang/lib (git dependency). The render
+# worker enables it; the manifest and lockfile parsers build without it.
 engine-kcl = ["dep:kcl-lang", "dep:sha2", "dep:tempfile"]
-# OCI chart fetch. Pulls Helm charts from registries (ghcr.io,
-# registry-1.docker.io, public-only for now). Synchronous reqwest
-# client — no tokio runtime injection into the render path. Disable
-# for offline-only builds (lockfile-only, no resolution against
-# remote registries).
-oci-fetch = ["dep:reqwest", "dep:flate2", "dep:tar"]
-helm-fetch = ["dep:reqwest", "dep:flate2", "dep:tar", "dep:semver", "dep:sha2"]
-# Git chart fetch. Pulls charts hosted in git repos via `gix` (pure
-# Rust, no shell-out). Disabled by default — the dep tree is large
-# and the feature is opt-in for ops who actually use git charts.
-# Public HTTPS + file:// URLs supported; ssh:// + private-repo auth
-# are follow-ups.
-git-fetch = ["dep:gix", "dep:curl", "curl/static-ssl"]
-# Cosign keyed signature verification. Pairs with oci-fetch: when a
-# public key is configured, the pull path also pulls the chart's
-# cosign `.sig` sidecar and verifies the signature before handing
-# the blob to the renderer. Phase 6 slice A — keyless (fulcio/rekor)
-# is deferred.
-cosign-verify = ["oci-fetch", "dep:p256", "dep:pem", "dep:signature", "dep:pkcs8"]
-# File-watch hot-reload. `akua dev` watches the workspace + re-renders
-# on change. Feature-gated so headless / CI builds skip the `notify`
-# dep tree (inotify/kqueue platform glue).
-dev-watch = ["engine-kcl", "dep:notify", "dep:notify-debouncer-mini"]
 
 [dependencies]
 serde = { workspace = true }
@@ -49,71 +19,15 @@ serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 toml = { workspace = true }
 thiserror = { workspace = true }
-# host_auth uses this for `Authorization: Basic <b64>` header
-# encoding. Always-built (small, transitively pulled by oci-fetch
-# anyway) so the host_auth module can stay un-feature-gated.
+# host_auth uses this for `Authorization: Basic <b64>` header encoding.
 base64 = { version = "0.22" }
 
-# Render-path deps — available on all targets (wasm32 included).
-# Spike at docs/spikes/kcl-wasm-feasibility.md proved compile is
-# clean; the workspace's `[patch."https://github.com/kcl-lang/kcl"]`
-# pin to cnap-tech/kcl#akua-wasm32 fixes the runtime `current_dir()`
-# panic. Worker at crates/akua-render-worker/ depends on akua-core +
-# engine-kcl compiled to wasip1 — that's how Phase 4 delivers the
-# sandbox.
+# The KCL engine. The worker compiles it to wasm32-wasip1; the three
+# kcl-lang/kcl crates that need wasm32 fixes are patched in the workspace
+# Cargo.toml ([patch] block, third_party/kcl/patches).
 kcl-lang = { git = "https://github.com/kcl-lang/lib", optional = true }
 sha2 = { version = "0.10", optional = true }
 tempfile = { version = "3", optional = true }
 
-# SDK type-emission deps. Optional; pulled in only when the
-# `ts-export` / `schema-export` features are enabled.
-ts-rs = { version = "12", optional = true }
-schemars = { version = "1", optional = true }
-semver = { version = "1", optional = true }
-
-# Host-only deps — compiled into the CLI binary that *hosts* the
-# render worker, not into the worker itself. Stay gated off wasm32:
-#   - helm/kustomize engine hosts run wasmtime inside wasmtime.
-#   - reqwest/gix need TCP which wasip1 doesn't have.
-#   - cosign crypto + dev-watch filesystem notifiers are host-level.
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-
-# OCI chart fetch. `rustls-tls` avoids the openssl dep chain.
-reqwest = { workspace = true, optional = true }
-flate2 = { version = "1", optional = true }
-tar = { version = "0.4", optional = true }
-# `blocking-http-transport-curl-rustls` makes gitoxide apply Git-compatible TLS
-# settings such as `GIT_SSL_CAINFO`, `GIT_SSL_NO_VERIFY`, and
-# `http.sslCAInfo`; the reqwest Rustls backend models those options but does
-# not apply them to the TLS client in gix 0.66. gix-transport enables curl's
-# default OpenSSL feature, so `git-fetch` also enables `curl/static-ssl` to make
-# release builds use vendored OpenSSL instead of target system OpenSSL packages.
-# Because this transport honours `GIT_SSL_NO_VERIFY` from the ambient
-# environment, `git_fetcher::force_tls_verification` pins `ssl_verify = true` on
-# every connection before the handshake while retaining configured CA bundles.
-gix = { version = "0.66", default-features = false, features = ["blocking-http-transport-curl-rustls", "max-performance-safe", "worktree-mutation"], optional = true }
-curl = { version = "0.4", optional = true, features = ["static-ssl"] }
-p256 = { version = "0.13", default-features = false, features = ["ecdsa", "std", "pem", "pkcs8"], optional = true }
-pkcs8 = { version = "0.10", default-features = false, features = ["pem", "pkcs5", "encryption", "alloc"], optional = true }
-pem = { version = "3", optional = true }
-signature = { version = "2", optional = true }
-notify = { version = "6", optional = true }
-notify-debouncer-mini = { version = "0.4", optional = true, default-features = false }
-
 [dev-dependencies]
 tempfile = "3"
-# cosign test fixtures generate a keypair per test run; keeps tests
-# hermetic instead of committing a PEM to the repo.
-rand = "0.8"
-# Local HTTP mock for OCI registry tests — hosts a tiny distribution-API
-# endpoint on `http://127.0.0.1:<port>` so push/pull paths exercise the
-# full transport without a real registry.
-httpmock = "0.7"
-# Authenticated HTTPS git fixture for the vendor regression test.
-rcgen = "0.13"
-rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
-# Pure-Rust OCI client. Dev-only — used to *parse* the manifest bytes
-# our pusher PUTs and assert spec compliance via a real OCI parser
-# (independent verification that we're not just round-tripping our own
-# serializer). No runtime use; we don't make any HTTP calls with it.
-oci-client = { version = "0.11", default-features = false, features = ["rustls-tls"] }
