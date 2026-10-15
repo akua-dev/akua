@@ -9806,6 +9806,23 @@ export const contract: ApiContract = {
 									"developers",
 									"vendors"
 								]
+							},
+							"use_case": {
+								"type": "string",
+								"enum": [
+									"customer-database",
+									"online-orders",
+									"email-assistant",
+									"social-posts",
+									"up-to-date",
+									"automation",
+									"website",
+									"customer-cloud",
+									"more-customers",
+									"staged-updates",
+									"customer-template",
+									"partner-channel"
+								]
 							}
 						},
 						"required": [
