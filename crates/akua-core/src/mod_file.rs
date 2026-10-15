@@ -879,7 +879,9 @@ cosign_public_key = "./cosign.pub"
 "#;
         assert!(AkuaManifest::parse(keyed).expect("parse").strict_signing());
         let unkeyed = keyed.replace("[signing]\ncosign_public_key = \"./cosign.pub\"\n", "");
-        assert!(!AkuaManifest::parse(&unkeyed).expect("parse").strict_signing());
+        assert!(!AkuaManifest::parse(&unkeyed)
+            .expect("parse")
+            .strict_signing());
     }
 
     #[test]

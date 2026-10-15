@@ -26,10 +26,6 @@ use crate::lock_file::{
     AkuaLock, LockLoadError, LockedPackage, GIT_DIGEST_PREFIX, VENDORED_LOCK_FALLBACK,
 };
 use crate::mod_file::{AkuaManifest, Dependency, DependencySpec, ManifestLoadError};
-#[cfg(feature = "oci-fetch")]
-use crate::{cache_inventory, oci_auth, oci_fetcher};
-#[cfg(feature = "git-fetch")]
-use crate::{git_fetcher, git_fetcher::RefSpec};
 use serde::{Deserialize, Serialize};
 
 crate::contract_type! {
@@ -145,22 +141,6 @@ pub enum VendorError {
         source: std::io::Error,
     },
 
-    #[cfg(feature = "oci-fetch")]
-    #[error("fetching OCI dep `{name}`: {source}")]
-    OciFetch {
-        name: String,
-        #[source]
-        source: oci_fetcher::OciFetchError,
-    },
-
-    #[cfg(feature = "git-fetch")]
-    #[error("fetching git dep `{name}`: {source}")]
-    GitFetch {
-        name: String,
-        #[source]
-        source: git_fetcher::GitFetchError,
-    },
-
     #[error("vendor tree drift detected")]
     Drift { output: VendorCheckOutput },
 
@@ -214,14 +194,6 @@ impl VendorError {
                     .with_path(path.display().to_string())
                     .with_default_docs()
             }
-            #[cfg(feature = "oci-fetch")]
-            VendorError::OciFetch { .. } => {
-                StructuredError::new(codes::E_DEP_RESOLVE, self.to_string()).with_default_docs()
-            }
-            #[cfg(feature = "git-fetch")]
-            VendorError::GitFetch { .. } => {
-                StructuredError::new(codes::E_DEP_RESOLVE, self.to_string()).with_default_docs()
-            }
             VendorError::Drift { .. } => {
                 StructuredError::new(codes::E_VENDOR_DRIFT, self.to_string()).with_default_docs()
             }
@@ -245,10 +217,6 @@ impl VendorError {
             | VendorError::Lock(_)
             | VendorError::AuthConfig(_)
             | VendorError::UnsupportedSource { .. } => ExitCode::UserError,
-            #[cfg(feature = "oci-fetch")]
-            VendorError::OciFetch { .. } => ExitCode::UserError,
-            #[cfg(feature = "git-fetch")]
-            VendorError::GitFetch { .. } => ExitCode::UserError,
         }
     }
 }
@@ -690,37 +658,6 @@ fn resolve_source(
     }
 }
 
-#[cfg(feature = "oci-fetch")]
-fn resolve_oci_source(
-    workspace: &Path,
-    name: &str,
-    oci: &str,
-    version: &str,
-) -> Result<SourceResolution, VendorError> {
-    let cache_root = cache_inventory::default_cache_root("oci");
-    let creds = oci_auth::CredsStore::load().map_err(|e| VendorError::AuthConfig(e.to_string()))?;
-    let locked_expected = expected_digest_from_lock(workspace, name, "oci");
-    let fetch_opts = oci_fetcher::FetchOpts {
-        expected_digest: locked_expected.as_deref(),
-        creds: &creds,
-        cosign_public_key_pem: None,
-    };
-    let fetched =
-        oci_fetcher::fetch_with_opts(oci, version, &cache_root, &fetch_opts).map_err(|source| {
-            VendorError::OciFetch {
-                name: name.to_string(),
-                source,
-            }
-        })?;
-    Ok(SourceResolution {
-        kind: "oci",
-        source_ref: format!("{oci}@{version}"),
-        root: fetched.root_dir,
-        lock_digest: None,
-    })
-}
-
-#[cfg(not(feature = "oci-fetch"))]
 fn resolve_oci_source(
     _workspace: &Path,
     name: &str,
@@ -733,49 +670,6 @@ fn resolve_oci_source(
     })
 }
 
-#[cfg(feature = "git-fetch")]
-fn resolve_git_source(
-    workspace: &Path,
-    name: &str,
-    git: &str,
-    tag: Option<&str>,
-    rev: Option<&str>,
-    auth: Option<&crate::host_auth::HostAuthMap>,
-) -> Result<SourceResolution, VendorError> {
-    let ref_spec = match (tag, rev) {
-        (Some(tag), _) => RefSpec::Tag(tag.to_string()),
-        (_, Some(rev)) => RefSpec::Rev(rev.to_string()),
-        _ => unreachable!("manifest validation guarantees tag or rev"),
-    };
-    let cache_root = cache_inventory::default_cache_root("git");
-    let expected_commit = expected_digest_from_lock(workspace, name, "git")
-        .and_then(|d| d.strip_prefix(GIT_DIGEST_PREFIX).map(str::to_string));
-    let fetched = git_fetcher::fetch(
-        git,
-        &ref_spec,
-        &cache_root,
-        expected_commit.as_deref(),
-        auth,
-    )
-    .map_err(|source| VendorError::GitFetch {
-        name: name.to_string(),
-        source,
-    })?;
-    // Canonicalize the URL before surfacing it in `source_ref` (and
-    // therefore `VendorAddOutput.source_ref` in `--json` output). The
-    // fetch path already validates that no userinfo is present in
-    // `akua.toml`, but applying canonicalize_url here is defense-in-depth
-    // matching the lockfile write path.
-    let canon_git = crate::host_auth::canonicalize_url(git);
-    Ok(SourceResolution {
-        kind: "git",
-        source_ref: format!("{canon_git}@{}", ref_spec.label()),
-        lock_digest: Some(format!("{GIT_DIGEST_PREFIX}{}", fetched.commit_sha)),
-        root: fetched.chart_dir,
-    })
-}
-
-#[cfg(not(feature = "git-fetch"))]
 fn resolve_git_source(
     _workspace: &Path,
     name: &str,

@@ -30,12 +30,9 @@ use sha2::{Digest, Sha256};
 use crate::hex::hex_encode;
 use crate::lock_file::VENDORED_LOCK_FALLBACK;
 use crate::mod_file::{AkuaManifest, Dependency, DependencySource, DependencySpec};
-#[cfg(feature = "oci-fetch")]
-pub use crate::oci_fetcher::PackageKind;
 
 /// Stand-in for non-oci-fetch builds so resolver consumers can name
 /// the kind unconditionally. Same shape as the oci_fetcher version.
-#[cfg(not(feature = "oci-fetch"))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PackageKind {
     HelmChart,
@@ -278,34 +275,6 @@ pub enum ChartResolveError {
         /// Context for the user: which gate blocked resolution
         /// (offline modeb slice C git support, etc).
         reason: &'static str,
-    },
-
-    /// An `oci_fetcher::fetch` call failed. Kept as `OciFetchError` so
-    /// the CLI layer can differentiate HTTP vs digest-mismatch.
-    #[cfg(feature = "oci-fetch")]
-    #[error("chart `{name}`: OCI fetch failed: {source}")]
-    OciFetch {
-        name: String,
-        #[source]
-        source: crate::oci_fetcher::OciFetchError,
-    },
-
-    /// A `helm_repo_fetcher::fetch` call failed.
-    #[cfg(feature = "helm-fetch")]
-    #[error("chart `{name}`: helm-repo fetch failed: {source}")]
-    HelmFetch {
-        name: String,
-        #[source]
-        source: crate::helm_repo_fetcher::HelmRepoFetchError,
-    },
-
-    /// A `git_fetcher::fetch` call failed.
-    #[cfg(feature = "git-fetch")]
-    #[error("chart `{name}`: git fetch failed: {source}")]
-    GitFetch {
-        name: String,
-        #[source]
-        source: crate::git_fetcher::GitFetchError,
     },
 
     /// Absolute paths in `path = "..."` / `replace.path` are rejected
@@ -591,89 +560,12 @@ fn resolve_from_vendor(
     Ok(Some(chart))
 }
 
-/// Resolve an OCI-sourced dep: fetch (or retrieve from cache) via
-/// [`crate::oci_fetcher`], capture the blob digest into
-/// [`ResolvedSource::Oci`].
-#[cfg(feature = "oci-fetch")]
-fn resolve_oci(
-    name: &str,
-    dep: &Dependency,
-    oci: &str,
-    opts: &ResolverOptions,
-) -> Result<ResolvedChart, ChartResolveError> {
-    let version = dep
-        .version
-        .as_deref()
-        .expect("manifest validation requires `version` on oci deps");
-    let cache_root = opts
-        .cache_root
-        .clone()
-        .unwrap_or_else(default_oci_cache_root);
-    let expected = opts.expected_digests.get(name).map(String::as_str);
+/// This resolver runs offline inside the render worker. The akuapkg host
+/// fetches remote dependencies, verifies them against `akua.lock` and hands
+/// the worker their materialized paths before render.
+const REMOTE_SOURCE_REASON: &str =
+    "the render worker resolves offline; the akuapkg host fetches remote dependencies before render";
 
-    let fetched = if opts.offline {
-        // Air-gapped path: the resolver must not touch the network.
-        // Require a lockfile-pinned digest + a populated cache
-        // entry. Anything else is an operator error (run `akua add`
-        // on a networked machine first).
-        //
-        // Note: offline mode bypasses cosign verification because
-        // the `.sig` sidecar lives in the same registry and isn't
-        // cached. If signing is required AND the cache was primed
-        // online, cosign already approved the bytes — they can't
-        // change between then and now without the digest check
-        // catching it. So the invariant holds.
-        let digest = expected.ok_or_else(|| ChartResolveError::UnsupportedSource {
-            name: name.to_string(),
-            kind: DependencySource::Oci,
-            reason: "offline mode needs a lockfile-pinned digest — run `akua add` first",
-        })?;
-        crate::oci_fetcher::fetch_from_cache(&cache_root, digest).ok_or_else(|| {
-            ChartResolveError::UnsupportedSource {
-                name: name.to_string(),
-                kind: DependencySource::Oci,
-                reason: "offline mode and the OCI cache doesn't have this dep — run `akua add` online first",
-            }
-        })?
-    } else {
-        // Online path: consult creds + optional cosign key.
-        let creds =
-            crate::oci_auth::CredsStore::load().map_err(|source| ChartResolveError::OciFetch {
-                name: name.to_string(),
-                source: crate::oci_fetcher::OciFetchError::AuthConfig {
-                    detail: source.to_string(),
-                },
-            })?;
-        let fetch_opts = crate::oci_fetcher::FetchOpts {
-            expected_digest: expected,
-            creds: &creds,
-            cosign_public_key_pem: opts.cosign_public_key_pem.as_deref(),
-        };
-        crate::oci_fetcher::fetch_with_opts(oci, version, &cache_root, &fetch_opts).map_err(
-            |source| ChartResolveError::OciFetch {
-                name: name.to_string(),
-                source,
-            },
-        )?
-    };
-
-    // The content-addressed cache dir has a stable structure, so the
-    // tree digest = the blob digest (same bytes just unpacked). Reuse
-    // the blob digest rather than re-hashing the tree.
-    Ok(ResolvedChart {
-        name: name.to_string(),
-        abs_path: fetched.root_dir,
-        sha256: fetched.blob_digest.clone(),
-        kind: fetched.kind,
-        source: ResolvedSource::Oci {
-            oci: oci.to_string(),
-            version: version.to_string(),
-            blob_digest: fetched.blob_digest,
-        },
-    })
-}
-
-#[cfg(not(feature = "oci-fetch"))]
 fn resolve_oci(
     name: &str,
     _dep: &Dependency,
@@ -683,77 +575,10 @@ fn resolve_oci(
     Err(ChartResolveError::UnsupportedSource {
         name: name.to_string(),
         kind: DependencySource::Oci,
-        reason: "oci-fetch feature disabled at compile time",
+        reason: REMOTE_SOURCE_REASON,
     })
 }
 
-/// Resolve a Helm-repo dep: fetch (or retrieve from cache) via
-/// [`crate::helm_repo_fetcher`], capture the `.tgz` sha256 into
-/// [`ResolvedSource::Helm`]. Mirrors [`resolve_oci`] — the digest is
-/// the cache key, the lockfile pin, and the fetcher-verified value.
-#[cfg(feature = "helm-fetch")]
-fn resolve_helm(
-    name: &str,
-    repo: &str,
-    chart: &str,
-    version: &str,
-    opts: &ResolverOptions,
-) -> Result<ResolvedChart, ChartResolveError> {
-    let cache_root = opts
-        .cache_root
-        .clone()
-        .unwrap_or_else(default_helm_cache_root);
-    let expected = opts.expected_digests.get(name).map(String::as_str);
-
-    let fetched = if opts.offline {
-        let digest = expected.ok_or_else(|| ChartResolveError::UnsupportedSource {
-            name: name.to_string(),
-            kind: DependencySource::Helm,
-            reason: "offline mode needs a lockfile-pinned digest — run `akua add` first",
-        })?;
-        crate::helm_repo_fetcher::fetch_from_cache(&cache_root, digest, chart).ok_or_else(|| {
-            ChartResolveError::UnsupportedSource {
-                name: name.to_string(),
-                kind: DependencySource::Helm,
-                reason: "offline mode and the helm cache doesn't have this dep — run `akua add` online first",
-            }
-        })?
-    } else {
-        let fetch_opts = crate::helm_repo_fetcher::FetchOpts {
-            expected_digest: expected,
-            auth: opts.auth.as_ref(),
-        };
-        crate::helm_repo_fetcher::fetch(repo, chart, version, &cache_root, &fetch_opts).map_err(
-            |source| ChartResolveError::HelmFetch {
-                name: name.to_string(),
-                source,
-            },
-        )?
-    };
-
-    // Offline cache lookup doesn't know the resolved version; the lockfile
-    // (consulted only when re-pinning online) already has it, and render
-    // doesn't use this field, so falling back to the declared value is safe.
-    let resolved_version = if fetched.version.is_empty() {
-        version.to_string()
-    } else {
-        fetched.version.clone()
-    };
-    Ok(ResolvedChart {
-        name: name.to_string(),
-        abs_path: fetched.root_dir,
-        sha256: fetched.digest.clone(),
-        kind: PackageKind::HelmChart,
-        source: ResolvedSource::Helm {
-            repo: repo.to_string(),
-            chart: chart.to_string(),
-            version: resolved_version,
-            digest: fetched.digest,
-        },
-    })
-}
-
-#[cfg(not(feature = "helm-fetch"))]
 fn resolve_helm(
     name: &str,
     _repo: &str,
@@ -764,108 +589,10 @@ fn resolve_helm(
     Err(ChartResolveError::UnsupportedSource {
         name: name.to_string(),
         kind: DependencySource::Helm,
-        reason: "this build lacks the `helm-fetch` feature",
+        reason: REMOTE_SOURCE_REASON,
     })
 }
 
-/// Default helm cache root. Same resolver as OCI/git, sibling subdir
-/// so the caches don't mix.
-#[cfg(feature = "helm-fetch")]
-fn default_helm_cache_root() -> PathBuf {
-    default_cache_root("helm")
-}
-
-/// Resolve a git-sourced dep: clone + checkout via `git_fetcher`,
-/// digest (commit SHA) written into [`ResolvedSource::Git`].
-#[cfg(feature = "git-fetch")]
-fn resolve_git(
-    name: &str,
-    dep: &Dependency,
-    git: &str,
-    opts: &ResolverOptions,
-) -> Result<ResolvedChart, ChartResolveError> {
-    use crate::git_fetcher::{self, RefSpec};
-
-    // tag wins over rev when both are set (matches the replace-path
-    // flow). Manifest validation guarantees at least one is present.
-    let ref_spec = if let Some(tag) = dep.tag.as_deref() {
-        RefSpec::Tag(tag.to_string())
-    } else if let Some(rev) = dep.rev.as_deref() {
-        RefSpec::Rev(rev.to_string())
-    } else {
-        unreachable!("manifest validation rejects git deps without tag or rev");
-    };
-    let tag_or_rev = ref_spec.label().to_string();
-
-    let cache_root = opts
-        .cache_root
-        .clone()
-        .unwrap_or_else(default_git_cache_root);
-
-    // The lockfile stores the commit SHA under `digest` with a `git:`
-    // prefix. Strip it back to raw hex for the fetcher; the prefix
-    // is a lock-layer concern.
-    let expected_commit = opts.expected_digests.get(name).and_then(|d| {
-        d.strip_prefix(crate::lock_file::GIT_DIGEST_PREFIX)
-            .map(str::to_string)
-    });
-
-    let fetched = if opts.offline {
-        let expected =
-            expected_commit
-                .as_deref()
-                .ok_or_else(|| ChartResolveError::UnsupportedSource {
-                    name: name.to_string(),
-                    kind: DependencySource::Git,
-                    reason: "offline mode needs a lockfile-pinned commit — run `akua add` first",
-                })?;
-        git_fetcher::fetch_from_cache(&cache_root, expected).ok_or_else(|| {
-            ChartResolveError::UnsupportedSource {
-                name: name.to_string(),
-                kind: DependencySource::Git,
-                reason: "offline mode and the git cache doesn't have this commit — run `akua add` online first",
-            }
-        })?
-    } else {
-        git_fetcher::fetch(
-            git,
-            &ref_spec,
-            &cache_root,
-            expected_commit.as_deref(),
-            opts.auth.as_ref(),
-        )
-        .map_err(|source| ChartResolveError::GitFetch {
-            name: name.to_string(),
-            source,
-        })?
-    };
-
-    // For git deps the lockfile digest is the commit SHA (git-native
-    // content-address). Prefixed `git:` so it doesn't collide with
-    // OCI `sha256:` in the digest-prefix validator.
-    let digest = format!(
-        "{}{}",
-        crate::lock_file::GIT_DIGEST_PREFIX,
-        fetched.commit_sha
-    );
-    // Same auto-detect as path deps. Falls back to HelmChart for
-    // unrecognised trees — every existing path/git dep was a vendored
-    // Helm chart before KCL pkg support landed.
-    let kind = detect_dep_kind(&fetched.chart_dir);
-    Ok(ResolvedChart {
-        name: name.to_string(),
-        abs_path: fetched.chart_dir,
-        sha256: digest,
-        kind,
-        source: ResolvedSource::Git {
-            git: git.to_string(),
-            tag_or_rev,
-            commit_sha: fetched.commit_sha,
-        },
-    })
-}
-
-#[cfg(not(feature = "git-fetch"))]
 fn resolve_git(
     name: &str,
     _dep: &Dependency,
@@ -875,38 +602,8 @@ fn resolve_git(
     Err(ChartResolveError::UnsupportedSource {
         name: name.to_string(),
         kind: DependencySource::Git,
-        reason: "git-fetch feature disabled at compile time",
+        reason: REMOTE_SOURCE_REASON,
     })
-}
-
-/// Default cache root: `$XDG_CACHE_HOME/akua/oci` with a fallback to
-/// `$HOME/.cache/akua/oci`, and finally `./.akua/cache/oci` when both
-/// env vars are absent (CI sandboxes, nix builds).
-#[cfg(feature = "oci-fetch")]
-fn default_oci_cache_root() -> PathBuf {
-    default_cache_root("oci")
-}
-
-/// Default git cache root. Same resolver as OCI, different subdir
-/// so the two caches don't mix.
-#[cfg(feature = "git-fetch")]
-fn default_git_cache_root() -> PathBuf {
-    default_cache_root("git")
-}
-
-#[cfg(any(feature = "oci-fetch", feature = "git-fetch", feature = "helm-fetch"))]
-fn default_cache_root(subdir: &str) -> PathBuf {
-    if let Ok(xdg) = std::env::var("XDG_CACHE_HOME") {
-        if !xdg.is_empty() {
-            return PathBuf::from(xdg).join("akua").join(subdir);
-        }
-    }
-    if let Ok(home) = std::env::var("HOME") {
-        if !home.is_empty() {
-            return PathBuf::from(home).join(".cache/akua").join(subdir);
-        }
-    }
-    PathBuf::from(".akua/cache").join(subdir)
 }
 
 /// Build the `ResolvedSource::*Replaced` variant from a dep that has
@@ -1098,30 +795,20 @@ pub fn upsert_locked_from_source(
     lock.upsert_at(slot, entry);
 }
 
-/// Human-readable tag for a dep source. Used by `UnsupportedSource`'s
-/// `#[error(...)]` template.
-/// Pick the package kind for a path/git dep tree. Reuses the marker
-/// heuristic [`oci_fetcher::detect_kind`] applies to OCI cache trees,
-/// so all three resolver branches agree on what counts as a KCL
-/// package vs a Helm chart. Falls back to `HelmChart` for trees that
-/// match neither marker — the historical default for path-deps.
+/// Pick the package kind for a path/git dep tree: a KCL package when it has
+/// `kcl.mod`, or `akua.toml` with `package.k`; otherwise a Helm chart.
 fn detect_dep_kind(dir: &Path) -> PackageKind {
-    #[cfg(feature = "oci-fetch")]
+    if dir.join("kcl.mod").is_file()
+        || (dir.join("akua.toml").is_file() && dir.join("package.k").is_file())
     {
-        crate::oci_fetcher::detect_kind(dir).unwrap_or(PackageKind::HelmChart)
-    }
-    #[cfg(not(feature = "oci-fetch"))]
-    {
-        if dir.join("kcl.mod").is_file()
-            || (dir.join("akua.toml").is_file() && dir.join("package.k").is_file())
-        {
-            PackageKind::KclModule
-        } else {
-            PackageKind::HelmChart
-        }
+        PackageKind::KclModule
+    } else {
+        PackageKind::HelmChart
     }
 }
 
+/// Human-readable tag for a dep source. Used by `UnsupportedSource`'s
+/// `#[error(...)]` template.
 fn source_kind_label(source: DependencySource) -> &'static str {
     match source {
         DependencySource::Oci => "oci://",
@@ -1589,33 +1276,6 @@ edition = "akua.dev/v1alpha1"
             ),
             "expected UnsupportedSource(Helm), got: {err:?}"
         );
-    }
-
-    #[test]
-    #[cfg(feature = "helm-fetch")]
-    fn resolves_helm_repo_dep_offline_from_cache() {
-        let cache = tempfile::tempdir().unwrap();
-        let tgz = crate::helm_repo_fetcher::tests::demo_tgz();
-        let primed =
-            crate::helm_repo_fetcher::extract_and_hash(&tgz, cache.path(), "demo").unwrap();
-
-        let ws = tempfile::tempdir().unwrap();
-        let manifest = minimal_manifest(
-            r#"demo = { repo = "https://example.com/charts", chart = "demo", version = "0.1.0" }"#,
-        );
-        let mut expected = std::collections::BTreeMap::new();
-        expected.insert("demo".to_string(), primed.digest.clone());
-        let opts = ResolverOptions {
-            cache_root: Some(cache.path().to_path_buf()),
-            offline: true,
-            expected_digests: expected,
-            ..Default::default()
-        };
-        let resolved = resolve_with_options(&manifest, ws.path(), &opts).unwrap();
-        let chart = resolved.entries.get("demo").unwrap();
-        assert!(chart.abs_path.join("Chart.yaml").is_file());
-        assert_eq!(chart.sha256, primed.digest);
-        assert!(matches!(chart.source, ResolvedSource::Helm { .. }));
     }
 
     #[test]
