@@ -232,6 +232,18 @@ export const contract: ApiContract = {
 				"type": "string",
 				"minLength": 1,
 				"maxLength": 64,
+				"description": "Required caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+				"pattern": "^[^\\r\\n]+$"
+			}
+		},
+		"header:idempotency-key:6": {
+			"name": "idempotency-key",
+			"in": "header",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 64,
 				"description": "Required stable key. Retry the identical key and input after an uncertain response."
 			}
 		},
@@ -1486,7 +1498,7 @@ export const contract: ApiContract = {
 			"auth": true,
 			"parameters": [
 				"header:akua-context:2",
-				"header:idempotency-key:5"
+				"header:idempotency-key:6"
 			],
 			"body": {
 				"required": true,
@@ -5492,6 +5504,24 @@ export const contract: ApiContract = {
 			}
 		},
 		{
+			"id": "repositories.createCommit",
+			"method": "POST",
+			"path": "/repositories/{id}/commits",
+			"summary": "Create the initial repository commit",
+			"auth": true,
+			"parameters": [
+				"path:id:7",
+				"header:akua-context",
+				"header:idempotency-key:5"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/CreateRepositoryCommitBody"
+				}
+			}
+		},
+		{
 			"id": "repositories.createToken",
 			"method": "POST",
 			"path": "/repositories/{id}:createToken",
@@ -5519,6 +5549,17 @@ export const contract: ApiContract = {
 				"path:id:18",
 				"header:akua-context",
 				"query:view:4"
+			]
+		},
+		{
+			"id": "repositories.getBranch",
+			"method": "GET",
+			"path": "/repositories/{id}/branches/main",
+			"summary": "Read the repository main branch",
+			"auth": true,
+			"parameters": [
+				"path:id:7",
+				"header:akua-context"
 			]
 		},
 		{
@@ -8417,6 +8458,50 @@ export const contract: ApiContract = {
 					"exclusiveMinimum": 0
 				}
 			},
+			"additionalProperties": false
+		},
+		"CreateRepositoryCommitBody": {
+			"type": "object",
+			"properties": {
+				"message": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 200
+				},
+				"expected_parent_sha": {
+					"type": "null"
+				},
+				"files": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"path": {
+								"type": "string",
+								"minLength": 1,
+								"maxLength": 240,
+								"pattern": "^[A-Za-z0-9_.-]+(?:\\/[A-Za-z0-9_.-]+)*$"
+							},
+							"content": {
+								"type": "string",
+								"maxLength": 16384
+							}
+						},
+						"required": [
+							"path",
+							"content"
+						],
+						"additionalProperties": false
+					},
+					"minItems": 1,
+					"maxItems": 32
+				}
+			},
+			"required": [
+				"message",
+				"expected_parent_sha",
+				"files"
+			],
 			"additionalProperties": false
 		},
 		"CreateRepositoryTokenBody": {
