@@ -23469,6 +23469,372 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
+    "/dashboard_preferences:suggestRole": {
+      "post": {
+        "tags": [
+          "Dashboard Preferences"
+        ],
+        "operationId": "dashboardPreferences.suggestRole",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DashboardRoleSuggestion",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardRoleSuggestion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Ranks the four onboarding answers from visited landing roles, sign-up attribution, early dashboard pages and installed apps in the selected workspace. Returns both deterministic and available evaluated reader evidence with reasons. Confirmation through PATCH is required to save a choice; this operation never changes preferences.",
+        "summary": "Suggest what you mainly do",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardRoleSuggestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC",
+        "x-platform-agent": {
+          "risk": "read"
+        }
+      }
+    },
+    "/dashboard_preferences": {
+      "get": {
+        "tags": [
+          "Dashboard Preferences"
+        ],
+        "operationId": "dashboardPreferences.get",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DashboardPreferencesResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardPreferencesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "What you mainly do (your role preset) and whether technical details are shown, for the workspace in Akua-Context or implied by the token. Unanswered fields are null.",
+        "summary": "Get your dashboard preferences",
+        "x-platform-visibility": "PUBLIC",
+        "x-platform-agent": {
+          "risk": "read"
+        }
+      },
+      "patch": {
+        "tags": [
+          "Dashboard Preferences"
+        ],
+        "operationId": "dashboardPreferences.update",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DashboardPreferencesResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardPreferencesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Sets or corrects your role preset and the technical details switch. Only the fields you send change. A role preset cannot be cleared once chosen.",
+        "summary": "Update your dashboard preferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardPreferencesUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC",
+        "x-platform-agent": {
+          "risk": "ui"
+        }
+      }
+    },
+    "/dashboard_surfaces": {
+      "get": {
+        "tags": [
+          "Dashboard Surfaces"
+        ],
+        "operationId": "dashboardSurfaces.list",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DashboardSurfaceList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSurfaceList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Every dashboard page your release flags allow, in navigation order, with its label in your vocabulary and whether your navigation shows it and why. Pages your navigation does not show stay reachable by search and URL.",
+        "summary": "List dashboard surfaces",
+        "x-platform-visibility": "PUBLIC",
+        "x-platform-agent": {
+          "risk": "read"
+        }
+      }
+    },
     "/agent_sessions/{id}": {
       "get": {
         "tags": [
@@ -26997,6 +27363,531 @@
           "errors",
           "result"
         ],
+        "additionalProperties": false
+      },
+      "DashboardSurfaceList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSurface"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_technical_details": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor",
+          "effective_technical_details"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardSurface": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "home",
+              "workspace",
+              "marketplace",
+              "packages",
+              "products",
+              "offers",
+              "managed_deployments",
+              "customers",
+              "apps",
+              "agents",
+              "repository_change_requests",
+              "operations",
+              "docs",
+              "compute",
+              "machines",
+              "clusters",
+              "secrets",
+              "registries",
+              "regions",
+              "cloudflare",
+              "dashboards",
+              "snippets",
+              "runs",
+              "quotas",
+              "api_tokens",
+              "billing",
+              "account",
+              "organization_members",
+              "organization",
+              "notifications",
+              "payments",
+              "access"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string",
+            "enum": [
+              "top",
+              "run",
+              "sell",
+              "watch",
+              "settings",
+              "search"
+            ]
+          },
+          "technical": {
+            "type": "boolean"
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "navigation": {
+            "type": "object",
+            "properties": {
+              "shown": {
+                "type": "boolean"
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "role",
+                      "owned",
+                      "always",
+                      "pinned"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "shown",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "path",
+          "area",
+          "technical",
+          "keywords",
+          "navigation"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardPreferencesResponse": {
+        "type": "object",
+        "properties": {
+          "role_preset": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "owners",
+                  "operations",
+                  "developers",
+                  "vendors"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role_preset_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "question",
+                  "website",
+                  "settings"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "technical_details": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_technical_details": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "role_preset",
+          "role_preset_source",
+          "technical_details",
+          "effective_technical_details",
+          "updated_at"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardPreferencesUpdate": {
+        "type": "object",
+        "properties": {
+          "role_preset": {
+            "type": "string",
+            "enum": [
+              "owners",
+              "operations",
+              "developers",
+              "vendors"
+            ]
+          },
+          "role_preset_source": {
+            "type": "string",
+            "enum": [
+              "question",
+              "website",
+              "settings"
+            ]
+          },
+          "technical_details": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardRoleSuggestion": {
+        "type": "object",
+        "properties": {
+          "suggested_role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "owners",
+                  "operations",
+                  "developers",
+                  "vendors"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "baseline",
+              "jev"
+            ]
+          },
+          "baseline": {
+            "type": "object",
+            "properties": {
+              "suggested_role": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "owners",
+                      "operations",
+                      "developers",
+                      "vendors"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "ranked_roles": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "role_preset": {
+                      "type": "string",
+                      "enum": [
+                        "owners",
+                        "operations",
+                        "developers",
+                        "vendors"
+                      ]
+                    },
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "reasons": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "role_preset",
+                    "score",
+                    "reasons"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "why": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "suggested_role",
+              "confidence",
+              "ranked_roles",
+              "why"
+            ],
+            "additionalProperties": false
+          },
+          "jev": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "probabilities": {
+                    "type": "object",
+                    "properties": {
+                      "owners": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "operations": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "developers": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "vendors": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "required": [
+                      "owners",
+                      "operations",
+                      "developers",
+                      "vendors"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "eligible": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "probabilities",
+                  "model",
+                  "eligible"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "why": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "suggested_role",
+          "source",
+          "baseline",
+          "jev",
+          "reasons",
+          "why"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardRoleSuggestionRequest": {
+        "type": "object",
+        "properties": {
+          "landing": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "role_tab",
+                    "role_page",
+                    "use_case_page",
+                    "use_case_chip"
+                  ]
+                },
+                "role_preset": {
+                  "type": "string",
+                  "enum": [
+                    "owners",
+                    "operations",
+                    "developers",
+                    "vendors"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "role_preset"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 20
+          },
+          "signup_source": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "utm": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "medium": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "campaign": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "content": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "term": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "additionalProperties": false
+          },
+          "dashboard_visits": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "home",
+                "workspace",
+                "marketplace",
+                "packages",
+                "products",
+                "offers",
+                "managed_deployments",
+                "customers",
+                "apps",
+                "agents",
+                "repository_change_requests",
+                "operations",
+                "docs",
+                "compute",
+                "machines",
+                "clusters",
+                "secrets",
+                "registries",
+                "regions",
+                "cloudflare",
+                "dashboards",
+                "snippets",
+                "runs",
+                "quotas",
+                "api_tokens",
+                "billing",
+                "account",
+                "organization_members",
+                "organization",
+                "notifications",
+                "payments",
+                "access"
+              ]
+            },
+            "maxItems": 20
+          },
+          "first_chat_message": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
         "additionalProperties": false
       },
       "WorkspaceFeatureFlags": {

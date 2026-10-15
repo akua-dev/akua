@@ -41,6 +41,14 @@ export const contract: ApiContract = {
 			"description": "Workspace custom domains and routing targets."
 		},
 		{
+			"name": "dashboard-preferences",
+			"title": "Dashboard Preferences"
+		},
+		{
+			"name": "dashboard-surfaces",
+			"title": "Dashboard Surfaces"
+		},
+		{
 			"name": "dashboards",
 			"title": "Dashboards",
 			"description": "Dashboard and widget resources."
@@ -2281,6 +2289,48 @@ export const contract: ApiContract = {
 			}
 		},
 		{
+			"id": "dashboardPreferences.get",
+			"method": "GET",
+			"path": "/dashboard_preferences",
+			"summary": "Get your dashboard preferences",
+			"auth": true,
+			"parameters": [
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "dashboardPreferences.suggestRole",
+			"method": "POST",
+			"path": "/dashboard_preferences:suggestRole",
+			"summary": "Suggest what you mainly do",
+			"auth": true,
+			"parameters": [
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/DashboardRoleSuggestionRequest"
+				}
+			}
+		},
+		{
+			"id": "dashboardPreferences.update",
+			"method": "PATCH",
+			"path": "/dashboard_preferences",
+			"summary": "Update your dashboard preferences",
+			"auth": true,
+			"parameters": [
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/DashboardPreferencesUpdate"
+				}
+			}
+		},
+		{
 			"id": "dashboards.create",
 			"method": "POST",
 			"path": "/dashboards",
@@ -4037,6 +4087,16 @@ export const contract: ApiContract = {
 					"$ref": "#/$defs/UpdateDashboardWidgetBody"
 				}
 			}
+		},
+		{
+			"id": "dashboardSurfaces.list",
+			"method": "GET",
+			"path": "/dashboard_surfaces",
+			"summary": "List dashboard surfaces",
+			"auth": true,
+			"parameters": [
+				"header:akua-context"
+			]
 		},
 		{
 			"id": "entitlements.list",
@@ -9687,6 +9747,152 @@ export const contract: ApiContract = {
 					"additionalProperties": false
 				}
 			]
+		},
+		"DashboardPreferencesUpdate": {
+			"type": "object",
+			"properties": {
+				"role_preset": {
+					"type": "string",
+					"enum": [
+						"owners",
+						"operations",
+						"developers",
+						"vendors"
+					]
+				},
+				"role_preset_source": {
+					"type": "string",
+					"enum": [
+						"question",
+						"website",
+						"settings"
+					]
+				},
+				"technical_details": {
+					"anyOf": [
+						{
+							"type": "boolean"
+						},
+						{
+							"type": "null"
+						}
+					]
+				}
+			},
+			"additionalProperties": false
+		},
+		"DashboardRoleSuggestionRequest": {
+			"type": "object",
+			"properties": {
+				"landing": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"kind": {
+								"type": "string",
+								"enum": [
+									"role_tab",
+									"role_page",
+									"use_case_page",
+									"use_case_chip"
+								]
+							},
+							"role_preset": {
+								"type": "string",
+								"enum": [
+									"owners",
+									"operations",
+									"developers",
+									"vendors"
+								]
+							}
+						},
+						"required": [
+							"kind",
+							"role_preset"
+						],
+						"additionalProperties": false
+					},
+					"maxItems": 20
+				},
+				"signup_source": {
+					"type": "string",
+					"maxLength": 200
+				},
+				"utm": {
+					"type": "object",
+					"properties": {
+						"source": {
+							"type": "string",
+							"maxLength": 200
+						},
+						"medium": {
+							"type": "string",
+							"maxLength": 200
+						},
+						"campaign": {
+							"type": "string",
+							"maxLength": 200
+						},
+						"content": {
+							"type": "string",
+							"maxLength": 200
+						},
+						"term": {
+							"type": "string",
+							"maxLength": 200
+						}
+					},
+					"additionalProperties": false
+				},
+				"dashboard_visits": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"enum": [
+							"home",
+							"workspace",
+							"marketplace",
+							"packages",
+							"products",
+							"offers",
+							"managed_deployments",
+							"customers",
+							"apps",
+							"agents",
+							"repository_change_requests",
+							"operations",
+							"docs",
+							"compute",
+							"machines",
+							"clusters",
+							"secrets",
+							"registries",
+							"regions",
+							"cloudflare",
+							"dashboards",
+							"snippets",
+							"runs",
+							"quotas",
+							"api_tokens",
+							"billing",
+							"account",
+							"organization_members",
+							"organization",
+							"notifications",
+							"payments",
+							"access"
+						]
+					},
+					"maxItems": 20
+				},
+				"first_chat_message": {
+					"type": "string",
+					"maxLength": 2000
+				}
+			},
+			"additionalProperties": false
 		},
 		"ExecBody": {
 			"type": "object",
