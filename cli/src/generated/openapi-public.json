@@ -23655,7 +23655,7 @@
             }
           }
         },
-        "description": "What you mainly do (your role preset) and whether technical details are shown, for the workspace in Akua-Context or implied by the token. Unanswered fields are null.",
+        "description": "Your language, what you mainly do (your role preset), and whether technical details are shown, for the workspace in Akua-Context or implied by the token. Unanswered fields are null.",
         "summary": "Get your dashboard preferences",
         "x-platform-visibility": "PUBLIC",
         "x-platform-agent": {
@@ -23740,7 +23740,7 @@
             }
           }
         },
-        "description": "Sets or corrects your role preset and the technical details switch. Only the fields you send change. A role preset cannot be cleared once chosen.",
+        "description": "Sets or corrects your language, role preset and the technical details switch. Only the fields you send change. A role preset cannot be cleared once chosen.",
         "summary": "Update your dashboard preferences",
         "requestBody": {
           "content": {
@@ -27519,6 +27519,20 @@
       "DashboardPreferencesResponse": {
         "type": "object",
         "properties": {
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "en",
+                  "de"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "role_preset": {
             "anyOf": [
               {
@@ -27575,6 +27589,7 @@
           }
         },
         "required": [
+          "locale",
           "role_preset",
           "role_preset_source",
           "technical_details",
@@ -27586,6 +27601,13 @@
       "DashboardPreferencesUpdate": {
         "type": "object",
         "properties": {
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "de"
+            ]
+          },
           "role_preset": {
             "type": "string",
             "enum": [

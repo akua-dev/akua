@@ -9751,6 +9751,13 @@ export const contract: ApiContract = {
 		"DashboardPreferencesUpdate": {
 			"type": "object",
 			"properties": {
+				"locale": {
+					"type": "string",
+					"enum": [
+						"en",
+						"de"
+					]
+				},
 				"role_preset": {
 					"type": "string",
 					"enum": [
