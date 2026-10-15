@@ -15,9 +15,9 @@ name = "akua-render-worker"
 path = "src/main.rs"
 
 [dependencies]
-# Render path via akua-core with only engine-kcl. No engine hosts,
-# no OCI fetch, no cosign, no dev-watch — those are host-CLI
-# concerns. Plugin callouts from KCL to engines + the chart
+# Render path via akua-core with only engine-kcl. Remote fetching,
+# signing and file watching belong to the TypeScript host.
+# Plugin callouts from KCL to engines + the chart
 # resolver will wire through wasmtime imported host functions in a
 # later slice; today's worker supports pure-KCL Packages (no
 # charts.* imports, no helm.template / kustomize.build).
