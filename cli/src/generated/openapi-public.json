@@ -43484,7 +43484,8 @@
                 "type": "string",
                 "enum": [
                   "manual",
-                  "downgrade"
+                  "downgrade",
+                  "trial_expired"
                 ]
               }
             },
