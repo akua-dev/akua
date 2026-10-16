@@ -171,21 +171,18 @@ function bodyFlags(contract: ApiContract, operation: ApiOperation): InputFlag[] 
 	const objects = branches.map((branch) => resolve(contract, branch));
 	if (!objects.every((branch) => Predicate.isObject(branch.properties))) return [];
 
-	const fields = new Map<
-		string,
-		{ kind: FlagKind; required: boolean; secret: boolean; description?: string }
-	>();
+	const fields = new Map<string, { kind: FlagKind; secret: boolean; description?: string }>();
 	for (const branch of objects) {
 		const properties = Predicate.isObject(branch.properties) ? branch.properties : {};
-		const required = stringArray(branch.required);
 		for (const [key, value] of Object.entries(properties)) {
 			if (!Predicate.isObject(value)) continue;
+			const excluded = resolve(contract, value).not;
+			if (Predicate.isObject(excluded) && Object.keys(excluded).length === 0) continue;
 			const kind = flagKind(contract, value);
 			const description = Predicate.isString(value.description) ? value.description : undefined;
 			const existing = fields.get(key);
 			fields.set(key, {
 				kind: existing === undefined ? kind : mergeKinds(existing.kind, kind),
-				required: (existing?.required ?? true) && required.includes(key),
 				secret: (existing?.secret ?? false) || isSecret(contract, value),
 				...((existing?.description ?? description) === undefined
 					? {}
@@ -193,19 +190,12 @@ function bodyFlags(contract: ApiContract, operation: ApiOperation): InputFlag[] 
 			});
 		}
 	}
-	for (const [key, field] of fields) {
-		if (
-			!objects.every((branch) => Predicate.isObject(branch.properties) && key in branch.properties)
-		)
-			fields.set(key, { ...field, required: false });
-	}
-
 	return [...fields].map(([key, field]) => ({
 		name: kebab(key),
 		target: 'body',
 		key,
 		kind: field.kind,
-		required: field.required,
+		required: objects.every((branch) => stringArray(branch.required).includes(key)),
 		secret: field.secret,
 		...(field.description === undefined ? {} : { description: field.description })
 	}));
