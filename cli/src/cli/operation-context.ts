@@ -1,4 +1,4 @@
-import { Result } from 'effect';
+import { Result, type Schema } from 'effect';
 
 import type { ApiContract, ApiOperation } from '../api/contract';
 import { commandPath, type InputFlag, type OperationInputs, operationInputs } from '../api/inputs';
@@ -37,12 +37,20 @@ export function operationContext(
 
 /** The human form first (arguments and required flags), then the JSON form for scripts. */
 export function commandExamples(context: OperationCommandContext): NextStep[] {
+	const body = operationBodyExample(context);
 	const usage = [
 		context.command,
 		...context.inputs.arguments.map((argument) => `<${argument.name}>`),
 		...context.inputs.flags
-			.filter((flag) => flag.required)
-			.map((flag) => `--${flag.name} ${placeholder(flag)}`)
+			.filter((flag) => flag.required || (flag.target === 'body' && flag.key in body))
+			.map(
+				(flag) =>
+					`--${flag.name} ${
+						!flag.required && flag.kind._tag === 'Json' && flag.target === 'body'
+							? `'${JSON.stringify(body[flag.key])}'`
+							: placeholder(flag)
+					}`
+			)
 	].join(' ');
 	return [
 		{ command: usage, description: context.operation.summary },
@@ -56,6 +64,43 @@ export function commandExamples(context: OperationCommandContext): NextStep[] {
 					}
 				])
 	];
+}
+
+export function operationBodyExample(
+	context: OperationCommandContext
+): Readonly<Record<string, Schema.Json>> {
+	if (context.operation.id === 'agentCommands.openSession') {
+		return {
+			agent: {
+				name: 'Support',
+				instructions: 'Help with the requested work.',
+				model: 'deepseek-flash',
+				billing_mode: 'PLATFORM_SUBSCRIPTION',
+				mode: 'CODING'
+			}
+		};
+	}
+	return Object.fromEntries(
+		context.inputs.flags
+			.filter((flag) => flag.target === 'body' && flag.required)
+			.map((flag) => [flag.key, exampleValue(flag)])
+	);
+}
+
+function exampleValue(flag: InputFlag): Schema.Json {
+	switch (flag.kind._tag) {
+		case 'Integer':
+		case 'Number':
+			return 0;
+		case 'Boolean':
+			return false;
+		case 'Choice':
+			return flag.kind.choices[0] ?? `<${flag.key}>`;
+		case 'Json':
+			return {};
+		case 'String':
+			return `<${flag.key}>`;
+	}
 }
 
 function placeholder(flag: InputFlag): string {

@@ -2,10 +2,10 @@ import { Effect, Option, Schema } from 'effect';
 import { Command, Flag } from 'effect/cli';
 
 import type { ApiContract } from '../api/contract';
-import { commandPath, type InputFlag, operationParameters } from '../api/inputs';
+import { commandPath, operationParameters } from '../api/inputs';
 import { UsageFailure } from '../runtime/effect-runtime';
 import type { RenderEnvelope } from '../runtime/render';
-import { commandExamples, operationContext } from './operation-context';
+import { commandExamples, operationBodyExample, operationContext } from './operation-context';
 import { respond } from './invocation';
 
 /**
@@ -85,11 +85,7 @@ const listCommands = Effect.fnUntraced(function* (
 	const data = selected.map((operation) => {
 		const context = operationContext(contract, operation);
 		const [usage] = commandExamples(context);
-		const bodyExample = Object.fromEntries(
-			context.inputs.flags
-				.filter((flag) => flag.target === 'body' && flag.required)
-				.map((flag) => [flag.key, placeholder(flag)])
-		);
+		const bodyExample = operationBodyExample(context);
 		const parameters = operationParameters(contract, operation);
 		const parameterExample = (location: 'path' | 'query' | 'header') =>
 			Object.fromEntries(
@@ -138,19 +134,3 @@ const listCommands = Effect.fnUntraced(function* (
 		]
 	};
 });
-
-function placeholder(flag: InputFlag): Schema.Json {
-	switch (flag.kind._tag) {
-		case 'Integer':
-		case 'Number':
-			return 0;
-		case 'Boolean':
-			return false;
-		case 'Choice':
-			return flag.kind.choices[0] ?? `<${flag.key}>`;
-		case 'Json':
-			return {};
-		case 'String':
-			return `<${flag.key}>`;
-	}
-}
