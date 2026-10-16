@@ -19,6 +19,7 @@ interface JsonSchema {
   readonly items?: JsonSchema
   readonly default?: unknown
   readonly description?: string
+  readonly additionalProperties?: boolean | JsonSchema
 }
 
 const JsonSchemaShape: Schema.Codec<JsonSchema> = Schema.Struct({
@@ -27,7 +28,8 @@ const JsonSchemaShape: Schema.Codec<JsonSchema> = Schema.Struct({
   required: Schema.optionalKey(Schema.Array(Schema.String)),
   items: Schema.optionalKey(Schema.suspend((): Schema.Codec<JsonSchema> => JsonSchemaShape)),
   default: Schema.optionalKey(Schema.Unknown),
-  description: Schema.optionalKey(Schema.String)
+  description: Schema.optionalKey(Schema.String),
+  additionalProperties: Schema.optionalKey(Schema.Union([Schema.Boolean, Schema.suspend((): Schema.Codec<JsonSchema> => JsonSchemaShape)]))
 })
 
 const decodeSchema = Schema.decodeUnknownEffect(Schema.fromJsonString(JsonSchemaShape))
@@ -59,9 +61,12 @@ const emitObject = (schema: JsonSchema, name: string, out: Array<string>): Effec
     let body = `schema ${name}:\n`
     if (schema.description !== undefined) body += `${docstring(schema.description, 4)}\n`
     const properties = sortedEntries(schema.properties ?? {})
+    // JSON Schema permits undeclared keys unless it explicitly closes the object.
+    if (schema.additionalProperties !== false) body += "    [str]: any\n"
     if (properties.length === 0) {
-      // A schema body needs one statement; the wildcard keeps `{}` constructible.
-      out.push(`${body}    _: any = None\n\n`)
+      // A closed empty schema still needs a body, without adding a real field.
+      if (schema.additionalProperties === false) body += "    check:\n        True\n"
+      out.push(`${body}\n`)
       return
     }
     const required = new Set(schema.required ?? [])

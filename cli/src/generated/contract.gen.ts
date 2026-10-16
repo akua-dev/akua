@@ -64,6 +64,10 @@ export const contract: ApiContract = {
 			"description": "Installation and render operations."
 		},
 		{
+			"name": "machine-quotes",
+			"title": "Machine quotes"
+		},
+		{
 			"name": "machines",
 			"title": "Machines",
 			"description": "Compute machines and lifecycle events."
@@ -322,12 +326,23 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"type": "string",
+				"description": "Notification ID. Prefixed form `ntf_<id>` is canonical.",
+				"minLength": 1,
+				"maxLength": 54
+			}
+		},
+		"path:id:11": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
 				"description": "Offer ID",
 				"minLength": 1,
 				"maxLength": 56
 			}
 		},
-		"path:id:11": {
+		"path:id:12": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -338,7 +353,7 @@ export const contract: ApiContract = {
 				"maxLength": 53
 			}
 		},
-		"path:id:12": {
+		"path:id:13": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -349,7 +364,7 @@ export const contract: ApiContract = {
 				"maxLength": 55
 			}
 		},
-		"path:id:13": {
+		"path:id:14": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -360,7 +375,7 @@ export const contract: ApiContract = {
 				"maxLength": 54
 			}
 		},
-		"path:id:14": {
+		"path:id:15": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -371,7 +386,7 @@ export const contract: ApiContract = {
 				"maxLength": 54
 			}
 		},
-		"path:id:15": {
+		"path:id:16": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -382,7 +397,7 @@ export const contract: ApiContract = {
 				"maxLength": 55
 			}
 		},
-		"path:id:16": {
+		"path:id:17": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -393,7 +408,7 @@ export const contract: ApiContract = {
 				"maxLength": 54
 			}
 		},
-		"path:id:17": {
+		"path:id:18": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -404,7 +419,7 @@ export const contract: ApiContract = {
 				"maxLength": 55
 			}
 		},
-		"path:id:18": {
+		"path:id:19": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -413,17 +428,6 @@ export const contract: ApiContract = {
 				"description": "Repository ID",
 				"minLength": 1,
 				"maxLength": 55
-			}
-		},
-		"path:id:19": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Secret ID. Prefixed form `sec_<id>` is canonical.",
-				"minLength": 1,
-				"maxLength": 54
 			}
 		},
 		"path:id:2": {
@@ -443,7 +447,7 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"type": "string",
-				"description": "Snippet ID",
+				"description": "Secret ID. Prefixed form `sec_<id>` is canonical.",
 				"minLength": 1,
 				"maxLength": 54
 			}
@@ -454,10 +458,21 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"type": "string",
-				"pattern": "^(?:ags_)?[a-zA-Z0-9]{1,50}$"
+				"description": "Snippet ID",
+				"minLength": 1,
+				"maxLength": 54
 			}
 		},
 		"path:id:22": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"pattern": "^(?:ags_)?[a-zA-Z0-9]{1,50}$"
+			}
+		},
+		"path:id:23": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -535,9 +550,8 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"type": "string",
-				"description": "Notification ID. Prefixed form `ntf_<id>` is canonical.",
 				"minLength": 1,
-				"maxLength": 54
+				"maxLength": 100
 			}
 		},
 		"path:invitationId": {
@@ -1554,7 +1568,7 @@ export const contract: ApiContract = {
 			"summary": "Recover persisted agent Session state",
 			"auth": true,
 			"parameters": [
-				"path:id:21",
+				"path:id:22",
 				"header:akua-context:2"
 			]
 		},
@@ -1815,7 +1829,7 @@ export const contract: ApiContract = {
 			"summary": "Get cluster compute settings",
 			"auth": true,
 			"parameters": [
-				"path:id:22",
+				"path:id:23",
 				"header:akua-context:3"
 			]
 		},
@@ -2021,7 +2035,7 @@ export const contract: ApiContract = {
 			"summary": "Update cluster compute settings",
 			"auth": true,
 			"parameters": [
-				"path:id:22",
+				"path:id:23",
 				"header:if-match:3",
 				"header:akua-context:3"
 			],
@@ -4321,6 +4335,89 @@ export const contract: ApiContract = {
 			}
 		},
 		{
+			"id": "machineQuotes.accept",
+			"method": "POST",
+			"path": "/machine_quotes/{id}:accept",
+			"summary": "Order a quoted machine",
+			"auth": true,
+			"parameters": [
+				"path:id:9",
+				"header:akua-context",
+				"header:if-match"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"type": "object",
+					"properties": {
+						"quote_revision": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						}
+					},
+					"required": [
+						"quote_revision"
+					],
+					"additionalProperties": false
+				}
+			}
+		},
+		{
+			"id": "machineQuotes.create",
+			"method": "POST",
+			"path": "/machine_quotes",
+			"summary": "Quote a managed machine",
+			"auth": true,
+			"parameters": [
+				"header:akua-context",
+				"header:idempotency-key:2"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"type": "object",
+					"properties": {
+						"cluster_id": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						},
+						"instance_type": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						},
+						"name": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						},
+						"machine_id": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						}
+					},
+					"required": [
+						"cluster_id"
+					],
+					"additionalProperties": false
+				}
+			}
+		},
+		{
+			"id": "machineQuotes.get",
+			"method": "GET",
+			"path": "/machine_quotes/{id}",
+			"summary": "Get a machine quote",
+			"auth": true,
+			"parameters": [
+				"path:id:9",
+				"header:akua-context"
+			]
+		},
+		{
 			"id": "machines.create",
 			"method": "POST",
 			"path": "/machines",
@@ -4509,7 +4606,7 @@ export const contract: ApiContract = {
 			"summary": "Mark a notification as read",
 			"auth": true,
 			"parameters": [
-				"path:id:9"
+				"path:id:10"
 			]
 		},
 		{
@@ -4519,7 +4616,7 @@ export const contract: ApiContract = {
 			"summary": "Archive offer",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key:2",
 				"header:if-match"
@@ -4549,7 +4646,7 @@ export const contract: ApiContract = {
 			"summary": "Get offer details",
 			"auth": true,
 			"parameters": [
-				"path:id:10"
+				"path:id:11"
 			]
 		},
 		{
@@ -4582,7 +4679,7 @@ export const contract: ApiContract = {
 			"summary": "Unarchive offer",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key:2",
 				"header:if-match"
@@ -4595,7 +4692,7 @@ export const contract: ApiContract = {
 			"summary": "Request operation cancellation",
 			"auth": true,
 			"parameters": [
-				"path:id:11",
+				"path:id:12",
 				"header:akua-context",
 				"header:idempotency-key:2",
 				"header:if-match:2"
@@ -4608,7 +4705,7 @@ export const contract: ApiContract = {
 			"summary": "Get operation details + steps",
 			"auth": true,
 			"parameters": [
-				"path:id:11",
+				"path:id:12",
 				"header:akua-context"
 			]
 		},
@@ -4633,7 +4730,7 @@ export const contract: ApiContract = {
 			"summary": "Wait for an operation to reach a terminal state",
 			"auth": true,
 			"parameters": [
-				"path:id:11",
+				"path:id:12",
 				"header:akua-context",
 				"query:timeout"
 			]
@@ -4645,7 +4742,7 @@ export const contract: ApiContract = {
 			"summary": "Cancel order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:12",
+				"path:id:13",
 				"header:if-match"
 			]
 		},
@@ -4656,7 +4753,7 @@ export const contract: ApiContract = {
 			"summary": "Claim order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:12",
+				"path:id:13",
 				"header:if-match"
 			],
 			"body": {
@@ -4684,7 +4781,7 @@ export const contract: ApiContract = {
 			"summary": "Create order draft checkout session",
 			"auth": true,
 			"parameters": [
-				"path:id:12",
+				"path:id:13",
 				"header:if-match"
 			]
 		},
@@ -4695,7 +4792,7 @@ export const contract: ApiContract = {
 			"summary": "Create order draft worker bootstrap",
 			"auth": true,
 			"parameters": [
-				"path:id:12"
+				"path:id:13"
 			],
 			"body": {
 				"required": false,
@@ -4719,7 +4816,7 @@ export const contract: ApiContract = {
 			"summary": "Get order draft details",
 			"auth": true,
 			"parameters": [
-				"path:id:12"
+				"path:id:13"
 			]
 		},
 		{
@@ -4729,7 +4826,7 @@ export const contract: ApiContract = {
 			"summary": "Get order draft checkout session",
 			"auth": true,
 			"parameters": [
-				"path:id:12",
+				"path:id:13",
 				"path:chk_id"
 			]
 		},
@@ -4754,7 +4851,7 @@ export const contract: ApiContract = {
 			"summary": "List order draft checkout sessions",
 			"auth": true,
 			"parameters": [
-				"path:id:12",
+				"path:id:13",
 				"query:cursor",
 				"query:limit"
 			]
@@ -4766,7 +4863,7 @@ export const contract: ApiContract = {
 			"summary": "Select order workspace",
 			"auth": true,
 			"parameters": [
-				"path:id:12",
+				"path:id:13",
 				"header:if-match"
 			],
 			"body": {
@@ -4783,7 +4880,7 @@ export const contract: ApiContract = {
 			"summary": "Submit configure values",
 			"auth": true,
 			"parameters": [
-				"path:id:12",
+				"path:id:13",
 				"header:if-match"
 			],
 			"body": {
@@ -4814,7 +4911,7 @@ export const contract: ApiContract = {
 			"summary": "Add organization member",
 			"auth": true,
 			"parameters": [
-				"path:id:13",
+				"path:id:14",
 				"header:idempotency-key:2",
 				"header:if-match"
 			],
@@ -4875,7 +4972,7 @@ export const contract: ApiContract = {
 			"summary": "Delete organization",
 			"auth": true,
 			"parameters": [
-				"path:id:13",
+				"path:id:14",
 				"header:idempotency-key:2",
 				"header:if-match"
 			]
@@ -4887,7 +4984,7 @@ export const contract: ApiContract = {
 			"summary": "Get organization details",
 			"auth": true,
 			"parameters": [
-				"path:id:13"
+				"path:id:14"
 			]
 		},
 		{
@@ -4920,7 +5017,7 @@ export const contract: ApiContract = {
 			"summary": "List managed workspaces",
 			"auth": true,
 			"parameters": [
-				"path:id:13",
+				"path:id:14",
 				"query:cursor",
 				"query:limit"
 			]
@@ -4932,7 +5029,7 @@ export const contract: ApiContract = {
 			"summary": "List organization members",
 			"auth": true,
 			"parameters": [
-				"path:id:13",
+				"path:id:14",
 				"query:cursor",
 				"query:limit"
 			]
@@ -4944,7 +5041,7 @@ export const contract: ApiContract = {
 			"summary": "Remove organization member",
 			"auth": true,
 			"parameters": [
-				"path:id:13",
+				"path:id:14",
 				"path:userId:2",
 				"header:idempotency-key:2",
 				"header:if-match"
@@ -4968,7 +5065,7 @@ export const contract: ApiContract = {
 			"summary": "Update organization",
 			"auth": true,
 			"parameters": [
-				"path:id:13",
+				"path:id:14",
 				"header:idempotency-key:2",
 				"header:if-match"
 			],
@@ -4986,7 +5083,7 @@ export const contract: ApiContract = {
 			"summary": "Update member role",
 			"auth": true,
 			"parameters": [
-				"path:id:13",
+				"path:id:14",
 				"path:userId",
 				"header:idempotency-key:2",
 				"header:if-match"
@@ -5022,7 +5119,7 @@ export const contract: ApiContract = {
 			"summary": "Create package version",
 			"auth": true,
 			"parameters": [
-				"path:id:14",
+				"path:id:15",
 				"header:akua-context",
 				"header:idempotency-key:2"
 			],
@@ -5222,7 +5319,7 @@ export const contract: ApiContract = {
 			"summary": "Archive product",
 			"auth": true,
 			"parameters": [
-				"path:id:15",
+				"path:id:16",
 				"header:akua-context",
 				"header:idempotency-key:2",
 				"header:if-match"
@@ -5258,7 +5355,7 @@ export const contract: ApiContract = {
 			"summary": "Get product details",
 			"auth": true,
 			"parameters": [
-				"path:id:15",
+				"path:id:16",
 				"header:akua-context"
 			]
 		},
@@ -5281,7 +5378,7 @@ export const contract: ApiContract = {
 			"summary": "Unarchive product",
 			"auth": true,
 			"parameters": [
-				"path:id:15",
+				"path:id:16",
 				"header:akua-context",
 				"header:idempotency-key:2",
 				"header:if-match"
@@ -5301,7 +5398,7 @@ export const contract: ApiContract = {
 			"summary": "Update product",
 			"auth": true,
 			"parameters": [
-				"path:id:15",
+				"path:id:16",
 				"header:akua-context",
 				"header:idempotency-key:2",
 				"header:if-match"
@@ -5376,7 +5473,7 @@ export const contract: ApiContract = {
 			"summary": "Delete region",
 			"auth": true,
 			"parameters": [
-				"path:id:16",
+				"path:id:17",
 				"header:akua-context",
 				"header:if-match"
 			]
@@ -5400,7 +5497,7 @@ export const contract: ApiContract = {
 			"summary": "Update region",
 			"auth": true,
 			"parameters": [
-				"path:id:16",
+				"path:id:17",
 				"header:akua-context",
 				"header:if-match"
 			],
@@ -5530,7 +5627,7 @@ export const contract: ApiContract = {
 			"summary": "Delete registry credential",
 			"auth": true,
 			"parameters": [
-				"path:id:17",
+				"path:id:18",
 				"header:akua-context"
 			]
 		},
@@ -5606,7 +5703,7 @@ export const contract: ApiContract = {
 			"summary": "Get repository details",
 			"auth": true,
 			"parameters": [
-				"path:id:18",
+				"path:id:19",
 				"header:akua-context",
 				"query:view:4"
 			]
@@ -5750,7 +5847,7 @@ export const contract: ApiContract = {
 			"summary": "Access secret version plaintext",
 			"auth": true,
 			"parameters": [
-				"path:id:19",
+				"path:id:20",
 				"path:vid:2",
 				"header:akua-context"
 			]
@@ -5779,7 +5876,7 @@ export const contract: ApiContract = {
 			"summary": "Create secret version",
 			"auth": true,
 			"parameters": [
-				"path:id:19",
+				"path:id:20",
 				"header:akua-context",
 				"header:idempotency-key:2"
 			],
@@ -5797,7 +5894,7 @@ export const contract: ApiContract = {
 			"summary": "Delete secret",
 			"auth": true,
 			"parameters": [
-				"path:id:19",
+				"path:id:20",
 				"header:akua-context",
 				"header:if-match",
 				"query:force"
@@ -5810,7 +5907,7 @@ export const contract: ApiContract = {
 			"summary": "Destroy secret version",
 			"auth": true,
 			"parameters": [
-				"path:id:19",
+				"path:id:20",
 				"path:vid",
 				"header:akua-context",
 				"header:if-match"
@@ -5823,7 +5920,7 @@ export const contract: ApiContract = {
 			"summary": "Disable secret version",
 			"auth": true,
 			"parameters": [
-				"path:id:19",
+				"path:id:20",
 				"path:vid",
 				"header:akua-context",
 				"header:if-match"
@@ -5836,7 +5933,7 @@ export const contract: ApiContract = {
 			"summary": "Enable a disabled secret version",
 			"auth": true,
 			"parameters": [
-				"path:id:19",
+				"path:id:20",
 				"path:vid",
 				"header:akua-context",
 				"header:idempotency-key:2",
@@ -5850,7 +5947,7 @@ export const contract: ApiContract = {
 			"summary": "Get secret",
 			"auth": true,
 			"parameters": [
-				"path:id:19",
+				"path:id:20",
 				"header:akua-context"
 			]
 		},
@@ -5861,7 +5958,7 @@ export const contract: ApiContract = {
 			"summary": "Get secret version",
 			"auth": true,
 			"parameters": [
-				"path:id:19",
+				"path:id:20",
 				"path:vid",
 				"header:akua-context"
 			]
@@ -5886,7 +5983,7 @@ export const contract: ApiContract = {
 			"summary": "List secret versions",
 			"auth": true,
 			"parameters": [
-				"path:id:19",
+				"path:id:20",
 				"header:akua-context",
 				"query:cursor",
 				"query:limit",
@@ -5900,7 +5997,7 @@ export const contract: ApiContract = {
 			"summary": "Restore a soft-deleted secret",
 			"auth": true,
 			"parameters": [
-				"path:id:19",
+				"path:id:20",
 				"header:akua-context",
 				"header:idempotency-key:2",
 				"header:if-match"
@@ -5913,7 +6010,7 @@ export const contract: ApiContract = {
 			"summary": "Update secret",
 			"auth": true,
 			"parameters": [
-				"path:id:19",
+				"path:id:20",
 				"header:akua-context",
 				"header:if-match"
 			],
@@ -6005,7 +6102,7 @@ export const contract: ApiContract = {
 			"summary": "Archive snippet",
 			"auth": true,
 			"parameters": [
-				"path:id:20",
+				"path:id:21",
 				"header:if-match"
 			]
 		},
@@ -6048,7 +6145,7 @@ export const contract: ApiContract = {
 			"summary": "Get snippet details",
 			"auth": true,
 			"parameters": [
-				"path:id:20"
+				"path:id:21"
 			]
 		},
 		{
@@ -6069,7 +6166,7 @@ export const contract: ApiContract = {
 			"summary": "Get snippet dashboard usage",
 			"auth": true,
 			"parameters": [
-				"path:id:20"
+				"path:id:21"
 			]
 		},
 		{
@@ -6115,7 +6212,7 @@ export const contract: ApiContract = {
 			"summary": "Update snippet",
 			"auth": true,
 			"parameters": [
-				"path:id:20",
+				"path:id:21",
 				"header:if-match"
 			],
 			"body": {
