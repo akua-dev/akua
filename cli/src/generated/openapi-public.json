@@ -18063,6 +18063,259 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
+    "/repositories/{id}/commits": {
+      "post": {
+        "tags": [
+          "Repositories"
+        ],
+        "operationId": "repositories.createCommit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Required caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ],
+              "pattern": "^[^\\r\\n]+$"
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Initial main commit created or confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepositoryCommit"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiConflict"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Commits a small text-file snapshot to the main branch of an empty, unexpired Workspace authoring repository. Repeating the same snapshot and idempotency key returns the same commit. A different existing main commit returns a conflict. No Git credential is returned.",
+        "summary": "Create the initial repository commit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRepositoryCommitBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/repositories/{id}/branches/main": {
+      "get": {
+        "tags": [
+          "Repositories"
+        ],
+        "operationId": "repositories.getBranch",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RepositoryBranch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepositoryBranch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiConflict"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Reads the current main commit of an unexpired Workspace authoring repository. An empty repository has a null commit SHA.",
+        "summary": "Read the repository main branch",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
     "/repository_change_requests": {
       "get": {
         "tags": [
@@ -37986,6 +38239,117 @@
           "data",
           "has_more",
           "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "RepositoryBranch": {
+        "type": "object",
+        "properties": {
+          "repository_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "remote_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "branch": {
+            "type": "string",
+            "enum": [
+              "main"
+            ]
+          },
+          "commit_sha": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "repository_id",
+          "remote_url",
+          "branch",
+          "commit_sha"
+        ],
+        "additionalProperties": false
+      },
+      "RepositoryCommit": {
+        "type": "object",
+        "properties": {
+          "repository_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "remote_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "branch": {
+            "type": "string",
+            "enum": [
+              "main"
+            ]
+          },
+          "commit_sha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          }
+        },
+        "required": [
+          "repository_id",
+          "remote_url",
+          "branch",
+          "commit_sha"
+        ],
+        "additionalProperties": false
+      },
+      "CreateRepositoryCommitBody": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "expected_parent_sha": {
+            "type": "null"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 240,
+                  "pattern": "^[A-Za-z0-9_.-]+(?:\\/[A-Za-z0-9_.-]+)*$"
+                },
+                "content": {
+                  "type": "string",
+                  "maxLength": 16384
+                }
+              },
+              "required": [
+                "path",
+                "content"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 32
+          }
+        },
+        "required": [
+          "message",
+          "expected_parent_sha",
+          "files"
         ],
         "additionalProperties": false
       },
