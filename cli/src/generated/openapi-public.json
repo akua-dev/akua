@@ -14664,7 +14664,7 @@
             }
           }
         },
-        "description": "Deletes a Package and its PackageVersions only when no Product references the Package and no Install references any PackageVersion.",
+        "description": "Deletes a Package and its PackageVersions when no Install references a version. Also removes unused archived Products in the same Workspace. Active Products must be archived first. Archived Products with Offers, Orders, Installs, rollout history, Offer reservations, channel scopes, or Install routes remain protected. Hosted repository quota is released only after repository cleanup succeeds.",
         "summary": "Delete package",
         "x-platform-visibility": "PUBLIC"
       }
