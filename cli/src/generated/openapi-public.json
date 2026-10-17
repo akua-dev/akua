@@ -15449,6 +15449,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
           }
         },
         "description": "Lists preview hostnames belonging to an install.",
