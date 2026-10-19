@@ -11223,7 +11223,8 @@
                 "workspace",
                 "machine",
                 "cluster",
-                "package"
+                "package",
+                "sandbox"
               ]
             },
             "required": false
@@ -26039,13 +26040,13 @@
         ],
         "additionalProperties": false
       },
-      "ApiNotFound": {
+      "ApiUnprocessable": {
         "type": "object",
         "properties": {
           "_tag": {
             "type": "string",
             "enum": [
-              "NotFound"
+              "Unprocessable"
             ]
           },
           "success": {
@@ -26076,780 +26077,6 @@
           "success",
           "errors",
           "result"
-        ],
-        "additionalProperties": false
-      },
-      "OpenCodeClientToken": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string",
-            "description": "The web UI address with a one-time client token in its fragment (`#ct=...`). Open it in a browser, or set it as an iframe's source; the token is exchanged for a session of that server and never reaches a server log."
-          },
-          "expires_at": {
-            "type": "integer",
-            "description": "When the token expires unused, in Unix seconds. Tokens live about a minute."
-          }
-        },
-        "required": [
-          "url",
-          "expires_at"
-        ],
-        "additionalProperties": false
-      },
-      "OpenCodeServerId": {
-        "type": "string",
-        "pattern": "^oc_[a-z0-9]{1,64}$",
-        "title": "OpenCode Server id",
-        "description": "OpenCode Server id (`oc_...`).",
-        "examples": [
-          "oc_j572abc123def456"
-        ]
-      },
-      "ApiGatewayTimeout": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "GatewayTimeout"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
-        ],
-        "additionalProperties": false
-      },
-      "ApiTooManyRequests": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "TooManyRequests"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardSurfaceList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardSurface"
-            }
-          },
-          "has_more": {
-            "type": "boolean"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "effective_technical_details": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor",
-          "effective_technical_details"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardSurface": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "enum": [
-              "home",
-              "workspace",
-              "marketplace",
-              "packages",
-              "products",
-              "offers",
-              "managed_deployments",
-              "customers",
-              "apps",
-              "agents",
-              "repository_change_requests",
-              "operations",
-              "docs",
-              "compute",
-              "machines",
-              "clusters",
-              "secrets",
-              "registries",
-              "regions",
-              "cloudflare",
-              "dashboards",
-              "snippets",
-              "runs",
-              "quotas",
-              "api_tokens",
-              "billing",
-              "account",
-              "organization_members",
-              "organization",
-              "notifications",
-              "payments",
-              "access"
-            ]
-          },
-          "label": {
-            "type": "string"
-          },
-          "path": {
-            "type": "string"
-          },
-          "area": {
-            "type": "string",
-            "enum": [
-              "top",
-              "run",
-              "sell",
-              "watch",
-              "settings",
-              "search"
-            ]
-          },
-          "technical": {
-            "type": "boolean"
-          },
-          "keywords": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "navigation": {
-            "type": "object",
-            "properties": {
-              "shown": {
-                "type": "boolean"
-              },
-              "reason": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": [
-                      "role",
-                      "owned",
-                      "always",
-                      "pinned"
-                    ]
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "shown",
-              "reason"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "id",
-          "label",
-          "path",
-          "area",
-          "technical",
-          "keywords",
-          "navigation"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardPreferencesResponse": {
-        "type": "object",
-        "properties": {
-          "locale": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "en",
-                  "de"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "role_preset": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "owners",
-                  "operations",
-                  "developers",
-                  "vendors"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "role_preset_source": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "question",
-                  "website",
-                  "settings"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "technical_details": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "effective_technical_details": {
-            "type": "boolean"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "locale",
-          "role_preset",
-          "role_preset_source",
-          "technical_details",
-          "effective_technical_details",
-          "updated_at"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardPreferencesUpdate": {
-        "type": "object",
-        "properties": {
-          "locale": {
-            "type": "string",
-            "enum": [
-              "en",
-              "de"
-            ]
-          },
-          "role_preset": {
-            "type": "string",
-            "enum": [
-              "owners",
-              "operations",
-              "developers",
-              "vendors"
-            ]
-          },
-          "role_preset_source": {
-            "type": "string",
-            "enum": [
-              "question",
-              "website",
-              "settings"
-            ]
-          },
-          "technical_details": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "additionalProperties": false
-      },
-      "DashboardRoleSuggestion": {
-        "type": "object",
-        "properties": {
-          "suggested_role": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "owners",
-                  "operations",
-                  "developers",
-                  "vendors"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "source": {
-            "type": "string",
-            "enum": [
-              "baseline",
-              "jev"
-            ]
-          },
-          "baseline": {
-            "type": "object",
-            "properties": {
-              "suggested_role": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": [
-                      "owners",
-                      "operations",
-                      "developers",
-                      "vendors"
-                    ]
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "confidence": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 1
-              },
-              "ranked_roles": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "role_preset": {
-                      "type": "string",
-                      "enum": [
-                        "owners",
-                        "operations",
-                        "developers",
-                        "vendors"
-                      ]
-                    },
-                    "score": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "reasons": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  },
-                  "required": [
-                    "role_preset",
-                    "score",
-                    "reasons"
-                  ],
-                  "additionalProperties": false
-                }
-              },
-              "why": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "suggested_role",
-              "confidence",
-              "ranked_roles",
-              "why"
-            ],
-            "additionalProperties": false
-          },
-          "jev": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "probabilities": {
-                    "type": "object",
-                    "properties": {
-                      "owners": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "operations": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "developers": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "vendors": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      }
-                    },
-                    "required": [
-                      "owners",
-                      "operations",
-                      "developers",
-                      "vendors"
-                    ],
-                    "additionalProperties": false
-                  },
-                  "model": {
-                    "type": "string"
-                  },
-                  "eligible": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "probabilities",
-                  "model",
-                  "eligible"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "reasons": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "why": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "suggested_role",
-          "source",
-          "baseline",
-          "jev",
-          "reasons",
-          "why"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardRoleSuggestionRequest": {
-        "type": "object",
-        "properties": {
-          "landing": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "role_tab",
-                    "role_page",
-                    "use_case_page",
-                    "use_case_chip"
-                  ]
-                },
-                "role_preset": {
-                  "type": "string",
-                  "enum": [
-                    "owners",
-                    "operations",
-                    "developers",
-                    "vendors"
-                  ]
-                },
-                "use_case": {
-                  "type": "string",
-                  "enum": [
-                    "customer-database",
-                    "online-orders",
-                    "email-assistant",
-                    "social-posts",
-                    "up-to-date",
-                    "automation",
-                    "website",
-                    "customer-cloud",
-                    "more-customers",
-                    "staged-updates",
-                    "customer-template",
-                    "partner-channel"
-                  ]
-                }
-              },
-              "required": [
-                "kind",
-                "role_preset"
-              ],
-              "additionalProperties": false
-            },
-            "maxItems": 20
-          },
-          "signup_source": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "utm": {
-            "type": "object",
-            "properties": {
-              "source": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "medium": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "campaign": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "content": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "term": {
-                "type": "string",
-                "maxLength": 200
-              }
-            },
-            "additionalProperties": false
-          },
-          "dashboard_visits": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "home",
-                "workspace",
-                "marketplace",
-                "packages",
-                "products",
-                "offers",
-                "managed_deployments",
-                "customers",
-                "apps",
-                "agents",
-                "repository_change_requests",
-                "operations",
-                "docs",
-                "compute",
-                "machines",
-                "clusters",
-                "secrets",
-                "registries",
-                "regions",
-                "cloudflare",
-                "dashboards",
-                "snippets",
-                "runs",
-                "quotas",
-                "api_tokens",
-                "billing",
-                "account",
-                "organization_members",
-                "organization",
-                "notifications",
-                "payments",
-                "access"
-              ]
-            },
-            "maxItems": 20
-          },
-          "first_chat_message": {
-            "type": "string",
-            "maxLength": 2000
-          }
-        },
-        "additionalProperties": false
-      },
-      "WorkspaceFeatureFlags": {
-        "type": "object",
-        "properties": {
-          "workspace_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "flags": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "boolean"
-            }
-          }
-        },
-        "required": [
-          "workspace_id",
-          "flags"
-        ],
-        "additionalProperties": false
-      },
-      "SubscriptionChangeRequest": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 55
-          },
-          "workspace_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 53
-          },
-          "requested_tier": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "effective_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "created_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "id",
-          "workspace_id",
-          "requested_tier",
-          "status",
-          "effective_at",
-          "created_at"
-        ],
-        "additionalProperties": false
-      },
-      "SubscriptionChangeRequestList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SubscriptionChangeRequest"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
         ],
         "additionalProperties": false
       },
@@ -26967,19 +26194,905 @@
         ],
         "additionalProperties": false
       },
-      "OperationEnvelope": {
+      "ApiNotFound": {
         "type": "object",
         "properties": {
-          "operation_id": {
+          "_tag": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 53
+            "enum": [
+              "NotFound"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
           }
         },
         "required": [
-          "operation_id"
+          "_tag",
+          "success",
+          "errors",
+          "result"
         ],
         "additionalProperties": false
+      },
+      "SandboxId": {
+        "type": "string",
+        "pattern": "^sbx_[A-Za-z0-9]{1,64}$",
+        "title": "Sandbox id",
+        "description": "Sandbox id (`sbx_...`).",
+        "examples": [
+          "sbx_j572abc123def456"
+        ]
+      },
+      "SandboxPreview": {
+        "type": "object",
+        "properties": {
+          "sandbox_id": {
+            "$ref": "#/components/schemas/SandboxId"
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535,
+            "description": "The port a service in the sandbox listens on.",
+            "examples": [
+              3000
+            ]
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/SandboxPreviewVisibility"
+          },
+          "hostname": {
+            "type": "string",
+            "description": "A host of its own under `akua.run` (`<port>-<name>-<token>.akua.run`), never shared with the dashboard or another preview.",
+            "examples": [
+              "3000-checkout-k3x9q2m7a1b8c4d6.akua.run"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "examples": [
+              "https://3000-checkout-k3x9q2m7a1b8c4d6.akua.run/"
+            ]
+          },
+          "routed": {
+            "type": "boolean",
+            "description": "True once the hostname answers. Until preview routing is live everywhere, a new preview is recorded but its URL does not answer yet."
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/SandboxActor"
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Exposure time (Unix seconds)."
+          }
+        },
+        "required": [
+          "sandbox_id",
+          "port",
+          "visibility",
+          "hostname",
+          "url",
+          "routed",
+          "created_by",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxActor": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "opencode"
+            ],
+            "description": "`user`: a workspace member. `opencode`: an OpenCode Server (`oc_...`)."
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "type",
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxPreviewVisibility": {
+        "type": "string",
+        "enum": [
+          "link",
+          "private"
+        ],
+        "description": "`link` (the default): anyone with the URL can open it; the random token in the hostname is the only gate. `private`: the same hostname, but it needs Akua sign-in and the `previews` permission on the sandbox."
+      },
+      "SandboxPreviewList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SandboxPreview"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "ExposeSandboxPortBody": {
+        "type": "object",
+        "properties": {
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535,
+            "description": "The port a service in the sandbox listens on.",
+            "examples": [
+              3000
+            ]
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/SandboxPreviewVisibility"
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$",
+            "description": "Readable part of the hostname. Defaults to `preview`.",
+            "examples": [
+              "checkout"
+            ]
+          }
+        },
+        "required": [
+          "port"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxAccessGrantId": {
+        "type": "string",
+        "pattern": "^sbxg_[A-Za-z0-9]{1,64}$",
+        "title": "Sandbox access grant id",
+        "description": "Sandbox access grant id (`sbxg_...`).",
+        "examples": [
+          "sbxg_j572abc123def456"
+        ]
+      },
+      "SandboxAccessGrantList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SandboxAccessGrant"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxAccessGrant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/SandboxAccessGrantId"
+          },
+          "sandbox_id": {
+            "$ref": "#/components/schemas/SandboxId"
+          },
+          "subject_type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "opencode"
+            ],
+            "description": "`user`: a workspace member. `opencode`: an OpenCode Server (`oc_...`)."
+          },
+          "subject_id": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SandboxPermission"
+            }
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/SandboxActor"
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Grant time (Unix seconds)."
+          }
+        },
+        "required": [
+          "id",
+          "sandbox_id",
+          "subject_type",
+          "subject_id",
+          "permissions",
+          "created_by",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxPermission": {
+        "type": "string",
+        "enum": [
+          "run_commands",
+          "files",
+          "terminal",
+          "previews",
+          "manage"
+        ],
+        "description": "`run_commands`: start, read and stop commands. `files`: read and write files. `terminal`: open terminals. `previews`: open previews of running services. `manage`: everything, plus lifecycle, settings and access grants."
+      },
+      "CreateSandboxAccessGrantBody": {
+        "type": "object",
+        "properties": {
+          "subject_type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "opencode"
+            ],
+            "description": "`user`: a workspace member. `opencode`: an OpenCode Server (`oc_...`)."
+          },
+          "subject_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "The user id, or the OpenCode Server id (`oc_...`)."
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SandboxPermission"
+            },
+            "minItems": 1,
+            "maxItems": 5
+          }
+        },
+        "required": [
+          "subject_type",
+          "subject_id",
+          "permissions"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxFileInfo": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "file",
+              "directory",
+              "symlink",
+              "other"
+            ]
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "mode": {
+            "type": "string",
+            "description": "Permission bits in octal.",
+            "examples": [
+              "0644"
+            ]
+          },
+          "modified_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Last modification (Unix seconds)."
+          }
+        },
+        "required": [
+          "path",
+          "type",
+          "size",
+          "mode",
+          "modified_at"
+        ],
+        "additionalProperties": false
+      },
+      "MakeSandboxDirectoryBody": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "^\\/[^\\0]*$",
+            "description": "Absolute path inside the sandbox.",
+            "examples": [
+              "/workspace/README.md"
+            ]
+          },
+          "parents": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "MoveSandboxFileBody": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "^\\/[^\\0]*$",
+            "description": "Absolute path inside the sandbox.",
+            "examples": [
+              "/workspace/README.md"
+            ]
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "^\\/[^\\0]*$",
+            "description": "Absolute path inside the sandbox.",
+            "examples": [
+              "/workspace/README.md"
+            ]
+          },
+          "overwrite": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "additionalProperties": false
+      },
+      "RemoveSandboxFilesBody": {
+        "type": "object",
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^\\/[^\\0]*$",
+              "description": "Absolute path inside the sandbox.",
+              "examples": [
+                "/workspace/README.md"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "recursive": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "paths"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxPathBody": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "^\\/[^\\0]*$",
+            "description": "Absolute path inside the sandbox.",
+            "examples": [
+              "/workspace/README.md"
+            ]
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxFileList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SandboxFileInfo"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "ListSandboxFilesBody": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "^\\/[^\\0]*$",
+            "description": "Absolute path inside the sandbox.",
+            "examples": [
+              "/workspace/README.md"
+            ]
+          },
+          "recursive": {
+            "type": "boolean",
+            "default": false
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "default": 200
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxFileInfos": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SandboxFileInfo"
+            }
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "additionalProperties": false
+      },
+      "WriteSandboxFilesBody": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "pattern": "^\\/[^\\0]*$",
+                  "description": "Absolute path inside the sandbox.",
+                  "examples": [
+                    "/workspace/README.md"
+                  ]
+                },
+                "content": {
+                  "type": "string"
+                },
+                "encoding": {
+                  "type": "string",
+                  "enum": [
+                    "utf8",
+                    "base64"
+                  ],
+                  "default": "utf8"
+                }
+              },
+              "required": [
+                "path",
+                "content"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 1000
+          },
+          "create_parents": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxCommandId": {
+        "type": "string",
+        "pattern": "^cmd_[A-Za-z0-9]{1,64}$",
+        "title": "Sandbox command id",
+        "description": "Sandbox command id (`cmd_...`).",
+        "examples": [
+          "cmd_j572abc123def456"
+        ]
+      },
+      "WriteSandboxStdinBody": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "string",
+            "maxLength": 1048576,
+            "description": "Text to write."
+          },
+          "close": {
+            "type": "boolean",
+            "description": "Close standard input afterwards.",
+            "default": false
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxCommand": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/SandboxCommandId"
+          },
+          "sandbox_id": {
+            "$ref": "#/components/schemas/SandboxId"
+          },
+          "argv": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shell": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cwd": {
+            "type": "string"
+          },
+          "timeout_seconds": {
+            "type": "integer"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SandboxCommandState"
+          },
+          "exit_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set once the command finished."
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/SandboxActor"
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Start time (Unix seconds)."
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Finish time (Unix seconds)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SandboxCommandOutput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Captured output, only on the response to a `wait: true` request that finished in time; `null` elsewhere."
+          }
+        },
+        "required": [
+          "id",
+          "sandbox_id",
+          "argv",
+          "shell",
+          "cwd",
+          "timeout_seconds",
+          "state",
+          "exit_code",
+          "created_by",
+          "created_at",
+          "finished_at",
+          "output"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxCommandOutput": {
+        "type": "object",
+        "properties": {
+          "stdout": {
+            "type": "string"
+          },
+          "stderr": {
+            "type": "string"
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when the output is longer than the 64 KiB returned here; read it all with `logs:stream`."
+          }
+        },
+        "required": [
+          "stdout",
+          "stderr",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxCommandState": {
+        "type": "string",
+        "enum": [
+          "RUNNING",
+          "SUCCEEDED",
+          "FAILED",
+          "CANCELLED"
+        ],
+        "description": "`SUCCEEDED`: exited with code 0. `FAILED`: exited with another code, was killed, or hit its timeout (exit code 124)."
+      },
+      "SandboxCommandList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SandboxCommand"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "RunSandboxCommandBody": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "argv": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 16384
+                },
+                "minItems": 1,
+                "maxItems": 256,
+                "description": "Program and arguments, run without a shell."
+              },
+              "cwd": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "^\\/[^\\0]*$",
+                "description": "Absolute path inside the sandbox.",
+                "default": "/workspace",
+                "examples": [
+                  "/workspace/README.md"
+                ]
+              },
+              "env": {
+                "$ref": "#/components/schemas/SandboxEnv"
+              },
+              "timeout_seconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 86400,
+                "description": "Seconds before the command is killed. Default 600.",
+                "default": 600
+              },
+              "wait": {
+                "type": "boolean",
+                "description": "Return when the command finished, for at most 60 seconds, with its output. Otherwise return as soon as it started.",
+                "default": false
+              },
+              "stdin": {
+                "type": "boolean",
+                "description": "Keep standard input open for `:writeStdin`. Default false (empty input).",
+                "default": false
+              }
+            },
+            "required": [
+              "argv"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "shell": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 16384,
+                "description": "A `bash -lc` command line."
+              },
+              "cwd": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "^\\/[^\\0]*$",
+                "description": "Absolute path inside the sandbox.",
+                "default": "/workspace",
+                "examples": [
+                  "/workspace/README.md"
+                ]
+              },
+              "env": {
+                "$ref": "#/components/schemas/SandboxEnv"
+              },
+              "timeout_seconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 86400,
+                "description": "Seconds before the command is killed. Default 600.",
+                "default": 600
+              },
+              "wait": {
+                "type": "boolean",
+                "description": "Return when the command finished, for at most 60 seconds, with its output. Otherwise return as soon as it started.",
+                "default": false
+              },
+              "stdin": {
+                "type": "boolean",
+                "description": "Keep standard input open for `:writeStdin`. Default false (empty input).",
+                "default": false
+              }
+            },
+            "required": [
+              "shell"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "SandboxEnv": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string",
+          "maxLength": 4096
+        }
       },
       "Operation": {
         "type": "object",
@@ -27022,13 +27135,14 @@
               "workspace",
               "machine",
               "cluster",
-              "package"
+              "package",
+              "sandbox"
             ],
             "description": "Domain entity collection the operation acts on."
           },
           "owner_id": {
             "type": "string",
-            "description": "Prefixed ID of the entity this operation acts on. Prefix matches `owner_type` (`ws_`, `mch_`, `clu_`, `pkg_`, `inst_`, `rcr_`, `repo_`)."
+            "description": "Prefixed ID of the entity this operation acts on. Prefix matches `owner_type` (`ws_`, `mch_`, `clu_`, `pkg_`, `inst_`, `rcr_`, `repo_`, `sbx_`)."
           },
           "parent_operation_id": {
             "anyOf": [
@@ -28129,6 +28243,90 @@
             "required": [
               "type",
               "purged_at"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "sandbox.create"
+                ]
+              },
+              "sandbox_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              }
+            },
+            "required": [
+              "type",
+              "sandbox_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "sandbox.suspend"
+                ]
+              },
+              "sandbox_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              }
+            },
+            "required": [
+              "type",
+              "sandbox_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "sandbox.resume"
+                ]
+              },
+              "sandbox_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              }
+            },
+            "required": [
+              "type",
+              "sandbox_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "sandbox.delete"
+                ]
+              },
+              "sandbox_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              }
+            },
+            "required": [
+              "type",
+              "sandbox_id"
             ],
             "additionalProperties": false
           },
@@ -29335,8 +29533,1304 @@
               "repository_id"
             ],
             "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "sandbox.create"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              },
+              "sandbox_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "source_sandbox_id": {
+                "type": "string",
+                "description": "Set when the sandbox is a fork of another sandbox.",
+                "minLength": 1,
+                "maxLength": 54
+              }
+            },
+            "required": [
+              "type",
+              "workspace_id",
+              "sandbox_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "sandbox.suspend"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              },
+              "sandbox_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "idle"
+                ],
+                "description": "`idle`: the sandbox suspended itself after its idle timeout."
+              }
+            },
+            "required": [
+              "type",
+              "workspace_id",
+              "sandbox_id",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "sandbox.resume"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              },
+              "sandbox_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              }
+            },
+            "required": [
+              "type",
+              "workspace_id",
+              "sandbox_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "sandbox.delete"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              },
+              "sandbox_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "orphaned"
+                ],
+                "description": "`orphaned`: nobody had access to the sandbox for 7 days."
+              }
+            },
+            "required": [
+              "type",
+              "workspace_id",
+              "sandbox_id",
+              "reason"
+            ],
+            "additionalProperties": false
           }
         ]
+      },
+      "ForkSandboxBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Display name.",
+            "examples": [
+              "checkout-service"
+            ]
+          },
+          "labels": {
+            "$ref": "#/components/schemas/SandboxLabels"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxLabels": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      "Sandbox": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/SandboxId"
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Display name.",
+            "examples": [
+              "checkout-service"
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/SandboxState"
+          },
+          "size": {
+            "$ref": "#/components/schemas/SandboxSize"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SandboxSource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`null` for a sandbox created empty."
+          },
+          "network_policy": {
+            "$ref": "#/components/schemas/SandboxNetworkPolicy"
+          },
+          "idle_timeout_seconds": {
+            "type": "integer",
+            "minimum": 300,
+            "maximum": 86400,
+            "description": "Seconds without API activity after which the sandbox suspends itself. Commands that are still running keep it awake. 300 to 86400; default 600.",
+            "default": 600,
+            "examples": [
+              600
+            ]
+          },
+          "env": {
+            "$ref": "#/components/schemas/SandboxEnv"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/SandboxLabels"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/SandboxActor"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/SandboxUsage"
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the sandbox is `FAILED`; `null` otherwise."
+          },
+          "last_active_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Last API activity (Unix seconds)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Creation time (Unix seconds)."
+          },
+          "updated_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Last change (Unix seconds)."
+          },
+          "etag": {
+            "type": "string",
+            "description": "Opaque version token. Send it as `If-Match` on writes."
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "name",
+          "state",
+          "size",
+          "source",
+          "network_policy",
+          "idle_timeout_seconds",
+          "env",
+          "labels",
+          "created_by",
+          "usage",
+          "failure",
+          "last_active_at",
+          "created_at",
+          "updated_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxUsage": {
+        "type": "object",
+        "properties": {
+          "active_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds the sandbox has spent `ACTIVE`, including the current active period."
+          },
+          "cpu_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "CPU seconds used. `null` until CPU accounting is available."
+          },
+          "egress_bytes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Bytes sent to the network. `null` until network accounting is available."
+          },
+          "ingress_bytes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Bytes received from the network. `null` until network accounting is available."
+          }
+        },
+        "required": [
+          "active_seconds",
+          "cpu_seconds",
+          "egress_bytes",
+          "ingress_bytes"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxNetworkPolicy": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "allow_all"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": false,
+        "description": "Outbound network access. `allow_all`: HTTP and HTTPS to public internet addresses; private, link-local and cluster-internal addresses are always blocked, and other protocols except DNS are not forwarded. Restrictive modes are added as new values."
+      },
+      "SandboxSource": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "sandbox"
+            ]
+          },
+          "sandbox_id": {
+            "$ref": "#/components/schemas/SandboxId"
+          }
+        },
+        "required": [
+          "type",
+          "sandbox_id"
+        ],
+        "additionalProperties": false,
+        "description": "Where the sandbox content comes from. `sandbox`: a copy of another sandbox from its latest snapshot (a fork). Repository, snapshot and template sources are added as new `type` values."
+      },
+      "SandboxSize": {
+        "type": "string",
+        "enum": [
+          "standard"
+        ],
+        "description": "Compute size. `standard` is the only size today; larger sizes are added as new values."
+      },
+      "SandboxState": {
+        "type": "string",
+        "enum": [
+          "PROVISIONING",
+          "ACTIVE",
+          "SUSPENDING",
+          "SUSPENDED",
+          "RESUMING",
+          "DELETING",
+          "FAILED"
+        ],
+        "description": "`ACTIVE` sandboxes run commands and file operations. `SUSPENDED` sandboxes keep their files and cost only storage. `-ING` states are in flight; `FAILED` sandboxes can only be deleted."
+      },
+      "UpdateSandboxBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Display name.",
+            "examples": [
+              "checkout-service"
+            ]
+          },
+          "size": {
+            "$ref": "#/components/schemas/SandboxSize"
+          },
+          "network_policy": {
+            "$ref": "#/components/schemas/SandboxNetworkPolicy"
+          },
+          "idle_timeout_seconds": {
+            "type": "integer",
+            "minimum": 300,
+            "maximum": 86400,
+            "description": "Seconds without API activity after which the sandbox suspends itself. Commands that are still running keep it awake. 300 to 86400; default 600.",
+            "default": 600,
+            "examples": [
+              600
+            ]
+          },
+          "labels": {
+            "$ref": "#/components/schemas/SandboxLabels"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SandboxList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sandbox"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "CreateSandboxBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Display name.",
+            "examples": [
+              "checkout-service"
+            ]
+          },
+          "size": {
+            "$ref": "#/components/schemas/SandboxSize"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SandboxSource"
+          },
+          "network_policy": {
+            "$ref": "#/components/schemas/SandboxNetworkPolicy"
+          },
+          "idle_timeout_seconds": {
+            "type": "integer",
+            "minimum": 300,
+            "maximum": 86400,
+            "description": "Seconds without API activity after which the sandbox suspends itself. Commands that are still running keep it awake. 300 to 86400; default 600.",
+            "default": 600,
+            "examples": [
+              600
+            ]
+          },
+          "env": {
+            "$ref": "#/components/schemas/SandboxEnv"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/SandboxLabels"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "OpenCodeClientToken": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The web UI address with a one-time client token in its fragment (`#ct=...`). Open it in a browser, or set it as an iframe's source; the token is exchanged for a session of that server and never reaches a server log."
+          },
+          "expires_at": {
+            "type": "integer",
+            "description": "When the token expires unused, in Unix seconds. Tokens live about a minute."
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "additionalProperties": false
+      },
+      "OpenCodeServerId": {
+        "type": "string",
+        "pattern": "^oc_[a-z0-9]{1,64}$",
+        "title": "OpenCode Server id",
+        "description": "OpenCode Server id (`oc_...`).",
+        "examples": [
+          "oc_j572abc123def456"
+        ]
+      },
+      "ApiGatewayTimeout": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "GatewayTimeout"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "ApiTooManyRequests": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "TooManyRequests"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardSurfaceList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSurface"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_technical_details": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor",
+          "effective_technical_details"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardSurface": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "home",
+              "workspace",
+              "marketplace",
+              "packages",
+              "products",
+              "offers",
+              "managed_deployments",
+              "customers",
+              "apps",
+              "agents",
+              "repository_change_requests",
+              "operations",
+              "docs",
+              "compute",
+              "machines",
+              "clusters",
+              "secrets",
+              "registries",
+              "regions",
+              "cloudflare",
+              "dashboards",
+              "snippets",
+              "runs",
+              "quotas",
+              "api_tokens",
+              "billing",
+              "account",
+              "organization_members",
+              "organization",
+              "notifications",
+              "payments",
+              "access"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string",
+            "enum": [
+              "top",
+              "run",
+              "sell",
+              "watch",
+              "settings",
+              "search"
+            ]
+          },
+          "technical": {
+            "type": "boolean"
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "navigation": {
+            "type": "object",
+            "properties": {
+              "shown": {
+                "type": "boolean"
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "role",
+                      "owned",
+                      "always",
+                      "pinned"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "shown",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "path",
+          "area",
+          "technical",
+          "keywords",
+          "navigation"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardPreferencesResponse": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "en",
+                  "de"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role_preset": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "owners",
+                  "operations",
+                  "developers",
+                  "vendors"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role_preset_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "question",
+                  "website",
+                  "settings"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "technical_details": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_technical_details": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "locale",
+          "role_preset",
+          "role_preset_source",
+          "technical_details",
+          "effective_technical_details",
+          "updated_at"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardPreferencesUpdate": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "de"
+            ]
+          },
+          "role_preset": {
+            "type": "string",
+            "enum": [
+              "owners",
+              "operations",
+              "developers",
+              "vendors"
+            ]
+          },
+          "role_preset_source": {
+            "type": "string",
+            "enum": [
+              "question",
+              "website",
+              "settings"
+            ]
+          },
+          "technical_details": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardRoleSuggestion": {
+        "type": "object",
+        "properties": {
+          "suggested_role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "owners",
+                  "operations",
+                  "developers",
+                  "vendors"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "baseline",
+              "jev"
+            ]
+          },
+          "baseline": {
+            "type": "object",
+            "properties": {
+              "suggested_role": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "owners",
+                      "operations",
+                      "developers",
+                      "vendors"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "ranked_roles": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "role_preset": {
+                      "type": "string",
+                      "enum": [
+                        "owners",
+                        "operations",
+                        "developers",
+                        "vendors"
+                      ]
+                    },
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "reasons": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "role_preset",
+                    "score",
+                    "reasons"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "why": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "suggested_role",
+              "confidence",
+              "ranked_roles",
+              "why"
+            ],
+            "additionalProperties": false
+          },
+          "jev": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "probabilities": {
+                    "type": "object",
+                    "properties": {
+                      "owners": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "operations": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "developers": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "vendors": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "required": [
+                      "owners",
+                      "operations",
+                      "developers",
+                      "vendors"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "eligible": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "probabilities",
+                  "model",
+                  "eligible"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "why": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "suggested_role",
+          "source",
+          "baseline",
+          "jev",
+          "reasons",
+          "why"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardRoleSuggestionRequest": {
+        "type": "object",
+        "properties": {
+          "landing": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "role_tab",
+                    "role_page",
+                    "use_case_page",
+                    "use_case_chip"
+                  ]
+                },
+                "role_preset": {
+                  "type": "string",
+                  "enum": [
+                    "owners",
+                    "operations",
+                    "developers",
+                    "vendors"
+                  ]
+                },
+                "use_case": {
+                  "type": "string",
+                  "enum": [
+                    "customer-database",
+                    "online-orders",
+                    "email-assistant",
+                    "social-posts",
+                    "up-to-date",
+                    "automation",
+                    "website",
+                    "customer-cloud",
+                    "more-customers",
+                    "staged-updates",
+                    "customer-template",
+                    "partner-channel"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "role_preset"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 20
+          },
+          "signup_source": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "utm": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "medium": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "campaign": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "content": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "term": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "additionalProperties": false
+          },
+          "dashboard_visits": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "home",
+                "workspace",
+                "marketplace",
+                "packages",
+                "products",
+                "offers",
+                "managed_deployments",
+                "customers",
+                "apps",
+                "agents",
+                "repository_change_requests",
+                "operations",
+                "docs",
+                "compute",
+                "machines",
+                "clusters",
+                "secrets",
+                "registries",
+                "regions",
+                "cloudflare",
+                "dashboards",
+                "snippets",
+                "runs",
+                "quotas",
+                "api_tokens",
+                "billing",
+                "account",
+                "organization_members",
+                "organization",
+                "notifications",
+                "payments",
+                "access"
+              ]
+            },
+            "maxItems": 20
+          },
+          "first_chat_message": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "additionalProperties": false
+      },
+      "WorkspaceFeatureFlags": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "flags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          }
+        },
+        "required": [
+          "workspace_id",
+          "flags"
+        ],
+        "additionalProperties": false
+      },
+      "SubscriptionChangeRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "requested_tier": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "effective_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "requested_tier",
+          "status",
+          "effective_at",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "SubscriptionChangeRequestList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionChangeRequest"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "OperationEnvelope": {
+        "type": "object",
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          }
+        },
+        "required": [
+          "operation_id"
+        ],
+        "additionalProperties": false
       },
       "WorkspaceManagement": {
         "type": "object",
@@ -29563,46 +31057,6 @@
           "current_period_end",
           "billed_by",
           "created_at"
-        ],
-        "additionalProperties": false
-      },
-      "ApiUnprocessable": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "Unprocessable"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
         ],
         "additionalProperties": false
       },
@@ -43233,13 +44687,14 @@
               "workspace",
               "machine",
               "cluster",
-              "package"
+              "package",
+              "sandbox"
             ],
             "description": "Domain entity collection the operation acts on."
           },
           "owner_id": {
             "type": "string",
-            "description": "Prefixed ID of the entity this operation acts on. Prefix matches `owner_type` (`ws_`, `mch_`, `clu_`, `pkg_`, `inst_`, `rcr_`, `repo_`)."
+            "description": "Prefixed ID of the entity this operation acts on. Prefix matches `owner_type` (`ws_`, `mch_`, `clu_`, `pkg_`, `inst_`, `rcr_`, `repo_`, `sbx_`)."
           },
           "parent_operation_id": {
             "anyOf": [

@@ -963,7 +963,8 @@ export const contract: ApiContract = {
 					"workspace",
 					"machine",
 					"cluster",
-					"package"
+					"package",
+					"sandbox"
 				]
 			}
 		},
