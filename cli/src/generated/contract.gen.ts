@@ -4440,7 +4440,8 @@ export const contract: ApiContract = {
 			"summary": "Create an OpenCode Server",
 			"auth": true,
 			"parameters": [
-				"header:akua-context"
+				"header:akua-context",
+				"header:idempotency-key:2"
 			],
 			"body": {
 				"required": true,
