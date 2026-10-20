@@ -33838,9 +33838,10 @@
                 "type": "string",
                 "enum": [
                   "manual",
-                  "orphaned"
+                  "orphaned",
+                  "workspace_deleted"
                 ],
-                "description": "`orphaned`: nobody had access to the sandbox for 7 days."
+                "description": "`orphaned`: nobody had access to the sandbox for 7 days. `workspace_deleted`: its workspace is being deleted."
               }
             },
             "required": [
