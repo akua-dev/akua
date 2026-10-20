@@ -74,6 +74,7 @@ describe('Effect auth command', () => {
 					stdoutIsTTY: false,
 					stdinIsTTY: false,
 					writeStderr: (value) => Effect.sync(() => stderr.push(value)),
+					writeStdoutBytes: () => Effect.void,
 					writeStdout: () => Effect.void
 				}),
 				memoryConfig(saved),
@@ -148,6 +149,7 @@ describe('Effect auth command', () => {
 							stdoutIsTTY: false,
 							stdinIsTTY: false,
 							writeStderr: () => Effect.void,
+							writeStdoutBytes: () => Effect.void,
 							writeStdout: (value) => Effect.sync(() => stdout.push(value))
 						}),
 						memoryConfig(),
@@ -190,6 +192,7 @@ describe('Effect auth command', () => {
 							stdoutIsTTY: false,
 							stdinIsTTY: false,
 							writeStderr: () => Effect.void,
+							writeStdoutBytes: () => Effect.void,
 							writeStdout: (value) => Effect.sync(() => stdout.push(value))
 						})
 					);

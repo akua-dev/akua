@@ -169,7 +169,95 @@ describe('generated API contract', () => {
 				}
 			}).pipe(Effect.flip);
 			expect(failure.message).toBe(
-				'files.upload: request body must be application/json only, found multipart/form-data'
+				'files.upload: request body must be application/json or application/octet-stream only, found multipart/form-data'
+			);
+		})
+	);
+
+	it.effect('represents raw byte bodies, byte responses, and NDJSON streams', () =>
+		Effect.gen(function* () {
+			const bytes = (media: string) => ({
+				[media]: { schema: { type: 'string', format: 'binary' } }
+			});
+			const contract = yield* contractOf({
+				...document,
+				paths: {
+					'/files:write': {
+						post: {
+							'x-platform-visibility': 'PUBLIC',
+							operationId: 'files.write',
+							requestBody: { required: true, content: bytes('application/octet-stream') },
+							responses: { '200': { description: 'OK' } }
+						}
+					},
+					'/files:read': {
+						post: {
+							'x-platform-visibility': 'PUBLIC',
+							operationId: 'files.read',
+							requestBody: {
+								content: { 'application/json': { schema: { type: 'object' } } }
+							},
+							responses: {
+								'200': {
+									description: 'OK',
+									content: {
+										'application/octet-stream': {
+											...bytes('application/octet-stream')['application/octet-stream'],
+											'x-effect-stream': { encoding: 'uint8array' }
+										}
+									}
+								},
+								'404': error
+							}
+						}
+					},
+					'/files/logs': {
+						get: {
+							'x-platform-visibility': 'PUBLIC',
+							operationId: 'files.logs',
+							responses: {
+								'200': {
+									description: 'OK',
+									content: {
+										'application/x-ndjson': {
+											...bytes('application/x-ndjson')['application/x-ndjson'],
+											'x-effect-stream': { encoding: 'uint8array' }
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			});
+			const byId = (id: string) => contract.operations.find((operation) => operation.id === id);
+
+			expect(byId('files.write')).toMatchObject({ upload: { required: true } });
+			expect(byId('files.write')?.body).toBeUndefined();
+			expect(byId('files.read')).toMatchObject({ download: true });
+			expect(byId('files.read')?.upload).toBeUndefined();
+			expect(byId('files.read')?.body).toBeDefined();
+			expect(byId('files.logs')).toMatchObject({ lines: true });
+			expect(byId('files.logs')?.stream).toBeUndefined();
+		})
+	);
+
+	it.effect('fails on a success response that is neither JSON, SSE, bytes, nor NDJSON', () =>
+		Effect.gen(function* () {
+			const failure = yield* contractOf({
+				...document,
+				paths: {
+					'/page': {
+						get: {
+							'x-platform-visibility': 'PUBLIC',
+							operationId: 'pages.get',
+							responses: { '200': { description: 'OK', content: { 'text/html': { schema: {} } } } }
+						}
+					}
+				}
+			}).pipe(Effect.flip);
+			expect(failure.message).toBe(
+				'pages.get: 200 text/html success response is not representable'
 			);
 		})
 	);

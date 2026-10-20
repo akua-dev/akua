@@ -34,6 +34,7 @@ describe('config directory selection', () => {
 				stdoutIsTTY: true,
 				stdinIsTTY: false,
 				writeStderr: () => Effect.void,
+				writeStdoutBytes: () => Effect.void,
 				writeStdout: (value) =>
 					Effect.sync(() => {
 						stdout.push(value);
@@ -198,6 +199,7 @@ describe('akua entrypoint', () => {
 						stdoutIsTTY: true,
 						stdinIsTTY: false,
 						writeStderr: () => Effect.void,
+						writeStdoutBytes: () => Effect.void,
 						writeStdout: () => Effect.void
 					}),
 					Effect.provide(CliLive(VERSION).pipe(Layer.provide(BunServices.layer)))
@@ -246,6 +248,7 @@ describe('akua entrypoint', () => {
 					stdoutIsTTY: false,
 					stdinIsTTY: false,
 					writeStderr: () => Effect.void,
+					writeStdoutBytes: () => Effect.void,
 					writeStdout: (value) =>
 						Effect.sync(() => {
 							stdout.push(value);
