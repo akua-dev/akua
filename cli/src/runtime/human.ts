@@ -57,31 +57,10 @@ export function humanNextSteps(steps: readonly NextStep[]): string[] {
 }
 
 /** One streamed event: log lines print their content, other events their data. */
-export function humanStreamItem(item: unknown, command?: string): string {
+export function humanStreamItem(item: unknown): string {
 	if (!Predicate.isObject(item) || !Predicate.isString(item.data)) return `${String(item)}\n`;
 	if (item.event === 'end') return '';
 	const payload = Option.getOrUndefined(decodeJsonTextOption(item.data));
-	if (command === 'akua agent-events stream-response-parts' && Predicate.isObject(payload)) {
-		if (payload.type === 'text-delta' && Predicate.isString(payload.delta)) return payload.delta;
-		switch (payload.type) {
-			case 'start':
-			case 'start-step':
-			case 'finish-step':
-			case 'text-start':
-				return '';
-			case 'text-end':
-				return '\n';
-			case 'finish': {
-				// This is a response boundary, not persisted Turn or approval authority.
-				const reason = Predicate.isString(payload.finishReason) ? ` (${payload.finishReason})` : '';
-				return `Response finished${reason}.\n`;
-			}
-			case 'abort': {
-				const reason = Predicate.isString(payload.reason) ? `: ${payload.reason}` : '';
-				return `\nResponse aborted${reason}\n`;
-			}
-		}
-	}
 	if (Predicate.isObject(payload) && Predicate.isString(payload.content)) {
 		return payload.content.endsWith('\n') ? payload.content : `${payload.content}\n`;
 	}
