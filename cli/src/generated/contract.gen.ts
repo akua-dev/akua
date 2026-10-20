@@ -7825,7 +7825,7 @@ export const contract: ApiContract = {
 				"hostname": {
 					"type": "string",
 					"pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
-					"description": "DNS label of the server's browser UI, `https://<hostname>.akua.run/`; unique across the platform. Created from the name plus a short random suffix when not given."
+					"description": "DNS label chosen for the server's browser UI; unique across the platform. Created from the name plus a short random suffix when not given. The UI is served at `web_url` until chosen hostnames are routed."
 				},
 				"labels": {
 					"type": "object",
@@ -12627,7 +12627,7 @@ export const contract: ApiContract = {
 				"hostname": {
 					"type": "string",
 					"pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
-					"description": "DNS label of the server's browser UI, `https://<hostname>.akua.run/`; unique across the platform. Created from the name plus a short random suffix when not given."
+					"description": "DNS label chosen for the server's browser UI; unique across the platform. Created from the name plus a short random suffix when not given. The UI is served at `web_url` until chosen hostnames are routed."
 				},
 				"labels": {
 					"type": "object",
