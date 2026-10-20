@@ -230,8 +230,8 @@ _MODULES = {
         srcs = [
             ":akua_entry_" + name,
             ":akuapkg_embedded_srcs_" + name,
-            "//cli:package.json",
-            "//cli:srcs",
+            "//packages/cli:package.json",
+            "//packages/cli:srcs",
             "//host:package.json",
             "//host:srcs",
         ],
@@ -267,7 +267,7 @@ _MODULES = {
 
 # ---------------------------------------------------------------------------
 # Release archives. akuapkg: akuapkg-v<version>-<triple>.{tar.gz,zip} plus the
-# source identity; akua: thirteen assets from cli/scripts/release.ts's contract.
+# source identity; akua: thirteen assets from packages/cli/scripts/release.ts's contract.
 # ---------------------------------------------------------------------------
 
 [
@@ -333,7 +333,7 @@ config_setting(
 cli_release_archive(
     name = "cli_release_archive",
     srcs = [
-        "//cli:release_program_srcs",
+        "//packages/cli:release_program_srcs",
     ],
     out = "cli-release",
     binaries = {
@@ -352,7 +352,7 @@ cli_release_archive(
         "memory_kb": "2097152",
     },
     node_modules = _NODE_MODULES,
-    package_json = "//cli:package.json",
+    package_json = "//packages/cli:package.json",
     package_version = PACKAGE_SOURCE_VERSION,
     program = "release-package-command.ts",
     stamp = select({
@@ -380,19 +380,19 @@ bun_test(
     size = "medium",
     srcs = [
         "//:package.json",
-        "//cli:test_srcs",
+        "//packages/cli:test_srcs",
         "//host:package.json",
         "//host:srcs",
         "//native:index.d.ts",
         "//native:package.json",
     ],
     bun_args = [
-        "../node_modules/typescript/bin/tsc",
+        "../../node_modules/typescript/bin/tsc",
         "--noEmit",
         "--project",
         "tsconfig.json",
     ],
-    chdir = "cli",
+    chdir = "packages/cli",
     node_modules = _TEST_NODE_MODULES,
     visibility = ["//visibility:public"],
     workspace_links = WORKSPACE_LINKS,
@@ -421,7 +421,7 @@ bun_test(
     workspace_links = WORKSPACE_LINKS,
 )
 
-# The CLI's own suite, run by vitest inside Bun (cli/package.json `test`).
+# The CLI's own suite, run by vitest inside Bun (packages/cli/package.json `test`).
 bun_test(
     name = "cli_unit_test",
     size = "large",
@@ -430,16 +430,16 @@ bun_test(
         "//:Cargo.toml",
         "//:cli_workflow",
         "//:package.json",
-        "//cli:test_srcs",
+        "//packages/cli:test_srcs",
         "//host:package.json",
         "//host:srcs",
     ],
     bun_args = [
         "--bun",
-        "../node_modules/vitest/vitest.mjs",
+        "../../node_modules/vitest/vitest.mjs",
         "run",
     ],
-    chdir = "cli",
+    chdir = "packages/cli",
     data = ["@bazel_tools//tools/zip:zipper"],
     env = {"PLATFORM_CLI_TEST_ZIPPER": "$RUNFILES/$(rlocationpath @bazel_tools//tools/zip:zipper)"},
     node_modules = _TEST_NODE_MODULES,

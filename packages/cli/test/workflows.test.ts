@@ -33,7 +33,7 @@ const Job = Schema.Struct({
 
 const readWorkflow = Effect.fn('readWorkflow')(function* () {
 	const fs = yield* FileSystem.FileSystem;
-	const content = yield* fs.readFileString('../.github/workflows/cli.yml');
+	const content = yield* fs.readFileString('../../.github/workflows/cli.yml');
 	return yield* Schema.decodeUnknownEffect(Workflow)(yield* Effect.try(() => Yaml.parse(content)));
 });
 const Workflow = Schema.Struct({

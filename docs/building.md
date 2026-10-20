@@ -55,7 +55,7 @@ git-ignored and imported by `.bazelrc`).
 | `host/` | The Bun/Effect host: CLI, render pipeline, Wasmtime sandbox adapter |
 | `native/` | The Wasmtime sandbox addon (napi-rs) and its build-time precompiler |
 | `crates/` | The KCL render worker (`akua-render-worker`, `akua-core`) and the Go Helm/Kustomize engines |
-| `cli/` | The `akua` CLI |
+| `packages/cli/` | The `akua` CLI |
 
 npm packages come from `bun.lock` alone: `bazel/npm/bun_lock.bzl` downloads
 each tarball with the lock's integrity hash, applies `patchedDependencies` and

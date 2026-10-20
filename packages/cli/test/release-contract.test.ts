@@ -25,7 +25,7 @@ describe('release provenance contract', () => {
 				source: {
 					repository: 'akua-dev/cnap',
 					sha: '0123456789abcdef0123456789abcdef01234567',
-					subtree: 'oss/akua/cli'
+					subtree: 'oss/akua/packages/cli'
 				},
 				dependencies: [{ name: 'akuapkg', version: '0.9.6' }]
 			});

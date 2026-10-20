@@ -4,22 +4,22 @@ This file covers building, testing, and releasing this repository's source.
 If you only want to use the `akua` executable, see [README.md](README.md)
 instead.
 
-The CLI is the `cli/` workspace of [`akua-dev/akua`](https://github.com/akua-dev/akua),
+The CLI is the `packages/cli/` workspace of [`akua-dev/akua`](https://github.com/akua-dev/akua),
 which also holds the package toolchain (`@akua-dev/sdk`, `host/`) that
 `akua pkg` embeds. The canonical writable history is the Akua monorepo, of
 which that repository is the exact projection. Issues are welcome; external
 code pull requests are not accepted yet (see
-[../CONTRIBUTING.md](../CONTRIBUTING.md)). The CLI shares one version with the
-package toolchain: `../Cargo.toml` `[workspace.package].version` is the source
+[../../CONTRIBUTING.md](../../CONTRIBUTING.md)). The CLI shares one version with the
+package toolchain: `../../Cargo.toml` `[workspace.package].version` is the source
 of truth, and this directory's `package.json` `version` must equal it (the unit
 suite fails otherwise). The public `v<version>` tag is created by the canonical
 Main pipeline at the admitted projected commit; see
-[../docs/releasing.md](../docs/releasing.md).
+[../../docs/releasing.md](../../docs/releasing.md).
 
 ## Building and testing with Bazel
 
 Bazel builds the release executables and runs the suite from a clone of
-akua-dev/akua; see [../docs/building.md](../docs/building.md):
+akua-dev/akua; see [../../docs/building.md](../../docs/building.md):
 
 ```sh
 bazel build //bazel:akua_darwin_arm64       # akua with `akua pkg` embedded
@@ -30,7 +30,7 @@ bazel test //bazel:cli_unit_test //bazel:cli_typecheck_test
 ## Prerequisites for the Bun scripts
 
 Bun 1.4+ is the only prerequisite. Run `bun install` at the repository root
-(it links `@akua-dev/sdk` from `host/`), then in `cli/`:
+(it links `@akua-dev/sdk` from `host/`), then in `packages/cli/`:
 
 ```sh
 bun run check
@@ -83,7 +83,7 @@ for what current test coverage includes.
 
 ## Release process
 
-Bump the shared version (`../Cargo.toml`, `../host/package.json`, this
+Bump the shared version (`../../Cargo.toml`, `../../host/package.json`, this
 `package.json` and its `@akua-dev/sdk` dependency, `src/bin/akua.ts`) in a
 reviewed cnap PR when a release is needed; `test/version.test.ts` keeps them
 equal. The Main pipeline does not invent a new version for unrelated

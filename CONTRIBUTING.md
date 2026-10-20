@@ -32,7 +32,7 @@ one `v<version>` release (see [docs/releasing.md](docs/releasing.md)):
 
 - `akuapkg`, the package toolchain (`host/`, `native/`, `crates/`), installed
   by `https://cli.akua.dev/install`;
-- `akua`, the Akua CLI (`cli/`), installed with
+- `akua`, the Akua CLI (`packages/cli/`), installed with
   `brew install akua-dev/tap/akua`. `akua pkg` embeds the same package
   toolchain host.
 
@@ -51,7 +51,7 @@ Every target cross-compiles on Linux x86_64; on macOS add `--config=remote`
 with a Remote Execution endpoint, or run Bazel in a Linux container.
 
 For quick iteration on the TypeScript, `bun install` at the repository root
-and use each workspace's scripts (`cd cli && bun run check`).
+and use each workspace's scripts (`cd packages/cli && bun run check`).
 
 Build the render worker with Bazel: KCL patches 0005 and 0006
 ([third_party/kcl/patches](third_party/kcl/patches/README.md)) are applied

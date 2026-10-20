@@ -5,25 +5,6 @@
     "": {
       "name": "akua-monorepo",
     },
-    "cli": {
-      "name": "@akua-dev/cli",
-      "version": "0.13.2",
-      "bin": {
-        "akua": "./src/bin/akua.ts",
-      },
-      "dependencies": {
-        "@akua-dev/sdk": "0.13.2",
-        "@effect/platform-bun": "4.0.1",
-        "effect": "4.0.1",
-      },
-      "devDependencies": {
-        "@effect/vitest": "4.0.1",
-        "@types/bun": "1.4.1",
-        "smol-toml": "1.8.0",
-        "typescript": "^6.0.3",
-        "vitest": "5.0.2",
-      },
-    },
     "host": {
       "name": "@akua-dev/sdk",
       "version": "0.13.2",
@@ -44,12 +25,31 @@
       "name": "@akua-dev/wasm-sandbox",
       "version": "0.1.0",
     },
+    "packages/cli": {
+      "name": "@akua-dev/cli",
+      "version": "0.13.2",
+      "bin": {
+        "akua": "./src/bin/akua.ts",
+      },
+      "dependencies": {
+        "@akua-dev/sdk": "0.13.2",
+        "@effect/platform-bun": "4.0.1",
+        "effect": "4.0.1",
+      },
+      "devDependencies": {
+        "@effect/vitest": "4.0.1",
+        "@types/bun": "1.4.1",
+        "smol-toml": "1.8.0",
+        "typescript": "^6.0.3",
+        "vitest": "5.0.2",
+      },
+    },
   },
   "patchedDependencies": {
     "effect@4.0.1": "patches/effect@4.0.1.patch",
   },
   "packages": {
-    "@akua-dev/cli": ["@akua-dev/cli@workspace:cli"],
+    "@akua-dev/cli": ["@akua-dev/cli@workspace:packages/cli"],
 
     "@akua-dev/sdk": ["@akua-dev/sdk@workspace:host"],
 

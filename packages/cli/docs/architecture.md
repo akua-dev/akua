@@ -6,7 +6,7 @@ Status: local authentication and executable generated public API commands.
 
 - Binary: `akua`.
 - Runtime: Bun and TypeScript.
-- Repository: the `cli/` workspace of `akua-dev/akua` (canonical history in the Akua monorepo at `oss/akua/cli`), released on the package toolchain's version in one `v<version>` release with it.
+- Repository: the `packages/cli/` workspace of `akua-dev/akua` (canonical history in the Akua monorepo at `oss/akua/packages/cli`), released on the package toolchain's version in one `v<version>` release with it.
 - Packaging: Bun self-contained executable via `bun build --compile`.
 - API source of truth: the Akua monorepo's `docs/openapi-public.json` (Bazel-generated; committed here as `src/generated/openapi-public.json`; no production fetch).
 - First release: local auth/config plus a provider-neutral public API command
@@ -319,7 +319,7 @@ manifests and non-force publishes the canonical tap source to
 `akua-dev/homebrew-tap`. Formula audits and install tests run in the canonical
 CI pipeline; the public tap has no workflows or independent writer. The Release
 Please files remain as version metadata only. See
-[../../docs/releasing.md](../../docs/releasing.md).
+[../../../docs/releasing.md](../../../docs/releasing.md).
 
 ## Testing Strategy
 
@@ -335,7 +335,7 @@ Current tests cover:
 - OpenAPI fetch guard and document shape validation;
 - public-only, deterministic operationId collection and typed Effect API
   generation;
-- one shared version across `../Cargo.toml`, the package manifests and the CLI version marker;
+- one shared version across `../../Cargo.toml`, the package manifests and the CLI version marker;
 - release target naming, archive contents/modes, manifests, checksums, and
   tamper rejection;
 - native install-smoke and workflow ordering/permission contracts;

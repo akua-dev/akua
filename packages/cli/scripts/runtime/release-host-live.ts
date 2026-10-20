@@ -817,7 +817,7 @@ function parseReleaseProvenance(value: Record<string, unknown>) {
 	if (
 		!isRecord(source) ||
 		source.repository !== 'akua-dev/cnap' ||
-		source.subtree !== 'oss/akua/cli' ||
+		source.subtree !== 'oss/akua/packages/cli' ||
 		!isRecord(toolchain) ||
 		toolchain.name !== 'akuapkg' ||
 		typeof source.sha !== 'string' ||

@@ -20,7 +20,7 @@ describe('one version for akua-dev/akua', () => {
 			const fs = yield* FileSystem.FileSystem;
 			// akuapkg and the CLI share one version and one `v<version>` tag. The
 			// Cargo workspace version is the source the Bazel release reads.
-			const cargoText = yield* fs.readFileString('../Cargo.toml');
+			const cargoText = yield* fs.readFileString('../../Cargo.toml');
 			const cargo = yield* Schema.decodeUnknownEffect(
 				Schema.Struct({
 					workspace: Schema.Struct({ package: Schema.Struct({ version: Schema.String }) })
@@ -30,7 +30,7 @@ describe('one version for akua-dev/akua', () => {
 			expect(workspaceVersion).toMatch(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/);
 			const host = yield* readJson(
 				Schema.Struct({ version: Schema.String }),
-				'../host/package.json'
+				'../../host/package.json'
 			);
 			const packageManifest = yield* readJson(
 				Schema.Struct({

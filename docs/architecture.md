@@ -43,7 +43,7 @@ schema and emits JSON Schema or OpenAPI without rendering anything.
 | `native/` | The Wasmtime addon (napi-rs, `@akua-dev/wasm-sandbox`) and its build-time precompiler. It owns the sandbox guarantees and knows nothing about KCL or Helm |
 | `crates/akua-render-worker`, `crates/akua-core` | The KCL render worker, Rust compiled to `wasm32-wasip1`, and the `akua.*` KCL standard library it embeds |
 | `crates/helm-engine-wasm`, `crates/kustomize-engine-wasm` | Helm v4.1.4 and Kustomize api v0.21.3, wrapped in small Go programs compiled to `wasip1` |
-| `cli/` | The `akua` CLI. Its `akua pkg` command runs this host in-process |
+| `packages/cli/` | The `akua` CLI. Its `akua pkg` command runs this host in-process |
 
 Bazel builds everything from source, precompiles each wasm module to machine
 code for every release target, and embeds the modules and the addon in the

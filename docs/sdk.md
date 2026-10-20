@@ -15,7 +15,7 @@ are frozen, come from an earlier implementation and do not match this page.
 Use the package from source:
 
 - inside a Bun workspace that contains this repository, depend on it as
-  `"@akua-dev/sdk": "workspace:*"`, as `cli/` does;
+  `"@akua-dev/sdk": "workspace:*"`, as `packages/cli/` does;
 - or copy `host/` into your workspace at the release tag you want.
 
 `package.json` exports point at the TypeScript sources, which Bun loads

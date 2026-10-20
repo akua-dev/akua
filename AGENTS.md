@@ -44,7 +44,7 @@ Akuapkg is the **bun/deno pattern applied to cloud-native packages**. One binary
 | TypeScript SDK (the host package) | [docs/sdk.md](docs/sdk.md) |
 | Roadmap | [docs/roadmap.md](docs/roadmap.md) |
 | Building and testing (Bazel), repository layout | [docs/building.md](docs/building.md) |
-| The `akua` CLI (`akua pkg` embeds this host) | [cli/](cli/), [cli/AGENTS.md](cli/AGENTS.md) |
+| The `akua` CLI (`akua pkg` embeds this host) | [packages/cli/](packages/cli/), [packages/cli/AGENTS.md](packages/cli/AGENTS.md) |
 | Releases (one `v*` release for akuapkg and the CLI) | [docs/releasing.md](docs/releasing.md) |
 | Runnable examples | [examples/](examples/) |
 | Agent-executable workflows | [skills/](skills/) |
@@ -55,7 +55,7 @@ Violations of these are architectural bugs:
 
 **CLI contract holds universally.** Every verb emits `--json`, accepts the universal flags, uses typed exit codes (0/1/2/6 in use; 3/4/5 reserved). Structured errors on stderr, never prose. Agent-context auto-detection runs silently; see [cli-contract §1.4](docs/cli-contract.md#14-agent-context).
 
-**The toolchain is cloud-independent.** Hosted-platform commands live in the `akua` CLI (`cli/`), never in `host/`. Package authoring plus `render`, `export`, `check`, `lint`, `test`, and `verify` must not import hosted API code.
+**The toolchain is cloud-independent.** Hosted-platform commands live in the `akua` CLI (`packages/cli/`), never in `host/`. Package authoring plus `render`, `export`, `check`, `lint`, `test`, and `verify` must not import hosted API code.
 
 **Canonical form is typed code.** KCL for Packages, typed against pinned Kubernetes and CRD schemas. YAML is a derived view via `akuapkg export`, never authoritative. Users author their own higher-level schemas (App, Environment, Cluster, Workspace - whatever fits their shape) in KCL inside their workspace; akua does not ship a KRM vocabulary.
 

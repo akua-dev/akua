@@ -113,7 +113,7 @@ export interface ReleaseProvenance {
 	source: {
 		repository: 'akua-dev/cnap';
 		sha: string;
-		subtree: 'oss/akua/cli';
+		subtree: 'oss/akua/packages/cli';
 	};
 	dependencies: [
 		{
@@ -163,7 +163,7 @@ export const makeReleaseProvenance = Effect.fn('makeReleaseProvenance')(function
 		source: {
 			repository: 'akua-dev/cnap',
 			sha: input.sourceSha,
-			subtree: 'oss/akua/cli'
+			subtree: 'oss/akua/packages/cli'
 		},
 		dependencies: [{ name: 'akuapkg', version: input.packageVersion }]
 	} satisfies ReleaseProvenance;

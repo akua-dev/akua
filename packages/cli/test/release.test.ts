@@ -382,7 +382,7 @@ describe('release target contract', () => {
 				source: {
 					repository: 'akua-dev/cnap',
 					sha: TEST_SOURCE_SHA,
-					subtree: 'oss/akua/cli'
+					subtree: 'oss/akua/packages/cli'
 				},
 				dependencies: [{ name: 'akuapkg', version: '0.9.6' }]
 			});

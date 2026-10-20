@@ -63,7 +63,7 @@ brew install akua-dev/tap/akuapkg
 On Windows, run `irm https://cli.akua.dev/install.ps1 | iex` in PowerShell,
 or download an archive from [the releases](https://github.com/akua-dev/akua/releases).
 
-The Akua CLI (`brew install akua-dev/tap/akua`, source in [`cli/`](cli/))
+The Akua CLI (`brew install akua-dev/tap/akua`, source in [`packages/cli/`](packages/cli/))
 embeds the same toolchain: every command in this README also works as
 `akua pkg <command>`.
 

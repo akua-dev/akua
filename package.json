@@ -4,7 +4,7 @@
   "workspaces": [
     "host",
     "native",
-    "cli"
+    "packages/cli"
   ],
   "patchedDependencies": {
     "effect@4.0.1": "patches/effect@4.0.1.patch"
