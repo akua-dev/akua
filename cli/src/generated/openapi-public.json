@@ -29837,6 +29837,13 @@
               },
               "idempotency_key": {
                 "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "workspace_deleted"
+                ]
               }
             },
             "required": [
@@ -29868,6 +29875,13 @@
               },
               "idempotency_key": {
                 "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "workspace_deleted"
+                ]
               }
             },
             "required": [
@@ -29899,6 +29913,13 @@
               },
               "idempotency_key": {
                 "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "workspace_deleted"
+                ]
               }
             },
             "required": [
