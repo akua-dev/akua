@@ -30168,10 +30168,13 @@
         "type": "string",
         "enum": [
           "ACTIVE",
+          "SUSPENDING",
           "SUSPENDED",
+          "RESUMING",
+          "DELETING",
           "DELETED"
         ],
-        "description": "`ACTIVE`: serves OpenCode protocol traffic. `SUSPENDED`: the gateway refuses protocol traffic until it is resumed. `DELETED`: terminal; the id stays reserved."
+        "description": "`ACTIVE`: serves OpenCode protocol traffic. `SUSPENDED`: the gateway refuses protocol traffic until it is resumed. `DELETED`: terminal; the id stays reserved. `SUSPENDING`, `RESUMING` and `DELETING`: a requested change is in progress; its Operation finishes when the server reached the new state. A deletion always finishes."
       },
       "UpdateOpenCodeServer": {
         "type": "object",
