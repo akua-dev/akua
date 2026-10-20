@@ -69,17 +69,6 @@ export function commandExamples(context: OperationCommandContext): NextStep[] {
 export function operationBodyExample(
 	context: OperationCommandContext
 ): Readonly<Record<string, Schema.Json>> {
-	if (context.operation.id === 'agentCommands.openSession') {
-		return {
-			agent: {
-				name: 'Support',
-				instructions: 'Help with the requested work.',
-				model: 'deepseek-flash',
-				billing_mode: 'PLATFORM_SUBSCRIPTION',
-				mode: 'CODING'
-			}
-		};
-	}
 	return Object.fromEntries(
 		context.inputs.flags
 			.filter((flag) => flag.target === 'body' && flag.required)

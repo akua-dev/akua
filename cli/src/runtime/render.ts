@@ -26,7 +26,7 @@ export function renderStreamSuccess(
 		data
 	};
 	if (mode === 'json') return `${JSON.stringify(item)}\n`;
-	return mode === 'human' ? humanStreamItem(data, envelope.command) : renderSuccess(item, mode);
+	return mode === 'human' ? humanStreamItem(data) : renderSuccess(item, mode);
 }
 
 export function renderSuccess(envelope: RenderEnvelope<unknown>, mode: OutputMode): string {
