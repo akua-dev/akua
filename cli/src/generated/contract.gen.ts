@@ -532,7 +532,7 @@ export const contract: ApiContract = {
 			"in": "path",
 			"required": true,
 			"schema": {
-				"$ref": "#/$defs/ConnectorId"
+				"$ref": "#/$defs/ConnectorSlug"
 			}
 		},
 		"path:id:6": {
@@ -822,7 +822,7 @@ export const contract: ApiContract = {
 			"in": "query",
 			"required": false,
 			"schema": {
-				"$ref": "#/$defs/ConnectorId"
+				"$ref": "#/$defs/ConnectorSlug"
 			}
 		},
 		"query:container": {
@@ -6893,11 +6893,11 @@ export const contract: ApiContract = {
 			"title": "ConnectionId",
 			"description": "A connection id"
 		},
-		"ConnectorId": {
+		"ConnectorSlug": {
 			"type": "string",
-			"pattern": "^ctr_[a-z0-9][a-z0-9_-]{0,63}$",
-			"title": "ConnectorId",
-			"description": "A connector id: `ctr_` and the connector slug."
+			"pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+			"title": "ConnectorSlug",
+			"description": "A connector's stable slug."
 		},
 		"ConnectSessionId": {
 			"type": "string",
@@ -7018,8 +7018,8 @@ export const contract: ApiContract = {
 		"CreateConnectionRequest": {
 			"type": "object",
 			"properties": {
-				"connector_id": {
-					"$ref": "#/$defs/ConnectorId"
+				"connector": {
+					"$ref": "#/$defs/ConnectorSlug"
 				},
 				"vault_id": {
 					"$ref": "#/$defs/VaultId_1"
@@ -7087,7 +7087,7 @@ export const contract: ApiContract = {
 				}
 			},
 			"required": [
-				"connector_id"
+				"connector"
 			],
 			"additionalProperties": false
 		},
@@ -11530,8 +11530,8 @@ export const contract: ApiContract = {
 								"connector"
 							]
 						},
-						"connector_id": {
-							"$ref": "#/$defs/ConnectorId"
+						"connector": {
+							"$ref": "#/$defs/ConnectorSlug"
 						},
 						"owner": {
 							"type": "string",
@@ -11542,7 +11542,7 @@ export const contract: ApiContract = {
 					},
 					"required": [
 						"type",
-						"connector_id",
+						"connector",
 						"owner"
 					],
 					"additionalProperties": false

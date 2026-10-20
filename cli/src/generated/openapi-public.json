@@ -784,7 +784,7 @@
             "name": "connector",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/ConnectorId"
+              "$ref": "#/components/schemas/ConnectorSlug"
             },
             "required": false
           },
@@ -1330,7 +1330,7 @@
             "name": "connector",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/ConnectorId"
+              "$ref": "#/components/schemas/ConnectorSlug"
             },
             "required": false
           }
@@ -1941,7 +1941,7 @@
             "name": "id",
             "in": "path",
             "schema": {
-              "$ref": "#/components/schemas/ConnectorId"
+              "$ref": "#/components/schemas/ConnectorSlug"
             },
             "required": true
           },
@@ -56413,10 +56413,7 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/ConnectorId"
-          },
-          "slug": {
-            "type": "string"
+            "$ref": "#/components/schemas/ConnectorSlug_1"
           },
           "name": {
             "type": "string"
@@ -56458,7 +56455,6 @@
         },
         "required": [
           "id",
-          "slug",
           "name",
           "description",
           "kind",
@@ -56484,13 +56480,22 @@
         ],
         "additionalProperties": false
       },
-      "ConnectorId": {
+      "ConnectorSlug_1": {
         "type": "string",
-        "pattern": "^ctr_[a-z0-9][a-z0-9_-]{0,63}$",
-        "title": "ConnectorId",
-        "description": "A connector id: `ctr_` and the connector slug.",
+        "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+        "title": "ConnectorSlug",
+        "description": "The connector's slug.",
         "examples": [
-          "ctr_openai"
+          "openai"
+        ]
+      },
+      "ConnectorSlug": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+        "title": "ConnectorSlug",
+        "description": "A connector's stable slug.",
+        "examples": [
+          "openai"
         ]
       },
       "ConnectorList": {
@@ -56534,8 +56539,8 @@
           "vault_id": {
             "$ref": "#/components/schemas/VaultId"
           },
-          "connector_id": {
-            "$ref": "#/components/schemas/ConnectorId"
+          "connector": {
+            "$ref": "#/components/schemas/ConnectorSlug"
           },
           "name": {
             "type": "string",
@@ -56557,7 +56562,7 @@
         "required": [
           "id",
           "vault_id",
-          "connector_id",
+          "connector",
           "name",
           "owner",
           "state",
@@ -56643,8 +56648,8 @@
           "vault_id": {
             "$ref": "#/components/schemas/VaultId"
           },
-          "connector_id": {
-            "$ref": "#/components/schemas/ConnectorId"
+          "connector": {
+            "$ref": "#/components/schemas/ConnectorSlug"
           },
           "name": {
             "type": "string",
@@ -56677,7 +56682,7 @@
         "required": [
           "id",
           "vault_id",
-          "connector_id",
+          "connector",
           "name",
           "owner",
           "state",
@@ -56712,8 +56717,8 @@
       "CreateConnectionRequest": {
         "type": "object",
         "properties": {
-          "connector_id": {
-            "$ref": "#/components/schemas/ConnectorId"
+          "connector": {
+            "$ref": "#/components/schemas/ConnectorSlug"
           },
           "vault_id": {
             "$ref": "#/components/schemas/VaultId_1"
@@ -56781,7 +56786,7 @@
           }
         },
         "required": [
-          "connector_id"
+          "connector"
         ],
         "additionalProperties": false
       },
@@ -56952,8 +56957,8 @@
                   "connector"
                 ]
               },
-              "connector_id": {
-                "$ref": "#/components/schemas/ConnectorId"
+              "connector": {
+                "$ref": "#/components/schemas/ConnectorSlug"
               },
               "owner": {
                 "type": "string",
@@ -56964,7 +56969,7 @@
             },
             "required": [
               "type",
-              "connector_id",
+              "connector",
               "owner"
             ],
             "additionalProperties": false
