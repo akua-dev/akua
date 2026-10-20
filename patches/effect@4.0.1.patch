@@ -213,3 +213,45 @@ diff --git a/dist/http-api/HttpApiEndpoint.d.ts b/dist/http-api/HttpApiEndpoint.
  })) extends infer Req ? keyof Req extends never ? (void | {
      readonly responseMode?: ResponseMode;
      readonly sseOptions?: Sse.DecodeOptions | undefined;
+diff --git a/dist/internal/schema/toCodeDocument.js b/dist/internal/schema/toCodeDocument.js
+index 829638c574d74aaf08dfd437cbe804f57116dfd9..de3188c73a29c462eff691acbaead0852ba18ce4 100644
+--- a/dist/internal/schema/toCodeDocument.js
++++ b/dist/internal/schema/toCodeDocument.js
+@@ -322,8 +322,14 @@ export function toCodeDocument(document) {
+         return makeCode("Schema.Any", "any");
+       case "String":
+         return makeCode("Schema.String", "string");
+-      case "Number":
+-        return makeCode("Schema.Number", "number");
++      case "Number": {
++        // Preserve the finite domain already required by JSON numbers and integers.
++        const finite = representation.checks.some((check) =>
++          check.representation?.id === "effect/schema/isFinite" ||
++          check.representation?.id === "effect/schema/isInt"
++        );
++        return makeCode(finite ? "Schema.Finite" : "Schema.Number", "number");
++      }
+       case "Boolean":
+         return makeCode("Schema.Boolean", "boolean");
+       case "BigInt":
+diff --git a/src/internal/schema/toCodeDocument.ts b/src/internal/schema/toCodeDocument.ts
+index f8673241b25f28aa8b4848051e293aed52bfbf46..121b19f53c8ee789790c3e70ff51100298c10b01 100644
+--- a/src/internal/schema/toCodeDocument.ts
++++ b/src/internal/schema/toCodeDocument.ts
+@@ -403,8 +403,14 @@ export function toCodeDocument(
+         return makeCode("Schema.Any", "any")
+       case "String":
+         return makeCode("Schema.String", "string")
+-      case "Number":
+-        return makeCode("Schema.Number", "number")
++      case "Number": {
++        // Preserve the finite domain already required by JSON numbers and integers.
++        const finite = representation.checks.some((check) =>
++          check.representation?.id === "effect/schema/isFinite" ||
++          check.representation?.id === "effect/schema/isInt"
++        )
++        return makeCode(finite ? "Schema.Finite" : "Schema.Number", "number")
++      }
+       case "Boolean":
+         return makeCode("Schema.Boolean", "boolean")
+       case "BigInt":
