@@ -1790,7 +1790,7 @@
             }
           }
         },
-        "description": "Stops all use of the connection immediately, then asks the provider to revoke and erases the stored credential. Grants on the connection stop applying.",
+        "description": "Stops all use of the connection immediately and answers with state REVOKING. The provider is then asked to revoke and the stored credential is erased in the background, however long that takes, and the state becomes REVOKED. Grants on the connection stop applying at once.",
         "summary": "Revoke a connection",
         "x-platform-visibility": "PUBLIC"
       }
@@ -24582,7 +24582,7 @@
             }
           }
         },
-        "description": "Deletes a vault with no active connections. The default vault cannot be deleted.",
+        "description": "Deletes a vault and everything in it. Deletion is accepted at once and the vault is unusable from then on; every connection is revoked and Akua Connect erases its state in the background, however long that takes, and the vault disappears when it is done. The default vault cannot be deleted.",
         "summary": "Delete a vault",
         "x-platform-visibility": "PUBLIC"
       }
@@ -30372,6 +30372,48 @@
             "additionalProperties": false
           },
           {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "connect.vault.delete"
+                ]
+              },
+              "vault_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              }
+            },
+            "required": [
+              "type",
+              "vault_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "connect.connection.revoke"
+                ]
+              },
+              "connection_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 56
+              }
+            },
+            "required": [
+              "type",
+              "connection_id"
+            ],
+            "additionalProperties": false
+          },
+          {
             "type": "null"
           }
         ],
@@ -31574,6 +31616,66 @@
               "repository_id"
             ],
             "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "connect.vault.delete"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              },
+              "vault_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              }
+            },
+            "required": [
+              "type",
+              "workspace_id",
+              "vault_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "connect.connection.revoke"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              },
+              "vault_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "connection_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 56
+              }
+            },
+            "required": [
+              "type",
+              "workspace_id",
+              "vault_id",
+              "connection_id"
+            ],
+            "additionalProperties": false
           }
         ]
       },
@@ -32158,6 +32260,14 @@
             "minLength": 1,
             "maxLength": 100
           },
+          "state": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "DELETING"
+            ],
+            "description": "`DELETING`: deletion was accepted. Nothing in the vault can be used any more, and Akua Connect is erasing its state; the vault disappears when that is done."
+          },
           "is_default": {
             "type": "boolean",
             "description": "True for the Workspace's default vault, which cannot be deleted."
@@ -32190,6 +32300,7 @@
           "id",
           "workspace_id",
           "name",
+          "state",
           "is_default",
           "external_id",
           "metadata",
