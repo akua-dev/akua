@@ -8762,37 +8762,70 @@ export const contract: ApiContract = {
 			"additionalProperties": false
 		},
 		"CreateSandboxAccessGrantBody": {
-			"type": "object",
-			"properties": {
-				"subject_type": {
-					"type": "string",
-					"enum": [
-						"user",
-						"opencode"
-					],
-					"description": "`user`: a workspace member. `opencode`: an OpenCode Server (`oc_...`)."
-				},
-				"subject_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 100,
-					"description": "The user id, or the OpenCode Server id (`oc_...`)."
-				},
-				"permissions": {
-					"type": "array",
-					"items": {
-						"$ref": "#/$defs/SandboxPermission"
+			"anyOf": [
+				{
+					"type": "object",
+					"properties": {
+						"subject_type": {
+							"type": "string",
+							"enum": [
+								"user",
+								"opencode"
+							],
+							"description": "`user`: a workspace member. `opencode`: an OpenCode Server (`oc_...`)."
+						},
+						"subject_id": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						},
+						"permissions": {
+							"type": "array",
+							"items": {
+								"$ref": "#/$defs/SandboxPermission"
+							},
+							"minItems": 1,
+							"maxItems": 5
+						}
 					},
-					"minItems": 1,
-					"maxItems": 5
+					"required": [
+						"subject_type",
+						"subject_id",
+						"permissions"
+					],
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"properties": {
+						"subject_type": {
+							"type": "string",
+							"enum": [
+								"workspace"
+							]
+						},
+						"subject_id": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100,
+							"description": "This sandbox's Workspace id. May be omitted; another Workspace is never accepted."
+						},
+						"permissions": {
+							"type": "array",
+							"items": {
+								"$ref": "#/$defs/SandboxPermission"
+							},
+							"minItems": 1,
+							"maxItems": 5
+						}
+					},
+					"required": [
+						"subject_type",
+						"permissions"
+					],
+					"additionalProperties": false
 				}
-			},
-			"required": [
-				"subject_type",
-				"subject_id",
-				"permissions"
-			],
-			"additionalProperties": false
+			]
 		},
 		"CreateSandboxBody": {
 			"type": "object",
@@ -8824,6 +8857,24 @@ export const contract: ApiContract = {
 				},
 				"labels": {
 					"$ref": "#/$defs/SandboxLabels"
+				},
+				"sharing": {
+					"type": "string",
+					"enum": [
+						"private",
+						"workspace"
+					],
+					"description": "Explicit creation is private by default. `workspace` grants access to every current Workspace member.",
+					"default": "private"
+				},
+				"sharing_permissions": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/SandboxPermission"
+					},
+					"minItems": 1,
+					"maxItems": 5,
+					"description": "Workspace-sharing permissions; defaults to run_commands and files. manage stays with the owner unless explicitly included."
 				}
 			},
 			"required": [
@@ -12580,7 +12631,7 @@ export const contract: ApiContract = {
 				"previews",
 				"manage"
 			],
-			"description": "`run_commands`: start, read and stop commands. `files`: read and write files. `terminal`: open terminals. `previews`: open previews of running services. `manage`: everything, plus lifecycle, settings and access grants."
+			"description": "`run_commands`: commands. `files`: files. `terminal`: terminals. `previews`: previews. `manage`: all permissions, lifecycle, settings and access grants."
 		},
 		"SandboxPreviewVisibility": {
 			"type": "string",

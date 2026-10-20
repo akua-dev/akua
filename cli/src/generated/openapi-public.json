@@ -25039,7 +25039,7 @@
             }
           }
         },
-        "description": "Sandboxes in the workspace that the caller has a grant on, newest first.",
+        "description": "Sandboxes visible through the caller’s own grant or a grant to every current Workspace member, newest first.",
         "summary": "List sandboxes",
         "x-platform-visibility": "PUBLIC"
       }
@@ -28079,7 +28079,7 @@
             }
           }
         },
-        "description": "Gives a workspace member or an OpenCode Server permissions on the sandbox. One grant per subject; change permissions by deleting and granting again. Requires `manage`.",
+        "description": "Gives a Workspace member, an OpenCode Server, or every current Workspace member permissions on the sandbox. For subject_type workspace, subject_id may be omitted and must match this Workspace if supplied. One grant per subject; change permissions by deleting and granting again. Requires `manage`.",
         "summary": "Grant access to a sandbox",
         "requestBody": {
           "content": {
@@ -30630,9 +30630,10 @@
             "type": "string",
             "enum": [
               "user",
-              "opencode"
+              "opencode",
+              "workspace"
             ],
-            "description": "`user`: a workspace member. `opencode`: an OpenCode Server (`oc_...`)."
+            "description": "A Workspace member, an OpenCode Server, or every current member of this sandbox's Workspace."
           },
           "subject_id": {
             "type": "string"
@@ -30672,40 +30673,73 @@
           "previews",
           "manage"
         ],
-        "description": "`run_commands`: start, read and stop commands. `files`: read and write files. `terminal`: open terminals. `previews`: open previews of running services. `manage`: everything, plus lifecycle, settings and access grants."
+        "description": "`run_commands`: commands. `files`: files. `terminal`: terminals. `previews`: previews. `manage`: all permissions, lifecycle, settings and access grants."
       },
       "CreateSandboxAccessGrantBody": {
-        "type": "object",
-        "properties": {
-          "subject_type": {
-            "type": "string",
-            "enum": [
-              "user",
-              "opencode"
-            ],
-            "description": "`user`: a workspace member. `opencode`: an OpenCode Server (`oc_...`)."
-          },
-          "subject_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100,
-            "description": "The user id, or the OpenCode Server id (`oc_...`)."
-          },
-          "permissions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SandboxPermission"
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "subject_type": {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "opencode"
+                ],
+                "description": "`user`: a workspace member. `opencode`: an OpenCode Server (`oc_...`)."
+              },
+              "subject_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "permissions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SandboxPermission"
+                },
+                "minItems": 1,
+                "maxItems": 5
+              }
             },
-            "minItems": 1,
-            "maxItems": 5
+            "required": [
+              "subject_type",
+              "subject_id",
+              "permissions"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "subject_type": {
+                "type": "string",
+                "enum": [
+                  "workspace"
+                ]
+              },
+              "subject_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "description": "This sandbox's Workspace id. May be omitted; another Workspace is never accepted."
+              },
+              "permissions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SandboxPermission"
+                },
+                "minItems": 1,
+                "maxItems": 5
+              }
+            },
+            "required": [
+              "subject_type",
+              "permissions"
+            ],
+            "additionalProperties": false
           }
-        },
-        "required": [
-          "subject_type",
-          "subject_id",
-          "permissions"
-        ],
-        "additionalProperties": false
+        ]
       },
       "SandboxFileInfo": {
         "type": "object",
@@ -34223,6 +34257,24 @@
           },
           "labels": {
             "$ref": "#/components/schemas/SandboxLabels"
+          },
+          "sharing": {
+            "type": "string",
+            "enum": [
+              "private",
+              "workspace"
+            ],
+            "description": "Explicit creation is private by default. `workspace` grants access to every current Workspace member.",
+            "default": "private"
+          },
+          "sharing_permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SandboxPermission"
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "description": "Workspace-sharing permissions; defaults to run_commands and files. manage stays with the owner unless explicitly included."
           }
         },
         "required": [
