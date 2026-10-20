@@ -129,6 +129,10 @@ export const contract: ApiContract = {
 			"description": "Fork-backed repository change reviews and lifecycle actions."
 		},
 		{
+			"name": "sandboxes",
+			"title": "Sandboxes"
+		},
+		{
 			"name": "secrets",
 			"title": "Secrets",
 			"description": "Workspace secrets and secret versions."
@@ -268,6 +272,14 @@ export const contract: ApiContract = {
 				"description": "Checkout session ID"
 			}
 		},
+		"path:command_id": {
+			"name": "command_id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"$ref": "#/$defs/SandboxCommandId"
+			}
+		},
 		"path:custom_domain_id": {
 			"name": "custom_domain_id",
 			"in": "path",
@@ -277,6 +289,14 @@ export const contract: ApiContract = {
 				"description": "Custom domain ID",
 				"minLength": 1,
 				"maxLength": 54
+			}
+		},
+		"path:grant_id": {
+			"name": "grant_id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"$ref": "#/$defs/SandboxAccessGrantId"
 			}
 		},
 		"path:id": {
@@ -438,6 +458,14 @@ export const contract: ApiContract = {
 			"in": "path",
 			"required": true,
 			"schema": {
+				"$ref": "#/$defs/SandboxId"
+			}
+		},
+		"path:id:23": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
 				"type": "string"
 			}
 		},
@@ -560,6 +588,17 @@ export const contract: ApiContract = {
 			"schema": {
 				"type": "string",
 				"description": "Kube API path forwarded verbatim"
+			}
+		},
+		"path:port": {
+			"name": "port",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "integer",
+				"minimum": 1,
+				"maximum": 65535,
+				"description": "The port a service in the sandbox listens on."
 			}
 		},
 		"path:preview_hostname_id": {
@@ -760,6 +799,15 @@ export const contract: ApiContract = {
 				"maxLength": 253
 			}
 		},
+		"query:create_parents": {
+			"name": "create_parents",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "boolean",
+				"description": "Create missing directories. Default true."
+			}
+		},
 		"query:cursor": {
 			"name": "cursor",
 			"in": "query",
@@ -770,6 +818,16 @@ export const contract: ApiContract = {
 			}
 		},
 		"query:cursor:2": {
+			"name": "cursor",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "string",
+				"maxLength": 512,
+				"description": "Pagination cursor from a previous response's `next_cursor`."
+			}
+		},
+		"query:cursor:3": {
 			"name": "cursor",
 			"in": "query",
 			"required": false,
@@ -838,6 +896,16 @@ export const contract: ApiContract = {
 					}
 				],
 				"description": "Follow log output",
+				"default": true
+			}
+		},
+		"query:follow:2": {
+			"name": "follow",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "boolean",
+				"description": "Keep the stream open until the command finished. Default true.",
 				"default": true
 			}
 		},
@@ -941,6 +1009,28 @@ export const contract: ApiContract = {
 				"maxLength": 56
 			}
 		},
+		"query:offset": {
+			"name": "offset",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "integer",
+				"minimum": 0,
+				"description": "Resume from this output byte offset. Default 0.",
+				"default": 0
+			}
+		},
+		"query:opencode": {
+			"name": "opencode",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 100,
+				"description": "Only sandboxes this OpenCode Server (`oc_...`) has a grant on."
+			}
+		},
 		"query:owner_id": {
 			"name": "owner_id",
 			"in": "query",
@@ -977,6 +1067,18 @@ export const contract: ApiContract = {
 				"description": "Filter to change requests targeting this parent repository",
 				"minLength": 1,
 				"maxLength": 55
+			}
+		},
+		"query:path": {
+			"name": "path",
+			"in": "query",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 4096,
+				"pattern": "^\\/[^\\0]*$",
+				"description": "Absolute path inside the sandbox."
 			}
 		},
 		"query:pod": {
@@ -1158,6 +1260,22 @@ export const contract: ApiContract = {
 					"failed",
 					"timed_out"
 				]
+			}
+		},
+		"query:state:7": {
+			"name": "state",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"$ref": "#/$defs/SandboxState"
+			}
+		},
+		"query:state:8": {
+			"name": "state",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"$ref": "#/$defs/SandboxCommandState"
 			}
 		},
 		"query:status": {
@@ -1566,7 +1684,7 @@ export const contract: ApiContract = {
 			"summary": "Get cluster compute settings",
 			"auth": true,
 			"parameters": [
-				"path:id:22",
+				"path:id:23",
 				"header:akua-context:2"
 			]
 		},
@@ -1772,7 +1890,7 @@ export const contract: ApiContract = {
 			"summary": "Update cluster compute settings",
 			"auth": true,
 			"parameters": [
-				"path:id:22",
+				"path:id:23",
 				"header:if-match:3",
 				"header:akua-context:2"
 			],
@@ -3873,7 +3991,7 @@ export const contract: ApiContract = {
 				"query:feature_set",
 				"query:feature",
 				"query:limit:3",
-				"query:cursor:2"
+				"query:cursor:3"
 			]
 		},
 		{
@@ -5576,6 +5694,441 @@ export const contract: ApiContract = {
 				"header:if-match",
 				"header:idempotency-key:3"
 			]
+		},
+		{
+			"id": "sandboxes.cancelCommand",
+			"method": "POST",
+			"path": "/sandboxes/{id}/commands/{command_id}:cancel",
+			"summary": "Cancel a command",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"path:command_id",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "sandboxes.create",
+			"method": "POST",
+			"path": "/sandboxes",
+			"summary": "Create a sandbox",
+			"auth": true,
+			"parameters": [
+				"header:akua-context",
+				"header:idempotency-key:2"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/CreateSandboxBody"
+				}
+			}
+		},
+		{
+			"id": "sandboxes.delete",
+			"method": "DELETE",
+			"path": "/sandboxes/{id}",
+			"summary": "Delete a sandbox",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context",
+				"header:idempotency-key:2",
+				"header:if-match"
+			]
+		},
+		{
+			"id": "sandboxes.exposePort",
+			"method": "POST",
+			"path": "/sandboxes/{id}/previews",
+			"summary": "Expose a port",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/ExposeSandboxPortBody"
+				}
+			}
+		},
+		{
+			"id": "sandboxes.fork",
+			"method": "POST",
+			"path": "/sandboxes/{id}:fork",
+			"summary": "Fork a sandbox",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context",
+				"header:idempotency-key:2"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/ForkSandboxBody"
+				}
+			}
+		},
+		{
+			"id": "sandboxes.get",
+			"method": "GET",
+			"path": "/sandboxes/{id}",
+			"summary": "Get a sandbox",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "sandboxes.getCommand",
+			"method": "GET",
+			"path": "/sandboxes/{id}/commands/{command_id}",
+			"summary": "Get a command",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"path:command_id",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "sandboxes.grantAccess",
+			"method": "POST",
+			"path": "/sandboxes/{id}/access",
+			"summary": "Grant access to a sandbox",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/CreateSandboxAccessGrantBody"
+				}
+			}
+		},
+		{
+			"id": "sandboxes.list",
+			"method": "GET",
+			"path": "/sandboxes",
+			"summary": "List sandboxes",
+			"auth": true,
+			"parameters": [
+				"header:akua-context",
+				"query:cursor:2",
+				"query:limit",
+				"query:state:7",
+				"query:opencode"
+			]
+		},
+		{
+			"id": "sandboxes.listAccess",
+			"method": "GET",
+			"path": "/sandboxes/{id}/access",
+			"summary": "List access grants",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context",
+				"query:cursor:2",
+				"query:limit"
+			]
+		},
+		{
+			"id": "sandboxes.listCommands",
+			"method": "GET",
+			"path": "/sandboxes/{id}/commands",
+			"summary": "List commands",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context",
+				"query:cursor:2",
+				"query:limit",
+				"query:state:8"
+			]
+		},
+		{
+			"id": "sandboxes.listFiles",
+			"method": "POST",
+			"path": "/sandboxes/{id}:listFiles",
+			"summary": "List files",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/ListSandboxFilesBody"
+				}
+			}
+		},
+		{
+			"id": "sandboxes.listPreviews",
+			"method": "GET",
+			"path": "/sandboxes/{id}/previews",
+			"summary": "List previews",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "sandboxes.makeDirectory",
+			"method": "POST",
+			"path": "/sandboxes/{id}:makeDirectory",
+			"summary": "Make a directory",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/MakeSandboxDirectoryBody"
+				}
+			}
+		},
+		{
+			"id": "sandboxes.moveFile",
+			"method": "POST",
+			"path": "/sandboxes/{id}:moveFile",
+			"summary": "Move a file",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/MoveSandboxFileBody"
+				}
+			}
+		},
+		{
+			"id": "sandboxes.readFile",
+			"method": "POST",
+			"path": "/sandboxes/{id}:readFile",
+			"summary": "Read a file",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/SandboxPathBody"
+				}
+			},
+			"download": true
+		},
+		{
+			"id": "sandboxes.removeFiles",
+			"method": "POST",
+			"path": "/sandboxes/{id}:removeFiles",
+			"summary": "Remove files",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/RemoveSandboxFilesBody"
+				}
+			}
+		},
+		{
+			"id": "sandboxes.resume",
+			"method": "POST",
+			"path": "/sandboxes/{id}:resume",
+			"summary": "Resume a sandbox",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context",
+				"header:idempotency-key:2",
+				"header:if-match"
+			]
+		},
+		{
+			"id": "sandboxes.revokeAccess",
+			"method": "DELETE",
+			"path": "/sandboxes/{id}/access/{grant_id}",
+			"summary": "Revoke access to a sandbox",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"path:grant_id",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "sandboxes.rotatePreviewToken",
+			"method": "POST",
+			"path": "/sandboxes/{id}/previews/{port}:rotateToken",
+			"summary": "Rotate a preview’s token",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"path:port",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "sandboxes.runCommand",
+			"method": "POST",
+			"path": "/sandboxes/{id}/commands",
+			"summary": "Run a command",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/RunSandboxCommandBody"
+				}
+			}
+		},
+		{
+			"id": "sandboxes.statFile",
+			"method": "POST",
+			"path": "/sandboxes/{id}:statFile",
+			"summary": "Get file metadata",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/SandboxPathBody"
+				}
+			}
+		},
+		{
+			"id": "sandboxes.streamCommandLogs",
+			"method": "GET",
+			"path": "/sandboxes/{id}/commands/{command_id}/logs:stream",
+			"summary": "Stream command output",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"path:command_id",
+				"header:akua-context",
+				"query:offset",
+				"query:follow:2"
+			],
+			"lines": true
+		},
+		{
+			"id": "sandboxes.suspend",
+			"method": "POST",
+			"path": "/sandboxes/{id}:suspend",
+			"summary": "Suspend a sandbox",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context",
+				"header:idempotency-key:2",
+				"header:if-match"
+			]
+		},
+		{
+			"id": "sandboxes.unexposePort",
+			"method": "DELETE",
+			"path": "/sandboxes/{id}/previews/{port}",
+			"summary": "Unexpose a port",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"path:port",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "sandboxes.update",
+			"method": "PATCH",
+			"path": "/sandboxes/{id}",
+			"summary": "Update a sandbox",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context",
+				"header:if-match"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/UpdateSandboxBody"
+				}
+			}
+		},
+		{
+			"id": "sandboxes.writeCommandStdin",
+			"method": "POST",
+			"path": "/sandboxes/{id}/commands/{command_id}:writeStdin",
+			"summary": "Write to a command’s input",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"path:command_id",
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/WriteSandboxStdinBody"
+				}
+			}
+		},
+		{
+			"id": "sandboxes.writeFile",
+			"method": "POST",
+			"path": "/sandboxes/{id}:writeFile",
+			"summary": "Write a file",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context",
+				"query:path",
+				"query:create_parents"
+			],
+			"upload": {
+				"required": true
+			}
+		},
+		{
+			"id": "sandboxes.writeFiles",
+			"method": "POST",
+			"path": "/sandboxes/{id}:writeFiles",
+			"summary": "Write several files",
+			"auth": true,
+			"parameters": [
+				"path:id:22",
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/WriteSandboxFilesBody"
+				}
+			}
 		},
 		{
 			"id": "secrets.accessVersion",
@@ -8206,6 +8759,76 @@ export const contract: ApiContract = {
 					"maximum": 3600
 				}
 			},
+			"additionalProperties": false
+		},
+		"CreateSandboxAccessGrantBody": {
+			"type": "object",
+			"properties": {
+				"subject_type": {
+					"type": "string",
+					"enum": [
+						"user",
+						"opencode"
+					],
+					"description": "`user`: a workspace member. `opencode`: an OpenCode Server (`oc_...`)."
+				},
+				"subject_id": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 100,
+					"description": "The user id, or the OpenCode Server id (`oc_...`)."
+				},
+				"permissions": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/SandboxPermission"
+					},
+					"minItems": 1,
+					"maxItems": 5
+				}
+			},
+			"required": [
+				"subject_type",
+				"subject_id",
+				"permissions"
+			],
+			"additionalProperties": false
+		},
+		"CreateSandboxBody": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 100,
+					"description": "Display name."
+				},
+				"size": {
+					"$ref": "#/$defs/SandboxSize"
+				},
+				"source": {
+					"$ref": "#/$defs/SandboxSource"
+				},
+				"network_policy": {
+					"$ref": "#/$defs/SandboxNetworkPolicy"
+				},
+				"idle_timeout_seconds": {
+					"type": "integer",
+					"minimum": 300,
+					"maximum": 86400,
+					"description": "Seconds without API activity after which the sandbox suspends itself. Commands that are still running keep it awake. 300 to 86400; default 600.",
+					"default": 600
+				},
+				"env": {
+					"$ref": "#/$defs/SandboxEnv"
+				},
+				"labels": {
+					"$ref": "#/$defs/SandboxLabels"
+				}
+			},
+			"required": [
+				"name"
+			],
 			"additionalProperties": false
 		},
 		"CreateSecretBody": {
@@ -10949,6 +11572,47 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
+		"ExposeSandboxPortBody": {
+			"type": "object",
+			"properties": {
+				"port": {
+					"type": "integer",
+					"minimum": 1,
+					"maximum": 65535,
+					"description": "The port a service in the sandbox listens on."
+				},
+				"visibility": {
+					"$ref": "#/$defs/SandboxPreviewVisibility"
+				},
+				"name": {
+					"type": "string",
+					"pattern": "^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$",
+					"description": "Readable part of the hostname. Defaults to `preview`."
+				}
+			},
+			"required": [
+				"port"
+			],
+			"additionalProperties": false
+		},
+		"ForkSandboxBody": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 100,
+					"description": "Display name."
+				},
+				"labels": {
+					"$ref": "#/$defs/SandboxLabels"
+				}
+			},
+			"required": [
+				"name"
+			],
+			"additionalProperties": false
+		},
 		"ImportPackageBody": {
 			"type": "object",
 			"properties": {
@@ -11032,6 +11696,36 @@ export const contract: ApiContract = {
 				}
 			]
 		},
+		"ListSandboxFilesBody": {
+			"type": "object",
+			"properties": {
+				"path": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 4096,
+					"pattern": "^\\/[^\\0]*$",
+					"description": "Absolute path inside the sandbox."
+				},
+				"recursive": {
+					"type": "boolean",
+					"default": false
+				},
+				"limit": {
+					"type": "integer",
+					"minimum": 1,
+					"maximum": 1000,
+					"default": 200
+				},
+				"cursor": {
+					"type": "string",
+					"maxLength": 4096
+				}
+			},
+			"required": [
+				"path"
+			],
+			"additionalProperties": false
+		},
 		"MachineCockpitResource": {
 			"type": "object",
 			"properties": {
@@ -11055,6 +11749,54 @@ export const contract: ApiContract = {
 				"workspace_id",
 				"cluster_id",
 				"machine_id"
+			],
+			"additionalProperties": false
+		},
+		"MakeSandboxDirectoryBody": {
+			"type": "object",
+			"properties": {
+				"path": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 4096,
+					"pattern": "^\\/[^\\0]*$",
+					"description": "Absolute path inside the sandbox."
+				},
+				"parents": {
+					"type": "boolean",
+					"default": true
+				}
+			},
+			"required": [
+				"path"
+			],
+			"additionalProperties": false
+		},
+		"MoveSandboxFileBody": {
+			"type": "object",
+			"properties": {
+				"from": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 4096,
+					"pattern": "^\\/[^\\0]*$",
+					"description": "Absolute path inside the sandbox."
+				},
+				"to": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 4096,
+					"pattern": "^\\/[^\\0]*$",
+					"description": "Absolute path inside the sandbox."
+				},
+				"overwrite": {
+					"type": "boolean",
+					"default": false
+				}
+			},
+			"required": [
+				"from",
+				"to"
 			],
 			"additionalProperties": false
 		},
@@ -11618,6 +12360,31 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
+		"RemoveSandboxFilesBody": {
+			"type": "object",
+			"properties": {
+				"paths": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 4096,
+						"pattern": "^\\/[^\\0]*$",
+						"description": "Absolute path inside the sandbox."
+					},
+					"minItems": 1,
+					"maxItems": 100
+				},
+				"recursive": {
+					"type": "boolean",
+					"default": false
+				}
+			},
+			"required": [
+				"paths"
+			],
+			"additionalProperties": false
+		},
 		"RestoreInstallBody": {
 			"type": "object",
 			"properties": {
@@ -11635,6 +12402,233 @@ export const contract: ApiContract = {
 		"ResumeMachineBody": {
 			"type": "object",
 			"additionalProperties": false
+		},
+		"RunSandboxCommandBody": {
+			"anyOf": [
+				{
+					"type": "object",
+					"properties": {
+						"argv": {
+							"type": "array",
+							"items": {
+								"type": "string",
+								"maxLength": 16384
+							},
+							"minItems": 1,
+							"maxItems": 256,
+							"description": "Program and arguments, run without a shell."
+						},
+						"cwd": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 4096,
+							"pattern": "^\\/[^\\0]*$",
+							"description": "Absolute path inside the sandbox.",
+							"default": "/workspace"
+						},
+						"env": {
+							"$ref": "#/$defs/SandboxEnv"
+						},
+						"timeout_seconds": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 86400,
+							"description": "Seconds before the command is killed. Default 600.",
+							"default": 600
+						},
+						"wait": {
+							"type": "boolean",
+							"description": "Return when the command finished, for at most 60 seconds, with its output. Otherwise return as soon as it started.",
+							"default": false
+						},
+						"stdin": {
+							"type": "boolean",
+							"description": "Keep standard input open for `:writeStdin`. Default false (empty input).",
+							"default": false
+						}
+					},
+					"required": [
+						"argv"
+					],
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"properties": {
+						"shell": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 16384,
+							"description": "A `bash -lc` command line."
+						},
+						"cwd": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 4096,
+							"pattern": "^\\/[^\\0]*$",
+							"description": "Absolute path inside the sandbox.",
+							"default": "/workspace"
+						},
+						"env": {
+							"$ref": "#/$defs/SandboxEnv"
+						},
+						"timeout_seconds": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 86400,
+							"description": "Seconds before the command is killed. Default 600.",
+							"default": 600
+						},
+						"wait": {
+							"type": "boolean",
+							"description": "Return when the command finished, for at most 60 seconds, with its output. Otherwise return as soon as it started.",
+							"default": false
+						},
+						"stdin": {
+							"type": "boolean",
+							"description": "Keep standard input open for `:writeStdin`. Default false (empty input).",
+							"default": false
+						}
+					},
+					"required": [
+						"shell"
+					],
+					"additionalProperties": false
+				}
+			]
+		},
+		"SandboxAccessGrantId": {
+			"type": "string",
+			"pattern": "^sbxg_[A-Za-z0-9]{1,64}$",
+			"title": "Sandbox access grant id",
+			"description": "Sandbox access grant id (`sbxg_...`)."
+		},
+		"SandboxCommandId": {
+			"type": "string",
+			"pattern": "^cmd_[A-Za-z0-9]{1,64}$",
+			"title": "Sandbox command id",
+			"description": "Sandbox command id (`cmd_...`)."
+		},
+		"SandboxCommandState": {
+			"type": "string",
+			"enum": [
+				"RUNNING",
+				"SUCCEEDED",
+				"FAILED",
+				"CANCELLED"
+			],
+			"description": "`SUCCEEDED`: exited with code 0. `FAILED`: exited with another code, was killed, or hit its timeout (exit code 124)."
+		},
+		"SandboxEnv": {
+			"type": "object",
+			"additionalProperties": {
+				"type": "string",
+				"maxLength": 4096
+			}
+		},
+		"SandboxId": {
+			"type": "string",
+			"pattern": "^sbx_[A-Za-z0-9]{1,64}$",
+			"title": "Sandbox id",
+			"description": "Sandbox id (`sbx_...`)."
+		},
+		"SandboxLabels": {
+			"type": "object",
+			"additionalProperties": {
+				"type": "string",
+				"maxLength": 256
+			}
+		},
+		"SandboxNetworkPolicy": {
+			"type": "object",
+			"properties": {
+				"mode": {
+					"type": "string",
+					"enum": [
+						"allow_all"
+					]
+				}
+			},
+			"required": [
+				"mode"
+			],
+			"additionalProperties": false,
+			"description": "Outbound network access. `allow_all`: HTTP and HTTPS to public internet addresses; private, link-local and cluster-internal addresses are always blocked, and other protocols except DNS are not forwarded. Restrictive modes are added as new values."
+		},
+		"SandboxPathBody": {
+			"type": "object",
+			"properties": {
+				"path": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 4096,
+					"pattern": "^\\/[^\\0]*$",
+					"description": "Absolute path inside the sandbox."
+				}
+			},
+			"required": [
+				"path"
+			],
+			"additionalProperties": false
+		},
+		"SandboxPermission": {
+			"type": "string",
+			"enum": [
+				"run_commands",
+				"files",
+				"terminal",
+				"previews",
+				"manage"
+			],
+			"description": "`run_commands`: start, read and stop commands. `files`: read and write files. `terminal`: open terminals. `previews`: open previews of running services. `manage`: everything, plus lifecycle, settings and access grants."
+		},
+		"SandboxPreviewVisibility": {
+			"type": "string",
+			"enum": [
+				"link",
+				"private"
+			],
+			"description": "`link` (the default): anyone with the URL can open it; the random token in the hostname is the only gate. `private`: the same hostname, but it needs Akua sign-in and the `previews` permission on the sandbox."
+		},
+		"SandboxSize": {
+			"type": "string",
+			"enum": [
+				"standard"
+			],
+			"description": "Compute size. `standard` is the only size today; larger sizes are added as new values."
+		},
+		"SandboxSource": {
+			"type": "object",
+			"properties": {
+				"type": {
+					"type": "string",
+					"enum": [
+						"sandbox"
+					]
+				},
+				"sandbox_id": {
+					"$ref": "#/$defs/SandboxId"
+				}
+			},
+			"required": [
+				"type",
+				"sandbox_id"
+			],
+			"additionalProperties": false,
+			"description": "Where the sandbox content comes from. `sandbox`: a copy of another sandbox from its latest snapshot (a fork). Repository, snapshot and template sources are added as new `type` values."
+		},
+		"SandboxState": {
+			"type": "string",
+			"enum": [
+				"PROVISIONING",
+				"ACTIVE",
+				"SUSPENDING",
+				"SUSPENDED",
+				"RESUMING",
+				"DELETING",
+				"FAILED"
+			],
+			"description": "`ACTIVE` sandboxes run commands and file operations. `SUSPENDED` sandboxes keep their files and cost only storage. `-ING` states are in flight; `FAILED` sandboxes can only be deleted."
 		},
 		"SelectOrderDraftWorkspaceBody": {
 			"oneOf": [
@@ -12419,6 +13413,34 @@ export const contract: ApiContract = {
 				},
 				"marketplace": {
 					"$ref": "#/$defs/ProductMarketplace"
+				}
+			},
+			"additionalProperties": false
+		},
+		"UpdateSandboxBody": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 100,
+					"description": "Display name."
+				},
+				"size": {
+					"$ref": "#/$defs/SandboxSize"
+				},
+				"network_policy": {
+					"$ref": "#/$defs/SandboxNetworkPolicy"
+				},
+				"idle_timeout_seconds": {
+					"type": "integer",
+					"minimum": 300,
+					"maximum": 86400,
+					"description": "Seconds without API activity after which the sandbox suspends itself. Commands that are still running keep it awake. 300 to 86400; default 600.",
+					"default": 600
+				},
+				"labels": {
+					"$ref": "#/$defs/SandboxLabels"
 				}
 			},
 			"additionalProperties": false
@@ -13268,6 +14290,71 @@ export const contract: ApiContract = {
 			},
 			"required": [
 				"workspace_id"
+			],
+			"additionalProperties": false
+		},
+		"WriteSandboxFilesBody": {
+			"type": "object",
+			"properties": {
+				"files": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"path": {
+								"type": "string",
+								"minLength": 1,
+								"maxLength": 4096,
+								"pattern": "^\\/[^\\0]*$",
+								"description": "Absolute path inside the sandbox."
+							},
+							"content": {
+								"type": "string"
+							},
+							"encoding": {
+								"type": "string",
+								"enum": [
+									"utf8",
+									"base64"
+								],
+								"default": "utf8"
+							}
+						},
+						"required": [
+							"path",
+							"content"
+						],
+						"additionalProperties": false
+					},
+					"minItems": 1,
+					"maxItems": 1000
+				},
+				"create_parents": {
+					"type": "boolean",
+					"default": true
+				}
+			},
+			"required": [
+				"files"
+			],
+			"additionalProperties": false
+		},
+		"WriteSandboxStdinBody": {
+			"type": "object",
+			"properties": {
+				"data": {
+					"type": "string",
+					"maxLength": 1048576,
+					"description": "Text to write."
+				},
+				"close": {
+					"type": "boolean",
+					"description": "Close standard input afterwards.",
+					"default": false
+				}
+			},
+			"required": [
+				"data"
 			],
 			"additionalProperties": false
 		}

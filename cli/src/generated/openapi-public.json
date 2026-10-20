@@ -24736,6 +24736,4191 @@
         }
       }
     },
+    "/sandboxes": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.create",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Sandbox creation started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates a Workspace sandbox and returns an Operation; the sandbox is `PROVISIONING` until the Operation finishes and `ACTIVE` afterwards. The caller gets the `manage` permission. With `source.type: \"sandbox\"` the new sandbox is a copy of that sandbox from its latest snapshot; the source must be `SUSPENDED`. Retrying with the same Idempotency-Key returns the same Operation.",
+        "summary": "Create a sandbox",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSandboxBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      },
+      "get": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.list",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512,
+              "description": "Pagination cursor from a previous response's `next_cursor`."
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (1-100, default 50)",
+              "default": 50,
+              "examples": [
+                50
+              ],
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxState"
+            },
+            "required": false
+          },
+          {
+            "name": "opencode",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Only sandboxes this OpenCode Server (`oc_...`) has a grant on."
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Sandboxes in the workspace that the caller has a grant on, newest first.",
+        "summary": "List sandboxes",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}": {
+      "get": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sandbox",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Sandbox"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "One sandbox the caller has a grant on.",
+        "summary": "Get a sandbox",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "patch": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sandbox",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Sandbox"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Changes name, size, network policy, idle timeout or labels. Requires `manage`. A new idle timeout applies from the next activity.",
+        "summary": "Update a sandbox",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSandboxBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      },
+      "delete": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Sandbox deletion started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Deletes the sandbox, its files, running processes and command history, and returns an Operation. Requires `manage`. OpenCode sessions that used the sandbox keep their history; their next tool call that needs it gets an error saying the sandbox no longer exists.",
+        "summary": "Delete a sandbox",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}:suspend": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.suspend",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Sandbox suspend started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Snapshots the whole sandbox, including its files and the memory of running processes, and stops it, returning an Operation. A suspended sandbox costs only storage. Requires `manage`. While suspended, commands, file operations, terminals and previews are unavailable; ports and preview URLs stop answering until it is resumed. Sandboxes also suspend themselves after `idle_timeout_seconds` without activity.",
+        "summary": "Suspend a sandbox",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}:resume": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.resume",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Sandbox resume started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Restores a suspended sandbox from its snapshot, with files and the processes that were running, and returns an Operation. Requires `manage`, `run_commands` or `files`. Network connections that were open at suspend time are closed.",
+        "summary": "Resume a sandbox",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}:fork": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.fork",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Sandbox fork started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates a new sandbox from this sandbox’s latest snapshot and returns the new sandbox’s creation Operation. The source must be `SUSPENDED`; it cannot be resumed or deleted until the copy has been taken. Requires `files` on the source; the caller gets `manage` on the copy, which keeps the source’s size, network policy, idle timeout and environment.",
+        "summary": "Fork a sandbox",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForkSandboxBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}/commands": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.runCommand",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Command started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxCommand"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Starts a command and returns it. With `wait: true` the response comes when the command finished, for at most 60 seconds, and includes its output. Requires `run_commands`. Environment: the sandbox's `env`, then the request's. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
+        "summary": "Run a command",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunSandboxCommandBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      },
+      "get": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.listCommands",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512,
+              "description": "Pagination cursor from a previous response's `next_cursor`."
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (1-100, default 50)",
+              "default": 50,
+              "examples": [
+                50
+              ],
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxCommandState"
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxCommandList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxCommandList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Commands run in the sandbox, newest first. Works in every sandbox state. Requires `run_commands`.",
+        "summary": "List commands",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}/commands/{command_id}": {
+      "get": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.getCommand",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "command_id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxCommandId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxCommand",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxCommand"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "One command with its state and exit code. Requires `run_commands`.",
+        "summary": "Get a command",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}/commands/{command_id}/logs:stream": {
+      "get": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.streamCommandLogs",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "command_id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxCommandId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Resume from this output byte offset. Default 0.",
+              "default": 0
+            },
+            "required": false
+          },
+          {
+            "name": "follow",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "description": "Keep the stream open until the command finished. Default true.",
+              "default": true
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-effect-stream": {
+                  "encoding": "uint8array"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Newline-delimited JSON `SandboxCommandLogRecord` values (`{ stream, data, offset }`) in output order. Reconnect with `?offset=` to continue where a stream broke off. Requires `run_commands`. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
+        "summary": "Stream command output",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}/commands/{command_id}:cancel": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.cancelCommand",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "command_id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxCommandId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxCommand",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxCommand"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Stops a running command (SIGTERM, then SIGKILL after 5 seconds) and returns it. A finished command is returned unchanged. Requires `run_commands`. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
+        "summary": "Cancel a command",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}/commands/{command_id}:writeStdin": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.writeCommandStdin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "command_id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxCommandId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "<No Content>"
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Writes text to the standard input of a command started with `stdin: true`. Requires `run_commands`. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
+        "summary": "Write to a command’s input",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WriteSandboxStdinBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}:readFile": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.readFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-effect-stream": {
+                  "encoding": "uint8array"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "The raw bytes of one file, streamed. Files over 100 MiB answer 422; read them in parts with a command. Requires `files`. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
+        "summary": "Read a file",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxPathBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}:writeFile": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.writeFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^\\/[^\\0]*$",
+              "description": "Absolute path inside the sandbox.",
+              "examples": [
+                "/workspace/README.md"
+              ]
+            },
+            "required": true
+          },
+          {
+            "name": "create_parents",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "description": "Create missing directories. Default true."
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxFileInfo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxFileInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Replaces one file with the raw request body (`application/octet-stream`, at most 100 MiB) and returns its new metadata. The body is streamed to the sandbox, never buffered whole. Requires `files`. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
+        "summary": "Write a file",
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}:writeFiles": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.writeFiles",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxFileInfos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxFileInfos"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Writes a batch of small files (UTF-8 text or base64) in one request of at most 4 MiB, for example a set of agent edits. Files are written in order; a failure stops the batch and earlier files stay written. Requires `files`. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
+        "summary": "Write several files",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WriteSandboxFilesBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}:listFiles": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.listFiles",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxFileList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxFileList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Entries of a directory sorted by path, optionally recursive, paged with `cursor`. Symbolic links are listed, not followed. Requires `files`. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
+        "summary": "List files",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListSandboxFilesBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}:statFile": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.statFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxFileInfo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxFileInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Type, size, mode and modification time of one path, without following a final symbolic link. Requires `files`. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
+        "summary": "Get file metadata",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxPathBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}:removeFiles": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.removeFiles",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "<No Content>"
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Removes files, and directories when `recursive` is true. Missing paths are ignored. Requires `files`. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
+        "summary": "Remove files",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveSandboxFilesBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}:moveFile": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.moveFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxFileInfo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxFileInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Moves or renames a file or directory and returns the destination's metadata. An existing destination answers 409 unless `overwrite` is true. Requires `files`. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
+        "summary": "Move a file",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveSandboxFileBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}:makeDirectory": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.makeDirectory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxFileInfo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxFileInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates a directory, with missing parents unless `parents` is false. An existing directory is returned unchanged. Requires `files`. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
+        "summary": "Make a directory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MakeSandboxDirectoryBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}/access": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.grantAccess",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Access granted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxAccessGrant"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Gives a workspace member or an OpenCode Server permissions on the sandbox. One grant per subject; change permissions by deleting and granting again. Requires `manage`.",
+        "summary": "Grant access to a sandbox",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSandboxAccessGrantBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      },
+      "get": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.listAccess",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512,
+              "description": "Pagination cursor from a previous response's `next_cursor`."
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (1-100, default 50)",
+              "default": 50,
+              "examples": [
+                50
+              ],
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxAccessGrantList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxAccessGrantList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Who may use the sandbox and how. Requires any grant on the sandbox.",
+        "summary": "List access grants",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}/access/{grant_id}": {
+      "delete": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.revokeAccess",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "grant_id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxAccessGrantId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "<No Content>"
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Removes one grant. Requires `manage`. A sandbox nobody has access to anymore is deleted after 7 days.",
+        "summary": "Revoke access to a sandbox",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}/previews": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.exposePort",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Port exposed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Gives a port of the sandbox its own HTTPS hostname under `akua.run`, with a random token in the name. HTTP, WebSockets and server-sent events pass through; the URL answers while the sandbox is `ACTIVE`. One preview per port; exposing an exposed port answers 409. Requires `previews`.",
+        "summary": "Expose a port",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExposeSandboxPortBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      },
+      "get": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.listPreviews",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxPreviewList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxPreviewList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Exposed ports and their URLs. Requires `previews`.",
+        "summary": "List previews",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}/previews/{port}:rotateToken": {
+      "post": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.rotatePreviewToken",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "port",
+            "in": "path",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "description": "The port a service in the sandbox listens on.",
+              "examples": [
+                3000
+              ]
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SandboxPreview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Gives the preview a new hostname token; links with the old token stop working. Requires `previews`.",
+        "summary": "Rotate a preview’s token",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/sandboxes/{id}/previews/{port}": {
+      "delete": {
+        "tags": [
+          "Sandboxes"
+        ],
+        "operationId": "sandboxes.unexposePort",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SandboxId"
+            },
+            "required": true
+          },
+          {
+            "name": "port",
+            "in": "path",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "description": "The port a service in the sandbox listens on.",
+              "examples": [
+                3000
+              ]
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "<No Content>"
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Removes the preview; its URL stops answering. Requires `previews`.",
+        "summary": "Unexpose a port",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
     "/entitlements": {
       "get": {
         "tags": [
