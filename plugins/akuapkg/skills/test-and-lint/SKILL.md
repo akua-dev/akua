@@ -72,5 +72,5 @@ All are embedded in akuapkg; nothing else needs installing.
 
 ## References
 
-- [docs/package-format.md](../../docs/package-format.md#tests)
-- [docs/cli-contract.md](../../docs/cli-contract.md)
+- [docs/package-format.md](../../../../docs/package-format.md#tests)
+- [docs/cli-contract.md](../../../../docs/cli-contract.md)

@@ -68,7 +68,7 @@ const returnedI32 = Effect.fnUntraced(function*(module: string, outcome: Outcome
 })
 
 /**
- * Wasmtime through the generic `native/` addon, running machine code
+ * Wasmtime through the generic `crates/wasm-sandbox/` addon, running machine code
  * precompiled at build time (the artifacts are `.cwasm`, not `.wasm`). The addon owns the
  * guarantees (memory caps, fuel, read-only preopens, capped stdio, no env or
  * sockets, fixed clock, seeded randomness); everything module-specific lives
@@ -88,7 +88,7 @@ export const NativeWasmHost = (limits: SandboxLimits = DEFAULT_LIMITS) =>
 
       /**
        * Decompress (zstd) and load machine code precompiled for this target
-       * (see native/precompile). Synchronous, so engines can load lazily from
+       * (see crates/wasm-sandbox/precompile). Synchronous, so engines can load lazily from
        * inside the KCL bridge.
        */
       const load = Effect.fn("NativeWasmHost.load")(function*(name: string, compressed: Uint8Array) {

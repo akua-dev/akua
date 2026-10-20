@@ -5,7 +5,7 @@ If you only want to use the `akua` executable, see [README.md](README.md)
 instead.
 
 The CLI is the `packages/cli/` workspace of [`akua-dev/akua`](https://github.com/akua-dev/akua),
-which also holds the package toolchain (`@akua-dev/sdk`, `host/`) that
+which also holds the package toolchain (`@akua-dev/sdk`, `packages/akuapkg/`) that
 `akua pkg` embeds. The canonical writable history is the Akua monorepo, of
 which that repository is the exact projection. Issues are welcome; external
 code pull requests are not accepted yet (see
@@ -30,7 +30,7 @@ bazel test //bazel:cli_unit_test //bazel:cli_typecheck_test
 ## Prerequisites for the Bun scripts
 
 Bun 1.4+ is the only prerequisite. Run `bun install` at the repository root
-(it links `@akua-dev/sdk` from `host/`), then in `packages/cli/`:
+(it links `@akua-dev/sdk` from `packages/akuapkg/`), then in `packages/cli/`:
 
 ```sh
 bun run check
@@ -56,11 +56,9 @@ here, `bun run generate` rebuilds `src/generated/contract.gen.ts` from the
 copy and `bun run generate:check` (also a unit test) fails on drift. There is
 no weekly production fetch.
 
-```sh
-# In the Akua monorepo, after a public API change:
-bazel run //:write_cli_generated         # regenerate src/generated/ from docs/openapi-public.json
-bazel test //:sdk_generated_drift_test   # fail if committed generated output has drifted
-```
+After a public API change, the canonical monorepo's Bazel generator updates
+both committed artifacts and its CI checks them for drift. Those integration
+targets belong to the parent workspace.
 
 Generation is deterministic and operationId-driven; only operations marked
 `x-platform-visibility: PUBLIC` are included, and registry rows are sorted by
@@ -83,7 +81,7 @@ for what current test coverage includes.
 
 ## Release process
 
-Bump the shared version (`../../Cargo.toml`, `../../host/package.json`, this
+Bump the shared version (`../../Cargo.toml`, `../akuapkg/package.json`, this
 `package.json` and its `@akua-dev/sdk` dependency, `src/bin/akua.ts`) in a
 reviewed cnap PR when a release is needed; `test/version.test.ts` keeps them
 equal. The Main pipeline does not invent a new version for unrelated

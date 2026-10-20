@@ -30,7 +30,7 @@ describe('one version for akua-dev/akua', () => {
 			expect(workspaceVersion).toMatch(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/);
 			const host = yield* readJson(
 				Schema.Struct({ version: Schema.String }),
-				'../../host/package.json'
+				'../akuapkg/package.json'
 			);
 			const packageManifest = yield* readJson(
 				Schema.Struct({

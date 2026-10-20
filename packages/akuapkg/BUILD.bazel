@@ -8,6 +8,7 @@ load("@aspect_rules_js//js:defs.bzl", "js_library")
 
 exports_files(
     [
+        "BUILD.bazel",
         "package.json",
         "tsconfig.json",
     ],

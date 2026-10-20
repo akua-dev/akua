@@ -47,7 +47,7 @@ akuapkg (Bun + Effect host)
 ```
 
 The host is TypeScript on Bun; Wasmtime runs inside it through a
-[napi-rs](https://napi.rs) addon (`native/`). The KCL runtime is compiled to
+[napi-rs](https://napi.rs) addon (`crates/wasm-sandbox/`). The KCL runtime is compiled to
 `wasm32-wasip1` as the render worker; Helm v4.1.4 and Kustomize api v0.21.3
 are compiled from Go to `wasip1`. All modules are compiled to machine code at
 build time and embedded in the executable, so the shipped binary contains no

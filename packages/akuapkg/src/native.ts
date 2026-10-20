@@ -3,7 +3,7 @@ import type * as Addon from "@akua-dev/wasm-sandbox"
 import { WasmLoadError } from "./errors"
 
 /**
- * The `native/` Wasmtime addon (`wasm-sandbox.node`). Whoever builds the
+ * The `crates/wasm-sandbox/` Wasmtime addon (`wasm-sandbox.node`). Whoever builds the
  * executable or embeds the SDK loads the addon for its platform and provides
  * it here; the host never resolves a `.node` path itself.
  */

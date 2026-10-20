@@ -39,8 +39,8 @@ schema and emits JSON Schema or OpenAPI without rendering anything.
 
 | Path | What it is |
 |---|---|
-| `host/` | The Bun + Effect host (`@akua-dev/sdk`): the command tree, dependency resolution, the render pipeline and the sandbox adapter |
-| `native/` | The Wasmtime addon (napi-rs, `@akua-dev/wasm-sandbox`) and its build-time precompiler. It owns the sandbox guarantees and knows nothing about KCL or Helm |
+| `packages/akuapkg/` | The Bun + Effect host (`@akua-dev/sdk`): the command tree, dependency resolution, the render pipeline and the sandbox adapter |
+| `crates/wasm-sandbox/` | The Wasmtime addon (napi-rs, `@akua-dev/wasm-sandbox`) and its build-time precompiler. It owns the sandbox guarantees and knows nothing about KCL or Helm |
 | `crates/akua-render-worker`, `crates/akua-core` | The KCL render worker, Rust compiled to `wasm32-wasip1`, and the `akua.*` KCL standard library it embeds |
 | `crates/helm-engine-wasm`, `crates/kustomize-engine-wasm` | Helm v4.1.4 and Kustomize api v0.21.3, wrapped in small Go programs compiled to `wasip1` |
 | `packages/cli/` | The `akua` CLI. Its `akua pkg` command runs this host in-process |

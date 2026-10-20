@@ -1,7 +1,7 @@
 """Root-level sources. Build targets live in //bazel; see docs/building.md.
 
-Keep this file and the other source packages (host, native, cli, crates,
-third_party) to source groups and local labels: the cnap monorepo also loads
+Keep this file and the other source packages (packages, crates, plugins,
+third_party) to source groups and local labels: the parent monorepo also loads
 them as ordinary packages of its own workspace.
 """
 

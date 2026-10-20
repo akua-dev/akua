@@ -21,17 +21,17 @@ MCP server to set up.
 ## Skills
 
 The repository ships [Agent Skills](https://agentskills.io) under
-[`skills/`](../skills/): task procedures an agent loads when the task
+[`skills/`](../plugins/akuapkg/skills/): task procedures an agent loads when the task
 matches.
 
 | Skill | Use when |
 |---|---|
-| [new-package](../skills/new-package/) | starting a Package, typed against Kubernetes and CRDs |
-| [inspect-package](../skills/inspect-package/) | auditing a Package or chart before using it |
-| [test-and-lint](../skills/test-and-lint/) | setting up checks, tests and golden snapshots |
-| [diff-gate](../skills/diff-gate/) | reviewing what a dependency or input change does to the output |
-| [publish-signed](../skills/publish-signed/) | publishing a signed, attested Package |
-| [migrate-helmfile](../skills/migrate-helmfile/) | turning a `helmfile.yaml` into a Package |
+| [new-package](../plugins/akuapkg/skills/new-package/) | starting a Package, typed against Kubernetes and CRDs |
+| [inspect-package](../plugins/akuapkg/skills/inspect-package/) | auditing a Package or chart before using it |
+| [test-and-lint](../plugins/akuapkg/skills/test-and-lint/) | setting up checks, tests and golden snapshots |
+| [diff-gate](../plugins/akuapkg/skills/diff-gate/) | reviewing what a dependency or input change does to the output |
+| [publish-signed](../plugins/akuapkg/skills/publish-signed/) | publishing a signed, attested Package |
+| [migrate-helmfile](../plugins/akuapkg/skills/migrate-helmfile/) | turning a `helmfile.yaml` into a Package |
 
 Agents that read repository-local skills pick them up from a checkout. For a
 global install, follow your agent's instructions for Agent Skills.
@@ -65,7 +65,7 @@ description: What this does and when to use it, with trigger words.
 Step-by-step instructions.
 ```
 
-Validate it with `bunx skills-ref validate ./skills/my-skill`.
+Validate it with `bunx skills-ref validate ./plugins/akuapkg/skills/my-skill`.
 
 ## Related topics
 

@@ -2,7 +2,7 @@
 
 `akua-dev/akua` releases the package toolchain `akuapkg` and the `akua` CLI together, on one version:
 
-- **Version.** `Cargo.toml` `[workspace.package].version` is the source of truth. `host/package.json`, `packages/cli/package.json` (and its `@akua-dev/sdk` dependency) and `packages/cli/src/bin/akua.ts` carry the same version; the CLI unit suite (`packages/cli/test/version.test.ts`) fails when they differ, and the release packaging refuses a CLI whose version differs from the akuapkg it embeds. `akuapkg --version`, `akua --version` and `akua pkg version` all print it.
+- **Version.** `Cargo.toml` `[workspace.package].version` is the source of truth. `packages/akuapkg/package.json`, `packages/cli/package.json` (and its `@akua-dev/sdk` dependency) `packages/cli/src/bin/akua.ts` and `plugins/akuapkg/plugin.json` carry the same version; the CLI unit suite (`packages/cli/test/version.test.ts`) fails when they differ, and the release packaging refuses a CLI whose version differs from the akuapkg it embeds. `akuapkg --version`, `akua --version` and `akua pkg version` all print it.
 - **Tag.** One lightweight `v<version>` tag per version.
 - **Release.** One GitHub Release per version, marked latest (the install scripts resolve `/releases/latest`), carrying both products' assets:
 
@@ -17,7 +17,7 @@ The writable source of truth is the canonical repository's `oss/akua` subtree. T
 
 ## Normal releases
 
-Review and merge a version bump (`Cargo.toml`, `host/package.json`, `packages/cli/package.json` and `packages/cli/src/bin/akua.ts`, plus the regenerated lockfiles) with the intended code changes. The canonical Main pipeline builds both products' native archives with Bazel, from this repository's `//bazel:release_archives` and `//bazel:cli_release_archive`, and records their exact source SHA. One public writer then fast-forwards `main` to the matching projected commit, creates the `v<version>` tag and draft Release, uploads all twenty-six admitted assets, and publishes the Release as latest, without rebuilding at the public boundary.
+Review and merge a version bump (`Cargo.toml`, `packages/akuapkg/package.json`, `packages/cli/package.json` `packages/cli/src/bin/akua.ts` and `plugins/akuapkg/plugin.json`, plus the regenerated lockfiles) with the intended code changes. The canonical Main pipeline builds both products' native archives with Bazel, from this repository's `//bazel:release_archives` and `//bazel:cli_release_archive`, and records their exact source SHA. One public writer then fast-forwards `main` to the matching projected commit, creates the `v<version>` tag and draft Release, uploads all twenty-six admitted assets, and publishes the Release as latest, without rebuilding at the public boundary.
 
 The release consumer downloads and verifies every published asset, renders the `akuapkg` and `akua` formulas from the verified Homebrew manifests, and non-force publishes the canonical tap source plus those formulas to `akua-dev/homebrew-tap`. Formula audits and install tests belong to canonical Bazel CI; the public tap does not run GitHub Actions or accept direct source changes.
 

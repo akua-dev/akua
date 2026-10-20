@@ -102,9 +102,9 @@ bun run generate                         # regenerate contract.gen.ts from the c
 bun run generate:check                   # fails on drift
 ```
 
-Any public OpenAPI update in the Akua monorepo must regenerate and review CLI
-artifacts with `bazel run //:write_cli_generated` before it is accepted; its CI
-enforces this via `//:sdk_generated_drift_test`.
+Any public OpenAPI update in the canonical monorepo must regenerate and review
+CLI artifacts through its owning Bazel generator before it is accepted; its
+CI enforces generated-artifact drift checks.
 
 ## API, Auth, And Config Model
 
@@ -341,7 +341,7 @@ Current tests cover:
 - native install-smoke and workflow ordering/permission contracts;
 - public install/auth/output/codegen documentation and source-skill ownership.
 
-Current validation also runs `bazel test //:sdk_generated_drift_test` to catch drift in all generated API artifacts.
+The canonical monorepo also checks drift across all generated API artifacts.
 
 Future execution slices should add:
 

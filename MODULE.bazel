@@ -232,13 +232,13 @@ crate.from_cargo(
 )
 
 # The generic Wasmtime sandbox addon and its build-time precompiler are
-# separate Cargo workspaces (native/, native/precompile/): one shared
+# separate Cargo workspaces (crates/wasm-sandbox/ and its precompile/): one shared
 # resolution would unify wasmtime features and pull Cranelift into the addon.
 crate.from_cargo(
     name = "akua_sandbox_crates",
-    cargo_lockfile = "//native:Cargo.lock",
+    cargo_lockfile = "//crates/wasm-sandbox:Cargo.lock",
     host_tools = "@akua_rust_host",
-    manifests = ["//native:Cargo.toml"],
+    manifests = ["//crates/wasm-sandbox:Cargo.toml"],
     skip_cargo_lockfile_overwrite = True,
     supported_platform_triples = [
         "aarch64-apple-darwin",
@@ -250,9 +250,9 @@ crate.from_cargo(
 )
 crate.from_cargo(
     name = "akua_precompile_crates",
-    cargo_lockfile = "//native/precompile:Cargo.lock",
+    cargo_lockfile = "//crates/wasm-sandbox/precompile:Cargo.lock",
     host_tools = "@akua_rust_host",
-    manifests = ["//native/precompile:Cargo.toml"],
+    manifests = ["//crates/wasm-sandbox/precompile:Cargo.toml"],
     skip_cargo_lockfile_overwrite = True,
     supported_platform_triples = ["x86_64-unknown-linux-gnu"],
 )

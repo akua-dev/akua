@@ -6,7 +6,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/akua-dev/akua.git",
-    "directory": "host"
+    "directory": "packages/akuapkg"
   },
   "type": "module",
   "exports": {

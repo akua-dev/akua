@@ -57,6 +57,6 @@ the kinds and counts rendered, and every finding from step 5.
 
 ## References
 
-- [docs/security-model.md](../../docs/security-model.md): what the sandbox
+- [docs/security-model.md](../../../../docs/security-model.md): what the sandbox
   does and does not protect
-- [docs/lockfile-format.md](../../docs/lockfile-format.md)
+- [docs/lockfile-format.md](../../../../docs/lockfile-format.md)

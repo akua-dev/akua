@@ -58,5 +58,5 @@ writes the signature next to the tarball as `<tarball>.akuasig`.
 
 ## References
 
-- [docs/lockfile-format.md](../../docs/lockfile-format.md#signing)
-- [docs/security-model.md](../../docs/security-model.md#supply-chain)
+- [docs/lockfile-format.md](../../../../docs/lockfile-format.md#signing)
+- [docs/security-model.md](../../../../docs/security-model.md#supply-chain)

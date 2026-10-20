@@ -1,10 +1,10 @@
 import { BunServices } from '@effect/platform-bun';
 import { describe, expect, it } from '@effect/vitest';
 import { Effect, FileSystem, Layer, PlatformError } from 'effect';
-import type { InstanceOptions, Outcome } from '../../../native/index';
-import { WasmHost } from '../../../host/src/host';
-import { NativeWasmHost } from '../../../host/src/host-native.effect';
-import { NativeSandbox } from '../../../host/src/native';
+import type { InstanceOptions, Outcome } from '../../../crates/wasm-sandbox/index';
+import { WasmHost } from '../../akuapkg/src/host';
+import { NativeWasmHost } from '../../akuapkg/src/host-native.effect';
+import { NativeSandbox } from '../../akuapkg/src/native';
 
 // Windows refuses directory removal while WASI still owns a preopen handle.
 // Model that OS boundary while exercising the real mount and command adapter.

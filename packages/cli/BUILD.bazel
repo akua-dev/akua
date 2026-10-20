@@ -13,6 +13,7 @@ _RELEASE_HOST = "scripts/runtime/release-host-live.ts"
 
 exports_files(
     [
+        "BUILD.bazel",
         "package.json",
         "tsconfig.json",
     ],

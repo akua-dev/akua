@@ -5,7 +5,11 @@
     "": {
       "name": "akua-monorepo",
     },
-    "host": {
+    "crates/wasm-sandbox": {
+      "name": "@akua-dev/wasm-sandbox",
+      "version": "0.1.0",
+    },
+    "packages/akuapkg": {
       "name": "@akua-dev/sdk",
       "version": "0.13.2",
       "dependencies": {
@@ -20,10 +24,6 @@
       "devDependencies": {
         "@types/bun": "1.4.2",
       },
-    },
-    "native": {
-      "name": "@akua-dev/wasm-sandbox",
-      "version": "0.1.0",
     },
     "packages/cli": {
       "name": "@akua-dev/cli",
@@ -51,9 +51,9 @@
   "packages": {
     "@akua-dev/cli": ["@akua-dev/cli@workspace:packages/cli"],
 
-    "@akua-dev/sdk": ["@akua-dev/sdk@workspace:host"],
+    "@akua-dev/sdk": ["@akua-dev/sdk@workspace:packages/akuapkg"],
 
-    "@akua-dev/wasm-sandbox": ["@akua-dev/wasm-sandbox@workspace:native"],
+    "@akua-dev/wasm-sandbox": ["@akua-dev/wasm-sandbox@workspace:crates/wasm-sandbox"],
 
     "@bjorn3/browser_wasi_shim": ["@bjorn3/browser_wasi_shim@0.4.2", "", {}, "sha512-/iHkCVUG3VbcbmEHn5iIUpIrh7a7WPiwZ3sHy4HZKZzBdSadwdddYDZAII2zBvQYV0Lfi8naZngPCN7WPHI/hA=="],
 

@@ -82,5 +82,5 @@ templated values become fields of a typed `Input` schema.
 
 ## References
 
-- [docs/package-format.md](../../docs/package-format.md)
-- [docs/typed-resources.md](../../docs/typed-resources.md)
+- [docs/package-format.md](../../../../docs/package-format.md)
+- [docs/typed-resources.md](../../../../docs/typed-resources.md)

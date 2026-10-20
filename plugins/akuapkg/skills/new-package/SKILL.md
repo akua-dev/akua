@@ -64,6 +64,6 @@ license: Apache-2.0
 
 ## References
 
-- [docs/typed-resources.md](../../docs/typed-resources.md)
-- [docs/package-format.md](../../docs/package-format.md)
-- [examples/16-typed-crds](../../examples/16-typed-crds/)
+- [docs/typed-resources.md](../../../../docs/typed-resources.md)
+- [docs/package-format.md](../../../../docs/package-format.md)
+- [examples/16-typed-crds](../../../../examples/16-typed-crds/)

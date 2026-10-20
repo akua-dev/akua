@@ -33,6 +33,7 @@ bazel build //bazel:cli_release_archive     # the akua CLI's thirteen release as
 # Tests.
 bazel test //bazel:cli_unit_test //bazel:cli_typecheck_test //bazel:host_typecheck_test
 bazel test //bazel:render_worker_stamp_contract_test //bazel:darwin_arm64_link_inputs_test
+bazel test //bazel/rust:core_worker_test
 ```
 
 On a non-Linux host, add the remote executor:
@@ -52,10 +53,11 @@ git-ignored and imported by `.bazelrc`).
 | `MODULE.bazel` | The `akua` Bazel module: dependencies, toolchain repositories, crate universes, Bun releases, npm packages |
 | `toolchains.MODULE.bazel` | Toolchain configuration only a root module may declare (the release Rust toolchains, the Linux-executed Zig toolchains); included by every root that builds this module |
 | `bazel/` | Build logic: `BUILD.bazel` (executables, release archives, tests), `rust/` (the render worker, the Wasmtime addon, the precompiler), `toolchains/` (C toolchains and the Windows SDK), `bun/` (Bun toolchain, `bun_compile`, `bun_test`), `npm/` (the `bun.lock` installer), `platforms/`, `patches/` |
-| `host/` | The Bun/Effect host: CLI, render pipeline, Wasmtime sandbox adapter |
-| `native/` | The Wasmtime sandbox addon (napi-rs) and its build-time precompiler |
+| `packages/akuapkg/` | The Bun/Effect host: CLI, render pipeline, Wasmtime sandbox adapter |
+| `crates/wasm-sandbox/` | The Wasmtime sandbox addon (napi-rs) and its build-time precompiler |
 | `crates/` | The KCL render worker (`akua-render-worker`, `akua-core`) and the Go Helm/Kustomize engines |
 | `packages/cli/` | The `akua` CLI |
+| `plugins/akuapkg/` | Portable agent skills for authoring Packages |
 
 npm packages come from `bun.lock` alone: `bazel/npm/bun_lock.bzl` downloads
 each tarball with the lock's integrity hash, applies `patchedDependencies` and

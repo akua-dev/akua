@@ -10,7 +10,7 @@ import ctx from "../crates/akua-core/stdlib/akua/ctx.k" with { type: "file" }
 import helmK from "../crates/akua-core/stdlib/akua/helm.k" with { type: "file" }
 import kustomizeK from "../crates/akua-core/stdlib/akua/kustomize.k" with { type: "file" }
 import pkgK from "../crates/akua-core/stdlib/akua/pkg.k" with { type: "file" }
-import type * as Addon from "../native/index.js"
+import type * as Addon from "../crates/wasm-sandbox/index.js"
 
 export const AKUAPKG_VERSION = "{VERSION}"
 

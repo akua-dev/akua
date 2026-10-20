@@ -36,15 +36,16 @@ guide doesn't cover, search through the source code in `node_modules/effect/src`
 
 ## Validation
 
-Run `bun run check` and `bazel test //:sdk_generated_drift_test` for every change that touches the public API surface. Release
+Run `bun run check` and `bun run generate:check` for every change that touches the public API surface. Release
 changes also require the focused release/workflow tests and a current-host
 compiled archive smoke through `bun run release:smoke`.
 
 ## Public API command contract
 
-- cnap `docs/openapi-public.json` is the only source of truth for public routes,
+- The API producer's OpenAPI document is the source of truth for public routes,
   request/response schemas, operation IDs, authentication, and error shapes.
-  Regenerate with `bazel run //:write_cli_generated` in the Akua monorepo. Do not duplicate
+  Its committed snapshot is `src/generated/openapi-public.json`; the canonical
+  monorepo owns regeneration and drift checks. Do not duplicate
   endpoint definitions, request types, or status-error maps in handwritten CLI
   code.
 - Generate the request contract (`src/generated/contract.gen.ts`) from that

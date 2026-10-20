@@ -2,9 +2,8 @@
   "name": "akua-monorepo",
   "private": true,
   "workspaces": [
-    "host",
-    "native",
-    "packages/cli"
+    "packages/*",
+    "crates/wasm-sandbox"
   ],
   "patchedDependencies": {
     "effect@4.0.1": "patches/effect@4.0.1.patch"

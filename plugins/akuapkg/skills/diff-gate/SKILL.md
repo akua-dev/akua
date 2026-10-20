@@ -50,5 +50,5 @@ diff: a dependency bump that removes a field or an API fails the render.
 
 ## References
 
-- [docs/typed-resources.md](../../docs/typed-resources.md)
-- [docs/cli-contract.md](../../docs/cli-contract.md#2-exit-codes)
+- [docs/typed-resources.md](../../../../docs/typed-resources.md)
+- [docs/cli-contract.md](../../../../docs/cli-contract.md#2-exit-codes)

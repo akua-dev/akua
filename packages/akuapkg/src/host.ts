@@ -61,7 +61,7 @@ export interface Command {
 /**
  * Where the wasm modules execute. Both implementations run the same
  * modules: the JS engine's `WebAssembly` (browser, portable) and Wasmtime
- * through the `native/` napi-rs addon (the CLI, with memory caps and fuel).
+ * through the `crates/wasm-sandbox/` napi-rs addon (the CLI, with memory caps and fuel).
  */
 export class WasmHost extends Context.Service<WasmHost, {
   readonly name: string
