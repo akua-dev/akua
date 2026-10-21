@@ -12,10 +12,10 @@ on:
 permissions:
   contents: read
 
-# The akua CLI lives in cli/; `bun install` at the root links @akua-dev/sdk.
+# The akua CLI lives in packages/cli/; `bun install` at the root links @akua-dev/sdk.
 defaults:
   run:
-    working-directory: cli
+    working-directory: packages/cli
 
 jobs:
   check:

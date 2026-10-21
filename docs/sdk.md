@@ -1,6 +1,6 @@
 # `@akua-dev/sdk`
 
-`@akua-dev/sdk` is the akuapkg host itself (`host/` in this repository): the
+`@akua-dev/sdk` is the akuapkg host itself (`packages/akuapkg/` in this repository): the
 TypeScript package that the `akuapkg` executable and the `akua` CLI are
 built from. Embed it when your own Bun program needs to render Packages or
 read their schemas. It is written with [Effect](https://effect.website) and
@@ -14,9 +14,9 @@ New versions are not published to npm. The `@akua-dev/sdk` versions on npm
 are frozen, come from an earlier implementation and do not match this page.
 Use the package from source:
 
-- inside a Bun workspace that contains this repository, depend on it as
-  `"@akua-dev/sdk": "workspace:*"`, as `cli/` does;
-- or copy `host/` into your workspace at the release tag you want.
+- inside a Bun workspace that contains this repository, depend on
+  `@akua-dev/sdk` at the version in its `package.json`, as `packages/cli/` does;
+- or copy `packages/akuapkg/` into your workspace at the release tag you want.
 
 `package.json` exports point at the TypeScript sources, which Bun loads
 directly. Rendering in-process needs the Wasmtime addon and the precompiled

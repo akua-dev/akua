@@ -6,7 +6,7 @@ load("@akua_precompile_crates//:defs.bzl", precompile_aliases = "aliases", preco
 load("@akua_sandbox_crates//:defs.bzl", sandbox_aliases = "aliases", sandbox_deps = "all_crate_deps")
 load("@akua_worker_crates//:defs.bzl", "aliases", "crate_deps")
 load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_shared_library")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_shared_library", "rust_test")
 load("@source_version//:version.bzl", "PACKAGE_SOURCE_VERSION")
 load("//bazel:source_paths.bzl", "source_directory")
 load(":rust_artifact.bzl", "package_rust_tool")
@@ -75,6 +75,20 @@ rust_library(
     ),
 )
 
+rust_test(
+    name = "core_worker_test",
+    size = "medium",
+    crate = ":core_worker",
+    # rust_test inherits sources and dependencies, but not crate features.
+    crate_features = ["engine-kcl"],
+    data = ["//crates/akua-core:rust_compile_data"],
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 # akua-render-worker
 rust_binary(
     name = "render_worker",
@@ -137,24 +151,24 @@ _LINUX_ARM64_LINKER = select({
 # //bazel:sandbox_addon_*.
 cargo_build_script(
     name = "sandbox_build_script",
-    srcs = ["//native:build.rs"],
-    build_script_env = {"CARGO_MANIFEST_DIR": source_directory("native")},
-    crate_root = "//native:build.rs",
-    data = ["//native:Cargo.toml"],
+    srcs = ["//crates/wasm-sandbox:build.rs"],
+    build_script_env = {"CARGO_MANIFEST_DIR": source_directory("crates/wasm-sandbox")},
+    crate_root = "//crates/wasm-sandbox:build.rs",
+    data = ["//crates/wasm-sandbox:Cargo.toml"],
     edition = "2024",
     pkg_name = "wasm-sandbox",
     version = "0.1.0",
     deps = sandbox_deps(
-        package_name = "native",
+        package_name = "crates/wasm-sandbox",
         build = True,
     ),
 )
 
 rust_shared_library(
     name = "sandbox_addon",
-    srcs = ["//native:rust_sources"],
+    srcs = ["//crates/wasm-sandbox:rust_sources"],
     aliases = sandbox_aliases(
-        package_name = "native",
+        package_name = "crates/wasm-sandbox",
         normal = True,
     ),
     compile_data = _DARWIN_LINK_INPUTS + select({
@@ -162,7 +176,7 @@ rust_shared_library(
         "//conditions:default": [],
     }),
     crate_name = "wasm_sandbox",
-    crate_root = "//native:src/lib.rs",
+    crate_root = "//crates/wasm-sandbox:src/lib.rs",
     edition = "2024",
     features = select({
         "//bazel/platforms:darwin": [
@@ -174,7 +188,7 @@ rust_shared_library(
         "//conditions:default": [],
     }),
     proc_macro_deps = sandbox_deps(
-        package_name = "native",
+        package_name = "crates/wasm-sandbox",
         proc_macro = True,
     ),
     rustc_env = select({
@@ -207,7 +221,7 @@ rust_shared_library(
     }),
     visibility = ["//visibility:public"],
     deps = [":sandbox_build_script"] + sandbox_deps(
-        package_name = "native",
+        package_name = "crates/wasm-sandbox",
         normal = True,
     ),
 )
@@ -218,18 +232,18 @@ rust_shared_library(
 rust_binary(
     name = "precompile",
     srcs = [
-        "//native:src/config.rs",
-        "//native/precompile:src/main.rs",
+        "//crates/wasm-sandbox:src/config.rs",
+        "//crates/wasm-sandbox/precompile:src/main.rs",
     ],
     aliases = precompile_aliases(
-        package_name = "native/precompile",
+        package_name = "crates/wasm-sandbox/precompile",
         normal = True,
     ),
-    crate_root = "//native/precompile:src/main.rs",
+    crate_root = "//crates/wasm-sandbox/precompile:src/main.rs",
     edition = "2024",
     visibility = ["//visibility:public"],
     deps = precompile_deps(
-        package_name = "native/precompile",
+        package_name = "crates/wasm-sandbox/precompile",
         normal = True,
     ),
 )

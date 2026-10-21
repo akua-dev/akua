@@ -102,7 +102,7 @@ wasm_precompile = rule(
     doc = """Compiles a wasm module to zstd-compressed Wasmtime machine code for one target.
 
 The precompiler shares the runtime addon's engine settings
-(source/native/src/config.rs), so the addon accepts exactly these artifacts.""",
+(crates/wasm-sandbox/src/config.rs), so the addon accepts exactly these artifacts.""",
     implementation = _wasm_precompile_impl,
     attrs = {
         "wasm": attr.label(mandatory = True, allow_single_file = [".wasm"]),

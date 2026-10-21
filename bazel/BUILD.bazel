@@ -49,8 +49,9 @@ go_wasi_engine(
 )
 
 # tokio for the render worker's crate closure, built from the locked sources
-# with only the runtime features the worker uses. The worker crate repo's tokio
-# annotation points here (MODULE.bazel).
+# with only the runtime features the WASI worker uses. Native library tests
+# also build KCL's native API, whose Cargo manifest requests Tokio's full feature
+# set. The worker crate repo's tokio annotation points here (MODULE.bazel).
 # The crate extension exposes aggregate repos, not the worker's generated source labels.
 # buildifier: disable=canonical-repository
 rust_library(
@@ -62,15 +63,49 @@ rust_library(
         "sync",
         "time",
         "test-util",
-    ],
+    ] + select({
+        "@platforms//os:linux": [
+            "bytes",
+            "fs",
+            "full",
+            "io-std",
+            "io-util",
+            "libc",
+            "macros",
+            "mio",
+            "net",
+            "parking_lot",
+            "process",
+            "rt-multi-thread",
+            "signal",
+            "signal-hook-registry",
+            "socket2",
+            "tokio-macros",
+        ],
+        "//conditions:default": [],
+    }),
     crate_name = "tokio",
     crate_root = "@@rules_rust++crate+akua_worker_crates__tokio-1.52.1//:src/lib.rs",
     edition = "2021",
+    proc_macro_deps = select({
+        "@platforms//os:linux": ["@@rules_rust++crate+akua_worker_crates__tokio-macros-2.7.0//:tokio_macros"],
+        "//conditions:default": [],
+    }),
     rustc_env_files = ["@@rules_rust++crate+akua_worker_crates__tokio-1.52.1//:cargo_toml_env_vars"],
     rustc_flags = ["--cap-lints=allow"],
     version = "1.52.1",
     visibility = ["//visibility:public"],
-    deps = ["@@rules_rust++crate+akua_worker_crates__pin-project-lite-0.2.17//:pin_project_lite"],
+    deps = ["@@rules_rust++crate+akua_worker_crates__pin-project-lite-0.2.17//:pin_project_lite"] + select({
+        "@platforms//os:linux": [
+            "@@rules_rust++crate+akua_worker_crates__bytes-1.11.1//:bytes",
+            "@@rules_rust++crate+akua_worker_crates__libc-0.2.186//:libc",
+            "@@rules_rust++crate+akua_worker_crates__mio-1.2.0//:mio",
+            "@@rules_rust++crate+akua_worker_crates__parking_lot-0.12.5//:parking_lot",
+            "@@rules_rust++crate+akua_worker_crates__signal-hook-registry-1.4.8//:signal_hook_registry",
+            "@@rules_rust++crate+akua_worker_crates__socket2-0.6.3//:socket2",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 package_rust_artifact(
@@ -122,7 +157,7 @@ _MODULES = {
     "kustomize-engine": ":kustomize_engine_wasm",
 }
 
-# The Wasmtime addon (native/) for each target.
+# The Wasmtime addon (crates/wasm-sandbox/) for each target.
 [
     package_rust_artifact(
         name = "sandbox_addon_" + name,
@@ -193,7 +228,7 @@ _MODULES = {
             ":akuapkg_embedded_" + name,
             ":sandbox_addon_" + name,
             "//crates/akua-core:akua_stdlib",
-            "//native:index.d.ts",
+            "//crates/wasm-sandbox:index.d.ts",
         ] + [":{}_{}".format(
             module.replace("-", "_"),
             name,
@@ -209,8 +244,8 @@ _MODULES = {
         srcs = [
             ":akuapkg_embedded_srcs_" + name,
             ":akuapkg_entry_" + name,
-            "//host:package.json",
-            "//host:srcs",
+            "//packages/akuapkg:package.json",
+            "//packages/akuapkg:srcs",
         ],
         out = "bin/{}/akuapkg{}".format(name, suffix),
         entry = ":akuapkg_entry_" + name,
@@ -230,10 +265,10 @@ _MODULES = {
         srcs = [
             ":akua_entry_" + name,
             ":akuapkg_embedded_srcs_" + name,
-            "//cli:package.json",
-            "//cli:srcs",
-            "//host:package.json",
-            "//host:srcs",
+            "//packages/akuapkg:package.json",
+            "//packages/akuapkg:srcs",
+            "//packages/cli:package.json",
+            "//packages/cli:srcs",
         ],
         out = "bin/{}/akua{}".format(name, suffix),
         entry = ":akua_entry_" + name,
@@ -267,7 +302,7 @@ _MODULES = {
 
 # ---------------------------------------------------------------------------
 # Release archives. akuapkg: akuapkg-v<version>-<triple>.{tar.gz,zip} plus the
-# source identity; akua: thirteen assets from cli/scripts/release.ts's contract.
+# source identity; akua: thirteen assets from packages/cli/scripts/release.ts's contract.
 # ---------------------------------------------------------------------------
 
 [
@@ -333,7 +368,7 @@ config_setting(
 cli_release_archive(
     name = "cli_release_archive",
     srcs = [
-        "//cli:release_program_srcs",
+        "//packages/cli:release_program_srcs",
     ],
     out = "cli-release",
     binaries = {
@@ -352,7 +387,7 @@ cli_release_archive(
         "memory_kb": "2097152",
     },
     node_modules = _NODE_MODULES,
-    package_json = "//cli:package.json",
+    package_json = "//packages/cli:package.json",
     package_version = PACKAGE_SOURCE_VERSION,
     program = "release-package-command.ts",
     stamp = select({
@@ -380,19 +415,19 @@ bun_test(
     size = "medium",
     srcs = [
         "//:package.json",
-        "//cli:test_srcs",
-        "//host:package.json",
-        "//host:srcs",
-        "//native:index.d.ts",
-        "//native:package.json",
+        "//crates/wasm-sandbox:index.d.ts",
+        "//crates/wasm-sandbox:package.json",
+        "//packages/akuapkg:package.json",
+        "//packages/akuapkg:srcs",
+        "//packages/cli:test_srcs",
     ],
     bun_args = [
-        "../node_modules/typescript/bin/tsc",
+        "../../node_modules/typescript/bin/tsc",
         "--noEmit",
         "--project",
         "tsconfig.json",
     ],
-    chdir = "cli",
+    chdir = "packages/cli",
     node_modules = _TEST_NODE_MODULES,
     visibility = ["//visibility:public"],
     workspace_links = WORKSPACE_LINKS,
@@ -403,25 +438,25 @@ bun_test(
     size = "medium",
     srcs = [
         "//:package.json",
-        "//host:package.json",
-        "//host:srcs",
-        "//host:tsconfig.json",
-        "//native:index.d.ts",
-        "//native:package.json",
+        "//crates/wasm-sandbox:index.d.ts",
+        "//crates/wasm-sandbox:package.json",
+        "//packages/akuapkg:package.json",
+        "//packages/akuapkg:srcs",
+        "//packages/akuapkg:tsconfig.json",
     ],
     bun_args = [
-        "../node_modules/typescript/bin/tsc",
+        "../../node_modules/typescript/bin/tsc",
         "--noEmit",
         "--project",
         "tsconfig.json",
     ],
-    chdir = "host",
+    chdir = "packages/akuapkg",
     node_modules = _TEST_NODE_MODULES,
     visibility = ["//visibility:public"],
     workspace_links = WORKSPACE_LINKS,
 )
 
-# The CLI's own suite, run by vitest inside Bun (cli/package.json `test`).
+# The CLI's own suite, run by vitest inside Bun (packages/cli/package.json `test`).
 bun_test(
     name = "cli_unit_test",
     size = "large",
@@ -430,16 +465,16 @@ bun_test(
         "//:Cargo.toml",
         "//:cli_workflow",
         "//:package.json",
-        "//cli:test_srcs",
-        "//host:package.json",
-        "//host:srcs",
+        "//packages/akuapkg:package.json",
+        "//packages/akuapkg:srcs",
+        "//packages/cli:test_srcs",
     ],
     bun_args = [
         "--bun",
-        "../node_modules/vitest/vitest.mjs",
+        "../../node_modules/vitest/vitest.mjs",
         "run",
     ],
-    chdir = "cli",
+    chdir = "packages/cli",
     data = ["@bazel_tools//tools/zip:zipper"],
     env = {"PLATFORM_CLI_TEST_ZIPPER": "$RUNFILES/$(rlocationpath @bazel_tools//tools/zip:zipper)"},
     node_modules = _TEST_NODE_MODULES,

@@ -1,8 +1,8 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun';
 import { Effect, FileSystem, Layer, Path, Schema } from 'effect';
 
-import { ReleaseHost, RELEASE_TARGETS } from '../cli/scripts/runtime/release-services';
-import { makeReleaseHostLive } from '../cli/scripts/runtime/release-host-live';
+import { ReleaseHost, RELEASE_TARGETS } from '../packages/cli/scripts/runtime/release-services';
+import { makeReleaseHostLive } from '../packages/cli/scripts/runtime/release-host-live';
 
 class CliReleasePackageFailure extends Schema.TaggedError<CliReleasePackageFailure>()(
 	'CliReleasePackageFailure',
@@ -79,7 +79,7 @@ const program = Effect.scoped(
 		// package toolchain it embeds (Cargo.toml's workspace version).
 		if (packageManifest.version !== packageVersion) {
 			return yield* fail(
-				`cli/package.json version ${packageManifest.version} differs from the embedded akuapkg ${packageVersion}`
+				`packages/cli/package.json version ${packageManifest.version} differs from the embedded akuapkg ${packageVersion}`
 			);
 		}
 		// `-`: an unstamped build (no `--stamp`), whose provenance names no commit.
