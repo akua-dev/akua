@@ -5,7 +5,7 @@ import type { JsonSchema as EffectJsonSchema } from 'effect';
  * `docs/openapi-public.json` into `src/generated/contract.gen.ts`.
  *
  * It is the request side of the OpenAPI document only: operations, their
- * parameters, request bodies as JSON Schema (draft 2020-12, `$ref`s point
+ * parameters, request bodies as JSON Schema (raw byte bodies are flagged, not described) (draft 2020-12, `$ref`s point
  * into `definitions`). Responses, including error bodies, are rendered as
  * the JSON the API returns, so their schemas are not carried.
  */
@@ -46,8 +46,18 @@ export interface ApiOperation {
 	/** Keys into `ApiContract.parameters`; path parameters come first, in template order. */
 	readonly parameters: readonly string[];
 	readonly body?: ApiRequestBody;
+	/** Present when the request body is raw bytes (`application/octet-stream`). */
+	readonly upload?: ApiUpload;
 	/** Present when the success response is a Server-Sent Events stream. */
 	readonly stream?: ApiEventStream;
+	/** The success response is raw bytes (`application/octet-stream`). */
+	readonly download?: true;
+	/** The success response is newline-delimited JSON (`application/x-ndjson`), read line by line. */
+	readonly lines?: true;
+}
+
+export interface ApiUpload {
+	readonly required: boolean;
 }
 
 export interface ApiRequestBody {

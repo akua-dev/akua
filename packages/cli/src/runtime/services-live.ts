@@ -29,6 +29,8 @@ import {
 	PackageCliFailure,
 	PublicInput,
 	PublicInputFailure,
+	PublicOutput,
+	PublicOutputFailure,
 	SecureConfig,
 	SecureConfigFailure,
 	StoredWorkspace
@@ -129,6 +131,8 @@ export const ConsoleLive = Layer.effect(
 			stdoutIsTTY: yield* stdio.stdoutIsTerminal,
 			stdinIsTTY: yield* stdio.stdinIsTerminal,
 			writeStdout: write(stdio.stdout()),
+			writeStdoutBytes: (value) =>
+				Stream.make(value).pipe(Stream.run(stdio.stdout()), Effect.orDie),
 			writeStderr: write(stdio.stderr())
 		});
 	})
@@ -251,7 +255,32 @@ export const PublicInputLive = Layer.effect(
 				(source === '-'
 					? stdio.stdin.pipe(Stream.decodeText(), Stream.mkString)
 					: fs.readFileString(source)
-				).pipe(Effect.mapError(() => new PublicInputFailure({})))
+				).pipe(Effect.mapError(() => new PublicInputFailure({}))),
+			readBytes: (source) =>
+				(source === '-' ? Stream.mkUint8Array(stdio.stdin) : fs.readFile(source)).pipe(
+					Effect.mapError(() => new PublicInputFailure({}))
+				)
+		});
+	})
+);
+
+export const PublicOutputLive = Layer.effect(
+	PublicOutput,
+	Effect.gen(function* () {
+		const fs = yield* FileSystem.FileSystem;
+		return PublicOutput.of({
+			writeFile: (path, bytes) =>
+				Effect.gen(function* () {
+					let written = 0;
+					yield* bytes.pipe(
+						Stream.tap((chunk) => Effect.sync(() => void (written += chunk.length))),
+						Stream.run(fs.sink(path)),
+						Effect.mapError((error) =>
+							Predicate.isTagged(error, 'PlatformError') ? new PublicOutputFailure({}) : error
+						)
+					);
+					return written;
+				})
 		});
 	})
 );
@@ -316,6 +345,7 @@ export function CliLive(
 		ConsoleLive,
 		SecureConfigLive,
 		PublicInputLive,
+		PublicOutputLive,
 		packageCli
 	).pipe(Layer.provideMerge(AkuaHttpClientLive(cliVersion)));
 }

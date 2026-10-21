@@ -9,6 +9,8 @@ export interface RenderEnvelope<StreamFailure = never> {
 	observations?: readonly string[];
 	data?: unknown;
 	stream?: Stream.Stream<unknown, StreamFailure, never>;
+	/** Raw bytes written to stdout as they arrive, in every output mode. */
+	bytes?: Stream.Stream<Uint8Array, StreamFailure, never>;
 	next_steps?: readonly NextStep[];
 	/** Lines a person reads instead of `observations` and `data`; never part of JSON or agent output. */
 	human?: readonly string[];

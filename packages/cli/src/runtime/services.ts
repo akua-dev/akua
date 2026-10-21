@@ -1,4 +1,4 @@
-import { Context, Effect, Schema } from 'effect';
+import { Context, Effect, Schema, type Stream } from 'effect';
 import type { HttpClient } from 'effect/http';
 
 export interface HttpResponse {
@@ -67,6 +67,8 @@ export class Console extends Context.Service<
 		readonly stdinIsTTY: boolean;
 		readonly writeStderr: (value: string) => Effect.Effect<void>;
 		readonly writeStdout: (value: string) => Effect.Effect<void>;
+		/** Raw bytes, for operations whose response is a file. */
+		readonly writeStdoutBytes: (value: Uint8Array) => Effect.Effect<void>;
 	}
 >()('platform/cli/Console') {}
 
@@ -102,8 +104,26 @@ export class PublicInput extends Context.Service<
 	PublicInput,
 	{
 		readonly read: (source: '-' | string) => Effect.Effect<string, PublicInputFailure>;
+		/** The raw bytes of a file, or of stdin for `-`. */
+		readonly readBytes: (source: '-' | string) => Effect.Effect<Uint8Array, PublicInputFailure>;
 	}
 >()('platform/cli/PublicInput') {}
+
+export class PublicOutputFailure extends Schema.TaggedError<PublicOutputFailure>()(
+	'PublicOutputFailure',
+	{}
+) {}
+
+export class PublicOutput extends Context.Service<
+	PublicOutput,
+	{
+		/** Writes the stream to a file, replacing it, and returns the number of bytes written. */
+		readonly writeFile: <E>(
+			path: string,
+			bytes: Stream.Stream<Uint8Array, E>
+		) => Effect.Effect<number, E | PublicOutputFailure>;
+	}
+>()('platform/cli/PublicOutput') {}
 
 export class PackageCli extends Context.Service<
 	PackageCli,
@@ -120,4 +140,5 @@ export type CliServices =
 	| Console
 	| SecureConfig
 	| PublicInput
+	| PublicOutput
 	| PackageCli;

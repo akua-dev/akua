@@ -25,9 +25,10 @@ const MAX_RAW_ERROR_CHARS = 2000;
 
 export type ApiResult =
 	| { readonly _tag: 'Value'; readonly value: Schema.Json }
-	| { readonly _tag: 'Stream'; readonly stream: Stream.Stream<ApiEvent, OperationFailure> };
+	| { readonly _tag: 'Stream'; readonly stream: Stream.Stream<ApiEvent, OperationFailure> }
+	| { readonly _tag: 'Bytes'; readonly stream: Stream.Stream<Uint8Array, OperationFailure> };
 
-/** One Server-Sent Event of a streaming operation. */
+/** One Server-Sent Event of a streaming operation; an NDJSON line is an event named `line`. */
 export interface ApiEvent {
 	readonly event: string;
 	readonly data: string;
@@ -44,7 +45,9 @@ export class ApiClient extends Context.Service<
 	{
 		readonly execute: (
 			operation: ApiOperation,
-			request: ApiRequest
+			request: ApiRequest,
+			/** The raw request body of an `upload` operation. */
+			upload?: Uint8Array
 		) => Effect.Effect<ApiResult, OperationFailure | SecureConfigFailure>;
 	}
 >()('platform/cli/ApiClient') {
@@ -73,7 +76,8 @@ export class ApiClient extends Context.Service<
 
 			const execute = Effect.fn('ApiClient.execute')(function* (
 				operation: ApiOperation,
-				request: ApiRequest
+				request: ApiRequest,
+				upload?: Uint8Array
 			) {
 				const path = yield* Effect.fromResult(expandPath(operation.path, request.path ?? {})).pipe(
 					Effect.mapError(
@@ -96,7 +100,11 @@ export class ApiClient extends Context.Service<
 							onSome: (value) => HttpClientRequest.bearerToken(base, Redacted.value(value))
 						}),
 					(base) =>
-						request.body === undefined ? base : HttpClientRequest.bodyJsonUnsafe(base, request.body)
+						upload !== undefined
+							? HttpClientRequest.bodyUint8Array(base, upload, 'application/octet-stream')
+							: request.body === undefined
+								? base
+								: HttpClientRequest.bodyJsonUnsafe(base, request.body)
 				);
 				const transport = () =>
 					new OperationFailure({ operationId: operation.id, reason: 'transport' });
@@ -109,6 +117,15 @@ export class ApiClient extends Context.Service<
 						_tag: 'Stream',
 						stream: eventStream(operation.id, operation.stream.failureEvent, response)
 					} satisfies ApiResult;
+				}
+				if (operation.download === true) {
+					return {
+						_tag: 'Bytes',
+						stream: response.stream.pipe(Stream.mapError(transport))
+					} satisfies ApiResult;
+				}
+				if (operation.lines === true) {
+					return { _tag: 'Stream', stream: lineStream(transport, response) } satisfies ApiResult;
 				}
 				const text = yield* response.text.pipe(Effect.mapError(transport));
 				if (text === '') return { _tag: 'Value', value: null } satisfies ApiResult;
@@ -234,6 +251,20 @@ function eventStream(
 					)
 				: Effect.succeed({ event: event.event, data: event.data })
 		)
+	);
+}
+
+/** NDJSON: every non-empty line is one event named `line`. */
+function lineStream(
+	transport: () => OperationFailure,
+	response: HttpClientResponse.HttpClientResponse
+): Stream.Stream<ApiEvent, OperationFailure> {
+	return response.stream.pipe(
+		Stream.decodeText,
+		Stream.splitLines,
+		Stream.filter((line) => line !== ''),
+		Stream.map((line): ApiEvent => ({ event: 'line', data: line })),
+		Stream.mapError(transport)
 	);
 }
 

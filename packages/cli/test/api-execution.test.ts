@@ -546,3 +546,144 @@ describe('inputs that must not reach the API or the terminal', () => {
 		}).pipe(Effect.scoped)
 	);
 });
+
+describe('raw byte and NDJSON operations', () => {
+	const encoder = new TextEncoder();
+	const fileBytes = new Uint8Array([0, 255, 10, 13, 128]);
+	const writeFile = ['sandboxes', 'write-file', 'sbx_1', '--path', '/work/a.bin', '--json'];
+
+	it.effect('uploads a file as the raw request body with --body-file', () =>
+		Effect.gen(function* () {
+			const env = yield* signedIn;
+
+			const result = yield* runAkua([...writeFile, '--body-file', 'a.bin'], {
+				env,
+				inputs: { 'a.bin': 'raw é bytes' },
+				api: () => ({ body: { path: '/work/a.bin' } })
+			});
+
+			expect(result.exitCode).toBe(0);
+			expect(result.requests[0]).toMatchObject({ method: 'POST', body: undefined });
+			expect(result.requests[0]?.headers['content-type']).toBe('application/octet-stream');
+			expect(result.requests[0]?.bytes).toEqual(encoder.encode('raw é bytes'));
+			expect(result.requests[0]?.url.pathname).toBe('/v1/sandboxes/sbx_1:writeFile');
+			expect(result.requests[0]?.url.searchParams.get('path')).toBe('/work/a.bin');
+		}).pipe(Effect.scoped)
+	);
+
+	it.effect('uploads stdin with --body-file -', () =>
+		Effect.gen(function* () {
+			const env = yield* signedIn;
+
+			const result = yield* runAkua([...writeFile, '--body-file', '-'], {
+				env,
+				inputs: { '-': 'from stdin' },
+				api: () => ({ body: { path: '/work/a.bin' } })
+			});
+
+			expect(result.requests[0]?.bytes).toEqual(encoder.encode('from stdin'));
+		}).pipe(Effect.scoped)
+	);
+
+	it.effect('asks for the file to send and sends nothing without --body-file', () =>
+		Effect.gen(function* () {
+			const env = yield* signedIn;
+
+			const result = yield* runAkua(writeFile, { env });
+
+			expect(result.exitCode).not.toBe(0);
+			expect(result.requests).toEqual([]);
+			expect(result.stdout).toContain('--body-file');
+		}).pipe(Effect.scoped)
+	);
+
+	it.effect('rejects stdin used twice, for the request and the body', () =>
+		Effect.gen(function* () {
+			const env = yield* signedIn;
+
+			const result = yield* runAkua([...writeFile, '--body-file', '-', '--input', '-'], {
+				env,
+				inputs: { '-': '{}' }
+			});
+
+			expect(result.exitCode).not.toBe(0);
+			expect(result.requests).toEqual([]);
+			expect(result.stdout).toContain('stdin (-) can be used by only one input source');
+		}).pipe(Effect.scoped)
+	);
+
+	const readFile = ['sandboxes', 'read-file', 'sbx_1', '--path', '/work/a.bin'];
+	const download = () => ({ bytes: fileBytes, contentType: 'application/octet-stream' });
+
+	it.effect('writes a downloaded file to stdout as raw bytes', () =>
+		Effect.gen(function* () {
+			const env = yield* signedIn;
+
+			const result = yield* runAkua(readFile, { env, api: download });
+
+			expect(result.exitCode).toBe(0);
+			expect(result.stdoutBytes).toEqual(fileBytes);
+			expect(result.stdout).toBe('');
+			expect(result.requests[0]?.body).toEqual({ path: '/work/a.bin' });
+		}).pipe(Effect.scoped)
+	);
+
+	it.effect('saves a downloaded file with --output-file and reports where', () =>
+		Effect.gen(function* () {
+			const env = yield* signedIn;
+
+			const result = yield* runAkua([...readFile, '--output-file', 'out.bin', '--json'], {
+				env,
+				api: download
+			});
+
+			expect(result.exitCode).toBe(0);
+			expect(result.files['out.bin']).toEqual(fileBytes);
+			expect(result.stdoutBytes).toEqual(new Uint8Array(0));
+			expect(JSON.parse(result.stdout).data).toEqual({ output_file: 'out.bin', bytes: 5 });
+		}).pipe(Effect.scoped)
+	);
+
+	it.effect('shows an API error for a download as JSON, not as bytes', () =>
+		Effect.gen(function* () {
+			const env = yield* signedIn;
+
+			const result = yield* runAkua([...readFile, '--json'], {
+				env,
+				api: () => ({ status: 404, body: { errors: [{ code: 404, message: 'No such file' }] } })
+			});
+
+			expect(result.exitCode).not.toBe(0);
+			expect(result.stdoutBytes).toEqual(new Uint8Array(0));
+			expect(result.stdout).toContain('No such file');
+		}).pipe(Effect.scoped)
+	);
+
+	it.effect('prints an NDJSON stream line by line', () =>
+		Effect.gen(function* () {
+			const env = yield* signedIn;
+
+			const result = yield* runAkua(
+				['sandboxes', 'stream-command-logs', 'sbx_1', 'cmd_1', '--json'],
+				{
+					env,
+					api: () => ({
+						text: '{"stream":"stdout","data":"a"}\n\n{"stream":"stderr","data":"b"}\n',
+						contentType: 'application/x-ndjson'
+					})
+				}
+			);
+
+			expect(result.exitCode).toBe(0);
+			expect(
+				result.stdout
+					.trim()
+					.split('\n')
+					.map((line) => JSON.parse(line).data)
+			).toEqual([
+				{ event: 'line', data: '{"stream":"stdout","data":"a"}' },
+				{ event: 'line', data: '{"stream":"stderr","data":"b"}' }
+			]);
+		}).pipe(Effect.scoped)
+	);
+});
