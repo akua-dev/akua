@@ -1,0 +1,17 @@
+"""Portable package-authoring plugin sources."""
+
+load("@bazel_lib//lib:copy_to_bin.bzl", "copy_to_bin")
+
+exports_files(["BUILD.bazel"])
+
+filegroup(
+    name = "plugin_content",
+    srcs = ["plugin.json"] + glob(["skills/**"]),
+    visibility = ["//visibility:public"],
+)
+
+copy_to_bin(
+    name = "plugin_content_bin",
+    srcs = [":plugin_content"],
+    visibility = ["//visibility:public"],
+)

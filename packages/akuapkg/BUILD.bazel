@@ -1,0 +1,42 @@
+"""The Bun/Effect host: CLI, render pipeline and the Wasmtime sandbox adapter.
+
+Keep this file to source groups and local labels: the cnap monorepo also
+loads it as an ordinary package of its own workspace.
+"""
+
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+
+exports_files(
+    [
+        "BUILD.bazel",
+        "package.json",
+        "tsconfig.json",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "srcs",
+    srcs = glob(
+        ["src/**/*.ts"],
+        exclude = ["src/**/*.test.ts"],
+    ),
+    visibility = ["//visibility:public"],
+)
+
+# Monorepo consumers resolve `@akua-dev/sdk` through a package store built
+# from these sources; the names are the ones that store graph looks up.
+js_library(
+    name = "workspace_verification_package_store_src",
+    srcs = [
+        "package.json",
+        ":srcs",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "workspace_verification_production_package_src",
+    actual = ":workspace_verification_package_store_src",
+    visibility = ["//visibility:public"],
+)

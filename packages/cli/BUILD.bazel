@@ -1,0 +1,140 @@
+"""Sources of the akua CLI; //bazel builds and tests them.
+
+Keep this file to source groups and local labels only: the cnap monorepo
+also loads it as an ordinary package of its own workspace, where its own
+lint, format and publication tooling reads the `*_bin` copies below.
+"""
+
+load("@bazel_lib//lib:copy_to_bin.bzl", "copy_to_bin")
+
+_RELEASE_SERVICES = "scripts/runtime/release-services.ts"
+
+_RELEASE_HOST = "scripts/runtime/release-host-live.ts"
+
+exports_files(
+    [
+        "BUILD.bazel",
+        "package.json",
+        "tsconfig.json",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "srcs",
+    srcs = glob(
+        ["src/**/*.ts"],
+        exclude = ["src/**/*.test.ts"],
+    ),
+    visibility = ["//visibility:public"],
+)
+
+# The packaging program behind the release archives (bazel/release-package-command.ts).
+filegroup(
+    name = "release_program_srcs",
+    srcs = [
+        _RELEASE_HOST,
+        _RELEASE_SERVICES,
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Hand-written TypeScript: everything but the generated API contract.
+filegroup(
+    name = "handwritten_ts",
+    srcs = glob(
+        [
+            "scripts/**/*.ts",
+            "src/**/*.ts",
+            "test/**/*.ts",
+        ],
+        exclude = ["src/generated/**"],
+    ) + ["vitest.config.ts"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "generated_srcs",
+    srcs = glob(["src/generated/**"]),
+    visibility = ["//visibility:public"],
+)
+
+# What `bun run test` reads.
+filegroup(
+    name = "test_srcs",
+    srcs = [
+        "CHANGELOG.md",
+        "package.json",
+        "tsconfig.json",
+        ":generated_srcs",
+        ":handwritten_ts",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "docs",
+    srcs = [
+        "AGENTS.md",
+        "CHANGELOG.md",
+        "CONTRIBUTING.md",
+        "README.md",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# The release contract (asset names, manifests, archive layout) the publisher
+# shares with the release program.
+copy_to_bin(
+    name = "release_services_bin",
+    srcs = [_RELEASE_SERVICES],
+    visibility = ["//visibility:public"],
+)
+
+copy_to_bin(
+    name = "release_host_bin",
+    srcs = [_RELEASE_HOST],
+    visibility = ["//visibility:public"],
+)
+
+copy_to_bin(
+    name = "other_handwritten_ts_bin",
+    srcs = glob(
+        [
+            "scripts/**/*.ts",
+            "src/**/*.ts",
+            "test/**/*.ts",
+        ],
+        exclude = [
+            "src/generated/**",
+            _RELEASE_HOST,
+            _RELEASE_SERVICES,
+        ],
+    ) + ["vitest.config.ts"],
+)
+
+filegroup(
+    name = "handwritten_ts_bin",
+    srcs = [
+        ":other_handwritten_ts_bin",
+        ":release_host_bin",
+        ":release_services_bin",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+copy_to_bin(
+    name = "generated_srcs_bin",
+    srcs = [":generated_srcs"],
+    visibility = ["//visibility:public"],
+)
+
+copy_to_bin(
+    name = "metadata_bin",
+    srcs = [
+        "package.json",
+        "tsconfig.json",
+        ":docs",
+    ],
+    visibility = ["//visibility:public"],
+)

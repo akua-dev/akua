@@ -4,7 +4,7 @@
 // and precompiled engines akuapkg_embedded_{TARGET}.ts embeds.
 import { AKUAPKG_VERSION, embeddedAssets } from './akuapkg_embedded_{TARGET}.ts';
 import { BunRuntime } from '@effect/platform-bun';
-import { akuaProgram } from '../cli/src/bin/akua.ts';
-import { EmbeddedPackageCli } from '../cli/src/runtime/services-live.ts';
+import { akuaProgram } from '../packages/cli/src/bin/akua.ts';
+import { EmbeddedPackageCli } from '../packages/cli/src/runtime/services-live.ts';
 
 BunRuntime.runMain(akuaProgram(EmbeddedPackageCli(embeddedAssets, AKUAPKG_VERSION)));
