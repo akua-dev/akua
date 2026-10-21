@@ -36003,7 +36003,7 @@
               "connection_id": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 56
+                "maxLength": 55
               }
             },
             "required": [
@@ -37512,7 +37512,7 @@
               "connection_id": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 56
+                "maxLength": 55
               }
             },
             "required": [
