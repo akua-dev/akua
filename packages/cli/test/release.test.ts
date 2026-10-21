@@ -15,7 +15,18 @@ import {
 	writeFileString
 } from './fs-test';
 import { BunServices } from '@effect/platform-bun';
-import { Config, Console, Crypto, Effect, FileSystem, Layer, Option, Path, Stream } from 'effect';
+import {
+	Config,
+	Console,
+	Crypto,
+	Effect,
+	FileSystem,
+	Layer,
+	Option,
+	Path,
+	Schema,
+	Stream
+} from 'effect';
 import { Command } from 'effect/cli';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 
@@ -338,6 +349,64 @@ describe('release target contract', () => {
 			await removePath(root, { recursive: true, force: true });
 		}
 	});
+
+	it.effect('verifies immutable releases from before the CLI source move', () =>
+		Effect.gen(function* () {
+			const fs = yield* FileSystem.FileSystem;
+			const path = yield* Path.Path;
+			const zipperPath = Option.getOrUndefined(
+				yield* Config.option(Config.String('PLATFORM_CLI_TEST_ZIPPER'))
+			);
+			const host = yield* ReleaseHost.pipe(Effect.provide(makeReleaseHostLive(zipperPath)));
+			const releaseRoot = path.resolve('dist', 'release');
+			yield* fs.makeDirectory(releaseRoot, { recursive: true });
+			const root = yield* fs.makeTempDirectoryScoped({
+				directory: releaseRoot,
+				prefix: '.tmp-akua-release-'
+			});
+			const executable = path.join(root, 'akua-fixture');
+			const outputDir = path.join(root, 'release');
+			yield* fs.writeFileString(executable, '#!/bin/sh\necho akua fixture\n');
+			yield* fs.chmod(executable, 0o755);
+			yield* host.packageExistingExecutables({
+				version: '1.2.3',
+				outputDir,
+				binaries: Object.fromEntries(RELEASE_TARGETS.map((target) => [target.id, executable])),
+				packageVersion: '0.9.6',
+				sourceSha: TEST_SOURCE_SHA,
+				zipperPath
+			});
+			const manifestPath = path.join(outputDir, 'akua-v1.2.3-manifest.json');
+			const manifest = yield* Schema.decodeEffect(
+				Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown))
+			)(yield* fs.readFileString(manifestPath));
+			const source = yield* Schema.decodeUnknownEffect(
+				Schema.Struct({ repository: Schema.String, sha: Schema.String, subtree: Schema.String })
+			)(manifest.source);
+			const historicalManifest = JSON.stringify({
+				...manifest,
+				source: { ...source, subtree: 'oss/akua/cli' }
+			});
+			yield* fs.writeFileString(manifestPath, historicalManifest);
+			yield* host.verifyReleaseDirectory(outputDir, '1.2.3');
+			expect(yield* fs.readFileString(manifestPath)).toBe(historicalManifest);
+			for (const invalidSource of [
+				{ ...source, subtree: 'oss/akua/unknown' },
+				{ ...source, repository: 'other/repository', subtree: 'oss/akua/cli' }
+			]) {
+				yield* fs.writeFileString(
+					manifestPath,
+					JSON.stringify({ ...manifest, source: invalidSource })
+				);
+				const failure = yield* host.verifyReleaseDirectory(outputDir, '1.2.3').pipe(Effect.flip);
+				expect(failure.message).toBe('Release manifest provenance is invalid');
+			}
+			yield* fs.writeFileString(manifestPath, historicalManifest);
+			yield* fs.writeFileString(path.join(outputDir, 'akua-v1.2.3-linux-x64.tar.gz'), 'tampered');
+			const failure = yield* host.verifyReleaseDirectory(outputDir, '1.2.3').pipe(Effect.flip);
+			expect(failure.message).toMatch(/checksum/i);
+		}).pipe(Effect.provide(BunServices.layer), Effect.scoped)
+	);
 
 	test('packages each akua executable alone with its provenance', async () => {
 		const targets = release.RELEASE_TARGETS;

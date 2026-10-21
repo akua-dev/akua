@@ -113,7 +113,7 @@ export interface ReleaseProvenance {
 	source: {
 		repository: 'akua-dev/cnap';
 		sha: string;
-		subtree: 'oss/akua/packages/cli';
+		subtree: 'oss/akua/packages/cli' | 'oss/akua/cli';
 	};
 	dependencies: [
 		{

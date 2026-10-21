@@ -809,15 +809,18 @@ function parseReleaseManifest(value: unknown): Effect.Effect<ReleaseManifest, Re
 	});
 }
 
-function parseReleaseProvenance(value: Record<string, unknown>) {
+function parseReleaseProvenance(
+	value: Record<string, unknown>
+): Effect.Effect<ReleaseProvenance, ReleaseFailure> {
 	const source = value.source;
+	const subtree = isRecord(source) ? source.subtree : undefined;
 	const dependencies = value.dependencies;
 	const toolchain =
 		Array.isArray(dependencies) && dependencies.length === 1 ? dependencies[0] : undefined;
 	if (
 		!isRecord(source) ||
 		source.repository !== 'akua-dev/cnap' ||
-		source.subtree !== 'oss/akua/packages/cli' ||
+		(subtree !== 'oss/akua/packages/cli' && subtree !== 'oss/akua/cli') ||
 		!isRecord(toolchain) ||
 		toolchain.name !== 'akuapkg' ||
 		typeof source.sha !== 'string' ||
@@ -825,7 +828,10 @@ function parseReleaseProvenance(value: Record<string, unknown>) {
 	) {
 		return releaseFailure('Release manifest provenance is invalid');
 	}
-	return makeReleaseProvenance({ sourceSha: source.sha, packageVersion: toolchain.version });
+	// Immutable releases retain the source location that existed when they were built.
+	return makeReleaseProvenance({ sourceSha: source.sha, packageVersion: toolchain.version }).pipe(
+		Effect.map((provenance) => ({ ...provenance, source: { ...provenance.source, subtree } }))
+	);
 }
 
 function parseReleaseAsset(value: unknown): Effect.Effect<ReleaseAsset, ReleaseFailure> {
