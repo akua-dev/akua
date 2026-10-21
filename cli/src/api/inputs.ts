@@ -57,6 +57,10 @@ export const SECRET_FILE_SUFFIX = '-file';
 /** Header the public API reads the workspace (or other scope) context from. */
 export const CONTEXT_HEADER = 'akua-context';
 
+/** Flags of the commands that send or save raw bytes; generated flags never take their names. */
+export const BODY_FILE_FLAG = 'body-file';
+export const OUTPUT_FILE_FLAG = 'output-file';
+
 /** Flags every command already owns; generated flags never shadow them. */
 export const RESERVED_FLAG_NAMES: ReadonlySet<string> = new Set([
 	'completions',
@@ -64,6 +68,8 @@ export const RESERVED_FLAG_NAMES: ReadonlySet<string> = new Set([
 	'input',
 	'json',
 	'output',
+	BODY_FILE_FLAG,
+	OUTPUT_FILE_FLAG,
 	'quiet',
 	'version',
 	'workspace'

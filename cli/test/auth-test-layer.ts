@@ -99,6 +99,7 @@ function testServices(dependencies: AuthTestDependencies) {
 						user_code: code.slice('Enter code: '.length)
 					});
 				}),
+			writeStdoutBytes: () => Effect.void,
 			writeStdout: () => Effect.void
 		}),
 		Layer.succeed(Clock.Clock, {

@@ -6,7 +6,9 @@ import type { ApiContract, ApiOperation } from '../api/contract';
 import { OperationFailure } from '../api/failure';
 import {
 	commandPath,
+	BODY_FILE_FLAG,
 	CONTEXT_HEADER,
+	OUTPUT_FILE_FLAG,
 	SECRET_FILE_SUFFIX,
 	type InputFlag,
 	type OperationInputs,
@@ -17,7 +19,13 @@ import { decodeRequest } from '../api/request';
 import type { CliFailure } from '../runtime/effect-runtime';
 import type { NextStep } from '../runtime/errors';
 import type { RenderEnvelope } from '../runtime/render';
-import { Console, PublicInput, type SecureConfig } from '../runtime/services';
+import {
+	Console,
+	PublicInput,
+	PublicOutput,
+	PublicOutputFailure,
+	type SecureConfig
+} from '../runtime/services';
 import { respond } from './invocation';
 import {
 	commandExamples,
@@ -89,14 +97,45 @@ function operationCommand(contract: ApiContract, operation: ApiOperation) {
 			Flag.withDescription(
 				'Read the JSON request {"path","query","headers","body"} from a file, or - for stdin; arguments and flags override it'
 			)
-		)
+		),
+		...(operation.upload === undefined
+			? {}
+			: {
+					bodyFile: Flag.String(BODY_FILE_FLAG).pipe(
+						Flag.optional,
+						Flag.withDescription(
+							`File to send as the request body, or - for stdin${operation.upload.required ? ' (required)' : ''}`
+						)
+					)
+				}),
+		...(operation.download === true
+			? {
+					outputFile: Flag.String(OUTPUT_FILE_FLAG).pipe(
+						Flag.optional,
+						Flag.withDescription('Write the response body to this file instead of stdout')
+					)
+				}
+			: {})
 	};
 	return Command.make(
 		context.action,
 		config,
-		Effect.fn(function* ({ args, flags, secretFiles, input }) {
+		Effect.fn(function* ({ args, flags, secretFiles, input, ...files }) {
 			const global = yield* akua;
-			yield* respond(runOperation(context, { args, flags, secretFiles, input }, global.workspace));
+			yield* respond(
+				runOperation(
+					context,
+					{
+						args,
+						flags,
+						secretFiles,
+						input,
+						bodyFile: files.bodyFile ?? Option.none(),
+						outputFile: files.outputFile ?? Option.none()
+					},
+					global.workspace
+				)
+			);
 		})
 	).pipe(
 		Command.withDescription(operation.summary),
@@ -160,6 +199,10 @@ interface ParsedInputs {
 	/** `--<secret>-file` values, in the order of the secret flags. */
 	readonly secretFiles: ReadonlyArray<Option.Option<string>>;
 	readonly input: Option.Option<string>;
+	/** `--body-file`, for operations that upload raw bytes. */
+	readonly bodyFile: Option.Option<string>;
+	/** `--output-file`, for operations that download raw bytes. */
+	readonly outputFile: Option.Option<string>;
 }
 
 type ResolvedInputs = Omit<ParsedInputs, 'flags'> & {
@@ -173,15 +216,48 @@ const runOperation = Effect.fnUntraced(function* (
 ): Effect.fn.Return<
 	RenderEnvelope<CliFailure>,
 	CliFailure,
-	ApiClient | Console | PublicInput | SecureConfig
+	ApiClient | Console | PublicInput | PublicOutput | SecureConfig
 > {
 	const { envelope, workspaceMissing } = yield* prepareRequest(context, parsed, workspaceFlag);
 	const failureContext = { ...context, workspaceMissing };
+	const upload = yield* readUpload(context.operation, parsed).pipe(
+		Effect.mapError(toCliFailure(context))
+	);
 	const result = yield* Effect.gen(function* () {
 		const request = yield* decodeRequest(context.contract, context.operation, envelope);
-		return yield* (yield* ApiClient).execute(context.operation, request);
+		return yield* (yield* ApiClient).execute(context.operation, request, upload);
 	}).pipe(Effect.mapError(toCliFailure(failureContext)));
-	return successEnvelope(context, result);
+	return yield* successEnvelope(context, result, parsed.outputFile);
+});
+
+/** The bytes `--body-file` names (`-` is stdin), when the operation uploads a raw body. */
+const readUpload = Effect.fnUntraced(function* (operation: ApiOperation, parsed: ParsedInputs) {
+	if (operation.upload === undefined) return undefined;
+	const issue = (message: string) =>
+		new OperationFailure({
+			operationId: operation.id,
+			reason: 'input',
+			issues: [{ path: ['body'], message }]
+		});
+	if (Option.isNone(parsed.bodyFile)) {
+		return operation.upload.required
+			? yield* issue(`Expected the file to send: --${BODY_FILE_FLAG} <path>, or - for stdin`)
+			: undefined;
+	}
+	const stdinSources = [parsed.input, parsed.bodyFile, ...parsed.secretFiles].filter(
+		(source) => Option.isSome(source) && source.value === '-'
+	).length;
+	if (stdinSources > 1) return yield* issue('stdin (-) can be used by only one input source');
+	return yield* (yield* PublicInput).readBytes(parsed.bodyFile.value).pipe(
+		Effect.mapError(
+			() =>
+				new OperationFailure({
+					operationId: operation.id,
+					reason: 'source',
+					detail: `--${BODY_FILE_FLAG}`
+				})
+		)
+	);
 });
 
 /**
@@ -367,14 +443,39 @@ function applyInputs(
 			);
 }
 
-function successEnvelope(
+const successEnvelope = Effect.fnUntraced(function* (
 	context: OperationCommandContext,
-	result: ApiResult
-): RenderEnvelope<CliFailure> {
+	result: ApiResult,
+	outputFile: Option.Option<string>
+): Effect.fn.Return<RenderEnvelope<CliFailure>, CliFailure, PublicOutput> {
 	if (result._tag === 'Stream') {
 		return {
 			command: context.command,
 			stream: result.stream.pipe(Stream.mapError(toCliFailure(context)))
+		};
+	}
+	if (result._tag === 'Bytes') {
+		if (Option.isNone(outputFile)) {
+			return {
+				command: context.command,
+				bytes: result.stream.pipe(Stream.mapError(toCliFailure(context)))
+			};
+		}
+		const bytes = yield* (yield* PublicOutput).writeFile(outputFile.value, result.stream).pipe(
+			Effect.catchTag('PublicOutputFailure', () =>
+				Effect.fail(
+					new OperationFailure({
+						operationId: context.operation.id,
+						reason: 'source',
+						detail: `--${OUTPUT_FILE_FLAG}`
+					})
+				)
+			),
+			Effect.mapError(toCliFailure(context))
+		);
+		return {
+			command: context.command,
+			data: { output_file: outputFile.value, bytes }
 		};
 	}
 	const nextSteps = successNextSteps(context, result.value);
@@ -383,7 +484,7 @@ function successEnvelope(
 		data: result.value,
 		...(nextSteps.length === 0 ? {} : { next_steps: nextSteps })
 	};
-}
+});
 
 /** Follow-ups a person would type next: poll a returned Operation, fetch the next page. */
 function successNextSteps(context: OperationCommandContext, value: Schema.Json): NextStep[] {

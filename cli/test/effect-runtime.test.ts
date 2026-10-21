@@ -22,6 +22,7 @@ describe('Effect CLI runtime', () => {
 					stdoutIsTTY: false,
 					stdinIsTTY: false,
 					writeStderr: () => Effect.void,
+					writeStdoutBytes: () => Effect.void,
 					writeStdout: (value) => Effect.sync(() => stdout.push(value))
 				})
 			);
@@ -50,6 +51,7 @@ describe('Effect CLI runtime', () => {
 					stdoutIsTTY: false,
 					stdinIsTTY: false,
 					writeStderr: () => Effect.void,
+					writeStdoutBytes: () => Effect.void,
 					writeStdout: (value) => Effect.sync(() => stdout.push(value))
 				})
 			);
@@ -80,6 +82,7 @@ describe('Effect CLI runtime', () => {
 					stdoutIsTTY: false,
 					stdinIsTTY: false,
 					writeStderr: () => Effect.void,
+					writeStdoutBytes: () => Effect.void,
 					writeStdout: () => Effect.void
 				}),
 				Layer.succeed(SecureConfig, {

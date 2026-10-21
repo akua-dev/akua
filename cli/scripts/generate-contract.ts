@@ -30,7 +30,10 @@ const DROPPED_KEYWORD = (key: string) =>
 const JsonObject = Schema.Record(Schema.String, Schema.Unknown);
 const MediaType = Schema.Struct({
 	schema: Schema.optionalKey(JsonObject),
-	'x-effect-stream': Schema.optionalKey(Schema.Struct({ failureEvent: Schema.String }))
+	// SSE streams name their failure event; byte and NDJSON streams carry only an encoding.
+	'x-effect-stream': Schema.optionalKey(
+		Schema.Struct({ failureEvent: Schema.optionalKey(Schema.String) })
+	)
 });
 const Content = Schema.Record(Schema.String, MediaType);
 const Parameter = Schema.Struct({
@@ -135,8 +138,8 @@ export const buildContract = Effect.fn('buildContract')(function* (document: Ope
 			parameterKeys.push(shareParameter(parameters, parameter));
 		}
 
-		const body = yield* requestBody(id, operation);
-		const stream = yield* successStream(id, operation);
+		const { body, upload } = yield* requestBody(id, operation);
+		const success = yield* successResponse(id, operation);
 		for (const [status, response] of Object.entries(operation.responses)) {
 			if (!/^[45]\d\d$/.test(status)) continue;
 			for (const [mediaType, media] of Object.entries(response.content ?? {})) {
@@ -154,7 +157,8 @@ export const buildContract = Effect.fn('buildContract')(function* (document: Ope
 			auth: requiresAuthentication(operation.security ?? document.security ?? []),
 			parameters: parameterKeys,
 			...(body === undefined ? {} : { body }),
-			...(stream === undefined ? {} : { stream })
+			...(upload === undefined ? {} : { upload }),
+			...success
 		});
 	}
 
@@ -247,42 +251,58 @@ function shareParameter(table: Record<string, ApiParameter>, parameter: ApiParam
 	}
 }
 
+const OCTET_STREAM = 'application/octet-stream';
+
+/** A JSON body, or a raw byte body that is sent from a file or stdin and has no schema. */
 function requestBody(
 	id: string,
 	operation: Operation
-): Effect.Effect<ApiOperation['body'], ScriptValidationFailure> {
+): Effect.Effect<
+	{ readonly body?: ApiOperation['body']; readonly upload?: ApiOperation['upload'] },
+	ScriptValidationFailure
+> {
 	const requestBody = operation.requestBody;
-	if (requestBody === undefined) return Effect.succeed(undefined);
+	if (requestBody === undefined) return Effect.succeed({});
+	const required = requestBody.required === true;
 	const mediaTypes = Object.keys(requestBody.content);
+	if (mediaTypes.length === 1 && mediaTypes[0] === OCTET_STREAM) {
+		return Effect.succeed({ upload: { required } });
+	}
 	const json = requestBody.content['application/json']?.schema;
 	if (json === undefined || mediaTypes.length !== 1) {
 		return invalid(
-			`${id}: request body must be application/json only, found ${mediaTypes.join(', ')}`
+			`${id}: request body must be application/json or ${OCTET_STREAM} only, found ${mediaTypes.join(', ')}`
 		);
 	}
-	return Effect.succeed({ required: requestBody.required === true, schema: cleanSchema(json) });
+	return Effect.succeed({ body: { required, schema: cleanSchema(json) } });
 }
 
-function successStream(
+/** How the CLI reads the success response: an SSE stream, NDJSON lines, raw bytes, or JSON. */
+function successResponse(
 	id: string,
 	operation: Operation
-): Effect.Effect<ApiOperation['stream'], ScriptValidationFailure> {
+): Effect.Effect<Pick<ApiOperation, 'stream' | 'download' | 'lines'>, ScriptValidationFailure> {
 	return Effect.gen(function* () {
-		let stream: ApiOperation['stream'];
+		let success: Pick<ApiOperation, 'stream' | 'download' | 'lines'> = {};
 		for (const [status, response] of Object.entries(operation.responses)) {
 			if (!/^2\d\d$/.test(status)) continue;
 			for (const [mediaType, media] of Object.entries(response.content ?? {})) {
 				if (mediaType === 'application/json') continue;
 				const failureEvent = media['x-effect-stream']?.failureEvent;
-				if (mediaType !== 'text/event-stream' || failureEvent === undefined) {
+				if (mediaType === 'text/event-stream' && failureEvent !== undefined) {
+					success = { stream: { failureEvent } };
+				} else if (mediaType === OCTET_STREAM) {
+					success = { download: true };
+				} else if (mediaType === 'application/x-ndjson') {
+					success = { lines: true };
+				} else {
 					return yield* invalid(
 						`${id}: ${status} ${mediaType} success response is not representable`
 					);
 				}
-				stream = { failureEvent };
 			}
 		}
-		return stream;
+		return success;
 	});
 }
 

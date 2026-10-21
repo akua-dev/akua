@@ -46,16 +46,23 @@ export const runCli = Effect.fnUntraced(function* <R>(
 	const console = yield* Console;
 	return yield* Effect.matchEffect(command, {
 		onSuccess: (envelope) =>
-			envelope.stream === undefined
-				? console.writeStdout(renderSuccess(envelope, renderer.mode)).pipe(Effect.as(0))
-				: Stream.runForEach(envelope.stream, (value) =>
-						console.writeStdout(renderStreamSuccess(envelope, value, renderer.mode))
-					).pipe(
+			envelope.bytes !== undefined
+				? Stream.runForEach(envelope.bytes, console.writeStdoutBytes).pipe(
 						Effect.matchEffect({
 							onFailure: (failure) => writeCliFailure(console, failure, renderer.mode),
 							onSuccess: () => Effect.succeed(0)
 						})
-					),
+					)
+				: envelope.stream === undefined
+					? console.writeStdout(renderSuccess(envelope, renderer.mode)).pipe(Effect.as(0))
+					: Stream.runForEach(envelope.stream, (value) =>
+							console.writeStdout(renderStreamSuccess(envelope, value, renderer.mode))
+						).pipe(
+							Effect.matchEffect({
+								onFailure: (failure) => writeCliFailure(console, failure, renderer.mode),
+								onSuccess: () => Effect.succeed(0)
+							})
+						),
 		onFailure: (failure) => writeCliFailure(console, failure, renderer.mode)
 	});
 });
