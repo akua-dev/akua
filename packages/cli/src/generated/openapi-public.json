@@ -24735,6 +24735,1104 @@
         }
       }
     },
+    "/opencodes": {
+      "post": {
+        "tags": [
+          "OpenCode Servers"
+        ],
+        "operationId": "opencodes.create",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "OpenCode Server created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenCodeServer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates a hosted OpenCode Server in the workspace with a random id. OpenCode's own settings (models, providers, agents) are managed in OpenCode itself; this resource holds the platform guardrails around it. `model_credential_source` is required. With an `Idempotency-Key`, a retry of the same request returns the server it created; the same key on a different request answers 409.",
+        "summary": "Create an OpenCode Server",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOpenCodeServer"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      },
+      "get": {
+        "tags": [
+          "OpenCode Servers"
+        ],
+        "operationId": "opencodes.list",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Pagination cursor from a previous response's `next_cursor`."
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (1-100, default 50)",
+              "default": 50,
+              "examples": [
+                50
+              ],
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OpenCode Server list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenCodeServerList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Lists the workspace's OpenCode Servers, oldest first, deleted servers excluded. The default server is created on first use.",
+        "summary": "List OpenCode Servers",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/opencodes/{id}": {
+      "get": {
+        "tags": [
+          "OpenCode Servers"
+        ],
+        "operationId": "opencodes.get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/OpenCodeServerId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OpenCode Server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenCodeServer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns one OpenCode Server of the workspace.",
+        "summary": "Get an OpenCode Server",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "patch": {
+        "tags": [
+          "OpenCode Servers"
+        ],
+        "operationId": "opencodes.update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/OpenCodeServerId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OpenCode Server updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenCodeServer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Changes the name, labels and guardrails of a server that is not deleted. Requires `If-Match` with the server's `etag`.",
+        "summary": "Update an OpenCode Server",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOpenCodeServer"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      },
+      "delete": {
+        "tags": [
+          "OpenCode Servers"
+        ],
+        "operationId": "opencodes.delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/OpenCodeServerId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Delete accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "Starts an operation that stops the server for good: protocol traffic is refused, its stored data is erased, and the platform's grants for it are revoked. The workspace's default server cannot be deleted.",
+        "summary": "Delete an OpenCode Server",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/opencodes/{id}:suspend": {
+      "post": {
+        "tags": [
+          "OpenCode Servers"
+        ],
+        "operationId": "opencodes.suspend",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/OpenCodeServerId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Suspend accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "Starts an operation after which the server refuses OpenCode protocol traffic. Its data is kept.",
+        "summary": "Suspend an OpenCode Server",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/opencodes/{id}:resume": {
+      "post": {
+        "tags": [
+          "OpenCode Servers"
+        ],
+        "operationId": "opencodes.resume",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/OpenCodeServerId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Resume accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "Starts an operation that lets a suspended server serve OpenCode protocol traffic again.",
+        "summary": "Resume an OpenCode Server",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/opencodes/{id}:createClientToken": {
+      "post": {
+        "tags": [
+          "OpenCode Servers"
+        ],
+        "operationId": "opencodes.createClientToken",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/OpenCodeServerId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OpenCodeClientToken",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenCodeClientToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates a one-time link that signs the browser in to the OpenCode Server's own web UI. The link expires after about a minute. Requires a workspace user; the server must belong to the workspace and be active.",
+        "summary": "Sign in to an OpenCode Server's web UI",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
     "/entitlements": {
       "get": {
         "tags": [
@@ -26039,13 +27137,13 @@
         ],
         "additionalProperties": false
       },
-      "ApiNotFound": {
+      "ApiIdempotencyConflict": {
         "type": "object",
         "properties": {
           "_tag": {
             "type": "string",
             "enum": [
-              "NotFound"
+              "IdempotencyConflict"
             ]
           },
           "success": {
@@ -26076,780 +27174,6 @@
           "success",
           "errors",
           "result"
-        ],
-        "additionalProperties": false
-      },
-      "OpenCodeClientToken": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string",
-            "description": "The web UI address with a one-time client token in its fragment (`#ct=...`). Open it in a browser, or set it as an iframe's source; the token is exchanged for a session of that server and never reaches a server log."
-          },
-          "expires_at": {
-            "type": "integer",
-            "description": "When the token expires unused, in Unix seconds. Tokens live about a minute."
-          }
-        },
-        "required": [
-          "url",
-          "expires_at"
-        ],
-        "additionalProperties": false
-      },
-      "OpenCodeServerId": {
-        "type": "string",
-        "pattern": "^oc_[a-z0-9]{1,64}$",
-        "title": "OpenCode Server id",
-        "description": "OpenCode Server id (`oc_...`).",
-        "examples": [
-          "oc_j572abc123def456"
-        ]
-      },
-      "ApiGatewayTimeout": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "GatewayTimeout"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
-        ],
-        "additionalProperties": false
-      },
-      "ApiTooManyRequests": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "TooManyRequests"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardSurfaceList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardSurface"
-            }
-          },
-          "has_more": {
-            "type": "boolean"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "effective_technical_details": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor",
-          "effective_technical_details"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardSurface": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "enum": [
-              "home",
-              "workspace",
-              "marketplace",
-              "packages",
-              "products",
-              "offers",
-              "managed_deployments",
-              "customers",
-              "apps",
-              "agents",
-              "repository_change_requests",
-              "operations",
-              "docs",
-              "compute",
-              "machines",
-              "clusters",
-              "secrets",
-              "registries",
-              "regions",
-              "cloudflare",
-              "dashboards",
-              "snippets",
-              "runs",
-              "quotas",
-              "api_tokens",
-              "billing",
-              "account",
-              "organization_members",
-              "organization",
-              "notifications",
-              "payments",
-              "access"
-            ]
-          },
-          "label": {
-            "type": "string"
-          },
-          "path": {
-            "type": "string"
-          },
-          "area": {
-            "type": "string",
-            "enum": [
-              "top",
-              "run",
-              "sell",
-              "watch",
-              "settings",
-              "search"
-            ]
-          },
-          "technical": {
-            "type": "boolean"
-          },
-          "keywords": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "navigation": {
-            "type": "object",
-            "properties": {
-              "shown": {
-                "type": "boolean"
-              },
-              "reason": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": [
-                      "role",
-                      "owned",
-                      "always",
-                      "pinned"
-                    ]
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "shown",
-              "reason"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "id",
-          "label",
-          "path",
-          "area",
-          "technical",
-          "keywords",
-          "navigation"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardPreferencesResponse": {
-        "type": "object",
-        "properties": {
-          "locale": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "en",
-                  "de"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "role_preset": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "owners",
-                  "operations",
-                  "developers",
-                  "vendors"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "role_preset_source": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "question",
-                  "website",
-                  "settings"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "technical_details": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "effective_technical_details": {
-            "type": "boolean"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "locale",
-          "role_preset",
-          "role_preset_source",
-          "technical_details",
-          "effective_technical_details",
-          "updated_at"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardPreferencesUpdate": {
-        "type": "object",
-        "properties": {
-          "locale": {
-            "type": "string",
-            "enum": [
-              "en",
-              "de"
-            ]
-          },
-          "role_preset": {
-            "type": "string",
-            "enum": [
-              "owners",
-              "operations",
-              "developers",
-              "vendors"
-            ]
-          },
-          "role_preset_source": {
-            "type": "string",
-            "enum": [
-              "question",
-              "website",
-              "settings"
-            ]
-          },
-          "technical_details": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "additionalProperties": false
-      },
-      "DashboardRoleSuggestion": {
-        "type": "object",
-        "properties": {
-          "suggested_role": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "owners",
-                  "operations",
-                  "developers",
-                  "vendors"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "source": {
-            "type": "string",
-            "enum": [
-              "baseline",
-              "jev"
-            ]
-          },
-          "baseline": {
-            "type": "object",
-            "properties": {
-              "suggested_role": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": [
-                      "owners",
-                      "operations",
-                      "developers",
-                      "vendors"
-                    ]
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "confidence": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 1
-              },
-              "ranked_roles": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "role_preset": {
-                      "type": "string",
-                      "enum": [
-                        "owners",
-                        "operations",
-                        "developers",
-                        "vendors"
-                      ]
-                    },
-                    "score": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "reasons": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  },
-                  "required": [
-                    "role_preset",
-                    "score",
-                    "reasons"
-                  ],
-                  "additionalProperties": false
-                }
-              },
-              "why": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "suggested_role",
-              "confidence",
-              "ranked_roles",
-              "why"
-            ],
-            "additionalProperties": false
-          },
-          "jev": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "probabilities": {
-                    "type": "object",
-                    "properties": {
-                      "owners": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "operations": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "developers": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      },
-                      "vendors": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 1
-                      }
-                    },
-                    "required": [
-                      "owners",
-                      "operations",
-                      "developers",
-                      "vendors"
-                    ],
-                    "additionalProperties": false
-                  },
-                  "model": {
-                    "type": "string"
-                  },
-                  "eligible": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "probabilities",
-                  "model",
-                  "eligible"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "reasons": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "why": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "suggested_role",
-          "source",
-          "baseline",
-          "jev",
-          "reasons",
-          "why"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardRoleSuggestionRequest": {
-        "type": "object",
-        "properties": {
-          "landing": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "role_tab",
-                    "role_page",
-                    "use_case_page",
-                    "use_case_chip"
-                  ]
-                },
-                "role_preset": {
-                  "type": "string",
-                  "enum": [
-                    "owners",
-                    "operations",
-                    "developers",
-                    "vendors"
-                  ]
-                },
-                "use_case": {
-                  "type": "string",
-                  "enum": [
-                    "customer-database",
-                    "online-orders",
-                    "email-assistant",
-                    "social-posts",
-                    "up-to-date",
-                    "automation",
-                    "website",
-                    "customer-cloud",
-                    "more-customers",
-                    "staged-updates",
-                    "customer-template",
-                    "partner-channel"
-                  ]
-                }
-              },
-              "required": [
-                "kind",
-                "role_preset"
-              ],
-              "additionalProperties": false
-            },
-            "maxItems": 20
-          },
-          "signup_source": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "utm": {
-            "type": "object",
-            "properties": {
-              "source": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "medium": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "campaign": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "content": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "term": {
-                "type": "string",
-                "maxLength": 200
-              }
-            },
-            "additionalProperties": false
-          },
-          "dashboard_visits": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "home",
-                "workspace",
-                "marketplace",
-                "packages",
-                "products",
-                "offers",
-                "managed_deployments",
-                "customers",
-                "apps",
-                "agents",
-                "repository_change_requests",
-                "operations",
-                "docs",
-                "compute",
-                "machines",
-                "clusters",
-                "secrets",
-                "registries",
-                "regions",
-                "cloudflare",
-                "dashboards",
-                "snippets",
-                "runs",
-                "quotas",
-                "api_tokens",
-                "billing",
-                "account",
-                "organization_members",
-                "organization",
-                "notifications",
-                "payments",
-                "access"
-              ]
-            },
-            "maxItems": 20
-          },
-          "first_chat_message": {
-            "type": "string",
-            "maxLength": 2000
-          }
-        },
-        "additionalProperties": false
-      },
-      "WorkspaceFeatureFlags": {
-        "type": "object",
-        "properties": {
-          "workspace_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "flags": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "boolean"
-            }
-          }
-        },
-        "required": [
-          "workspace_id",
-          "flags"
-        ],
-        "additionalProperties": false
-      },
-      "SubscriptionChangeRequest": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 55
-          },
-          "workspace_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 53
-          },
-          "requested_tier": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "effective_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "created_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "id",
-          "workspace_id",
-          "requested_tier",
-          "status",
-          "effective_at",
-          "created_at"
-        ],
-        "additionalProperties": false
-      },
-      "SubscriptionChangeRequestList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SubscriptionChangeRequest"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
         ],
         "additionalProperties": false
       },
@@ -26967,17 +27291,110 @@
         ],
         "additionalProperties": false
       },
-      "OperationEnvelope": {
+      "ApiNotFound": {
         "type": "object",
         "properties": {
-          "operation_id": {
+          "_tag": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 53
+            "enum": [
+              "NotFound"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
           }
         },
         "required": [
-          "operation_id"
+          "_tag",
+          "success",
+          "errors",
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "OpenCodeClientToken": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The web UI address with a one-time client token in its fragment (`#ct=...`). Open it in a browser, or set it as an iframe's source; the token is exchanged for a session of that server and never reaches a server log."
+          },
+          "expires_at": {
+            "type": "integer",
+            "description": "When the token expires unused, in Unix seconds. Tokens live about a minute."
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "additionalProperties": false
+      },
+      "OpenCodeServerId": {
+        "type": "string",
+        "pattern": "^oc_[a-z0-9]{1,64}$",
+        "title": "OpenCode Server id",
+        "description": "OpenCode Server id (`oc_...`).",
+        "examples": [
+          "oc_j572abc123def456"
+        ]
+      },
+      "ApiGatewayTimeout": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "GatewayTimeout"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
         ],
         "additionalProperties": false
       },
@@ -28108,6 +28525,90 @@
             "required": [
               "type",
               "expired"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "opencode.suspend"
+                ]
+              },
+              "opencode_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 70
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "SUSPENDED"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "opencode_id",
+              "state"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "opencode.resume"
+                ]
+              },
+              "opencode_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 70
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "opencode_id",
+              "state"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "opencode.delete"
+                ]
+              },
+              "opencode_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 70
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "DELETED"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "opencode_id",
+              "state"
             ],
             "additionalProperties": false
           },
@@ -29321,6 +29822,120 @@
               "type": {
                 "type": "string",
                 "enum": [
+                  "opencode.suspend"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              },
+              "opencode_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 70
+              },
+              "idempotency_key": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "workspace_deleted"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "workspace_id",
+              "opencode_id",
+              "idempotency_key"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "opencode.resume"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              },
+              "opencode_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 70
+              },
+              "idempotency_key": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "workspace_deleted"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "workspace_id",
+              "opencode_id",
+              "idempotency_key"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "opencode.delete"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              },
+              "opencode_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 70
+              },
+              "idempotency_key": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "workspace_deleted"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "workspace_id",
+              "opencode_id",
+              "idempotency_key"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
                   "repository.delete"
                 ]
               },
@@ -29337,6 +29952,1105 @@
             "additionalProperties": false
           }
         ]
+      },
+      "OpenCodeServer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/OpenCodeServerId"
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Display name."
+          },
+          "hostname": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+            "description": "DNS label chosen for the server's browser UI; unique across the platform. Created from the name plus a short random suffix when not given. The UI is served at `web_url` until chosen hostnames are routed.",
+            "examples": [
+              "acme-agents"
+            ]
+          },
+          "labels": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 63
+            },
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 63
+            },
+            "maxProperties": 32,
+            "description": "Free-form string labels: up to 32 keys of up to 63 characters."
+          },
+          "state": {
+            "$ref": "#/components/schemas/OpenCodeServerState"
+          },
+          "default": {
+            "type": "boolean",
+            "description": "True for the Workspace's default server, which exists as soon as the Workspace uses OpenCode and cannot be deleted."
+          },
+          "budget": {
+            "$ref": "#/components/schemas/OpenCodeBudget"
+          },
+          "model_credential_source": {
+            "$ref": "#/components/schemas/ModelCredentialSource"
+          },
+          "features": {
+            "$ref": "#/components/schemas/OpenCodeFeatures"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/OpenCodeUsage"
+          },
+          "web_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where people open the server's web UI: `https://oc-<key>.akua.run/`, a browser origin of its own, derived from the server id. `null` when this deployment hosts no OpenCode Servers."
+          },
+          "server_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The long form of the server's address, `https://<api host>/v1/opencodes/{id}/`: OpenCode's protocol under `api/`, its web UI at the base. `null` when this deployment hosts no OpenCode Servers."
+          },
+          "short_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The short form, `https://<site host>/{id}/`: protocol requests only, always with an explicit token. `null` when this deployment has none."
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "etag": {
+            "type": "string",
+            "description": "Send as `If-Match` on `PATCH`."
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "name",
+          "hostname",
+          "labels",
+          "state",
+          "default",
+          "budget",
+          "model_credential_source",
+          "features",
+          "usage",
+          "web_url",
+          "server_url",
+          "short_url",
+          "created_at",
+          "updated_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "OpenCodeUsage": {
+        "type": "object",
+        "properties": {
+          "active_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds the server has been awake and serving, summed over its life."
+          },
+          "requests": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Protocol requests served over its life."
+          }
+        },
+        "required": [
+          "active_seconds",
+          "requests"
+        ],
+        "additionalProperties": false,
+        "description": "Raw usage counters for later pricing. They carry no prices."
+      },
+      "OpenCodeFeatures": {
+        "type": "object",
+        "properties": {
+          "worktrees": {
+            "type": "boolean",
+            "description": "OpenCode worktree creation in the web UI."
+          },
+          "terminal": {
+            "type": "boolean",
+            "description": "OpenCode terminals in the web UI."
+          }
+        },
+        "required": [
+          "worktrees",
+          "terminal"
+        ],
+        "additionalProperties": false,
+        "description": "Web UI feature toggles. Everything else in OpenCode's UI stays on."
+      },
+      "ModelCredentialSource": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "platform"
+                ],
+                "description": "Models are paid through the platform's own provider access."
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "own"
+                ],
+                "description": "Models use the workspace's own provider connection."
+              },
+              "connection_id": {
+                "type": "string",
+                "description": "The workspace connection that holds the provider credential.",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            },
+            "required": [
+              "type",
+              "connection_id"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Whose provider access pays for the models this server uses. Always explicit; there is no default."
+      },
+      "OpenCodeBudget": {
+        "type": "object",
+        "properties": {
+          "monthly_limit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Monthly limit in metered usage units. The unit and its pricing are not defined yet; the value is stored and returned, not enforced. `null`: no limit."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "monthly_limit"
+        ],
+        "additionalProperties": false
+      },
+      "OpenCodeServerState": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "SUSPENDING",
+          "SUSPENDED",
+          "RESUMING",
+          "DELETING",
+          "DELETED"
+        ],
+        "description": "`ACTIVE`: serves OpenCode protocol traffic. `SUSPENDED`: the gateway refuses protocol traffic until it is resumed. `DELETED`: terminal; the id stays reserved. `SUSPENDING`, `RESUMING` and `DELETING`: a requested change is in progress; its Operation finishes when the server reached the new state. A deletion always finishes."
+      },
+      "UpdateOpenCodeServer": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Display name."
+          },
+          "hostname": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+            "description": "DNS label chosen for the server's browser UI; unique across the platform. Created from the name plus a short random suffix when not given. The UI is served at `web_url` until chosen hostnames are routed.",
+            "examples": [
+              "acme-agents"
+            ]
+          },
+          "labels": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 63
+            },
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 63
+            },
+            "maxProperties": 32,
+            "description": "Free-form string labels: up to 32 keys of up to 63 characters."
+          },
+          "model_credential_source": {
+            "$ref": "#/components/schemas/ModelCredentialSource"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/OpenCodeBudget"
+          },
+          "features": {
+            "type": "object",
+            "properties": {
+              "worktrees": {
+                "type": "boolean",
+                "description": "OpenCode worktree creation in the web UI."
+              },
+              "terminal": {
+                "type": "boolean",
+                "description": "OpenCode terminals in the web UI."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "description": "Fields left out stay as they are. `labels` replaces the whole map; `features` changes only the toggles named."
+      },
+      "OpenCodeServerList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpenCodeServer"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "CreateOpenCodeServer": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Display name."
+          },
+          "hostname": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+            "description": "DNS label chosen for the server's browser UI; unique across the platform. Created from the name plus a short random suffix when not given. The UI is served at `web_url` until chosen hostnames are routed.",
+            "examples": [
+              "acme-agents"
+            ]
+          },
+          "labels": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 63
+            },
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 63
+            },
+            "maxProperties": 32,
+            "description": "Free-form string labels: up to 32 keys of up to 63 characters."
+          },
+          "model_credential_source": {
+            "$ref": "#/components/schemas/ModelCredentialSource"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/OpenCodeBudget"
+          },
+          "features": {
+            "$ref": "#/components/schemas/OpenCodeFeatures"
+          }
+        },
+        "required": [
+          "name",
+          "model_credential_source"
+        ],
+        "additionalProperties": false
+      },
+      "ApiTooManyRequests": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "TooManyRequests"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardSurfaceList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSurface"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_technical_details": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor",
+          "effective_technical_details"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardSurface": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "home",
+              "workspace",
+              "marketplace",
+              "packages",
+              "products",
+              "offers",
+              "managed_deployments",
+              "customers",
+              "apps",
+              "agents",
+              "repository_change_requests",
+              "operations",
+              "docs",
+              "compute",
+              "machines",
+              "clusters",
+              "secrets",
+              "registries",
+              "regions",
+              "cloudflare",
+              "dashboards",
+              "snippets",
+              "runs",
+              "quotas",
+              "api_tokens",
+              "billing",
+              "account",
+              "organization_members",
+              "organization",
+              "notifications",
+              "payments",
+              "access"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string",
+            "enum": [
+              "top",
+              "run",
+              "sell",
+              "watch",
+              "settings",
+              "search"
+            ]
+          },
+          "technical": {
+            "type": "boolean"
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "navigation": {
+            "type": "object",
+            "properties": {
+              "shown": {
+                "type": "boolean"
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "role",
+                      "owned",
+                      "always",
+                      "pinned"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "shown",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "path",
+          "area",
+          "technical",
+          "keywords",
+          "navigation"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardPreferencesResponse": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "en",
+                  "de"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role_preset": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "owners",
+                  "operations",
+                  "developers",
+                  "vendors"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role_preset_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "question",
+                  "website",
+                  "settings"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "technical_details": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_technical_details": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "locale",
+          "role_preset",
+          "role_preset_source",
+          "technical_details",
+          "effective_technical_details",
+          "updated_at"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardPreferencesUpdate": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "de"
+            ]
+          },
+          "role_preset": {
+            "type": "string",
+            "enum": [
+              "owners",
+              "operations",
+              "developers",
+              "vendors"
+            ]
+          },
+          "role_preset_source": {
+            "type": "string",
+            "enum": [
+              "question",
+              "website",
+              "settings"
+            ]
+          },
+          "technical_details": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardRoleSuggestion": {
+        "type": "object",
+        "properties": {
+          "suggested_role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "owners",
+                  "operations",
+                  "developers",
+                  "vendors"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "baseline",
+              "jev"
+            ]
+          },
+          "baseline": {
+            "type": "object",
+            "properties": {
+              "suggested_role": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "owners",
+                      "operations",
+                      "developers",
+                      "vendors"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "ranked_roles": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "role_preset": {
+                      "type": "string",
+                      "enum": [
+                        "owners",
+                        "operations",
+                        "developers",
+                        "vendors"
+                      ]
+                    },
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "reasons": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "role_preset",
+                    "score",
+                    "reasons"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "why": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "suggested_role",
+              "confidence",
+              "ranked_roles",
+              "why"
+            ],
+            "additionalProperties": false
+          },
+          "jev": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "probabilities": {
+                    "type": "object",
+                    "properties": {
+                      "owners": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "operations": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "developers": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "vendors": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "required": [
+                      "owners",
+                      "operations",
+                      "developers",
+                      "vendors"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "eligible": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "probabilities",
+                  "model",
+                  "eligible"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "why": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "suggested_role",
+          "source",
+          "baseline",
+          "jev",
+          "reasons",
+          "why"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardRoleSuggestionRequest": {
+        "type": "object",
+        "properties": {
+          "landing": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "role_tab",
+                    "role_page",
+                    "use_case_page",
+                    "use_case_chip"
+                  ]
+                },
+                "role_preset": {
+                  "type": "string",
+                  "enum": [
+                    "owners",
+                    "operations",
+                    "developers",
+                    "vendors"
+                  ]
+                },
+                "use_case": {
+                  "type": "string",
+                  "enum": [
+                    "customer-database",
+                    "online-orders",
+                    "email-assistant",
+                    "social-posts",
+                    "up-to-date",
+                    "automation",
+                    "website",
+                    "customer-cloud",
+                    "more-customers",
+                    "staged-updates",
+                    "customer-template",
+                    "partner-channel"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "role_preset"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 20
+          },
+          "signup_source": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "utm": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "medium": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "campaign": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "content": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "term": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "additionalProperties": false
+          },
+          "dashboard_visits": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "home",
+                "workspace",
+                "marketplace",
+                "packages",
+                "products",
+                "offers",
+                "managed_deployments",
+                "customers",
+                "apps",
+                "agents",
+                "repository_change_requests",
+                "operations",
+                "docs",
+                "compute",
+                "machines",
+                "clusters",
+                "secrets",
+                "registries",
+                "regions",
+                "cloudflare",
+                "dashboards",
+                "snippets",
+                "runs",
+                "quotas",
+                "api_tokens",
+                "billing",
+                "account",
+                "organization_members",
+                "organization",
+                "notifications",
+                "payments",
+                "access"
+              ]
+            },
+            "maxItems": 20
+          },
+          "first_chat_message": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "additionalProperties": false
+      },
+      "WorkspaceFeatureFlags": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "flags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          }
+        },
+        "required": [
+          "workspace_id",
+          "flags"
+        ],
+        "additionalProperties": false
+      },
+      "SubscriptionChangeRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "requested_tier": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "effective_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "requested_tier",
+          "status",
+          "effective_at",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "SubscriptionChangeRequestList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionChangeRequest"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "OperationEnvelope": {
+        "type": "object",
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          }
+        },
+        "required": [
+          "operation_id"
+        ],
+        "additionalProperties": false
       },
       "WorkspaceManagement": {
         "type": "object",
@@ -43034,46 +44748,6 @@
           "context",
           "read_at",
           "created_at"
-        ],
-        "additionalProperties": false
-      },
-      "ApiIdempotencyConflict": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "IdempotencyConflict"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
         ],
         "additionalProperties": false
       },
