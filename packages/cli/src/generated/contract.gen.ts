@@ -4598,7 +4598,7 @@ export const contract: ApiContract = {
 						"instance_type": {
 							"type": "string",
 							"minLength": 1,
-							"description": "Provider instance type name. For managed machines on the Free plan (compute_config_id omitted), choose `cax11` (2 vCPU, 4 GB, ARM), `cx23` (2 vCPU, 4 GB, x86), or `cpx22` (2 vCPU, 4 GB, x86). With compute_config_id, use a type supported by that provider account and region. Availability and plan quotas are checked when creating the machine."
+							"description": "Provider instance type name. For managed machines on the Free plan (compute_config_id omitted), choose `cax11`, `cx23`, or `cpx22`. With compute_config_id, use a type supported by that provider account and region. Availability and plan quotas are checked when creating the machine."
 						},
 						"compute_config_id": {
 							"type": "string",
