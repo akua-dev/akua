@@ -37750,7 +37750,7 @@
           "mode"
         ],
         "additionalProperties": false,
-        "description": "Outbound network access. `allow_all`: HTTP and HTTPS to public internet addresses; private, link-local and cluster-internal addresses are always blocked, and other protocols except DNS are not forwarded. Restrictive modes are added as new values."
+        "description": "Outbound network access. `allow_all` means public internet only: HTTP on TCP port 80, TLS on TCP port 443 (including HTTPS), and public DNS. Private, link-local, cluster-internal and execution-cluster node addresses are blocked. Cluster DNS names and other ports or protocols are unavailable."
       },
       "SandboxSource": {
         "type": "object",
