@@ -10,6 +10,7 @@ def _macos_sdk_impl(rctx):
 exports_files(["SDKSettings.json"], visibility = ["//visibility:public"])
 filegroup(name = "files", srcs = glob(["SDKSettings.*", "usr/include/**", "usr/lib/**", "System/Library/**"]), visibility = ["//visibility:public"])
 """)
+    return rctx.repo_metadata(reproducible = True)
 
 macos_sdk = repository_rule(implementation = _macos_sdk_impl)
 
@@ -82,11 +83,19 @@ def _windows_sdk_inputs_impl(rctx):
         fail("Pinned Windows SDK input resolution failed:\n" + result.stderr)
 
     # xwin's debug trees reflect parallel extraction order, not SDK content.
-    # Keep its .unpack metadata and actual cached SDK inputs.
+    # Remove them from the repository itself, not just its action inputs, so
+    # the repo contents cache only retains deterministic files.
+    for package in rctx.path("cache/unpack").readdir():
+        rctx.delete(package.get_child("tree.txt"))
+
+    # Only the pinned Linux executable is an action input. The resolver must
+    # not leave host-specific binaries in the shared repository contents.
+    rctx.delete("host")
     rctx.file("BUILD.bazel", """
 exports_files(["manifest.json", "linux/xwin"], visibility = ["//visibility:public"])
 filegroup(name = "files", srcs = glob(["cache/dl/**", "cache/unpack/**"], exclude = ["cache/unpack/**/tree.txt"]), visibility = ["//visibility:public"])
 """)
+    return rctx.repo_metadata(reproducible = True)
 
 windows_sdk_inputs = repository_rule(implementation = _windows_sdk_inputs_impl)
 
@@ -107,5 +116,6 @@ def _windows_build_tools_impl(rctx):
 exports_files(["usr/bin/nasm"], visibility = ["//visibility:public"])
 filegroup(name = "files", srcs = ["usr/bin/nasm"] + glob(["lib/x86_64-linux-gnu/libtinfo.so.5*"]), visibility = ["//visibility:public"])
 """)
+    return rctx.repo_metadata(reproducible = True)
 
 windows_build_tools = repository_rule(implementation = _windows_build_tools_impl)
