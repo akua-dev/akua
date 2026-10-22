@@ -2,27 +2,25 @@
 runtime `bun build --compile` embeds per target."""
 
 # The compiler that runs on the build machine (actions, tests).
-BUN_VERSION = "1.4.2"
+BUN_VERSION = "1.4.4"
 
 BUN_RELEASES = {
-    "bun-darwin-arm64": ("bun-darwin-aarch64", "90987a3a16d7db556d886ac3d551e7b6d3edf0a1cf43acaed622e8676be1d12f"),
-    "bun-darwin-x64": ("bun-darwin-x64", "80520d7e17526308c9185d261679ac6d27798d3803a0e9f7ff9121ab8affb012"),
-    "bun-linux-arm64": ("bun-linux-aarch64", "54328bbc2d9c8e0c9f892c544d66c57a83b84139e34909e5ee81758f1ac8fda7"),
-    "bun-linux-x64-baseline": ("bun-linux-x64-baseline", "c678040f14fe0440eb839d37cbd0ce4c051a32da72806ac97de6a6aab6bf728f"),
+    "bun-darwin-arm64": ("bun-darwin-aarch64", "c240d7f0ccb90c263a849fcdb09b7ee62630d921348ed6aafda86b9d577bc510"),
+    "bun-darwin-x64": ("bun-darwin-x64", "50a3491f73abc2fe81673171a85762d3bc2cc1680ccecadd983de99adf77977e"),
+    "bun-linux-arm64": ("bun-linux-aarch64", "baa6bb36f51d6e58561e02bbea825038a9df454f673d6d776e8bbf86f8c7850e"),
+    "bun-linux-x64-baseline": ("bun-linux-x64-baseline", "e0446eb55995772eb9894bebae9a6be368d985a8b9271ee124486f9946eedd76"),
 }
 
-# The runtime embedded in the released executables. Bun 1.4.2 standalone
-# executables regress authenticated fetches, so the shipped runtime stays on
-# the last release proven in production while the compiler moves ahead.
-BUN_COMPILE_RUNTIME_VERSION = "1.3.14"
+# Keep the embedded runtime on the same security release as the compiler.
+BUN_COMPILE_RUNTIME_VERSION = "1.4.4"
 
 BUN_COMPILE_RUNTIME_RELEASES = {
-    "bun-darwin-arm64": ("bun-darwin-aarch64", "d8b96221828ad6f97ac7ac0ab7e95872341af763001e8803e8267652c2652620"),
-    "bun-darwin-x64": ("bun-darwin-x64", "4183df3374623e5bab315c547cfa0974533cd457d86b73b639f7a87974cd6633"),
-    "bun-linux-arm64": ("bun-linux-aarch64", "a27ffb63a8310375836e0d6f668ae17fa8d8d18b88c37c821c65331973a19a3b"),
-    "bun-linux-x64": ("bun-linux-x64", "951ee2aee855f08595aeec6225226a298d3fea83a3dcd6465c09cbccdf7e848f"),
-    "bun-linux-x64-baseline": ("bun-linux-x64-baseline", "a063908ae08b7852ca10939bbdc6ceed3ddabce8fb9402dce83d65d73b36e6c7"),
-    "bun-windows-x64-baseline": ("bun-windows-x64-baseline", "538f9c846355d9e847b2671bc00c47da4229a0befb24df3282b739770f3b475f"),
+    "bun-darwin-arm64": ("bun-darwin-aarch64", "c240d7f0ccb90c263a849fcdb09b7ee62630d921348ed6aafda86b9d577bc510"),
+    "bun-darwin-x64": ("bun-darwin-x64", "50a3491f73abc2fe81673171a85762d3bc2cc1680ccecadd983de99adf77977e"),
+    "bun-linux-arm64": ("bun-linux-aarch64", "baa6bb36f51d6e58561e02bbea825038a9df454f673d6d776e8bbf86f8c7850e"),
+    "bun-linux-x64": ("bun-linux-x64", "bf8ccbfb2b0b80159e0f9a6d15c55317add8077534dbc6130a3edb52fccb395c"),
+    "bun-linux-x64-baseline": ("bun-linux-x64-baseline", "e0446eb55995772eb9894bebae9a6be368d985a8b9271ee124486f9946eedd76"),
+    "bun-windows-x64-baseline": ("bun-windows-x64-baseline", "0f20ce6674d4f2dbcc8c5d59fdf99f7ba45f8c3b367e0f5781cbfa30a1c78d99"),
 }
 
 def _bun_release_impl(rctx):

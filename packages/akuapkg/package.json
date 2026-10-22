@@ -16,7 +16,7 @@
     "./render": "./src/render.effect.ts"
   },
   "engines": {
-    "bun": ">=1.3"
+    "bun": ">=1.4.4"
   },
   "dependencies": {
     "@akua-dev/wasm-sandbox": "0.1.0",
