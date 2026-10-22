@@ -6146,23 +6146,6 @@ export const contract: ApiContract = {
 			]
 		},
 		{
-			"id": "sandboxes.exposePort",
-			"method": "POST",
-			"path": "/sandboxes/{id}/previews",
-			"summary": "Expose a port (requires release_sandbox_previews)",
-			"auth": true,
-			"parameters": [
-				"path:id:28",
-				"header:akua-context"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/ExposeSandboxPortBody"
-				}
-			}
-		},
-		{
 			"id": "sandboxes.fork",
 			"method": "POST",
 			"path": "/sandboxes/{id}:fork",
@@ -6380,18 +6363,6 @@ export const contract: ApiContract = {
 			"parameters": [
 				"path:id:28",
 				"path:grant_id",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "sandboxes.rotatePreviewToken",
-			"method": "POST",
-			"path": "/sandboxes/{id}/previews/{port}:rotateToken",
-			"summary": "Rotate a preview’s token (requires release_sandbox_previews)",
-			"auth": true,
-			"parameters": [
-				"path:id:28",
-				"path:port",
 				"header:akua-context"
 			]
 		},
@@ -12312,29 +12283,6 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
-		"ExposeSandboxPortBody": {
-			"type": "object",
-			"properties": {
-				"port": {
-					"type": "integer",
-					"minimum": 1,
-					"maximum": 65535,
-					"description": "The port a service in the sandbox listens on."
-				},
-				"visibility": {
-					"$ref": "#/$defs/SandboxPreviewVisibility"
-				},
-				"name": {
-					"type": "string",
-					"pattern": "^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$",
-					"description": "Readable part of the hostname. Defaults to `preview`."
-				}
-			},
-			"required": [
-				"port"
-			],
-			"additionalProperties": false
-		},
 		"ForkSandboxBody": {
 			"type": "object",
 			"properties": {
@@ -13485,14 +13433,6 @@ export const contract: ApiContract = {
 				"manage"
 			],
 			"description": "`run_commands`: commands. `files`: files. `terminal`: terminals. `previews`: previews. `manage`: all permissions, lifecycle, settings and access grants."
-		},
-		"SandboxPreviewVisibility": {
-			"type": "string",
-			"enum": [
-				"link",
-				"private"
-			],
-			"description": "When preview routing is available, `link` (the default) uses the random hostname token as the only access gate; `private` requires Akua sign-in and the `previews` permission. Preview creation requires `release_sandbox_previews`, which is disabled by default."
 		},
 		"SandboxSize": {
 			"type": "string",

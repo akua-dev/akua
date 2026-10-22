@@ -17,6 +17,34 @@ const signedIn = Effect.gen(function* () {
 
 const accepted = () => ({ status: 202, body: { id: 'op_1', done: false } });
 
+describe('sandbox preview discovery before release', () => {
+	it('keeps preview cleanup public and omits creation and rotation from the generated contract', () => {
+		const ids = contract.operations.map((operation) => operation.id);
+		expect(ids).not.toContain('sandboxes.exposePort');
+		expect(ids).not.toContain('sandboxes.rotatePreviewToken');
+		expect(ids).toContain('sandboxes.listPreviews');
+		expect(ids).toContain('sandboxes.unexposePort');
+		expect(ids).toContain('sandboxes.runCommand');
+		expect(ids).toContain('sandboxes.writeFile');
+	});
+
+	it.effect(
+		'renders sandbox help with cleanup commands and without preview creation or rotation',
+		() =>
+			Effect.gen(function* () {
+				const help = yield* runAkua(['sandboxes', '--help'], { tty: true });
+				expect(help.exitCode).toBe(0);
+				expect(help.stdout).not.toMatch(/^\s+expose-port\s/mu);
+				expect(help.stdout).not.toMatch(/^\s+rotate-preview-token\s/mu);
+				expect(help.stdout).toContain('list-previews');
+				expect(help.stdout).toContain('unexpose-port');
+				expect(help.stdout).toContain('run-command');
+				expect(help.stdout).toContain('write-file');
+				expect(help.requests).toEqual([]);
+			})
+	);
+});
+
 describe('secret values', () => {
 	const createGeneric = ['secrets', 'create', '--name', 'token', '--kind', 'generic'];
 

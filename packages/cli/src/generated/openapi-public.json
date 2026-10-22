@@ -31714,143 +31714,6 @@
       }
     },
     "/sandboxes/{id}/previews": {
-      "post": {
-        "tags": [
-          "Sandboxes"
-        ],
-        "operationId": "sandboxes.exposePort",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "schema": {
-              "$ref": "#/components/schemas/SandboxId"
-            },
-            "required": true
-          },
-          {
-            "name": "akua-context",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 53,
-              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
-              "examples": [
-                "ws_j572abc123def456"
-              ]
-            },
-            "required": false
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Port exposed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SandboxPreview"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The request is malformed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiBadRequest"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired credential.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnauthorized"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The credential may not act in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiForbidden"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The resource was not found in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiNotFound"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ApiConflict"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ApiPreconditionFailed"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is well-formed but cannot be processed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnprocessable"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The service is temporarily unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiServiceUnavailable"
-                }
-              }
-            }
-          }
-        },
-        "description": "Requires the default-off `release_sandbox_previews` feature flag and `previews` permission. When disabled, returns HTTP 403 Forbidden: \"Sandbox previews are not enabled for this workspace (release_sandbox_previews).\" No preview is created. When enabled, records a port with a tokenized HTTPS hostname under `akua.run`; check `routed` before opening the URL because public forwarding is not available yet. One preview per port; exposing an exposed port answers 409.",
-        "summary": "Expose a port (requires release_sandbox_previews)",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExposeSandboxPortBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "x-platform-visibility": "PUBLIC"
-      },
       "get": {
         "tags": [
           "Sandboxes"
@@ -31976,149 +31839,6 @@
         },
         "description": "Lists existing preview records for inspection and cleanup, including while preview creation is disabled. A recorded URL does not establish reachability; check `routed`. Requires `previews`.",
         "summary": "List previews",
-        "x-platform-visibility": "PUBLIC"
-      }
-    },
-    "/sandboxes/{id}/previews/{port}:rotateToken": {
-      "post": {
-        "tags": [
-          "Sandboxes"
-        ],
-        "operationId": "sandboxes.rotatePreviewToken",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "schema": {
-              "$ref": "#/components/schemas/SandboxId"
-            },
-            "required": true
-          },
-          {
-            "name": "port",
-            "in": "path",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 65535,
-              "description": "The port a service in the sandbox listens on.",
-              "examples": [
-                3000
-              ]
-            },
-            "required": true
-          },
-          {
-            "name": "akua-context",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 53,
-              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
-              "examples": [
-                "ws_j572abc123def456"
-              ]
-            },
-            "required": false
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "SandboxPreview",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SandboxPreview"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The request is malformed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiBadRequest"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired credential.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnauthorized"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The credential may not act in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiForbidden"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The resource was not found in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiNotFound"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ApiConflict"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ApiPreconditionFailed"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is well-formed but cannot be processed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnprocessable"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The service is temporarily unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiServiceUnavailable"
-                }
-              }
-            }
-          }
-        },
-        "description": "Requires the default-off `release_sandbox_previews` feature flag and `previews` permission. When disabled, returns HTTP 403 Forbidden: \"Sandbox previews are not enabled for this workspace (release_sandbox_previews).\" The existing token is unchanged. When enabled, replaces the preview hostname token; check `routed` before opening the new URL because public forwarding is not available yet.",
-        "summary": "Rotate a preview’s token (requires release_sandbox_previews)",
         "x-platform-visibility": "PUBLIC"
       }
     },
@@ -33765,6 +33485,38 @@
           "sbx_j572abc123def456"
         ]
       },
+      "SandboxPreviewList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SandboxPreview"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
       "SandboxPreview": {
         "type": "object",
         "properties": {
@@ -33851,67 +33603,6 @@
           "private"
         ],
         "description": "When preview routing is available, `link` (the default) uses the random hostname token as the only access gate; `private` requires Akua sign-in and the `previews` permission. Preview creation requires `release_sandbox_previews`, which is disabled by default."
-      },
-      "SandboxPreviewList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SandboxPreview"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "ExposeSandboxPortBody": {
-        "type": "object",
-        "properties": {
-          "port": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 65535,
-            "description": "The port a service in the sandbox listens on.",
-            "examples": [
-              3000
-            ]
-          },
-          "visibility": {
-            "$ref": "#/components/schemas/SandboxPreviewVisibility"
-          },
-          "name": {
-            "type": "string",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$",
-            "description": "Readable part of the hostname. Defaults to `preview`.",
-            "examples": [
-              "checkout"
-            ]
-          }
-        },
-        "required": [
-          "port"
-        ],
-        "additionalProperties": false
       },
       "SandboxAccessGrantId": {
         "type": "string",
