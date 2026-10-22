@@ -6149,7 +6149,7 @@ export const contract: ApiContract = {
 			"id": "sandboxes.exposePort",
 			"method": "POST",
 			"path": "/sandboxes/{id}/previews",
-			"summary": "Expose a port",
+			"summary": "Expose a port (requires release_sandbox_previews)",
 			"auth": true,
 			"parameters": [
 				"path:id:28",
@@ -6387,7 +6387,7 @@ export const contract: ApiContract = {
 			"id": "sandboxes.rotatePreviewToken",
 			"method": "POST",
 			"path": "/sandboxes/{id}/previews/{port}:rotateToken",
-			"summary": "Rotate a preview’s token",
+			"summary": "Rotate a preview’s token (requires release_sandbox_previews)",
 			"auth": true,
 			"parameters": [
 				"path:id:28",
@@ -13492,7 +13492,7 @@ export const contract: ApiContract = {
 				"link",
 				"private"
 			],
-			"description": "`link` (the default): anyone with the URL can open it; the random token in the hostname is the only gate. `private`: the same hostname, but it needs Akua sign-in and the `previews` permission on the sandbox."
+			"description": "When preview routing is available, `link` (the default) uses the random hostname token as the only access gate; `private` requires Akua sign-in and the `previews` permission. Preview creation requires `release_sandbox_previews`, which is disabled by default."
 		},
 		"SandboxSize": {
 			"type": "string",

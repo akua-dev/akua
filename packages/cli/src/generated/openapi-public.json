@@ -31837,8 +31837,8 @@
             }
           }
         },
-        "description": "Gives a port of the sandbox its own HTTPS hostname under `akua.run`, with a random token in the name. HTTP, WebSockets and server-sent events pass through; the URL answers while the sandbox is `ACTIVE`. One preview per port; exposing an exposed port answers 409. Requires `previews`.",
-        "summary": "Expose a port",
+        "description": "Requires the default-off `release_sandbox_previews` feature flag and `previews` permission. When disabled, returns HTTP 403 Forbidden: \"Sandbox previews are not enabled for this workspace (release_sandbox_previews).\" No preview is created. When enabled, records a port with a tokenized HTTPS hostname under `akua.run`; check `routed` before opening the URL because public forwarding is not available yet. One preview per port; exposing an exposed port answers 409.",
+        "summary": "Expose a port (requires release_sandbox_previews)",
         "requestBody": {
           "content": {
             "application/json": {
@@ -31974,7 +31974,7 @@
             }
           }
         },
-        "description": "Exposed ports and their URLs. Requires `previews`.",
+        "description": "Lists existing preview records for inspection and cleanup, including while preview creation is disabled. A recorded URL does not establish reachability; check `routed`. Requires `previews`.",
         "summary": "List previews",
         "x-platform-visibility": "PUBLIC"
       }
@@ -32117,8 +32117,8 @@
             }
           }
         },
-        "description": "Gives the preview a new hostname token; links with the old token stop working. Requires `previews`.",
-        "summary": "Rotate a preview’s token",
+        "description": "Requires the default-off `release_sandbox_previews` feature flag and `previews` permission. When disabled, returns HTTP 403 Forbidden: \"Sandbox previews are not enabled for this workspace (release_sandbox_previews).\" The existing token is unchanged. When enabled, replaces the preview hostname token; check `routed` before opening the new URL because public forwarding is not available yet.",
+        "summary": "Rotate a preview’s token (requires release_sandbox_previews)",
         "x-platform-visibility": "PUBLIC"
       }
     },
@@ -32253,7 +32253,7 @@
             }
           }
         },
-        "description": "Removes the preview; its URL stops answering. Requires `previews`.",
+        "description": "Removes an existing preview record, including while preview creation is disabled. Requires `previews`.",
         "summary": "Unexpose a port",
         "x-platform-visibility": "PUBLIC"
       }
@@ -33850,7 +33850,7 @@
           "link",
           "private"
         ],
-        "description": "`link` (the default): anyone with the URL can open it; the random token in the hostname is the only gate. `private`: the same hostname, but it needs Akua sign-in and the `previews` permission on the sandbox."
+        "description": "When preview routing is available, `link` (the default) uses the random hostname token as the only access gate; `private` requires Akua sign-in and the `previews` permission. Preview creation requires `release_sandbox_previews`, which is disabled by default."
       },
       "SandboxPreviewList": {
         "type": "object",
