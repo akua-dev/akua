@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "akuapkg",
-  "version": "0.13.2",
+  "version": "0.13.3",
   "description": "Skills for authoring, inspecting, testing and publishing typed Kubernetes packages with akuapkg.",
   "author": { "name": "Akua" },
   "homepage": "https://docs.akua.dev/akua",

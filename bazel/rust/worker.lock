@@ -19,7 +19,7 @@ dependencies = [
 
 [[package]]
 name = "akua-core"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "base64 0.22.1",
  "kcl-lang",
@@ -34,7 +34,7 @@ dependencies = [
 
 [[package]]
 name = "akua-render-worker"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "akua-core",
  "serde",

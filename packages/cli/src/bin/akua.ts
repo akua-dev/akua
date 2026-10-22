@@ -7,7 +7,7 @@ import { ExitStatus } from '../runtime/exit-codes';
 import { CliLive, type CliPlatform, PackageCliLive } from '../runtime/services-live';
 import type { CliServices, PackageCli } from '../runtime/services';
 
-export const VERSION = '0.13.2'; // the Cargo workspace version (test/version.test.ts)
+export const VERSION = '0.13.3'; // the Cargo workspace version (test/version.test.ts)
 
 export function main(argv: readonly string[]): Effect.Effect<number, never, CliServices> {
 	return runAkua(argv, VERSION);
