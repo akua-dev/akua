@@ -262,6 +262,25 @@ describe('generated API contract', () => {
 		})
 	);
 
+	it.effect(
+		'the public OpenAPI snapshot keeps preview cleanup but does not advertise unfinished creation',
+		() =>
+			Effect.gen(function* () {
+				const fs = yield* FileSystem.FileSystem;
+				const text = yield* fs.readFileString('src/generated/openapi-public.json');
+				const document = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(OpenApiDocument))(
+					text
+				);
+				const ids = Object.values(document.paths).flatMap((path) =>
+					Object.values(path).flatMap((operation) => operation?.operationId ?? [])
+				);
+				expect(ids).not.toContain('sandboxes.exposePort');
+				expect(ids).not.toContain('sandboxes.rotatePreviewToken');
+				expect(ids).toContain('sandboxes.listPreviews');
+				expect(ids).toContain('sandboxes.unexposePort');
+			}).pipe(Effect.provide(BunServices.layer))
+	);
+
 	it.effect('the committed contract is what the public OpenAPI document generates', () =>
 		Effect.gen(function* () {
 			const fs = yield* FileSystem.FileSystem;

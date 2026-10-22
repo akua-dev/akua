@@ -4597,7 +4597,8 @@ export const contract: ApiContract = {
 						},
 						"instance_type": {
 							"type": "string",
-							"minLength": 1
+							"minLength": 1,
+							"description": "Provider instance type name. For managed machines on the Free plan (compute_config_id omitted), choose `cax11` (2 vCPU, 4 GB, ARM), `cx23` (2 vCPU, 4 GB, x86), or `cpx22` (2 vCPU, 4 GB, x86). With compute_config_id, use a type supported by that provider account and region. Availability and plan quotas are checked when creating the machine."
 						},
 						"compute_config_id": {
 							"type": "string",
@@ -6146,23 +6147,6 @@ export const contract: ApiContract = {
 			]
 		},
 		{
-			"id": "sandboxes.exposePort",
-			"method": "POST",
-			"path": "/sandboxes/{id}/previews",
-			"summary": "Expose a port",
-			"auth": true,
-			"parameters": [
-				"path:id:28",
-				"header:akua-context"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/ExposeSandboxPortBody"
-				}
-			}
-		},
-		{
 			"id": "sandboxes.fork",
 			"method": "POST",
 			"path": "/sandboxes/{id}:fork",
@@ -6380,18 +6364,6 @@ export const contract: ApiContract = {
 			"parameters": [
 				"path:id:28",
 				"path:grant_id",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "sandboxes.rotatePreviewToken",
-			"method": "POST",
-			"path": "/sandboxes/{id}/previews/{port}:rotateToken",
-			"summary": "Rotate a preview’s token",
-			"auth": true,
-			"parameters": [
-				"path:id:28",
-				"path:port",
 				"header:akua-context"
 			]
 		},
@@ -12312,29 +12284,6 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
-		"ExposeSandboxPortBody": {
-			"type": "object",
-			"properties": {
-				"port": {
-					"type": "integer",
-					"minimum": 1,
-					"maximum": 65535,
-					"description": "The port a service in the sandbox listens on."
-				},
-				"visibility": {
-					"$ref": "#/$defs/SandboxPreviewVisibility"
-				},
-				"name": {
-					"type": "string",
-					"pattern": "^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$",
-					"description": "Readable part of the hostname. Defaults to `preview`."
-				}
-			},
-			"required": [
-				"port"
-			],
-			"additionalProperties": false
-		},
 		"ForkSandboxBody": {
 			"type": "object",
 			"properties": {
@@ -13485,14 +13434,6 @@ export const contract: ApiContract = {
 				"manage"
 			],
 			"description": "`run_commands`: commands. `files`: files. `terminal`: terminals. `previews`: previews. `manage`: all permissions, lifecycle, settings and access grants."
-		},
-		"SandboxPreviewVisibility": {
-			"type": "string",
-			"enum": [
-				"link",
-				"private"
-			],
-			"description": "`link` (the default): anyone with the URL can open it; the random token in the hostname is the only gate. `private`: the same hostname, but it needs Akua sign-in and the `previews` permission on the sandbox."
 		},
 		"SandboxSize": {
 			"type": "string",
