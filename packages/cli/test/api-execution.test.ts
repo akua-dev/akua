@@ -340,6 +340,48 @@ describe('authentication', () => {
 });
 
 describe('responses', () => {
+	for (const status of [500, 502, 503, 504, 520, 522, 530]) {
+		it.effect(`reports HTTP ${status} as unavailable with a retry hint`, () =>
+			Effect.gen(function* () {
+				const env = yield* signedIn;
+				const result = yield* runAkua(['regions', 'list', '--json'], {
+					env,
+					api: () => ({ status, text: 'error code: 1033', contentType: 'text/plain' })
+				});
+				const error = JSON.parse(result.stdout).error;
+				expect(result.exitCode).toBe(6);
+				expect(error).toMatchObject({
+					type: 'api_error',
+					code: 'AKUA_API_ERROR',
+					status,
+					response: { raw: 'error code: 1033' }
+				});
+				expect(error.message).toMatch(/unavailable/i);
+				expect(error.message).toMatch(/try again/i);
+				expect(error.message).not.toMatch(/reject/i);
+			}).pipe(Effect.scoped)
+		);
+	}
+
+	it.effect('keeps a structured server error code and body while explaining unavailability', () =>
+		Effect.gen(function* () {
+			const env = yield* signedIn;
+			const body = {
+				success: false,
+				errors: [{ code: 7011, message: 'Origin unreachable' }],
+				result: {}
+			};
+			const result = yield* runAkua(['regions', 'list', '--json'], {
+				env,
+				api: () => ({ status: 503, body })
+			});
+			const error = JSON.parse(result.stdout).error;
+			expect(result.exitCode).toBe(6);
+			expect(error).toMatchObject({ code: 'AKUA_API_7011', status: 503, response: body });
+			expect(error.message).toMatch(/unavailable.*Origin unreachable.*try again/i);
+		}).pipe(Effect.scoped)
+	);
+
 	it.effect('keeps a structured API error without echoing request values', () =>
 		Effect.gen(function* () {
 			const env = yield* signedIn;
