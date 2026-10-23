@@ -28212,6 +28212,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -28385,6 +28395,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -28510,6 +28530,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -28651,6 +28681,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -28820,6 +28860,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -28973,6 +29023,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -29134,6 +29194,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -29277,6 +29347,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -29412,6 +29492,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -29586,6 +29676,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -29719,6 +29819,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -29885,6 +29995,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -30022,6 +30142,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -30148,6 +30278,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -30291,6 +30431,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -30458,6 +30608,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -30594,6 +30754,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -30737,6 +30907,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -30876,6 +31056,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -31004,6 +31194,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -31147,6 +31347,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -31286,6 +31496,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -31421,6 +31641,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -31587,6 +31817,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -31717,6 +31957,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -31842,6 +32092,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -31979,6 +32239,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -32126,6 +32396,16 @@
               }
             }
           },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -32258,6 +32538,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The Workspace or owner sandbox quota has been reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
                 }
               }
             }
@@ -33539,6 +33829,46 @@
           "workspace_id",
           "feature",
           "allocation"
+        ],
+        "additionalProperties": false
+      },
+      "ApiTooManyRequests": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "TooManyRequests"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
         ],
         "additionalProperties": false
       },
@@ -38421,46 +38751,6 @@
         "required": [
           "name",
           "model_credential_source"
-        ],
-        "additionalProperties": false
-      },
-      "ApiTooManyRequests": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "TooManyRequests"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
         ],
         "additionalProperties": false
       },
