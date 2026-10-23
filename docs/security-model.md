@@ -162,7 +162,7 @@ so it is strict:
 - **Wasmtime and the host code.** They are the trusted computing base.
   Wasmtime has had sandbox escapes
   ([CVE-2026-34971](https://www.cve.org/CVERecord?id=CVE-2026-34971));
-  akuapkg pins Wasmtime 49.0.2 and updates it deliberately.
+  akuapkg pins Wasmtime 49.0.4 and updates it deliberately.
 
 ## Why there is no shell-out
 
