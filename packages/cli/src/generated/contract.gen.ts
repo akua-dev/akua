@@ -11030,7 +11030,7 @@ export const contract: ApiContract = {
 			"additionalProperties": false
 		},
 		"ExplainAccessDecisionBody": {
-			"oneOf": [
+			"anyOf": [
 				{
 					"type": "object",
 					"properties": {
@@ -12145,7 +12145,14 @@ export const contract: ApiContract = {
 							]
 						},
 						"resource": {
-							"$ref": "#/$defs/ClusterCockpitResource"
+							"anyOf": [
+								{
+									"$ref": "#/$defs/ClusterCockpitResource"
+								},
+								{
+									"$ref": "#/$defs/MachineAdmissionResource"
+								}
+							]
 						}
 					},
 					"required": [
@@ -12507,6 +12514,30 @@ export const contract: ApiContract = {
 			},
 			"required": [
 				"path"
+			],
+			"additionalProperties": false
+		},
+		"MachineAdmissionResource": {
+			"type": "object",
+			"properties": {
+				"workspace_id": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 53
+				},
+				"cpu": {
+					"type": "integer",
+					"exclusiveMinimum": 0
+				},
+				"memory_bytes": {
+					"type": "integer",
+					"exclusiveMinimum": 0
+				}
+			},
+			"required": [
+				"workspace_id",
+				"cpu",
+				"memory_bytes"
 			],
 			"additionalProperties": false
 		},

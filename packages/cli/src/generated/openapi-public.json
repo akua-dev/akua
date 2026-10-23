@@ -64939,7 +64939,7 @@
         "additionalProperties": false
       },
       "ExplainAccessDecisionBody": {
-        "oneOf": [
+        "anyOf": [
           {
             "type": "object",
             "properties": {
@@ -66054,7 +66054,14 @@
                 ]
               },
               "resource": {
-                "$ref": "#/components/schemas/ClusterCockpitResource"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ClusterCockpitResource"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MachineAdmissionResource"
+                  }
+                ]
               }
             },
             "required": [
@@ -66260,6 +66267,30 @@
           "workspace_id",
           "cluster_id",
           "machine_id"
+        ],
+        "additionalProperties": false
+      },
+      "MachineAdmissionResource": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "cpu": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "memory_bytes": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "workspace_id",
+          "cpu",
+          "memory_bytes"
         ],
         "additionalProperties": false
       },
