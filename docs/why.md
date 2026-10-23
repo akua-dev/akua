@@ -225,7 +225,7 @@ The details, with every limit and where it is enforced, are in
 - **Wasmtime and the host.** Wasmtime and akuapkg's host code are the trusted
   computing base. Wasmtime has had sandbox escapes
   ([CVE-2026-34971](https://www.cve.org/CVERecord?id=CVE-2026-34971));
-  akuapkg pins Wasmtime 49.0.2 and updates it deliberately.
+  akuapkg pins Wasmtime 49.0.4 and updates it deliberately.
 - **Helm semantics.** Inside the sandbox, Helm is still Helm: templates emit
   text that is parsed as YAML 1.1. akuapkg passes values as JSON, but a chart
   that writes an unquoted `yes` into its own template output still gets a

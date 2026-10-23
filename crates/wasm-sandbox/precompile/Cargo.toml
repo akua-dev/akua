@@ -11,5 +11,5 @@ publish = false
 # Build-time only: Cranelift with every backend, so one machine produces
 # machine code for every target. Never linked into the shipped addon.
 [dependencies]
-wasmtime = { version = "=49.0.2", default-features = false, features = ["cranelift", "all-arch", "parallel-compilation", "runtime", "std", "gc", "gc-drc"] }
+wasmtime = { version = "=49.0.4", default-features = false, features = ["cranelift", "all-arch", "parallel-compilation", "runtime", "std", "gc", "gc-drc"] }
 zstd = "=0.14.0"
