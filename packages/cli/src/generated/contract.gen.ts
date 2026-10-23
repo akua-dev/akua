@@ -11040,6 +11040,27 @@ export const contract: ApiContract = {
 						"permission": {
 							"type": "string",
 							"enum": [
+								"clusters.create"
+							]
+						},
+						"resource": {
+							"$ref": "#/$defs/WorkspaceClassResource"
+						}
+					},
+					"required": [
+						"permission"
+					],
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"properties": {
+						"subject": {
+							"$ref": "#/$defs/AccessSubject"
+						},
+						"permission": {
+							"type": "string",
+							"enum": [
 								"offers.create_via_channel"
 							]
 						},

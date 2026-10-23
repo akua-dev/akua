@@ -64949,6 +64949,27 @@
               "permission": {
                 "type": "string",
                 "enum": [
+                  "clusters.create"
+                ]
+              },
+              "resource": {
+                "$ref": "#/components/schemas/WorkspaceClassResource"
+              }
+            },
+            "required": [
+              "permission"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "subject": {
+                "$ref": "#/components/schemas/AccessSubject"
+              },
+              "permission": {
+                "type": "string",
+                "enum": [
                   "offers.create_via_channel"
                 ]
               },
