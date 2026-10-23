@@ -1,19 +1,19 @@
-"""Pinned upstream Go 1.27.2 archives (Linux ZIP verified via Go's checksum database)."""
+"""Pinned upstream Go 1.27.3 archives (Linux ZIP verified via Go's checksum database)."""
 
 SOURCE_TOOLCHAIN_PINS = {
     "go": {
         "aarch64-apple-darwin": {
-            "sha256": "76812b213b1b2302c978d28fa52fa92d541704b9e7d9d5db8002c50e4018c4c5",
-            "url": "https://go.dev/dl/go1.27.2.darwin-arm64.tar.gz",
+            "sha256": "dd3908cf20959d798c1e06ebe5b72213f0505ce01373b40ce3110975a6cd99c2",
+            "url": "https://go.dev/dl/go1.27.3.darwin-arm64.tar.gz",
         },
         "x86_64-apple-darwin": {
-            "sha256": "587b59182488b23aa6e5fc25110405a3e0e5b38ed2f5b2f46ed13c32aee356fe",
-            "url": "https://go.dev/dl/go1.27.2.darwin-amd64.tar.gz",
+            "sha256": "b6f8e931e4ab497fcde6da8ae4499a58f9d258e55c8a80824a516eae5950a750",
+            "url": "https://go.dev/dl/go1.27.3.darwin-amd64.tar.gz",
         },
         "x86_64-unknown-linux-gnu": {
-            "sha256": "3a467ed067f27cd55bf3a702f8e2bf12479f53c9d8ae0de548f48ebcb3c67796",
-            "strip_prefix": "golang.org/toolchain@v0.0.1-go1.27.2.linux-amd64",
-            "url": "https://proxy.golang.org/golang.org/toolchain/@v/v0.0.1-go1.27.2.linux-amd64.zip",
+            "sha256": "af4c06478303fdd1bfb335fab86c7ccb9b12e529044a946a16a1c4bcc779f8d7",
+            "strip_prefix": "golang.org/toolchain@v0.0.1-go1.27.3.linux-amd64",
+            "url": "https://proxy.golang.org/golang.org/toolchain/@v/v0.0.1-go1.27.3.linux-amd64.zip",
         },
     },
 }
