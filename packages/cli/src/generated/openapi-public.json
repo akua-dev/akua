@@ -10774,7 +10774,11 @@
                   },
                   "instance_type": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "Provider instance type name. For managed machines on the Free plan (compute_config_id omitted), choose `cax11`, `cx23`, or `cpx22`. With compute_config_id, use a type supported by that provider account and region. Availability and plan quotas are checked when creating the machine.",
+                    "examples": [
+                      "cx23"
+                    ]
                   },
                   "compute_config_id": {
                     "type": "string",
@@ -31984,153 +31988,6 @@
       }
     },
     "/sandboxes/{id}/previews": {
-      "post": {
-        "tags": [
-          "Sandboxes"
-        ],
-        "operationId": "sandboxes.exposePort",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "schema": {
-              "$ref": "#/components/schemas/SandboxId"
-            },
-            "required": true
-          },
-          {
-            "name": "akua-context",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 53,
-              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
-              "examples": [
-                "ws_j572abc123def456"
-              ]
-            },
-            "required": false
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Port exposed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SandboxPreview"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The request is malformed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiBadRequest"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired credential.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnauthorized"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The credential may not act in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiForbidden"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The resource was not found in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiNotFound"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ApiConflict"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ApiPreconditionFailed"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is well-formed but cannot be processed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnprocessable"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "The Workspace or owner sandbox quota has been reached.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiTooManyRequests"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The service is temporarily unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiServiceUnavailable"
-                }
-              }
-            }
-          }
-        },
-        "description": "Gives a port of the sandbox its own HTTPS hostname under `akua.run`, with a random token in the name. HTTP, WebSockets and server-sent events pass through; the URL answers while the sandbox is `ACTIVE`. One preview per port; exposing an exposed port answers 409. Requires `previews`.",
-        "summary": "Expose a port",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExposeSandboxPortBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "x-platform-visibility": "PUBLIC"
-      },
       "get": {
         "tags": [
           "Sandboxes"
@@ -32266,159 +32123,6 @@
         },
         "description": "Exposed ports and their URLs. Requires `previews`.",
         "summary": "List previews",
-        "x-platform-visibility": "PUBLIC"
-      }
-    },
-    "/sandboxes/{id}/previews/{port}:rotateToken": {
-      "post": {
-        "tags": [
-          "Sandboxes"
-        ],
-        "operationId": "sandboxes.rotatePreviewToken",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "schema": {
-              "$ref": "#/components/schemas/SandboxId"
-            },
-            "required": true
-          },
-          {
-            "name": "port",
-            "in": "path",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 65535,
-              "description": "The port a service in the sandbox listens on.",
-              "examples": [
-                3000
-              ]
-            },
-            "required": true
-          },
-          {
-            "name": "akua-context",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 53,
-              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
-              "examples": [
-                "ws_j572abc123def456"
-              ]
-            },
-            "required": false
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "SandboxPreview",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SandboxPreview"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The request is malformed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiBadRequest"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired credential.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnauthorized"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The credential may not act in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiForbidden"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The resource was not found in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiNotFound"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ApiConflict"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ApiPreconditionFailed"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is well-formed but cannot be processed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnprocessable"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "The Workspace or owner sandbox quota has been reached.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiTooManyRequests"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The service is temporarily unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiServiceUnavailable"
-                }
-              }
-            }
-          }
-        },
-        "description": "Gives the preview a new hostname token; links with the old token stop working. Requires `previews`.",
-        "summary": "Rotate a preview’s token",
         "x-platform-visibility": "PUBLIC"
       }
     },
@@ -34115,6 +33819,38 @@
           "sbx_j572abc123def456"
         ]
       },
+      "SandboxPreviewList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SandboxPreview"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
       "SandboxPreview": {
         "type": "object",
         "properties": {
@@ -34201,67 +33937,6 @@
           "private"
         ],
         "description": "`link` (the default): anyone with the URL can open it; the random token in the hostname is the only gate. `private`: the same hostname, but it needs Akua sign-in and the `previews` permission on the sandbox."
-      },
-      "SandboxPreviewList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SandboxPreview"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "ExposeSandboxPortBody": {
-        "type": "object",
-        "properties": {
-          "port": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 65535,
-            "description": "The port a service in the sandbox listens on.",
-            "examples": [
-              3000
-            ]
-          },
-          "visibility": {
-            "$ref": "#/components/schemas/SandboxPreviewVisibility"
-          },
-          "name": {
-            "type": "string",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$",
-            "description": "Readable part of the hostname. Defaults to `preview`.",
-            "examples": [
-              "checkout"
-            ]
-          }
-        },
-        "required": [
-          "port"
-        ],
-        "additionalProperties": false
       },
       "SandboxAccessGrantId": {
         "type": "string",
