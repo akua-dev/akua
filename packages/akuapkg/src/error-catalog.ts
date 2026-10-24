@@ -114,6 +114,12 @@ export const ERROR_CATALOG: ReadonlyArray<ErrorCatalogEntry> = [
       "`package.k` imports a dependency alias whose kind KCL cannot import, typically a Helm chart alias used as `import <alias>`. Charts are reached through `charts.<alias>`."
   },
   {
+    code: "E_DEP_NOT_FOUND",
+    section: "Manifest and lockfile",
+    summary: "The OCI registry returned 404 for a dependency artifact.",
+    fix: "Check the repository URL and select a published chart or package version. A registry may not publish a latest tag."
+  },
+  {
     code: "E_DEP_RESOLVE",
     section: "Manifest and lockfile",
     summary:

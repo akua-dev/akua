@@ -267,9 +267,10 @@ describe('generated API contract', () => {
 		() =>
 			Effect.gen(function* () {
 				const fs = yield* FileSystem.FileSystem;
-				const document = yield* fs
-					.readFileString('src/generated/openapi-public.json')
-					.pipe(Effect.flatMap(Schema.decodeEffect(Schema.fromJsonString(OpenApiDocument))));
+				const text = yield* fs.readFileString('src/generated/openapi-public.json');
+				const document = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(OpenApiDocument))(
+					text
+				);
 				const ids = Object.values(document.paths).flatMap((path) =>
 					Object.values(path).flatMap((operation) => operation?.operationId ?? [])
 				);

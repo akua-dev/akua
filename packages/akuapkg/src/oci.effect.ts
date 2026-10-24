@@ -15,7 +15,7 @@ import { cacheRoot as defaultCacheRoot, readBounded, sha256, unpackInto } from "
  */
 
 export class OciPullFailed extends Schema.TaggedError<OciPullFailed>()("OciPullFailed", {
-  /** E_DEP_RESOLVE, E_COSIGN_VERIFY or E_COSIGN_SIG_MISSING. */
+  /** E_DEP_RESOLVE, E_DEP_NOT_FOUND, E_COSIGN_VERIFY or E_COSIGN_SIG_MISSING. */
   code: Schema.String,
   message: Schema.String,
   /** Refused because `--offline` forbids the network, not because a pull failed. */
@@ -271,6 +271,7 @@ export class OciRegistry extends Context.Service<OciRegistry, {
         readonly accept: ReadonlyArray<string>
         readonly limit: number
         readonly token: { value: string | undefined }
+        readonly notFoundCode?: string
       }) {
         const configured = (yield* credentials).get(request.registry)
         const send = (bearer: string | undefined) => {
@@ -305,7 +306,7 @@ export class OciRegistry extends Context.Service<OciRegistry, {
             )
           }
         }
-        return yield* body(response, request.url, request.limit)
+        return yield* body(response, request.url, request.limit, response.status === 404 ? request.notFoundCode : undefined)
       })
 
       const exchangeToken = Effect.fnUntraced(function*(
@@ -339,11 +340,11 @@ export class OciRegistry extends Context.Service<OciRegistry, {
       })
 
       /** The response body, failing on a non-2xx status or past `limit` bytes. */
-      const body = (response: HttpClientResponse.HttpClientResponse, url: string, limit: number) =>
+      const body = (response: HttpClientResponse.HttpClientResponse, url: string, limit: number, code = "E_DEP_RESOLVE") =>
         readBounded(response, {
           url,
           limit,
-          fail: (message) => failed(message),
+          fail: (message) => failed(message, code),
           status: (status, text) => `registry returned ${status} for \`${url}\`: ${text}`
         })
 
@@ -396,6 +397,7 @@ export class OciRegistry extends Context.Service<OciRegistry, {
           registry: parsed.registry,
           accept: MANIFEST_TYPES,
           limit: MAX_MANIFEST_BYTES,
+          notFoundCode: "E_DEP_NOT_FOUND",
           token
         })
         const manifest = yield* decodeManifest(new TextDecoder().decode(manifestBytes)).pipe(
