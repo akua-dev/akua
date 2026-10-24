@@ -1,6 +1,6 @@
 module kustomize-engine-wasm
 
-go 1.27.0
+go 1.27.3
 
 require (
 	sigs.k8s.io/kustomize/api v0.21.3
