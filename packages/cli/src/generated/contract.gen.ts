@@ -11026,7 +11026,7 @@ export const contract: ApiContract = {
 			"additionalProperties": false
 		},
 		"ExplainAccessDecisionBody": {
-			"anyOf": [
+			"oneOf": [
 				{
 					"type": "object",
 					"properties": {
