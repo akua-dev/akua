@@ -17,6 +17,36 @@ const signedIn = Effect.gen(function* () {
 
 const accepted = () => ({ status: 202, body: { id: 'op_1', done: false } });
 
+describe('sandbox preview discovery before release', () => {
+	it('keeps preview cleanup public and omits creation and rotation from the generated contract', () => {
+		const ids = contract.operations.map((operation) => operation.id);
+		expect(ids.some((id) => id.startsWith('clusterRuntime.'))).toBe(false);
+		expect(ids.some((id) => id.startsWith('adminAccess.'))).toBe(false);
+		expect(ids).not.toContain('sandboxes.exposePort');
+		expect(ids).not.toContain('sandboxes.rotatePreviewToken');
+		expect(ids).toContain('sandboxes.listPreviews');
+		expect(ids).toContain('sandboxes.unexposePort');
+		expect(ids).toContain('sandboxes.runCommand');
+		expect(ids).toContain('sandboxes.writeFile');
+	});
+
+	it.effect(
+		'renders sandbox help with cleanup commands and without preview creation or rotation',
+		() =>
+			Effect.gen(function* () {
+				const help = yield* runAkua(['sandboxes', '--help'], { tty: true });
+				expect(help.exitCode).toBe(0);
+				expect(help.stdout).not.toMatch(/^\s+expose-port\s/mu);
+				expect(help.stdout).not.toMatch(/^\s+rotate-preview-token\s/mu);
+				expect(help.stdout).toContain('list-previews');
+				expect(help.stdout).toContain('unexpose-port');
+				expect(help.stdout).toContain('run-command');
+				expect(help.stdout).toContain('write-file');
+				expect(help.requests).toEqual([]);
+			})
+	);
+});
+
 describe('secret values', () => {
 	const createGeneric = ['secrets', 'create', '--name', 'token', '--kind', 'generic'];
 
@@ -310,6 +340,48 @@ describe('authentication', () => {
 });
 
 describe('responses', () => {
+	for (const status of [500, 502, 503, 504, 520, 522, 530]) {
+		it.effect(`reports HTTP ${status} as unavailable with a retry hint`, () =>
+			Effect.gen(function* () {
+				const env = yield* signedIn;
+				const result = yield* runAkua(['regions', 'list', '--json'], {
+					env,
+					api: () => ({ status, text: 'error code: 1033', contentType: 'text/plain' })
+				});
+				const error = JSON.parse(result.stdout).error;
+				expect(result.exitCode).toBe(6);
+				expect(error).toMatchObject({
+					type: 'api_error',
+					code: 'AKUA_API_ERROR',
+					status,
+					response: { raw: 'error code: 1033' }
+				});
+				expect(error.message).toMatch(/unavailable/i);
+				expect(error.message).toMatch(/try again/i);
+				expect(error.message).not.toMatch(/reject/i);
+			}).pipe(Effect.scoped)
+		);
+	}
+
+	it.effect('keeps a structured server error code and body while explaining unavailability', () =>
+		Effect.gen(function* () {
+			const env = yield* signedIn;
+			const body = {
+				success: false,
+				errors: [{ code: 7011, message: 'Origin unreachable' }],
+				result: {}
+			};
+			const result = yield* runAkua(['regions', 'list', '--json'], {
+				env,
+				api: () => ({ status: 503, body })
+			});
+			const error = JSON.parse(result.stdout).error;
+			expect(result.exitCode).toBe(6);
+			expect(error).toMatchObject({ code: 'AKUA_API_7011', status: 503, response: body });
+			expect(error.message).toMatch(/unavailable.*Origin unreachable.*try again/i);
+		}).pipe(Effect.scoped)
+	);
+
 	it.effect('keeps a structured API error without echoing request values', () =>
 		Effect.gen(function* () {
 			const env = yield* signedIn;

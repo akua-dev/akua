@@ -82,11 +82,14 @@ export function operationError(
 			return new AkuaCliError({
 				type: 'api_error',
 				code: failure.code === undefined ? 'AKUA_API_ERROR' : `AKUA_API_${failure.code}`,
-				message: needsWorkspace(failure, context)
-					? `No workspace selected; ${context.command} runs in a workspace (API: ${failure.detail ?? `HTTP ${failure.status}`}).`
-					: fields.length > 0
-						? `The Akua API rejected the input for ${context.command}: ${fields.join('; ')}.`
-						: (failure.detail ?? 'The Akua API rejected the request.'),
+				message:
+					failure.status !== undefined && failure.status >= 500 && failure.status < 600
+						? `The Akua API is temporarily unavailable (HTTP ${failure.status}). ${failure.detail === undefined ? '' : `${failure.detail} `}Please try again in a few minutes.`
+						: needsWorkspace(failure, context)
+							? `No workspace selected; ${context.command} runs in a workspace (API: ${failure.detail ?? `HTTP ${failure.status}`}).`
+							: fields.length > 0
+								? `The Akua API rejected the input for ${context.command}: ${fields.join('; ')}.`
+								: (failure.detail ?? 'The Akua API rejected the request.'),
 				...(failure.status === undefined ? {} : { status: failure.status }),
 				...(failure.response === undefined ? {} : { response: failure.response }),
 				nextSteps:
