@@ -8863,9 +8863,6 @@ export const contract: ApiContract = {
 					"maxProperties": 32,
 					"description": "Free-form string labels: up to 32 keys of up to 63 characters."
 				},
-				"model_credential_source": {
-					"$ref": "#/$defs/ModelCredentialSource"
-				},
 				"budget": {
 					"$ref": "#/$defs/OpenCodeBudget"
 				},
@@ -8874,8 +8871,7 @@ export const contract: ApiContract = {
 				}
 			},
 			"required": [
-				"name",
-				"model_credential_source"
+				"name"
 			],
 			"additionalProperties": false
 		},
@@ -12587,50 +12583,6 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
-		"ModelCredentialSource": {
-			"oneOf": [
-				{
-					"type": "object",
-					"properties": {
-						"type": {
-							"type": "string",
-							"enum": [
-								"platform"
-							],
-							"description": "Models are paid through the platform's own provider access."
-						}
-					},
-					"required": [
-						"type"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"type": {
-							"type": "string",
-							"enum": [
-								"own"
-							],
-							"description": "Models use the workspace's own provider connection."
-						},
-						"connection_id": {
-							"type": "string",
-							"description": "The workspace connection that holds the provider credential.",
-							"minLength": 1,
-							"maxLength": 64
-						}
-					},
-					"required": [
-						"type",
-						"connection_id"
-					],
-					"additionalProperties": false
-				}
-			],
-			"description": "Whose provider access pays for the models this server uses. Always explicit; there is no default."
-		},
 		"MoveSandboxFileBody": {
 			"type": "object",
 			"properties": {
@@ -14283,9 +14235,6 @@ export const contract: ApiContract = {
 					},
 					"maxProperties": 32,
 					"description": "Free-form string labels: up to 32 keys of up to 63 characters."
-				},
-				"model_credential_source": {
-					"$ref": "#/$defs/ModelCredentialSource"
 				},
 				"budget": {
 					"$ref": "#/$defs/OpenCodeBudget"

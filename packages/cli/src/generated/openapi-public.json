@@ -27122,7 +27122,7 @@
             }
           }
         },
-        "description": "Creates a hosted OpenCode Server in the workspace with a random id. OpenCode's own settings (models, providers, agents) are managed in OpenCode itself; this resource holds the platform guardrails around it. `model_credential_source` is required. With an `Idempotency-Key`, a retry of the same request returns the server it created; the same key on a different request answers 409.",
+        "description": "Creates a hosted OpenCode Server in the workspace with a random id. OpenCode's own settings (models, providers, agents) are managed in OpenCode itself; this resource holds the platform guardrails around it. With an `Idempotency-Key`, a retry of the same request returns the server it created; the same key on a different request answers 409.",
         "summary": "Create an OpenCode Server",
         "requestBody": {
           "content": {
@@ -38100,9 +38100,6 @@
           "budget": {
             "$ref": "#/components/schemas/OpenCodeBudget"
           },
-          "model_credential_source": {
-            "$ref": "#/components/schemas/ModelCredentialSource"
-          },
           "features": {
             "$ref": "#/components/schemas/OpenCodeFeatures"
           },
@@ -38166,7 +38163,6 @@
           "state",
           "default",
           "budget",
-          "model_credential_source",
           "features",
           "usage",
           "web_url",
@@ -38217,50 +38213,6 @@
         ],
         "additionalProperties": false,
         "description": "Web UI feature toggles. Everything else in OpenCode's UI stays on."
-      },
-      "ModelCredentialSource": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "platform"
-                ],
-                "description": "Models are paid through the platform's own provider access."
-              }
-            },
-            "required": [
-              "type"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "own"
-                ],
-                "description": "Models use the workspace's own provider connection."
-              },
-              "connection_id": {
-                "type": "string",
-                "description": "The workspace connection that holds the provider credential.",
-                "minLength": 1,
-                "maxLength": 64
-              }
-            },
-            "required": [
-              "type",
-              "connection_id"
-            ],
-            "additionalProperties": false
-          }
-        ],
-        "description": "Whose provider access pays for the models this server uses. Always explicit; there is no default."
       },
       "OpenCodeBudget": {
         "type": "object",
@@ -38325,9 +38277,6 @@
             },
             "maxProperties": 32,
             "description": "Free-form string labels: up to 32 keys of up to 63 characters."
-          },
-          "model_credential_source": {
-            "$ref": "#/components/schemas/ModelCredentialSource"
           },
           "budget": {
             "$ref": "#/components/schemas/OpenCodeBudget"
@@ -38413,9 +38362,6 @@
             "maxProperties": 32,
             "description": "Free-form string labels: up to 32 keys of up to 63 characters."
           },
-          "model_credential_source": {
-            "$ref": "#/components/schemas/ModelCredentialSource"
-          },
           "budget": {
             "$ref": "#/components/schemas/OpenCodeBudget"
           },
@@ -38424,8 +38370,7 @@
           }
         },
         "required": [
-          "name",
-          "model_credential_source"
+          "name"
         ],
         "additionalProperties": false
       },
@@ -63838,7 +63783,7 @@
         "title": "ConnectorSlug",
         "description": "The connector's slug.",
         "examples": [
-          "openai"
+          "akua"
         ]
       },
       "ConnectorSlug": {
@@ -63847,7 +63792,7 @@
         "title": "ConnectorSlug",
         "description": "A connector's stable slug.",
         "examples": [
-          "openai"
+          "akua"
         ]
       },
       "ConnectorList": {
