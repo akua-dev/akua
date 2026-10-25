@@ -24620,6 +24620,17 @@
         "operationId": "workspaces.list",
         "parameters": [
           {
+            "name": "organization",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 54,
+              "description": "Filter by owning organization. Requires membership; excludes managed customer Workspaces."
+            },
+            "required": false
+          },
+          {
             "name": "cursor",
             "in": "query",
             "schema": {
@@ -24756,6 +24767,12 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "organization": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 54,
+                    "description": "Owning organization. Requires owner or admin permission. Omit to use your personal organization."
+                  },
                   "name": {
                     "type": "string",
                     "minLength": 1,
@@ -39359,6 +39376,19 @@
       "Workspace": {
         "type": "object",
         "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Owning organization ID, or null for legacy Workspaces without an organization."
+          },
           "id": {
             "type": "string",
             "description": "Workspace ID",
@@ -39425,6 +39455,7 @@
           }
         },
         "required": [
+          "organization_id",
           "id",
           "name",
           "slug",
