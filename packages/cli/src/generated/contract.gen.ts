@@ -11036,6 +11036,27 @@ export const contract: ApiContract = {
 						"permission": {
 							"type": "string",
 							"enum": [
+								"clusters.create"
+							]
+						},
+						"resource": {
+							"$ref": "#/$defs/WorkspaceClassResource"
+						}
+					},
+					"required": [
+						"permission"
+					],
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"properties": {
+						"subject": {
+							"$ref": "#/$defs/AccessSubject"
+						},
+						"permission": {
+							"type": "string",
+							"enum": [
 								"offers.create_via_channel"
 							]
 						},
@@ -12120,7 +12141,14 @@ export const contract: ApiContract = {
 							]
 						},
 						"resource": {
-							"$ref": "#/$defs/ClusterCockpitResource"
+							"anyOf": [
+								{
+									"$ref": "#/$defs/ClusterCockpitResource"
+								},
+								{
+									"$ref": "#/$defs/MachineAdmissionResource"
+								}
+							]
 						}
 					},
 					"required": [
@@ -12482,6 +12510,30 @@ export const contract: ApiContract = {
 			},
 			"required": [
 				"path"
+			],
+			"additionalProperties": false
+		},
+		"MachineAdmissionResource": {
+			"type": "object",
+			"properties": {
+				"workspace_id": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 53
+				},
+				"cpu": {
+					"type": "integer",
+					"exclusiveMinimum": 0
+				},
+				"memory_bytes": {
+					"type": "integer",
+					"exclusiveMinimum": 0
+				}
+			},
+			"required": [
+				"workspace_id",
+				"cpu",
+				"memory_bytes"
 			],
 			"additionalProperties": false
 		},
