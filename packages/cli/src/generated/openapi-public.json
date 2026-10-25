@@ -32121,7 +32121,7 @@
             }
           }
         },
-        "description": "Exposed ports and their URLs. Requires `previews`.",
+        "description": "Lists existing preview records for inspection and cleanup, including while preview creation is disabled. A recorded URL does not establish reachability; check `routed`. Requires `previews`.",
         "summary": "List previews",
         "x-platform-visibility": "PUBLIC"
       }
@@ -32267,7 +32267,7 @@
             }
           }
         },
-        "description": "Removes the preview; its URL stops answering. Requires `previews`.",
+        "description": "Removes an existing preview record, including while preview creation is disabled. Requires `previews`.",
         "summary": "Unexpose a port",
         "x-platform-visibility": "PUBLIC"
       }
@@ -33936,7 +33936,7 @@
           "link",
           "private"
         ],
-        "description": "`link` (the default): anyone with the URL can open it; the random token in the hostname is the only gate. `private`: the same hostname, but it needs Akua sign-in and the `previews` permission on the sandbox."
+        "description": "When preview routing is available, `link` (the default) uses the random hostname token as the only access gate; `private` requires Akua sign-in and the `previews` permission. Preview creation requires `release_sandbox_previews`, which is disabled by default."
       },
       "SandboxAccessGrantId": {
         "type": "string",
