@@ -4151,6 +4151,16 @@
               }
             }
           },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Missing, invalid or expired credential.",
             "content": {
@@ -4180,9 +4190,19 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
           }
         },
-        "description": "Issues a new worker-bootstrap row and returns its metadata.",
+        "description": "Issues a worker bootstrap. Invalid node names and names already used by a node in the cluster return a typed Validation error with path body.node_name.",
         "summary": "Create worker bootstrap",
         "requestBody": {
           "content": {
@@ -4190,6 +4210,12 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "node_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 63,
+                    "description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must not match an existing node in the cluster."
+                  },
                   "ttl_seconds": {
                     "type": "integer",
                     "description": "Token TTL in seconds (optional).",
@@ -62193,6 +62219,9 @@
       "WorkerBootstrap": {
         "type": "object",
         "properties": {
+          "node_name": {
+            "type": "string"
+          },
           "id": {
             "type": "string",
             "minLength": 1,
@@ -62744,6 +62773,9 @@
       "ClusterNode": {
         "type": "object",
         "properties": {
+          "worker_bootstrap_id": {
+            "type": "string"
+          },
           "name": {
             "type": "string"
           },
@@ -63325,6 +63357,10 @@
       "DashboardClusterObservedNode": {
         "type": "object",
         "properties": {
+          "worker_bootstrap_id": {
+            "type": "string",
+            "description": "Worker bootstrap used to join this node, when reported by the node."
+          },
           "name": {
             "type": "string"
           },

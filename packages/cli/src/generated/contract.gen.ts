@@ -1752,6 +1752,12 @@ export const contract: ApiContract = {
 				"schema": {
 					"type": "object",
 					"properties": {
+						"node_name": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 63,
+							"description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must not match an existing node in the cluster."
+						},
 						"ttl_seconds": {
 							"type": "integer",
 							"description": "Token TTL in seconds (optional).",
