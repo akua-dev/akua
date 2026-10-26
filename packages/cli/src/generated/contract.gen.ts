@@ -4627,6 +4627,12 @@ export const contract: ApiContract = {
 							"type": "string",
 							"maxLength": 120
 						},
+						"node_name": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 63,
+							"description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must be unique in the cluster. Defaults to cnap- plus the final eight machine ID characters."
+						},
 						"node_claim": {
 							"type": "object"
 						}
