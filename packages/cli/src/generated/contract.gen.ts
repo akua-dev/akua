@@ -1756,6 +1756,7 @@ export const contract: ApiContract = {
 							"type": "string",
 							"minLength": 1,
 							"maxLength": 63,
+							"pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
 							"description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must not match an existing node in the cluster."
 						},
 						"ttl_seconds": {
@@ -4631,6 +4632,7 @@ export const contract: ApiContract = {
 							"type": "string",
 							"minLength": 1,
 							"maxLength": 63,
+							"pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
 							"description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must be unique in the cluster. Defaults to cnap- plus the final eight machine ID characters."
 						},
 						"node_claim": {

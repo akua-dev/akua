@@ -4191,6 +4191,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -4214,6 +4224,7 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 63,
+                    "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
                     "description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must not match an existing node in the cluster."
                   },
                   "ttl_seconds": {
@@ -10784,6 +10795,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -10795,7 +10816,7 @@
             }
           }
         },
-        "description": "Creates a machine and returns a long-running operation envelope.",
+        "description": "Creates a machine and returns a long-running operation envelope. Invalid node names and names already used in the cluster return a typed Validation error at body.node_name.",
         "summary": "Create machine",
         "requestBody": {
           "content": {
@@ -10830,6 +10851,7 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 63,
+                    "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
                     "description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must be unique in the cluster. Defaults to cnap- plus the final eight machine ID characters."
                   },
                   "node_claim": {
@@ -62813,7 +62835,8 @@
         "type": "object",
         "properties": {
           "worker_bootstrap_id": {
-            "type": "string"
+            "type": "string",
+            "description": "Worker bootstrap used to join this node, when reported by the node."
           },
           "name": {
             "type": "string"
@@ -63557,7 +63580,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Kubernetes node name selected for this machine."
           },
           "state": {
             "type": "string",
