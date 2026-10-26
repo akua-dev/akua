@@ -7061,7 +7061,9 @@ export const contract: ApiContract = {
 			"path": "/workspaces",
 			"summary": "Create workspace",
 			"auth": true,
-			"parameters": [],
+			"parameters": [
+				"header:idempotency-key"
+			],
 			"body": {
 				"required": true,
 				"schema": {

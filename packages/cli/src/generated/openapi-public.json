@@ -24727,7 +24727,22 @@
           "Workspaces"
         ],
         "operationId": "workspaces.create",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
         "security": [
           {
             "BearerAuth": []
@@ -24765,11 +24780,18 @@
             }
           },
           "409": {
-            "description": "The request conflicts with existing resource state or immutable intent.",
+            "description": "The request conflicts with existing resource state or immutable intent. | The idempotency key was already used for a different request.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiConflict"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
                 }
               }
             }
@@ -24785,7 +24807,7 @@
             }
           }
         },
-        "description": "Creates a workspace for the authenticated user.",
+        "description": "Creates a workspace for the authenticated user. An Idempotency-Key is scoped to that user. Reusing it with the same request returns the existing Workspace in its current state; a different request returns 409/7015. Keys do not expire; replay remains available until the Workspace is permanently deleted.",
         "summary": "Create workspace",
         "requestBody": {
           "content": {
