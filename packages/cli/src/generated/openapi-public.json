@@ -54937,6 +54937,21 @@
           "cluster_name": {
             "type": "string"
           },
+          "node_names": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Observed pod node names. Null until placement is available. OUTPUT_ONLY.",
+            "readOnly": true
+          },
           "region_name": {
             "type": "string"
           },
