@@ -63421,6 +63421,31 @@
             "minLength": 1,
             "maxLength": 54
           },
+          "location": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "provider",
+                  "code"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Provider location captured for this machine. Null when unknown.",
+            "readOnly": true
+          },
           "provider_id": {
             "type": "string",
             "description": "Provider URI identifier in canonical form (for example, compute://hcloud/server-1234).",
