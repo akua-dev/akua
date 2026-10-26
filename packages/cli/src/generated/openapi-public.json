@@ -4353,6 +4353,16 @@
               }
             }
           },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Missing, invalid or expired credential.",
             "content": {
@@ -4382,9 +4392,29 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
           }
         },
-        "description": "Issues a new worker-bootstrap row and returns its metadata.",
+        "description": "Issues a worker bootstrap. Invalid node names and names already used by a node in the cluster return a typed Validation error with path body.node_name.",
         "summary": "Create worker bootstrap",
         "requestBody": {
           "content": {
@@ -4392,6 +4422,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "node_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 63,
+                    "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
+                    "description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must not match an existing node in the cluster."
+                  },
                   "ttl_seconds": {
                     "type": "integer",
                     "description": "Token TTL in seconds (optional).",
@@ -10910,6 +10947,16 @@
               }
             }
           },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Missing, invalid or expired credential.",
             "content": {
@@ -10950,6 +10997,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -10961,7 +11018,7 @@
             }
           }
         },
-        "description": "Creates a machine and returns a long-running operation envelope.",
+        "description": "Creates a machine and returns a long-running operation envelope. Invalid node names and names already used in the cluster return a typed Validation error at body.node_name.",
         "summary": "Create machine",
         "requestBody": {
           "content": {
@@ -10991,6 +11048,13 @@
                   "name": {
                     "type": "string",
                     "maxLength": 120
+                  },
+                  "node_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 63,
+                    "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
+                    "description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must be unique in the cluster. Defaults to cnap- plus the final eight machine ID characters."
                   },
                   "node_claim": {
                     "type": "object"
@@ -53781,7 +53845,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Kubernetes node name selected for this machine."
           },
           "state": {
             "type": "string",
@@ -62687,6 +62752,9 @@
       "WorkerBootstrap": {
         "type": "object",
         "properties": {
+          "node_name": {
+            "type": "string"
+          },
           "id": {
             "type": "string",
             "minLength": 1,
@@ -63238,6 +63306,10 @@
       "ClusterNode": {
         "type": "object",
         "properties": {
+          "worker_bootstrap_id": {
+            "type": "string",
+            "description": "Worker bootstrap used to join this node, when reported by the node."
+          },
           "name": {
             "type": "string"
           },
@@ -63855,6 +63927,10 @@
       "DashboardClusterObservedNode": {
         "type": "object",
         "properties": {
+          "worker_bootstrap_id": {
+            "type": "string",
+            "description": "Worker bootstrap used to join this node, when reported by the node."
+          },
           "name": {
             "type": "string"
           },
@@ -64024,7 +64100,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Kubernetes node name selected for this machine."
           },
           "state": {
             "type": "string",
