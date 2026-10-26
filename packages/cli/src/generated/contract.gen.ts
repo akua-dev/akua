@@ -1128,6 +1128,17 @@ export const contract: ApiContract = {
 				"description": "Only sandboxes this OpenCode Server (`oc_...`) has a grant on."
 			}
 		},
+		"query:organization": {
+			"name": "organization",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 54,
+				"description": "Filter by owning organization. Requires membership; excludes managed customer Workspaces."
+			}
+		},
 		"query:owner_id": {
 			"name": "owner_id",
 			"in": "query",
@@ -7050,6 +7061,12 @@ export const contract: ApiContract = {
 				"schema": {
 					"type": "object",
 					"properties": {
+						"organization": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 54,
+							"description": "Owning organization. Requires owner or admin permission. Omit to use your personal organization."
+						},
 						"name": {
 							"type": "string",
 							"minLength": 1,
@@ -7143,6 +7160,7 @@ export const contract: ApiContract = {
 			"summary": "List workspaces",
 			"auth": true,
 			"parameters": [
+				"query:organization",
 				"query:cursor",
 				"query:limit"
 			]
