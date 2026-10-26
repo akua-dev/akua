@@ -28265,6 +28265,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -28448,6 +28458,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -28583,6 +28603,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -28734,6 +28764,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -28913,6 +28953,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -29076,6 +29126,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -29247,6 +29307,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -29400,6 +29470,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -29545,6 +29625,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -29729,6 +29819,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -29872,6 +29972,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -30048,6 +30158,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -30195,6 +30315,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -30331,6 +30461,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -30484,6 +30624,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -30661,6 +30811,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -30807,6 +30967,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -30960,6 +31130,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -31109,6 +31289,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -31247,6 +31437,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -31400,6 +31600,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -31549,6 +31759,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -31694,6 +31914,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -31870,6 +32100,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -32010,6 +32250,16 @@
               }
             }
           },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -32145,6 +32395,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -32291,6 +32551,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -33816,6 +34086,46 @@
             "type": "string",
             "enum": [
               "NotFound"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "ApiExternalServiceError": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "ExternalServiceError"
             ]
           },
           "success": {
@@ -46077,46 +46387,6 @@
           "data",
           "has_more",
           "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "ApiExternalServiceError": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "ExternalServiceError"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
         ],
         "additionalProperties": false
       },
