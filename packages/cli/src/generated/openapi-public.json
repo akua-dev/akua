@@ -63070,6 +63070,18 @@
           "status_message": {
             "type": "string"
           },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClusterNodeUsage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last observed resource usage. Null when metrics are unavailable. OUTPUT_ONLY.",
+            "readOnly": true
+          },
           "roles": {
             "type": "array",
             "items": {
@@ -63106,6 +63118,30 @@
           "memory_capacity",
           "os_image",
           "architecture"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterNodeUsage": {
+        "type": "object",
+        "properties": {
+          "cpu_cores": {
+            "type": "number",
+            "minimum": 0
+          },
+          "memory_bytes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "observed_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "cpu_cores",
+          "memory_bytes",
+          "observed_at"
         ],
         "additionalProperties": false
       },
@@ -63650,6 +63686,18 @@
           },
           "status_message": {
             "type": "string"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClusterNodeUsage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last observed resource usage. Null when metrics are unavailable. OUTPUT_ONLY.",
+            "readOnly": true
           },
           "roles": {
             "type": "array",
