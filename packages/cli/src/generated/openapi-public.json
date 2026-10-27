@@ -63604,6 +63604,23 @@
           "kaas": {
             "$ref": "#/components/schemas/ClusterKaas"
           },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "connection_failed",
+                  "capability_reconciliation_failed",
+                  "cluster_unhealthy",
+                  "cluster_operation_failed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "OUTPUT_ONLY. Failure class projected from persisted cluster status. Technical diagnostics remain in kaas.status_message."
+          },
           "created_at": {
             "type": "integer",
             "description": "Unix timestamp (seconds)",
@@ -63641,6 +63658,7 @@
           "region",
           "provider",
           "kaas",
+          "status_reason",
           "created_at",
           "updated_at",
           "product_count",
