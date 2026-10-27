@@ -52564,6 +52564,10 @@
             "minLength": 1,
             "maxLength": 55
           },
+          "package_version": {
+            "type": "string",
+            "description": "Semantic version of the pinned Package version, populated on customer resolve"
+          },
           "input_schema": {
             "type": "object",
             "description": "JSON Schema 2020-12 with x-ui extensions for the pinned package version. Present on customer resolve responses so the install wizard can render the configure step."
