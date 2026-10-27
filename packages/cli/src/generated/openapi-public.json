@@ -55496,6 +55496,21 @@
           "cluster_name": {
             "type": "string"
           },
+          "node_names": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Observed pod node names. Null until placement is available. OUTPUT_ONLY.",
+            "readOnly": true
+          },
           "region_name": {
             "type": "string"
           },
@@ -64038,6 +64053,31 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 54
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "provider",
+                  "code"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Provider location captured for this machine. Null when unknown.",
+            "readOnly": true
           },
           "provider_id": {
             "type": "string",
