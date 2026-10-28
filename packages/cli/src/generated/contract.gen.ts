@@ -5091,6 +5091,7 @@ export const contract: ApiContract = {
 			"auth": true,
 			"parameters": [
 				"path:offer",
+				"header:akua-context",
 				"header:idempotency-key"
 			]
 		},
