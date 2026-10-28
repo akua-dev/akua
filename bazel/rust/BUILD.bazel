@@ -134,6 +134,7 @@ rust_binary(
     name = "zig_link",
     srcs = ["zig_link.rs"],
     edition = "2024",
+    stamp = 0,
 )
 
 package_rust_tool(
@@ -241,6 +242,7 @@ rust_binary(
     ),
     crate_root = "//crates/wasm-sandbox/precompile:src/main.rs",
     edition = "2024",
+    stamp = 0,
     visibility = ["//visibility:public"],
     deps = precompile_deps(
         package_name = "crates/wasm-sandbox/precompile",
