@@ -20,7 +20,7 @@
 		"test": "bun --bun run vitest run"
 	},
 	"devDependencies": {
-		"@effect/vitest": "4.0.1",
+		"@effect/vitest": "4.0.7",
 		"@types/bun": "1.4.1",
 		"smol-toml": "1.8.0",
 		"typescript": "^6.0.3",
@@ -31,7 +31,7 @@
 	},
 	"dependencies": {
 		"@akua-dev/sdk": "0.13.3",
-		"@effect/platform-bun": "4.0.1",
-		"effect": "4.0.1"
+		"@effect/platform-bun": "4.0.7",
+		"effect": "4.0.7"
 	}
 }

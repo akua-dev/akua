@@ -1,0 +1,1042 @@
+diff --git a/dist/cluster/Entity.d.ts b/dist/cluster/Entity.d.ts
+index 482c629..03d0654 100644
+--- a/dist/cluster/Entity.d.ts
++++ b/dist/cluster/Entity.d.ts
+@@ -353,5 +353,22 @@ declare const KeepAliveLatch_base: Context.ServiceClass<KeepAliveLatch, "effect/
+  */
+ export declare class KeepAliveLatch extends KeepAliveLatch_base {
+ }
++declare const KeepAliveHandler_base: Context.ServiceClass<KeepAliveHandler, "effect/cluster/Entity/KeepAliveHandler", (enabled: boolean) => Effect.Effect<void>>;
++/**
++ * Service tag for the runtime hook behind {@link keepAlive}.
++ *
++ * **Details**
++ *
++ * Runtimes that support pinning an entity in memory provide this service; the
++ * handler receives `true` while at least one keep-alive holder exists and
++ * `false` once the last holder is released. When the service is absent,
++ * `keepAlive` is a no-op.
++ *
++ * @stability unstable
++ * @category services
++ * @since 4.0.0
++ */
++export declare class KeepAliveHandler extends KeepAliveHandler_base {
++}
+ export {};
+ //# sourceMappingURL=Entity.d.ts.map
+\ No newline at end of file
+diff --git a/dist/cluster/Entity.js b/dist/cluster/Entity.js
+index 44610e2..81ee380 100644
+--- a/dist/cluster/Entity.js
++++ b/dist/cluster/Entity.js
+@@ -55,89 +55,85 @@ const TypeId = "~effect/cluster/Entity";
+  * @category guards
+  * @since 4.0.0
+  */
+-export const isEntity = u => Predicate.hasProperty(u, TypeId);
++export const isEntity = (u) => Predicate.hasProperty(u, TypeId);
+ const Proto = {
+-  [TypeId]: TypeId,
+-  [Hash.symbol]() {
+-    return Hash.structure({
+-      type: this.type
+-    });
+-  },
+-  [Equal.symbol](that) {
+-    return isEntity(that) && this.type === that.type;
+-  },
+-  annotate(key, value) {
+-    return fromRpcGroup(this.type, this.protocol.annotate(key, value));
+-  },
+-  annotateRpcs(key, value) {
+-    return fromRpcGroup(this.type, this.protocol.annotateRpcs(key, value));
+-  },
+-  annotateMerge(annotations) {
+-    return fromRpcGroup(this.type, this.protocol.annotateMerge(annotations));
+-  },
+-  annotateRpcsMerge(annotations) {
+-    return fromRpcGroup(this.type, this.protocol.annotateRpcsMerge(annotations));
+-  },
+-  getShardId(entityId) {
+-    return Effect.map(shardingTag, sharding => sharding.getShardId(entityId, this.getShardGroup(entityId)));
+-  },
+-  get client() {
+-    return shardingTag.pipe(Effect.flatMap(sharding => sharding.makeClient(this)));
+-  },
+-  toLayer(build, options) {
+-    return shardingTag.pipe(Effect.flatMap(sharding => sharding.registerEntity(this, Effect.isEffect(build) ? build : Effect.succeed(build), options)), Layer.effectDiscard);
+-  },
+-  of: identity,
+-  toLayerQueue(build, options) {
+-    const buildHandlers = Effect.gen({
+-      self: this
+-    }, function* () {
+-      const behaviour = Effect.isEffect(build) ? yield* build : build;
+-      const queue = yield* Queue.make();
+-      // create the rpc handlers for the entity
+-      const handler = envelope => Effect.callback(resume => {
+-        Queue.offerUnsafe(queue, envelope);
+-        resumes.set(envelope, resume);
+-      });
+-      const streamHandler = envelope => Effect.callback(resume => {
+-        Queue.offerUnsafe(queue, envelope);
+-        resumes.set(envelope, resume);
+-      }).pipe(Effect.map(streamOrQueue => Stream.isStream(streamOrQueue) ? streamOrQueue : Stream.fromQueue(streamOrQueue)), Stream.unwrap);
+-      const handlers = Object.create(null);
+-      for (const rpc_ of this.protocol.requests.values()) {
+-        const rpc = rpc_;
+-        handlers[rpc._tag] = RpcSchema.isStreamSchema(rpc.successSchema) ? streamHandler : handler;
+-      }
+-      // make the Replier for the behaviour
+-      const resumes = new Map();
+-      const complete = (request, exit) => Effect.sync(() => {
+-        const resume = resumes.get(request);
+-        if (resume) {
+-          resumes.delete(request);
+-          resume(exit);
+-        }
+-      });
+-      const replier = {
+-        succeed: (request, value) => complete(request, Exit.succeed(value)),
+-        fail: (request, error) => complete(request, Exit.fail(error)),
+-        failCause: (request, cause) => complete(request, Exit.failCause(cause)),
+-        complete
+-      };
+-      // fork the behaviour into the layer scope
+-      yield* behaviour(queue, replier).pipe(Effect.catchCause(cause => {
+-        const exit = Exit.failCause(cause);
+-        for (const resume of resumes.values()) {
+-          resume(exit);
+-        }
+-        return Effect.void;
+-      }), Effect.interruptible, Effect.forkScoped);
+-      return handlers;
+-    });
+-    return this.toLayer(buildHandlers, {
+-      ...options,
+-      concurrency: "unbounded"
+-    });
+-  }
++    [TypeId]: TypeId,
++    [Hash.symbol]() {
++        return Hash.structure({ type: this.type });
++    },
++    [Equal.symbol](that) {
++        return isEntity(that) && this.type === that.type;
++    },
++    annotate(key, value) {
++        return fromRpcGroup(this.type, this.protocol.annotate(key, value));
++    },
++    annotateRpcs(key, value) {
++        return fromRpcGroup(this.type, this.protocol.annotateRpcs(key, value));
++    },
++    annotateMerge(annotations) {
++        return fromRpcGroup(this.type, this.protocol.annotateMerge(annotations));
++    },
++    annotateRpcsMerge(annotations) {
++        return fromRpcGroup(this.type, this.protocol.annotateRpcsMerge(annotations));
++    },
++    getShardId(entityId) {
++        return Effect.map(shardingTag, (sharding) => sharding.getShardId(entityId, this.getShardGroup(entityId)));
++    },
++    get client() {
++        return shardingTag.pipe(Effect.flatMap((sharding) => sharding.makeClient(this)));
++    },
++    toLayer(build, options) {
++        return shardingTag.pipe(Effect.flatMap((sharding) => sharding.registerEntity(this, Effect.isEffect(build) ? build : Effect.succeed(build), options)), Layer.effectDiscard);
++    },
++    of: identity,
++    toLayerQueue(build, options) {
++        const buildHandlers = Effect.gen({ self: this }, function* () {
++            const behaviour = Effect.isEffect(build) ? yield* build : build;
++            const queue = yield* Queue.make();
++            // create the rpc handlers for the entity
++            const handler = (envelope) => Effect.callback((resume) => {
++                Queue.offerUnsafe(queue, envelope);
++                resumes.set(envelope, resume);
++            });
++            const streamHandler = (envelope) => Effect.callback((resume) => {
++                Queue.offerUnsafe(queue, envelope);
++                resumes.set(envelope, resume);
++            }).pipe(Effect.map((streamOrQueue) => Stream.isStream(streamOrQueue) ? streamOrQueue : Stream.fromQueue(streamOrQueue)), Stream.unwrap);
++            const handlers = Object.create(null);
++            for (const rpc_ of this.protocol.requests.values()) {
++                const rpc = rpc_;
++                handlers[rpc._tag] = RpcSchema.isStreamSchema(rpc.successSchema) ? streamHandler : handler;
++            }
++            // make the Replier for the behaviour
++            const resumes = new Map();
++            const complete = (request, exit) => Effect.sync(() => {
++                const resume = resumes.get(request);
++                if (resume) {
++                    resumes.delete(request);
++                    resume(exit);
++                }
++            });
++            const replier = {
++                succeed: (request, value) => complete(request, Exit.succeed(value)),
++                fail: (request, error) => complete(request, Exit.fail(error)),
++                failCause: (request, cause) => complete(request, Exit.failCause(cause)),
++                complete
++            };
++            // fork the behaviour into the layer scope
++            yield* behaviour(queue, replier).pipe(Effect.catchCause((cause) => {
++                const exit = Exit.failCause(cause);
++                for (const resume of resumes.values()) {
++                    resume(exit);
++                }
++                return Effect.void;
++            }), Effect.interruptible, Effect.forkScoped);
++            return handlers;
++        });
++        return this.toLayer(buildHandlers, {
++            ...options,
++            concurrency: "unbounded"
++        });
++    }
+ };
+ /**
+  * Creates a new `Entity` of the specified `type` which will accept messages
+@@ -151,17 +147,17 @@ export const fromRpcGroup = (
+ /**
+  * The entity type name.
+  */
+-type,
++type, 
+ /**
+  * The schema definition for messages that the entity is capable of
+  * processing.
+  */
+ protocol) => {
+-  const self = Object.create(Proto);
+-  self.type = EntityType.make(type);
+-  self.protocol = protocol;
+-  self.getShardGroup = Context.get(protocol.annotations, ShardGroup);
+-  return self;
++    const self = Object.create(Proto);
++    self.type = EntityType.make(type);
++    self.protocol = protocol;
++    self.getShardGroup = Context.get(protocol.annotations, ShardGroup);
++    return self;
+ };
+ /**
+  * Creates a new `Entity` of the specified `type` which will accept messages
+@@ -192,7 +188,7 @@ export const make = (
+ /**
+  * The entity type name.
+  */
+-type,
++type, 
+ /**
+  * The schema definition for messages that the entity is capable of
+  * processing.
+@@ -210,7 +206,8 @@ protocol) => fromRpcGroup(type, RpcGroup.make(...protocol));
+  * @category services
+  * @since 4.0.0
+  */
+-export class CurrentAddress extends /*#__PURE__*/Context.Service()("effect/cluster/Entity/EntityAddress") {}
++export class CurrentAddress extends Context.Service()("effect/cluster/Entity/EntityAddress") {
++}
+ /**
+  * Service tag for the runner address currently registering entity handlers.
+  *
+@@ -223,7 +220,8 @@ export class CurrentAddress extends /*#__PURE__*/Context.Service()("effect/clust
+  * @category services
+  * @since 4.0.0
+  */
+-export class CurrentRunnerAddress extends /*#__PURE__*/Context.Service()("effect/cluster/Entity/RunnerAddress") {}
++export class CurrentRunnerAddress extends Context.Service()("effect/cluster/Entity/RunnerAddress") {
++}
+ /**
+  * Represents an entity request envelope delivered to entity handlers.
+  *
+@@ -237,29 +235,29 @@ export class CurrentRunnerAddress extends /*#__PURE__*/Context.Service()("effect
+  * @since 4.0.0
+  */
+ export class Request extends Data.Class {
+-  /**
+-   * Most recent success chunk value sent by the entity, when one exists.
+-   *
+-   * @stability unstable
+-   * @since 4.0.0
+-   */
+-  get lastSentChunkValue() {
+-    return Option.map(this.lastSentChunk, chunk => Arr.lastNonEmpty(chunk.values));
+-  }
+-  /**
+-   * Sequence number to use for the entity's next outgoing success chunk.
+-   *
+-   * @stability unstable
+-   * @since 4.0.0
+-   */
+-  get nextSequence() {
+-    if (Option.isNone(this.lastSentChunk)) {
+-      return 0;
++    /**
++     * Most recent success chunk value sent by the entity, when one exists.
++     *
++     * @stability unstable
++     * @since 4.0.0
++     */
++    get lastSentChunkValue() {
++        return Option.map(this.lastSentChunk, (chunk) => Arr.lastNonEmpty(chunk.values));
++    }
++    /**
++     * Sequence number to use for the entity's next outgoing success chunk.
++     *
++     * @stability unstable
++     * @since 4.0.0
++     */
++    get nextSequence() {
++        if (Option.isNone(this.lastSentChunk)) {
++            return 0;
++        }
++        return this.lastSentChunk.value.sequence + 1;
+     }
+-    return this.lastSentChunk.value.sequence + 1;
+-  }
+ }
+-const shardingTag = /*#__PURE__*/Context.Service("effect/cluster/Sharding");
++const shardingTag = Context.Service("effect/cluster/Sharding");
+ /**
+  * Builds an in-memory test client for an entity layer.
+  *
+@@ -272,74 +270,69 @@ const shardingTag = /*#__PURE__*/Context.Service("effect/cluster/Sharding");
+  * @category testing
+  * @since 4.0.0
+  */
+-export const makeTestClient = /*#__PURE__*/Effect.fnUntraced(function* (entity, layer) {
+-  const config = yield* ShardingConfig;
+-  const makeShardId = entityId => ShardId.make(entity.getShardGroup(entityId), Math.abs(hashString(entityId) % config.shardsPerGroup) + 1);
+-  const snowflakeGen = yield* Snowflake.makeGenerator;
+-  const runnerAddress = new RunnerAddress({
+-    host: "localhost",
+-    port: 3000
+-  });
+-  const entityMap = new Map();
+-  const sharding = shardingTag.of({
+-    ...{},
+-    registerEntity: (entity, handlers, options) => Effect.contextWith(context => {
+-      entityMap.set(entity.type, {
+-        context: context,
+-        concurrency: options?.concurrency ?? 1,
+-        disableFatalDefects: options?.disableFatalDefects,
+-        build: entity.protocol.toHandlers(handlers)
+-      });
+-      return Effect.void;
+-    })
+-  });
+-  yield* Layer.build(Layer.provide(layer, Layer.succeed(shardingTag)(sharding)));
+-  const entityEntry = entityMap.get(entity.type);
+-  if (!entityEntry) {
+-    return yield* Effect.die(`Entity.makeTestClient: ${entity.type} was not registered by layer`);
+-  }
+-  const map = yield* ResourceMap.make(Effect.fnUntraced(function* (entityId) {
+-    const address = new EntityAddress({
+-      entityType: entity.type,
+-      entityId: entityId,
+-      shardId: makeShardId(entityId)
++export const makeTestClient = Effect.fnUntraced(function* (entity, layer) {
++    const config = yield* ShardingConfig;
++    const makeShardId = (entityId) => ShardId.make(entity.getShardGroup(entityId), (Math.abs(hashString(entityId) % config.shardsPerGroup)) + 1);
++    const snowflakeGen = yield* Snowflake.makeGenerator;
++    const runnerAddress = new RunnerAddress({ host: "localhost", port: 3000 });
++    const entityMap = new Map();
++    const sharding = shardingTag.of({
++        ...{},
++        registerEntity: (entity, handlers, options) => Effect.contextWith((context) => {
++            entityMap.set(entity.type, {
++                context: context,
++                concurrency: options?.concurrency ?? 1,
++                disableFatalDefects: options?.disableFatalDefects,
++                build: entity.protocol.toHandlers(handlers)
++            });
++            return Effect.void;
++        })
+     });
+-    const scope = yield* Effect.scope;
+-    const handlerContext = entityEntry.context.pipe(Context.add(CurrentRunnerAddress, runnerAddress), Context.add(CurrentAddress, address), Context.add(CurrentActivationScope, scope), Context.add(Scope, scope));
+-    const handlers = yield* entityEntry.build.pipe(Effect.setContext(handlerContext));
+-    // oxlint-disable-next-line prefer-const
+-    let client;
+-    const server = yield* RpcServer.makeNoSerialization(entity.protocol, {
+-      concurrency: entityEntry.concurrency,
+-      disableFatalDefects: entityEntry.disableFatalDefects,
+-      onFromServer(response) {
+-        return client.write(response);
+-      }
+-    }).pipe(Effect.setContext(Context.merge(handlerContext, handlers)));
+-    client = yield* RpcClient.makeNoSerialization(entity.protocol, {
+-      supportsAck: true,
+-      generateRequestId: () => snowflakeGen.nextUnsafe(),
+-      onFromClient({
+-        message
+-      }) {
+-        if (message._tag === "Request") {
+-          return server.write(0, {
+-            ...message,
+-            payload: new Request({
+-              ...message,
+-              [Envelope.TypeId]: Envelope.TypeId,
+-              address,
+-              requestId: Snowflake.Snowflake(message.id),
+-              lastSentChunk: Option.none()
+-            })
+-          });
+-        }
+-        return server.write(0, message);
+-      }
+-    });
+-    return client.client;
+-  }));
+-  return entityId => map.get(entityId);
++    yield* Layer.build(Layer.provide(layer, Layer.succeed(shardingTag)(sharding)));
++    const entityEntry = entityMap.get(entity.type);
++    if (!entityEntry) {
++        return yield* Effect.die(`Entity.makeTestClient: ${entity.type} was not registered by layer`);
++    }
++    const map = yield* ResourceMap.make(Effect.fnUntraced(function* (entityId) {
++        const address = new EntityAddress({
++            entityType: entity.type,
++            entityId: entityId,
++            shardId: makeShardId(entityId)
++        });
++        const scope = yield* Effect.scope;
++        const handlerContext = entityEntry.context.pipe(Context.add(CurrentRunnerAddress, runnerAddress), Context.add(CurrentAddress, address), Context.add(CurrentActivationScope, scope), Context.add(Scope, scope));
++        const handlers = yield* entityEntry.build.pipe(Effect.setContext(handlerContext));
++        // oxlint-disable-next-line prefer-const
++        let client;
++        const server = yield* RpcServer.makeNoSerialization(entity.protocol, {
++            concurrency: entityEntry.concurrency,
++            disableFatalDefects: entityEntry.disableFatalDefects,
++            onFromServer(response) {
++                return client.write(response);
++            }
++        }).pipe(Effect.setContext(Context.merge(handlerContext, handlers)));
++        client = yield* RpcClient.makeNoSerialization(entity.protocol, {
++            supportsAck: true,
++            generateRequestId: () => snowflakeGen.nextUnsafe(),
++            onFromClient({ message }) {
++                if (message._tag === "Request") {
++                    return server.write(0, {
++                        ...message,
++                        payload: new Request({
++                            ...message,
++                            [Envelope.TypeId]: Envelope.TypeId,
++                            address,
++                            requestId: Snowflake.Snowflake(message.id),
++                            lastSentChunk: Option.none()
++                        })
++                    });
++                }
++                return server.write(0, message);
++            }
++        });
++        return client.client;
++    }));
++    return (entityId) => map.get(entityId);
+ });
+ /**
+  * Enables or disables keep-alive for the current entity.
+@@ -353,41 +346,42 @@ export const makeTestClient = /*#__PURE__*/Effect.fnUntraced(function* (entity,
+  * @category keep alive
+  * @since 4.0.0
+  */
+-export const keepAlive = /*#__PURE__*/Effect.fnUntraced(function* (enabled) {
+-  const olatch = yield* Effect.serviceOption(KeepAliveLatch);
+-  if (olatch._tag === "None") return;
+-  if (!enabled) {
+-    yield* olatch.value.open;
+-    return;
+-  }
+-  const sharding = yield* shardingTag;
+-  const address = yield* CurrentAddress;
+-  const requestId = yield* sharding.getSnowflake;
+-  const span = yield* Effect.orDie(Effect.currentSpan);
+-  olatch.value.closeUnsafe();
+-  yield* Effect.orDie(sharding.sendOutgoing(new Message.OutgoingRequest({
+-    annotations: KeepAliveRpc.annotations,
+-    rpc: KeepAliveRpc,
+-    context: Context.empty(),
+-    envelope: Envelope.makeRequest({
+-      requestId,
+-      address,
+-      tag: KeepAliveRpc._tag,
+-      payload: void 0,
+-      headers: Headers.empty,
+-      traceId: span.traceId,
+-      spanId: span.spanId,
+-      sampled: span.sampled
+-    }),
+-    lastReceivedReply: Option.none(),
+-    respond: () => Effect.void
+-  }), true));
+-}, (effect, enabled) => Effect.withSpan(effect, "Entity/keepAlive", {
+-  attributes: {
+-    enabled
+-  },
+-  captureStackTrace: false
+-}));
++export const keepAlive = Effect.fnUntraced(function* (enabled) {
++    const ohandler = yield* Effect.serviceOption(KeepAliveHandler);
++    if (ohandler._tag === "Some") {
++        yield* ohandler.value(enabled);
++        return;
++    }
++    const olatch = yield* Effect.serviceOption(KeepAliveLatch);
++    if (olatch._tag === "None")
++        return;
++    if (!enabled) {
++        yield* olatch.value.open;
++        return;
++    }
++    const sharding = yield* shardingTag;
++    const address = yield* CurrentAddress;
++    const requestId = yield* sharding.getSnowflake;
++    const span = yield* Effect.orDie(Effect.currentSpan);
++    olatch.value.closeUnsafe();
++    yield* Effect.orDie(sharding.sendOutgoing(new Message.OutgoingRequest({
++        annotations: KeepAliveRpc.annotations,
++        rpc: KeepAliveRpc,
++        context: Context.empty(),
++        envelope: Envelope.makeRequest({
++            requestId,
++            address,
++            tag: KeepAliveRpc._tag,
++            payload: void 0,
++            headers: Headers.empty,
++            traceId: span.traceId,
++            spanId: span.spanId,
++            sampled: span.sampled
++        }),
++        lastReceivedReply: Option.none(),
++        respond: () => Effect.void
++    }), true));
++}, (effect, enabled) => Effect.withSpan(effect, "Entity/keepAlive", { attributes: { enabled }, captureStackTrace: false }));
+ /**
+  * RPC used internally to keep an entity active while a resource is held.
+  *
+@@ -400,7 +394,9 @@ export const keepAlive = /*#__PURE__*/Effect.fnUntraced(function* (enabled) {
+  * @category keep alive
+  * @since 4.0.0
+  */
+-export const KeepAliveRpc = /*#__PURE__*/Rpc.make("Cluster/Entity/keepAlive").annotate(Persisted, true).annotate(Uninterruptible, true);
++export const KeepAliveRpc = Rpc.make("Cluster/Entity/keepAlive")
++    .annotate(Persisted, true)
++    .annotate(Uninterruptible, true);
+ /**
+  * Service tag for the latch that coordinates entity keep-alive state.
+  *
+@@ -413,5 +409,22 @@ export const KeepAliveRpc = /*#__PURE__*/Rpc.make("Cluster/Entity/keepAlive").an
+  * @category services
+  * @since 4.0.0
+  */
+-export class KeepAliveLatch extends /*#__PURE__*/Context.Service()("effect/cluster/Entity/KeepAliveLatch") {}
++export class KeepAliveLatch extends Context.Service()("effect/cluster/Entity/KeepAliveLatch") {
++}
++/**
++ * Service tag for the runtime hook behind {@link keepAlive}.
++ *
++ * **Details**
++ *
++ * Runtimes that support pinning an entity in memory provide this service; the
++ * handler receives `true` while at least one keep-alive holder exists and
++ * `false` once the last holder is released. When the service is absent,
++ * `keepAlive` is a no-op.
++ *
++ * @stability unstable
++ * @category services
++ * @since 4.0.0
++ */
++export class KeepAliveHandler extends Context.Service()("effect/cluster/Entity/KeepAliveHandler") {
++}
+ //# sourceMappingURL=Entity.js.map
+\ No newline at end of file
+diff --git a/dist/http-api/HttpApiClient.js b/dist/http-api/HttpApiClient.js
+index 0d5b12e..b66f246 100644
+--- a/dist/http-api/HttpApiClient.js
++++ b/dist/http-api/HttpApiClient.js
+@@ -383,22 +383,24 @@ export const urlBuilder = (api, options) => {
+   return builder;
+ };
+ // ----------------------------------------------------------------------------
++const paramsRegExp = /(\/?):(\w+)(\?)?|\{([\w-]+)(:\*)?\}/g;
+ const compilePath = (path, schema) => {
+-  if (schema === undefined || !path.includes(":")) {
+-    return _ => path;
+-  }
++  if (schema === undefined || (!path.includes(":") && !path.includes("{"))) return _ => path;
+   const paramNames = HttpApiPath.getParamNames(schema);
+-  return params => HttpApiPath.replaceParams(path, paramNames, (key, optional) => {
++  return params => path.replace(paramsRegExp, (match, slash, colonKey, optional, templateKey, wildcard) => {
++    const key = templateKey ?? colonKey;
++    if (key === undefined || (paramNames !== undefined && !paramNames.has(key))) return match;
+     const value = params[key];
+-    if (value === "." || value === "..") {
+-      // dot segments survive encoding and would be resolved by URL normalization
+-      throw new Error(`Invalid path parameter: ${key}`);
++    if (value === undefined) {
++      if (optional) return "";
++      throw new Error(`Missing path parameter: ${key}`);
+     }
+-    if (value !== undefined) return encodeURIComponent(value);
+-    if (optional) return undefined;
+-    throw new Error(`Missing path parameter: ${key}`);
++    const segments = wildcard === undefined ? [value] : value.split("/");
++    if (segments.some(segment => segment === "." || segment === "..")) throw new Error(`Invalid path parameter: ${key}`);
++    return `${slash ?? ""}${segments.map(encodeURIComponent).join("/")}`;
+   });
+ };
++
+ function schemasToResponse(schemas, options, headersOptions) {
+   const hasWithHeaders = schemas.some(schema => HttpApiSchema.isWithHeaders(schema) || HttpApiSchema.getWithHeadersAnnotation(schema.ast) !== undefined);
+   const codec = hasWithHeaders ? Schema.Union(schemas.map(schema => toCodecArrayBufferWithHeaders(schema, options, headersOptions))) : toCodecArrayBuffer(schemas);
+@@ -739,6 +741,7 @@ function getEncodePayloadSchemaFromBody(schema, method) {
+       }, input, options));
+     },
+     encode(t, options) {
++      if (HttpApiSchema.isNoContent(ast)) return Effect.succeed(HttpBody.empty);
+       switch (encoding._tag) {
+         case "Multipart":
+           return Effect.fail(new SchemaIssue.Forbidden({
+diff --git a/dist/http-api/HttpApiEndpoint.d.ts b/dist/http-api/HttpApiEndpoint.d.ts
+index 8497b3c..b80f3ac 100644
+--- a/dist/http-api/HttpApiEndpoint.d.ts
++++ b/dist/http-api/HttpApiEndpoint.d.ts
+@@ -335,12 +335,8 @@ export type ClientRequest<Params extends Schema.Constraint, Query extends Schema
+     readonly query: Query["Type"];
+ }) & ([Headers["Type"]] extends [never] ? {} : {
+     readonly headers: Headers["Type"];
+-}) & ([Payload["Type"]] extends [never] ? {} : Payload["Type"] extends infer P ? P extends Brand<HttpApiSchema.MultipartTypeId> | Brand<HttpApiSchema.MultipartStreamTypeId> ? {
+-    readonly payload: FormData;
+-} : {
+-    readonly payload: ClientPayload<Payload, PayloadR>;
+-} : {
+-    readonly payload: ClientPayload<Payload, PayloadR>;
++}) & ([Payload["Type"]] extends [never] ? {} : {
++    readonly payload: Payload["Type"] extends infer P ? P extends Brand<HttpApiSchema.MultipartTypeId> | Brand<HttpApiSchema.MultipartStreamTypeId> ? FormData : Payload extends HttpApiSchema.StreamUint8Array | HttpApiSchema.StreamNdjson<any> ? ClientPayload<Payload, PayloadR> : P : never;
+ })) extends infer Req ? keyof Req extends never ? (void | {
+     readonly responseMode?: ResponseMode;
+     readonly sseOptions?: Sse.DecodeOptions | undefined;
+diff --git a/dist/http-api/internal/path.js b/dist/http-api/internal/path.js
+index 5a5e644..cb3ae3d 100644
+--- a/dist/http-api/internal/path.js
++++ b/dist/http-api/internal/path.js
+@@ -14,8 +14,8 @@ export function getParamNames(schema) {
+  */
+ export function toRouterPath(path, schema) {
+   // Preserve undeclared params for raw RouteContext consumers.
+-  if (schema === undefined || !path.includes(":")) return path;
+-  const paramNames = getParamNames(schema);
++  if (!path.includes(":")) return path;
++  const paramNames = schema === undefined ? emptyParamNames : getParamNames(schema);
+   if (paramNames === undefined) return path;
+   let out = "";
+   for (let i = 0; i < path.length; i++) {
+diff --git a/dist/http/HttpClient.js b/dist/http/HttpClient.js
+index 07fbd43..cc2454c 100644
+--- a/dist/http/HttpClient.js
++++ b/dist/http/HttpClient.js
+@@ -1069,7 +1069,8 @@ export const layerMergedContext = effect => Layer.effect(HttpClient)(Effect.cont
+ // -----------------------------------------------------------------------------
+ const responseRegistry = /*#__PURE__*/(() => {
+   if ("FinalizationRegistry" in globalThis && globalThis.FinalizationRegistry) {
+-    const registry = /*#__PURE__*/new FinalizationRegistry(controller => {
++    let registry;
++    const getRegistry = () => registry ??= new FinalizationRegistry(controller => {
+       try {
+         controller.abort();
+       } catch {
+@@ -1078,10 +1079,10 @@ const responseRegistry = /*#__PURE__*/(() => {
+     });
+     return {
+       register(response, controller) {
+-        registry.register(response, controller, response);
++        getRegistry().register(response, controller, response);
+       },
+       unregister(response) {
+-        registry.unregister(response);
++        registry?.unregister(response);
+       }
+     };
+   }
+diff --git a/dist/internal/schema/toCodeDocument.js b/dist/internal/schema/toCodeDocument.js
+index f89c6e2..082ec05 100644
+--- a/dist/internal/schema/toCodeDocument.js
++++ b/dist/internal/schema/toCodeDocument.js
+@@ -330,8 +330,14 @@ export function toCodeDocument(document) {
+         return makeCode("Schema.Any", "any");
+       case "String":
+         return makeCode("Schema.String", "string");
+-      case "Number":
+-        return makeCode("Schema.Number", "number");
++      case "Number": {
++        // Preserve the finite domain already required by JSON numbers and integers.
++        const finite = representation.checks.some((check) =>
++          check.representation?.id === "effect/schema/isFinite" ||
++          check.representation?.id === "effect/schema/isInt"
++        );
++        return makeCode(finite ? "Schema.Finite" : "Schema.Number", "number");
++      }
+       case "Boolean":
+         return makeCode("Schema.Boolean", "boolean");
+       case "BigInt":
+diff --git a/dist/workflow/DurableClock.d.ts b/dist/workflow/DurableClock.d.ts
+index eca827b..10f1b51 100644
+--- a/dist/workflow/DurableClock.d.ts
++++ b/dist/workflow/DurableClock.d.ts
+@@ -1,3 +1,15 @@
++/**
++ * Durable timers for workflow sleeps.
++ *
++ * `make` creates a `DurableClock` with a name, duration, and deferred wake-up
++ * signal. `sleep` ignores zero durations, runs short sleeps through an
++ * in-memory activity, and schedules longer sleeps through the `WorkflowEngine`
++ * before awaiting the durable deferred tied to the clock.
++ *
++ * @stability unstable
++ * @since 4.0.0
++ */
++import * as Context from "../Context.ts";
+ import * as Duration from "../Duration.ts";
+ import * as Effect from "../Effect.ts";
+ import type * as Schema from "../Schema.ts";
+@@ -30,6 +42,21 @@ export declare const make: (options: {
+     readonly name: string;
+     readonly duration: Duration.Input;
+ }) => DurableClock;
++/**
++ * Context reference containing the default `inMemoryThreshold` used by
++ * {@link sleep} when the option is not passed.
++ *
++ * **Details**
++ *
++ * Workflow engines whose timers are always durable (for example the Cloudflare
++ * Durable Object engine) provide `Duration.zero` so every `sleep` without an
++ * explicit `inMemoryThreshold` schedules a durable clock.
++ *
++ * @stability unstable
++ * @category services
++ * @since 4.0.0
++ */
++export declare const InMemoryThreshold: Context.Reference<Duration.Duration>;
+ /**
+  * Waits inside a workflow, using an in-memory activity for durations at or
+  * below the threshold and scheduling a durable clock for longer durations.
+diff --git a/dist/workflow/DurableClock.js b/dist/workflow/DurableClock.js
+index 6ae2ac0..b45f3a6 100644
+--- a/dist/workflow/DurableClock.js
++++ b/dist/workflow/DurableClock.js
+@@ -23,14 +23,29 @@ const TypeId = "~effect/workflow/DurableClock";
+  * @category constructors
+  * @since 4.0.0
+  */
+-export const make = options => ({
+-  [TypeId]: TypeId,
+-  name: options.name,
+-  duration: Duration.fromInputUnsafe(options.duration),
+-  deferred: DurableDeferred.make(`DurableClock/${options.name}`)
++export const make = (options) => ({
++    [TypeId]: TypeId,
++    name: options.name,
++    duration: Duration.fromInputUnsafe(options.duration),
++    deferred: DurableDeferred.make(`DurableClock/${options.name}`)
+ });
+-const EngineTag = /*#__PURE__*/Context.Service("effect/workflow/WorkflowEngine");
+-const InstanceTag = /*#__PURE__*/Context.Service("effect/workflow/WorkflowEngine/WorkflowInstance");
++const EngineTag = Context.Service("effect/workflow/WorkflowEngine");
++const InstanceTag = Context.Service("effect/workflow/WorkflowEngine/WorkflowInstance");
++/**
++ * Context reference containing the default `inMemoryThreshold` used by
++ * {@link sleep} when the option is not passed.
++ *
++ * **Details**
++ *
++ * Workflow engines whose timers are always durable (for example the Cloudflare
++ * Durable Object engine) provide `Duration.zero` so every `sleep` without an
++ * explicit `inMemoryThreshold` schedules a durable clock.
++ *
++ * @stability unstable
++ * @category services
++ * @since 4.0.0
++ */
++export const InMemoryThreshold = Context.Reference("effect/workflow/DurableClock/InMemoryThreshold", { defaultValue: () => Duration.seconds(60) });
+ /**
+  * Waits inside a workflow, using an in-memory activity for durations at or
+  * below the threshold and scheduling a durable clock for longer durations.
+@@ -39,26 +54,27 @@ const InstanceTag = /*#__PURE__*/Context.Service("effect/workflow/WorkflowEngine
+  * @category delays & timeouts
+  * @since 4.0.0
+  */
+-export const sleep = /*#__PURE__*/Effect.fnUntraced(function* (options) {
+-  const duration = Duration.fromInputUnsafe(options.duration);
+-  if (Duration.isZero(duration)) {
+-    return;
+-  }
+-  const inMemoryThreshold = options.inMemoryThreshold !== undefined ? Duration.fromInputUnsafe(options.inMemoryThreshold) : defaultInMemoryThreshold;
+-  if (Duration.isLessThanOrEqualTo(duration, inMemoryThreshold)) {
+-    return yield* Activity.make({
+-      name: `DurableClock/${options.name}`,
+-      execute: Effect.sleep(duration)
++export const sleep = Effect.fnUntraced(function* (options) {
++    const duration = Duration.fromInputUnsafe(options.duration);
++    if (Duration.isZero(duration)) {
++        return;
++    }
++    const inMemoryThreshold = options.inMemoryThreshold !== undefined
++        ? Duration.fromInputUnsafe(options.inMemoryThreshold)
++        : yield* InMemoryThreshold;
++    if (Duration.isLessThanOrEqualTo(duration, inMemoryThreshold)) {
++        return yield* Activity.make({
++            name: `DurableClock/${options.name}`,
++            execute: Effect.sleep(duration)
++        });
++    }
++    const engine = yield* EngineTag;
++    const instance = yield* InstanceTag;
++    const clock = make(options);
++    yield* engine.scheduleClock(instance.workflow, {
++        executionId: instance.executionId,
++        clock
+     });
+-  }
+-  const engine = yield* EngineTag;
+-  const instance = yield* InstanceTag;
+-  const clock = make(options);
+-  yield* engine.scheduleClock(instance.workflow, {
+-    executionId: instance.executionId,
+-    clock
+-  });
+-  return yield* DurableDeferred.await(clock.deferred);
++    return yield* DurableDeferred.await(clock.deferred);
+ });
+-const defaultInMemoryThreshold = /*#__PURE__*/Duration.seconds(60);
+ //# sourceMappingURL=DurableClock.js.map
+\ No newline at end of file
+diff --git a/src/cluster/Entity.ts b/src/cluster/Entity.ts
+index 2370430..0c6d68c 100644
+--- a/src/cluster/Entity.ts
++++ b/src/cluster/Entity.ts
+@@ -739,6 +739,11 @@ export const keepAlive: (
+   never,
+   Sharding | CurrentAddress
+ > = Effect.fnUntraced(function*(enabled: boolean) {
++  const ohandler = yield* Effect.serviceOption(KeepAliveHandler)
++  if (ohandler._tag === "Some") {
++    yield* ohandler.value(enabled)
++    return
++  }
+   const olatch = yield* Effect.serviceOption(KeepAliveLatch)
+   if (olatch._tag === "None") return
+   if (!enabled) {
+@@ -808,3 +813,22 @@ export const KeepAliveRpc = Rpc.make("Cluster/Entity/keepAlive")
+ export class KeepAliveLatch extends Context.Service<KeepAliveLatch, Latch.Latch>()(
+   "effect/cluster/Entity/KeepAliveLatch"
+ ) {}
++
++/**
++ * Service tag for the runtime hook behind {@link keepAlive}.
++ *
++ * **Details**
++ *
++ * Runtimes that support pinning an entity in memory provide this service; the
++ * handler receives `true` while at least one keep-alive holder exists and
++ * `false` once the last holder is released. When the service is absent,
++ * `keepAlive` is a no-op.
++ *
++ * @stability unstable
++ * @category services
++ * @since 4.0.0
++ */
++export class KeepAliveHandler extends Context.Service<
++  KeepAliveHandler,
++  (enabled: boolean) => Effect.Effect<void>
++>()("effect/cluster/Entity/KeepAliveHandler") {}
+diff --git a/src/http-api/HttpApiClient.ts b/src/http-api/HttpApiClient.ts
+index a0b60d5..ec0d90d 100644
+--- a/src/http-api/HttpApiClient.ts
++++ b/src/http-api/HttpApiClient.ts
+@@ -893,22 +893,22 @@ export const urlBuilder = <Api extends HttpApi.Constraint>(api: Api, options?: {
+ 
+ // ----------------------------------------------------------------------------
+ 
++const paramsRegExp = /(\/?):(\w+)(\?)?|\{([\w-]+)(:\*)?\}/g
+ const compilePath = (path: string, schema: Schema.Top | undefined) => {
+-  if (schema === undefined || !path.includes(":")) {
+-    return (_: any) => path
+-  }
++  if (schema === undefined || (!path.includes(":") && !path.includes("{"))) return (_: any) => path
+   const paramNames = HttpApiPath.getParamNames(schema)
+-  return (params: Record<string, string | undefined>) =>
+-    HttpApiPath.replaceParams(path, paramNames, (key, optional) => {
+-      const value = params[key]
+-      if (value === "." || value === "..") {
+-        // dot segments survive encoding and would be resolved by URL normalization
+-        throw new Error(`Invalid path parameter: ${key}`)
+-      }
+-      if (value !== undefined) return encodeURIComponent(value)
+-      if (optional) return undefined
++  return (params: Record<string, string | undefined>) => path.replace(paramsRegExp, (match, slash: string | undefined, colonKey: string | undefined, optional: string | undefined, templateKey: string | undefined, wildcard: string | undefined) => {
++    const key = templateKey ?? colonKey
++    if (key === undefined || (paramNames !== undefined && !paramNames.has(key))) return match
++    const value = params[key]
++    if (value === undefined) {
++      if (optional) return ""
+       throw new Error(`Missing path parameter: ${key}`)
+-    })
++    }
++    const segments = wildcard === undefined ? [value] : value.split("/")
++    if (segments.some((segment) => segment === "." || segment === "..")) throw new Error(`Invalid path parameter: ${key}`)
++    return `${slash ?? ""}${segments.map(encodeURIComponent).join("/")}`
++  })
+ }
+ 
+ function schemasToResponse(
+@@ -1440,6 +1440,7 @@ function getEncodePayloadSchemaFromBody(
+         )
+       },
+       encode(t, options) {
++        if (HttpApiSchema.isNoContent(ast)) return Effect.succeed(HttpBody.empty)
+         switch (encoding._tag) {
+           case "Multipart":
+             return Effect.fail(
+diff --git a/src/http-api/HttpApiEndpoint.ts b/src/http-api/HttpApiEndpoint.ts
+index f5b19b7..95e078c 100644
+--- a/src/http-api/HttpApiEndpoint.ts
++++ b/src/http-api/HttpApiEndpoint.ts
+@@ -658,12 +658,13 @@ export type ClientRequest<
+   & ([Params["Type"]] extends [never] ? {} : { readonly params: Params["Type"] })
+   & ([Query["Type"]] extends [never] ? {} : { readonly query: Query["Type"] })
+   & ([Headers["Type"]] extends [never] ? {} : { readonly headers: Headers["Type"] })
+-  & ([Payload["Type"]] extends [never] ? {}
+-    : Payload["Type"] extends infer P ?
+-      P extends Brand<HttpApiSchema.MultipartTypeId> | Brand<HttpApiSchema.MultipartStreamTypeId>
+-        ? { readonly payload: FormData }
+-      : { readonly payload: ClientPayload<Payload, PayloadR> }
+-    : { readonly payload: ClientPayload<Payload, PayloadR> })
++& ([Payload["Type"]] extends [never] ? {} : {
++  readonly payload: Payload["Type"] extends infer P
++    ? P extends Brand<HttpApiSchema.MultipartTypeId> | Brand<HttpApiSchema.MultipartStreamTypeId>
++      ? FormData
++      : Payload extends HttpApiSchema.StreamUint8Array | HttpApiSchema.StreamNdjson<any> ? ClientPayload<Payload, PayloadR> : P
++    : never
++})
+ ) extends infer Req ? keyof Req extends never ? (void | {
+       readonly responseMode?: ResponseMode
+       readonly sseOptions?: Sse.DecodeOptions | undefined
+diff --git a/src/http-api/internal/path.ts b/src/http-api/internal/path.ts
+index e1fdb18..735f593 100644
+--- a/src/http-api/internal/path.ts
++++ b/src/http-api/internal/path.ts
+@@ -19,9 +19,14 @@ export function getParamNames(schema: Schema.Constraint | undefined): ReadonlySe
+  * @internal
+  */
+ export function toRouterPath(path: string, schema: Schema.Constraint | undefined): string {
+-  // Preserve undeclared params for raw RouteContext consumers.
+-  if (schema === undefined || !path.includes(":")) return path
+-  const paramNames = getParamNames(schema)
++  if (!path.includes(":")) return path
++  // A schema of `undefined` declares zero path parameters (this differs from
++  // `getParamNames` returning `undefined`, which means "declared but its
++  // names cannot be determined" and is handled by the fallthrough below) - so
++  // every `:word` in the path is undeclared and must be escaped, matching an
++  // endpoint that has no params schema at all (e.g. an AIP collection-level
++  // custom method like `/resources:action`).
++  const paramNames = schema === undefined ? emptyParamNames : getParamNames(schema)
+   if (paramNames === undefined) return path
+ 
+   let out = ""
+diff --git a/src/http/HttpClient.ts b/src/http/HttpClient.ts
+index 10cb9a3..64f9829 100644
+--- a/src/http/HttpClient.ts
++++ b/src/http/HttpClient.ts
+@@ -2824,7 +2824,8 @@ export const layerMergedContext = <E, R>(
+ 
+ const responseRegistry = (() => {
+   if ("FinalizationRegistry" in globalThis && globalThis.FinalizationRegistry) {
+-    const registry = new FinalizationRegistry((controller: AbortController) => {
++    let registry: FinalizationRegistry<AbortController> | undefined
++    const getRegistry = () => registry ??= new FinalizationRegistry((controller: AbortController) => {
+       try {
+         controller.abort()
+       } catch {
+@@ -2833,10 +2834,10 @@ const responseRegistry = (() => {
+     })
+     return {
+       register(response: HttpClientResponse.HttpClientResponse, controller: AbortController) {
+-        registry.register(response, controller, response)
++        getRegistry().register(response, controller, response)
+       },
+       unregister(response: HttpClientResponse.HttpClientResponse) {
+-        registry.unregister(response)
++        registry?.unregister(response)
+       }
+     }
+   }
+diff --git a/src/internal/schema/toCodeDocument.ts b/src/internal/schema/toCodeDocument.ts
+index a5c4543..1996cbb 100644
+--- a/src/internal/schema/toCodeDocument.ts
++++ b/src/internal/schema/toCodeDocument.ts
+@@ -414,8 +414,14 @@ export function toCodeDocument(
+         return makeCode("Schema.Any", "any")
+       case "String":
+         return makeCode("Schema.String", "string")
+-      case "Number":
+-        return makeCode("Schema.Number", "number")
++      case "Number": {
++        // Preserve the finite domain already required by JSON numbers and integers.
++        const finite = representation.checks.some((check) =>
++          check.representation?.id === "effect/schema/isFinite" ||
++          check.representation?.id === "effect/schema/isInt"
++        )
++        return makeCode(finite ? "Schema.Finite" : "Schema.Number", "number")
++      }
+       case "Boolean":
+         return makeCode("Schema.Boolean", "boolean")
+       case "BigInt":
+diff --git a/src/workflow/DurableClock.ts b/src/workflow/DurableClock.ts
+index 1594a9f..a0cce2a 100644
+--- a/src/workflow/DurableClock.ts
++++ b/src/workflow/DurableClock.ts
+@@ -63,6 +63,25 @@ const InstanceTag = Context.Service<
+   "effect/workflow/WorkflowEngine/WorkflowInstance" satisfies typeof WorkflowInstance.key
+ )
+ 
++/**
++ * Context reference containing the default `inMemoryThreshold` used by
++ * {@link sleep} when the option is not passed.
++ *
++ * **Details**
++ *
++ * Workflow engines whose timers are always durable (for example the Cloudflare
++ * Durable Object engine) provide `Duration.zero` so every `sleep` without an
++ * explicit `inMemoryThreshold` schedules a durable clock.
++ *
++ * @stability unstable
++ * @category services
++ * @since 4.0.0
++ */
++export const InMemoryThreshold = Context.Reference<Duration.Duration>(
++  "effect/workflow/DurableClock/InMemoryThreshold",
++  { defaultValue: () => Duration.seconds(60) }
++)
++
+ /**
+  * Waits inside a workflow, using an in-memory activity for durations at or
+  * below the threshold and scheduling a durable clock for longer durations.
+@@ -99,7 +118,7 @@ export const sleep: (
+ 
+   const inMemoryThreshold = options.inMemoryThreshold !== undefined
+     ? Duration.fromInputUnsafe(options.inMemoryThreshold)
+-    : defaultInMemoryThreshold
++    : yield* InMemoryThreshold
+ 
+   if (Duration.isLessThanOrEqualTo(duration, inMemoryThreshold)) {
+     return yield* Activity.make({
+@@ -117,5 +136,3 @@ export const sleep: (
+   })
+   return yield* DurableDeferred.await(clock.deferred)
+ })
+-
+-const defaultInMemoryThreshold = Duration.seconds(60)
