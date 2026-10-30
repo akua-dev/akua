@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 import { Effect, FileSystem, Option, Path, Predicate } from "effect"
 import YAML from "yaml"
 import type { RenderSummary } from "./contract"

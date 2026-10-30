@@ -1,4 +1,4 @@
-import { Effect, Option, Schema } from "effect"
+import { Bytes, Effect, Option, Schema } from "effect"
 import { sha256 } from "./downloads.effect"
 
 /**
@@ -268,10 +268,10 @@ export const signKeyed = Effect.fn("signKeyed")(function*(
 
 /** DSSE pre-authentication encoding: `DSSEv1 <len> <type> <len> <payload>`. */
 const dssePae = (payloadType: string, payload: Uint8Array) =>
-  new Uint8Array(Bun.concatArrayBuffers([
+  Bytes.concat([
     encoder.encode(`DSSEv1 ${encoder.encode(payloadType).length} ${payloadType} ${payload.length} `),
     payload
-  ]))
+  ])
 
 export const DSSE_ENVELOPE_MEDIA_TYPE = "application/vnd.dsse.envelope.v1+json"
 

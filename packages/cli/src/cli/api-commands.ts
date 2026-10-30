@@ -23,7 +23,6 @@ import {
 	Console,
 	PublicInput,
 	PublicOutput,
-	PublicOutputFailure,
 	type SecureConfig
 } from '../runtime/services';
 import { respond } from './invocation';

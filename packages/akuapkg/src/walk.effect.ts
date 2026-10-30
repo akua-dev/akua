@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 import { Effect, FileSystem, Path, type PlatformError } from "effect"
 
 /**

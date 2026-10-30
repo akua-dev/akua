@@ -1,4 +1,4 @@
-import { Cause, Context, Effect, FileSystem, Layer, Path, Predicate, Schema, type Scope } from "effect"
+import { Cause, Context, Crypto, Effect, FileSystem, Layer, Path, Predicate, Schema, type Scope } from "effect"
 import YAML from "yaml"
 import { type ResolvedDependency, type ResolveOptions, resolvePackage } from "./dependencies.effect"
 import {
@@ -26,7 +26,7 @@ import {
   WorkerRequest,
   WorkerResponse
 } from "./schemas"
-import type { Snapshot } from "./snapshot.effect"
+import { type Snapshot, treeDigest } from "./snapshot.effect"
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
@@ -71,7 +71,7 @@ export interface PackageTree {
   readonly mounts: {
     readonly charts?: MountedTree
     readonly pkgs?: MountedTree
-    readonly kclModules: ReadonlyArray<{ readonly ident: string; readonly tree: MountedTree }>
+    readonly kclModules: ReadonlyArray<{ readonly ident: string; readonly digest: string; readonly tree: MountedTree }>
   }
 }
 
@@ -175,7 +175,7 @@ export class RenderWorker extends Context.Service<RenderWorker, {
       const host = yield* WasmHost
       const artifacts = yield* Artifacts
       const plugins = yield* KclPlugins
-      const platform = yield* Effect.context<FileSystem.FileSystem | Path.Path | OciRegistry | HelmRepository | GitRemote | UrlSource>()
+      const platform = yield* Effect.context<Crypto.Crypto | FileSystem.FileSystem | Path.Path | OciRegistry | HelmRepository | GitRemote | UrlSource>()
       const worker = yield* host.command("akua-render-worker", yield* fs.readFile(artifacts.worker))
       const stdlibFiles: Snapshot = new Map(
         yield* Effect.forEach(
@@ -195,7 +195,7 @@ export class RenderWorker extends Context.Service<RenderWorker, {
       ): Effect.Effect<
         PackageTree,
         ManifestInvalid | DependencyUnresolved | RenderError,
-        Scope.Scope | FileSystem.FileSystem | Path.Path | OciRegistry | HelmRepository | GitRemote | UrlSource
+        Scope.Scope | Crypto.Crypto | FileSystem.FileSystem | Path.Path | OciRegistry | HelmRepository | GitRemote | UrlSource
       > =>
         Effect.gen(function*() {
           const stack = [...ancestors, yield* fs.realPath(pkg.workspace)]
@@ -219,6 +219,28 @@ export class RenderWorker extends Context.Service<RenderWorker, {
                 )
             )
           }
+          const visibleModules = new Map<string, PackageTree["mounts"]["kclModules"][number]>()
+          for (const { files, ident } of crds === undefined ? modules : [...modules, { ident: "crds", files: crds }]) {
+            visibleModules.set(ident, {
+              ident,
+              digest: yield* treeDigest(files),
+              tree: yield* host.mount(files)
+            })
+          }
+          // Imported Package stubs retain the schemas' imports. Their KCL
+          // dependencies must be visible while the parent's schemas compile.
+          for (const child of packages.values()) {
+            if (child._tag !== "PackageTree") continue
+            for (const module of child.mounts.kclModules) {
+              const existing = visibleModules.get(module.ident)
+              if (existing !== undefined && existing.digest !== module.digest) {
+                return yield* new RenderError({
+                  message: `composed Packages require conflicting KCL module \`${module.ident}\` - use compatible dependency pins`
+                })
+              }
+              if (existing === undefined) visibleModules.set(module.ident, module)
+            }
+          }
           return {
             _tag: "PackageTree",
             filename: pkg.filename,
@@ -233,10 +255,7 @@ export class RenderWorker extends Context.Service<RenderWorker, {
             mounts: {
               ...(charts === undefined ? {} : { charts: yield* host.mount(charts) }),
               ...(stubs === undefined ? {} : { pkgs: yield* host.mount(stubs) }),
-              kclModules: yield* Effect.forEach(
-                crds === undefined ? modules : [...modules, { ident: "crds", files: crds }],
-                ({ files, ident }) => host.mount(files).pipe(Effect.map((tree) => ({ ident, tree })))
-              )
+              kclModules: Array.from(visibleModules.values())
             }
           } satisfies PackageTree
         }).pipe(

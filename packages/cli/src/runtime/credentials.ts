@@ -12,6 +12,12 @@ export function optionalEnv(name: string): Effect.Effect<Option.Option<string>> 
 	);
 }
 
+/** The device flow follows the selected API environment as well as API requests. */
+export const authenticationBaseUrl = optionalEnv('AKUA_AUTH_URL').pipe(
+	Effect.map(Option.getOrElse(() => 'https://akua.dev/api/auth')),
+	Effect.map((url) => url.replace(/\/+$/, ''))
+);
+
 /** One config for both credentials and workspace context; never fall back across profiles. */
 export const configPath: Effect.Effect<Option.Option<string>> = Effect.gen(function* () {
 	const explicit = yield* optionalEnv('AKUA_CONFIG_DIR');

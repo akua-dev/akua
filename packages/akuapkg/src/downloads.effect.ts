@@ -1,4 +1,5 @@
-import { Config, Effect, FileSystem, Option, Path, Stream } from "effect"
+/// <reference types="bun" />
+import { Bytes, Config, Effect, FileSystem, Option, Path, Stream } from "effect"
 import type { HttpClientResponse } from "effect/http"
 
 /**
@@ -58,7 +59,7 @@ export const readBounded = <E>(
         return total > limit ? Effect.fail(fail(`response from \`${url}\` exceeds the ${limit}-byte ceiling`)) : Effect.void
       })
     )
-    return new Uint8Array(Bun.concatArrayBuffers(chunks))
+    return Bytes.concat(chunks)
   })
 
 /**

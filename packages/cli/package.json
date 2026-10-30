@@ -3,6 +3,13 @@
 	"version": "0.13.3",
 	"private": false,
 	"type": "module",
+	"exports": {
+		"./cli": "./src/cli/main.ts",
+		"./contract": "./scripts/generate-contract.ts",
+		"./runtime/services": "./src/runtime/services.ts",
+		"./runtime/services-live": "./src/runtime/services-live.ts",
+		"./runtime/exit-codes": "./src/runtime/exit-codes.ts"
+	},
 	"description": "Akua Cloud CLI",
 	"bin": {
 		"akua": "./src/bin/akua.ts"

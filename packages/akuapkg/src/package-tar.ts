@@ -102,7 +102,7 @@ export const packWorkspace = Effect.fn("packWorkspace")(function*(
   for (const file of yield* collectFiles(crds, () => true).pipe(Effect.mapError(io(crds)))) {
     vendorFiles.push(yield* readFile(path.join(crds, file), `${CRDS_DIR}/${file}`))
   }
-  return gzip(tar([...files, ...vendorFiles.toSorted((a, b) => comparePaths(a.path, b.path))]))
+  return yield* gzip(tar([...files, ...vendorFiles.toSorted((a, b) => comparePaths(a.path, b.path))]))
 })
 
 /** What a packed Package holds, read in memory. */

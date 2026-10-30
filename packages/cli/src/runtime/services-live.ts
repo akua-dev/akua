@@ -171,7 +171,7 @@ export const SecureConfigLive = Layer.effect(
 			config: Record<string, unknown>
 		) {
 			const directory = path.dirname(configPath);
-			const temporary = path.join(directory, `.config.json.${yield* crypto.randomUUIDv4}.tmp`);
+			const temporary = path.join(directory, `.config.json.${yield* crypto.randomUUIDv4()}.tmp`);
 			yield* Effect.gen(function* () {
 				yield* fs.makeDirectory(directory, { recursive: true, mode: CONFIG_DIR_MODE });
 				yield* fs.chmod(directory, CONFIG_DIR_MODE);

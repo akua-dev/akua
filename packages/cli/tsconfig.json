@@ -1,12 +1,23 @@
 {
-  "compilerOptions": {
-    "target": "ES2023",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "strict": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "types": ["bun"]
-  },
-  "include": ["scripts/**/*.ts", "src/**/*.ts", "test/**/*.ts"]
+	"compilerOptions": {
+		"target": "ES2023",
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"strict": true,
+		"skipLibCheck": true,
+		"noEmit": true,
+		"types": ["bun"],
+		"plugins": [
+			{
+				"name": "@effect/language-service",
+				"allowedUnstableApis": [
+					"@effect/platform-bun",
+					"@effect/vitest",
+					"effect/cli",
+					"effect/http"
+				]
+			}
+		]
+	},
+	"include": ["scripts/**/*.ts", "src/**/*.ts", "test/**/*.ts"]
 }

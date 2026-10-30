@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 import { Context, Effect, FileSystem, Layer, Option, Path, Schema } from "effect"
 import { CliName } from "./cli-name"
 import { HttpClient, HttpClientRequest } from "effect/http"

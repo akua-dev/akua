@@ -295,6 +295,7 @@ const resolveDependency = Effect.fnUntraced(function*(request: DependencyRequest
     if (Option.isSome(generated)) {
       const { directory, files, provenance } = generated.value
       const locked = lockRecord(spec, { gitFallback: "vendored" })
+      const currentDigest = yield* treeDigest(files)
       // The directory is used only as akua.lock records it: from the pinned
       // source bytes, and with the file digest `lock` wrote (`crds_digest`),
       // so an edited or unlocked schema tree never renders.
@@ -302,7 +303,7 @@ const resolveDependency = Effect.fnUntraced(function*(request: DependencyRequest
         (spec._tag !== "Helm" && provenance.version !== locked.version) || provenance.crds !== selector ||
         !Option.exists(
           request.locked,
-          (entry) => entry.digest === provenance.digest && entry.crds_digest === treeDigest(files)
+          (entry) => entry.digest === provenance.digest && entry.crds_digest === currentDigest
         )
       if (stale) {
         return yield* new DependencyUnresolved({
@@ -582,7 +583,7 @@ const fromDirectory = Effect.fnUntraced(function*(name: string, directory: strin
     kind,
     root: prefix === "" ? directory : path.join(directory, prefix),
     files: inside,
-    digest: treeDigest(files)
+    digest: yield* treeDigest(files)
   } satisfies DependencyTree
 })
 

@@ -1,5 +1,5 @@
 import { Context, Effect, Layer, Schema } from "effect"
-import { gzip, tar } from "./archive"
+import { Gzip, gzip, tar } from "./archive"
 import { HelmEngine, KustomizeEngine } from "./engines.effect"
 import { PluginError } from "./errors"
 import type { EngineBudget } from "./host"
@@ -13,12 +13,13 @@ import { parseEngineManifests, sortKeys } from "./yaml-compat"
  * Deterministic tar.gz of a snapshot under `prefix/`: sorted entries,
  * fixed mtime/owner, so identical inputs give identical engine requests.
  */
-const tarGz = (files: Snapshot, prefix: string): Uint8Array =>
-  gzip(tar(
+const tarGz = Effect.fnUntraced(function*(files: Snapshot, prefix: string) {
+  return yield* gzip(tar(
     Array.from(files)
       .toSorted(([a], [b]) => comparePaths(a, b))
       .map(([name, data]) => ({ path: `${prefix}/${name}`, data, mode: 0o644 }))
   ))
+})
 
 const lastSegment = (path: string, fallback: string) => path.split("/").filter(Boolean).at(-1) ?? fallback
 
@@ -52,6 +53,7 @@ export class KclPlugins extends Context.Service<KclPlugins, {
     Effect.gen(function*() {
       const helm = yield* HelmEngine
       const kustomize = yield* KustomizeEngine
+      const compression = yield* Gzip
       const decodeHelmArgs = Schema.decodeUnknownEffect(Schema.fromJsonString(HelmTemplateArgs))
       const decodeKustomizeArgs = Schema.decodeUnknownEffect(Schema.fromJsonString(KustomizeBuildArgs))
       const decodePkgRenderArgs = Schema.decodeUnknownEffect(Schema.fromJsonString(PkgRenderArgs))
@@ -105,7 +107,7 @@ export class KclPlugins extends Context.Service<KclPlugins, {
         const [opts] = yield* decodeHelmArgs(argsJson)
         const chart = yield* chartFiles(opts.chart, scope)
         const manifests = yield* helm.render({
-          chartTarGz: tarGz(chart.files, chart.name),
+          chartTarGz: yield* tarGz(chart.files, chart.name),
           values: opts.values ?? {},
           release: { name: opts.release ?? "release", namespace: opts.namespace ?? "default" },
           budget: scope.budget
@@ -125,7 +127,7 @@ export class KclPlugins extends Context.Service<KclPlugins, {
         // Tar the overlay's parent so sibling bases (`../base`) resolve.
         const parent = overlay.prefix.split("/").slice(0, -1).join("/")
         const yaml = yield* kustomize.build({
-          treeTarGz: tarGz(subtree(scope.files, parent), "pkg"),
+          treeTarGz: yield* tarGz(subtree(scope.files, parent), "pkg"),
           entrypoint: `pkg/${lastSegment(overlay.prefix, "overlay")}`,
           budget: scope.budget
         })
@@ -146,6 +148,7 @@ export class KclPlugins extends Context.Service<KclPlugins, {
               return yield* new PluginError({ plugin: name, message: `no plugin registered under \`${name}\`` })
           }
         },
+        Effect.provideService(Gzip, compression),
         Effect.catchTags({
           SchemaError: (error) => Effect.fail(new PluginError({ plugin: "args", message: error.message })),
           EngineError: (error) =>

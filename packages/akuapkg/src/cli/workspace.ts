@@ -175,7 +175,8 @@ export const generateCrds = Effect.fnUntraced(function*(resolved: ReadonlyArray<
   return {
     trees,
     summaries,
-    digests: new Map(trees.map((tree) => [tree.dependency, generatedCrdsDigest(tree)]))
+    digests: new Map(yield* Effect.forEach(trees, (tree) =>
+      generatedCrdsDigest(tree).pipe(Effect.map((digest): readonly [string, string] => [tree.dependency, digest]))))
   } satisfies CrdGeneration
 })
 

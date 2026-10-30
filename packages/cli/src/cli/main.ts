@@ -10,7 +10,7 @@ import { packageCommandError } from '../runtime/errors';
 import { detectOutputMode, type OutputMode } from '../runtime/mode';
 import { renderSuccess } from '../runtime/render';
 import { Console, type CliServices, PackageCli } from '../runtime/services';
-import { authCommand } from './auth';
+import { authCommand, authCommands } from './auth';
 import { resourceCommands } from './api-commands';
 import { discoveryCommand } from './discovery';
 import { Invocation } from './invocation';
@@ -19,14 +19,20 @@ import { workspaceContextCommands } from './workspaces';
 
 /** The complete `akua` command tree, built from the generated API contract. */
 export function akuaCommand(api: ApiContract) {
+	type Extension =
+		| (typeof authCommands)[number]
+		| ReturnType<typeof workspaceContextCommands>['commands'][number];
 	return akua.pipe(
 		Command.withSubcommands([
-			authCommand,
+			...(api.resources.some((resource) => resource.name === 'auth') ? [] : [authCommand]),
 			discoveryCommand(api),
 			Command.make('pkg').pipe(
 				Command.withDescription('Build, render, publish, and inspect Packages (akua pkg --help)')
 			),
-			...resourceCommands(api, { workspaces: workspaceContextCommands(api) })
+			...resourceCommands<Extension>(api, {
+				auth: { commands: authCommands },
+				workspaces: workspaceContextCommands(api)
+			})
 		])
 	);
 }
@@ -39,7 +45,8 @@ export function akuaCommand(api: ApiContract) {
  */
 export const runAkua = Effect.fn('runAkua')(function* (
 	argv: readonly string[],
-	version: string
+	version: string,
+	api: ApiContract = contract
 ): Effect.fn.Return<number, never, CliServices> {
 	const console = yield* Console;
 	const detected = yield* Effect.result(
@@ -55,7 +62,7 @@ export const runAkua = Effect.fn('runAkua')(function* (
 	const exitCode = yield* Ref.make(0);
 	const helpPath = yield* Ref.make(Option.none<ReadonlyArray<string>>());
 	const captured = capturingConsole();
-	const outcome = yield* Command.runWith(akuaCommand(contract), {
+	const outcome = yield* Command.runWith(akuaCommand(api), {
 		version,
 		renderErrors: false
 	})(argv).pipe(

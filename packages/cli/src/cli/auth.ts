@@ -2,6 +2,7 @@ import { Clock, Duration, Effect, Option, Schema } from 'effect';
 import { Command, Flag } from 'effect/cli';
 
 import {
+	authenticationBaseUrl,
 	type CredentialSource,
 	optionalEnv,
 	requiredConfigPath,
@@ -18,7 +19,6 @@ import type { RenderEnvelope } from '../runtime/render';
 import { Browser, Console, Http, Process, SecureConfig } from '../runtime/services';
 import { respond } from './invocation';
 
-const AUTH_BASE_URL = 'https://akua.dev/api/auth';
 const DEVICE_CLIENT_ID = 'akua-cli';
 const DEVICE_SCOPE = 'platform';
 const DEVICE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code';
@@ -66,39 +66,41 @@ interface DeviceLoginResult {
 	observations: string[];
 }
 
+export const authCommands = [
+	Command.make(
+		'login',
+		{
+			noBrowser: Flag.Boolean('no-browser').pipe(
+				Flag.withDefault(false),
+				Flag.withDescription('Print the verification URL instead of opening a browser')
+			),
+			token: Flag.String('token').pipe(
+				Flag.optional,
+				Flag.withDescription('Save an existing API token instead (for automation)')
+			)
+		},
+		(options) => respond(login(options))
+	).pipe(
+		Command.withDescription('Sign in with your browser and save the access token'),
+		Command.withExamples([
+			{ command: 'akua auth login', description: 'Open the browser to approve this device' },
+			{
+				command: 'akua auth login --no-browser',
+				description: 'On a remote machine: open the printed URL elsewhere'
+			}
+		])
+	),
+	Command.make('status', {}, () => respond(status)).pipe(
+		Command.withDescription('Show which credential the CLI uses')
+	),
+	Command.make('logout', {}, () => respond(logout)).pipe(
+		Command.withDescription('Remove the saved credential')
+	)
+];
+
 export const authCommand = Command.make('auth').pipe(
 	Command.withDescription('Sign in, check, or remove the credential the CLI uses'),
-	Command.withSubcommands([
-		Command.make(
-			'login',
-			{
-				noBrowser: Flag.Boolean('no-browser').pipe(
-					Flag.withDefault(false),
-					Flag.withDescription('Print the verification URL instead of opening a browser')
-				),
-				token: Flag.String('token').pipe(
-					Flag.optional,
-					Flag.withDescription('Save an existing API token instead (for automation)')
-				)
-			},
-			(options) => respond(login(options))
-		).pipe(
-			Command.withDescription('Sign in with your browser and save the access token'),
-			Command.withExamples([
-				{ command: 'akua auth login', description: 'Open the browser to approve this device' },
-				{
-					command: 'akua auth login --no-browser',
-					description: 'On a remote machine: open the printed URL elsewhere'
-				}
-			])
-		),
-		Command.make('status', {}, () => respond(status)).pipe(
-			Command.withDescription('Show which credential the CLI uses')
-		),
-		Command.make('logout', {}, () => respond(logout)).pipe(
-			Command.withDescription('Remove the saved credential')
-		)
-	])
+	Command.withSubcommands(authCommands)
 );
 
 type AuthServices = Http | Browser | Process | Console | SecureConfig;
@@ -184,7 +186,8 @@ const runDeviceLogin = Effect.fnUntraced(function* (noBrowser: boolean) {
 });
 
 const completeDeviceLogin = Effect.fnUntraced(function* (noBrowser: boolean) {
-	const deviceCode = yield* requestDevice(`${AUTH_BASE_URL}/device/code`, {
+	const baseUrl = yield* authenticationBaseUrl;
+	const deviceCode = yield* requestDevice(`${baseUrl}/device/code`, {
 		client_id: DEVICE_CLIENT_ID,
 		scope: DEVICE_SCOPE
 	}).pipe(Effect.flatMap(parseDeviceCode));
@@ -218,7 +221,8 @@ const pollForDeviceToken = Effect.fnUntraced(function* (
 ): Effect.fn.Return<string, DeviceAuthorizationFailure | DeviceRequestFailure, Http> {
 	const now = yield* Clock.currentTimeMillis;
 	if (now >= deadline) return yield* new DeviceAuthorizationFailure({ reason: 'expired_token' });
-	const response = yield* requestDevice(`${AUTH_BASE_URL}/device/token`, {
+	const baseUrl = yield* authenticationBaseUrl;
+	const response = yield* requestDevice(`${baseUrl}/device/token`, {
 		grant_type: DEVICE_GRANT_TYPE,
 		device_code: deviceCode.device_code,
 		client_id: DEVICE_CLIENT_ID
@@ -256,7 +260,7 @@ function parseDeviceCode(response: DeviceResponse) {
 
 function parseDeviceToken(response: DeviceResponse) {
 	if (response.status < 200 || response.status >= 300) {
-		return Effect.succeed(undefined);
+		return Effect.void;
 	}
 	return Option.match(decodeDeviceToken(response.body), {
 		onNone: () => Effect.fail(new DeviceRequestFailure({})),

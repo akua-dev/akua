@@ -1,4 +1,4 @@
-import { Effect, Layer, Predicate } from "effect"
+import { Bytes, Context, Effect, Layer, Predicate } from "effect"
 import { ConsoleStdout, Directory, File, type Inode, OpenFile, PreopenDirectory, WASI } from "@bjorn3/browser_wasi_shim"
 import { EngineError, RenderError, WasmLoadError } from "./errors"
 import { type CommandRun, type MountedTree, type ReactorSpec, WasmHost } from "./host"
@@ -48,7 +48,15 @@ const exportOf = Effect.fnUntraced(function*<T>(
   return value
 })
 
-const concat = (chunks: ReadonlyArray<Uint8Array>) => new Uint8Array(Bun.concatArrayBuffers([...chunks]))
+/** Supply already-compiled modules in runtimes that prohibit compiling raw bytes. */
+export const JsWasmCompiler = Context.Reference<
+  (name: string, bytes: Uint8Array) => Effect.Effect<WebAssembly.Module, WasmLoadError>
+>("akuapkg/host/JsWasmCompiler", {
+  defaultValue: () => (name, bytes) => Effect.tryPromise({
+    try: () => WebAssembly.compile(new Uint8Array(bytes).buffer),
+    catch: (cause) => new WasmLoadError({ module: name, cause })
+  })
+})
 
 const readCString = (memory: WebAssembly.Memory, address: number): string | undefined => {
   if (address <= 0) return undefined
@@ -106,16 +114,13 @@ const instantiateReactor = Effect.fn("JsWasmHost.instantiateReactor")(function*(
  * from the environment (a browser's renderer process), and there are no
  * memory caps or fuel.
  */
-export const JsWasmHost = Layer.succeed(
+export const JsWasmHost = Layer.effect(
   WasmHost,
-  WasmHost.of({
+  Effect.map(JsWasmCompiler, (compile) => WasmHost.of({
     name: "js",
     mount: (files) => Effect.succeed({ _tag: "InMemory", files } satisfies MountedTree),
     reactor: Effect.fn("JsWasmHost.reactor")(function*(spec: ReactorSpec, wasm: Uint8Array) {
-      const module = yield* Effect.tryPromise({
-        try: () => WebAssembly.compile(wasm),
-        catch: (cause) => new WasmLoadError({ module: spec.name, cause })
-      })
+      const module = yield* compile(spec.name, wasm)
       // A failed call can leave the guest's runtime mid-operation: the next
       // call gets a fresh instance. There is no fuel here, so the render's
       // engine budget is not charged.
@@ -147,10 +152,7 @@ export const JsWasmHost = Layer.succeed(
     }),
 
     command: Effect.fn("JsWasmHost.command")(function*(name: string, wasm: Uint8Array) {
-      const module = yield* Effect.tryPromise({
-        try: () => WebAssembly.compile(wasm),
-        catch: (cause) => new WasmLoadError({ module: name, cause })
-      })
+      const module = yield* compile(name, wasm)
 
       const run = Effect.fn("JsWasmHost.run")(function*({ kclPlugin, preopens, stdin }: CommandRun) {
         const stdout: Array<Uint8Array> = []
@@ -178,9 +180,9 @@ export const JsWasmHost = Layer.succeed(
           return dest
         }
 
-        const instance = yield* Effect.tryPromise({
+        const instance = yield* Effect.try({
           try: () =>
-            WebAssembly.instantiate(module, {
+            new WebAssembly.Instance(module, {
               wasi_snapshot_preview1: wasi.wasiImport,
               env: { kcl_plugin_invoke_json_wasm: kclPluginInvokeJsonWasm }
             }),
@@ -196,10 +198,10 @@ export const JsWasmHost = Layer.succeed(
           try: () => wasi.start({ exports: { memory, _start: () => start() } }),
           catch: (cause) => new RenderError({ message: `${name} trapped: ${String(cause)}` })
         })
-        return { exitCode, stdout: concat(stdout), stderr: concat(stderr) }
+        return { exitCode, stdout: Bytes.concat(stdout), stderr: Bytes.concat(stderr) }
       })
 
       return { run }
     })
-  })
+  }))
 )

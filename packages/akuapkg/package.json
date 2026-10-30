@@ -13,12 +13,15 @@
 		"./cli": "./src/cli.ts",
 		"./contract": "./src/contract.ts",
 		"./process": "./src/process.ts",
-		"./render": "./src/render.effect.ts"
+		"./render": "./src/render.effect.ts",
+		"./snapshot-render": "./src/snapshot-render.effect.ts",
+		"./memory-fs": "./src/memory-fs.ts"
 	},
 	"engines": {
 		"bun": ">=1.4.4"
 	},
 	"dependencies": {
+		"@types/bun": "1.4.2",
 		"@akua-dev/wasm-sandbox": "0.1.0",
 		"@bjorn3/browser_wasi_shim": "0.4.2",
 		"@effect/platform-bun": "4.0.7",
@@ -26,8 +29,5 @@
 		"isomorphic-git": "1.41.4",
 		"smol-toml": "1.8.0",
 		"yaml": "2.9.0"
-	},
-	"devDependencies": {
-		"@types/bun": "1.4.2"
 	}
 }

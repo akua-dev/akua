@@ -1,4 +1,4 @@
-import { Effect, Option, Schema } from 'effect';
+import { Effect, Option } from 'effect';
 import { Command, Flag } from 'effect/cli';
 
 import type { ApiContract } from '../api/contract';
