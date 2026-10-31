@@ -27,20 +27,20 @@ bazel build //bazel:cli_release_archive     # all five archives and the release 
 bazel test //bazel:cli_unit_test //bazel:cli_typecheck_test
 ```
 
-## Prerequisites for the Bun scripts
+## Prerequisites for CLI development
 
 Bun 1.4+ is the only prerequisite. Run `bun install` at the repository root
 (it links `@akua-dev/sdk` from `packages/akuapkg/`), then in `packages/cli/`:
 
 ```sh
-bun run check
-bun run build:binary
+bazel test --config=dev_remote @akua//bazel:cli_typecheck_test
+bazel build --config=dev_remote @akua//bazel:akua_linux_x64
 ./dist/akua --version
 ./dist/akua --help
 ./dist/akua commands --limit 1
 ```
 
-`bun run check` typechecks, builds, and tests this standalone checkout.
+`bazel test --config=dev_remote @akua//bazel:cli_typecheck_test` typechecks, builds, and tests this standalone checkout.
 Public API changes also require the canonical cnap Bazel drift gate below.
 
 Canonical cnap Bazel releases embed the source host, its Wasmtime addon and
@@ -52,8 +52,8 @@ akuapkg version they come from.
 The command surface is generated from Akua's public OpenAPI document, of
 which `src/generated/openapi-public.json` is the committed copy. The Akua
 monorepo regenerates both files from its own document and drift-gates them;
-here, `bun run generate` rebuilds `src/generated/contract.gen.ts` from the
-copy and `bun run generate:check` (also a unit test) fails on drift. There is
+here, `bazel run //:write_cli_generated` rebuilds `src/generated/contract.gen.ts` from the
+copy and `bazel test --config=dev_remote //:sdk_generated_drift_test` (also a unit test) fails on drift. There is
 no weekly production fetch.
 
 After a public API change, the canonical monorepo's Bazel generator updates
@@ -72,10 +72,10 @@ the rest of the CLI's design contract.
 ## Testing
 
 ```sh
-bun run test
+bazel test --config=dev_remote @akua//bazel:cli_unit_test
 ```
 
-`bun run check` (build and tests) is the required gate before
+`bazel test --config=dev_remote @akua//bazel:cli_typecheck_test` (build and tests) is the required gate before
 release changes; see [docs/architecture.md](docs/architecture.md#testing-strategy)
 for what current test coverage includes.
 
@@ -104,9 +104,9 @@ The tap is a published source view. Its templates, formula rendering, audits,
 and install tests are owned by the same canonical Main pipeline; public tap
 workflows do not generate or publish changes.
 
-`bun run release:package` remains a local packaging tool.
-`bun run release:verify` re-verifies the files in `dist/release`.
-`CLI_RELEASE_ARCHIVE_SHA256=<expected-sha256> bun run release:smoke` verifies,
+`bazel build --config=dev_remote @akua//bazel:release_archives` remains a local packaging tool.
+`bazel test --config=dev_remote //packages/cli/delivery:cli_release_consumer_test` re-verifies the files in `dist/release`.
+`CLI_RELEASE_ARCHIVE_SHA256=<expected-sha256> bazel test --config=dev_remote //tools/akuapkg:cli_release_linux_x64_smoke_test` verifies,
 extracts, and executes the current host archive. Supply its digest from the
 verified manifest; a missing, malformed, or mismatched digest fails before
 extraction. `scripts/release.ts` defines the target IDs, archive names, checksums,

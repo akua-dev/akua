@@ -50,8 +50,9 @@ bazel test //bazel:cli_unit_test //bazel:cli_typecheck_test //bazel:host_typeche
 Every target cross-compiles on Linux x86_64; on macOS add `--config=remote`
 with a Remote Execution endpoint, or run Bazel in a Linux container.
 
-For quick iteration on the TypeScript, `bun install` at the repository root
-and use each workspace's scripts (`cd packages/cli && bun run check`).
+Install dependencies with `bun install` at the repository root. Verify CLI
+TypeScript with `bazel test //bazel:cli_typecheck_test` and its behavior with
+`bazel test //bazel:cli_unit_test`.
 
 Build the render worker with Bazel: KCL patches 0005 and 0006
 ([third_party/kcl/patches](third_party/kcl/patches/README.md)) are applied
