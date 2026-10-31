@@ -52,7 +52,6 @@ schema Input:
 
 input: Input = ctx.input()
 _values = input.values_private_ingress_gateway
-assert not input.cluster_id or _values.namespace == "platform-system", "Cluster gateways must use the platform-system namespace"
 _resource_requests = _values.resources.requests or {}
 _resource_limits = _values.resources.limits or {}
 _name = "private-ingress-gateway"

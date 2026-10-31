@@ -61,4 +61,5 @@ public key and route table and disables the Pod's ServiceAccount token.
 
 With `cluster_id`, the Package also creates `gw-<id>` after removing the
 `clu_` prefix. Both Services select the same gateway Pods and belong to the
-same Install. Cluster gateways require the `platform-system` namespace.
+same Install. Both Services use the configured namespace, which defaults to
+`platform-system`; local instances can select their own namespace.
