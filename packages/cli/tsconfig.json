@@ -10,12 +10,7 @@
 		"plugins": [
 			{
 				"name": "@effect/language-service",
-				"allowedUnstableApis": [
-					"@effect/platform-bun",
-					"@effect/vitest",
-					"effect/cli",
-					"effect/http"
-				]
+				"allowedUnstableApis": ["effect", "@effect"]
 			}
 		]
 	},
