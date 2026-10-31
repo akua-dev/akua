@@ -42,6 +42,10 @@
         "vitest": "5.0.2",
       },
     },
+    "packages/cloudflare-tunnel-connector": {
+      "name": "@akua-dev/cloudflare-tunnel-connector",
+      "version": "0.13.3",
+    },
     "packages/private-ingress-gateway": {
       "name": "@akua-dev/private-ingress-gateway",
       "version": "0.13.3",
@@ -68,6 +72,8 @@
   },
   "packages": {
     "@akua-dev/cli": ["@akua-dev/cli@workspace:packages/cli"],
+
+    "@akua-dev/cloudflare-tunnel-connector": ["@akua-dev/cloudflare-tunnel-connector@workspace:packages/cloudflare-tunnel-connector"],
 
     "@akua-dev/private-ingress-gateway": ["@akua-dev/private-ingress-gateway@workspace:packages/private-ingress-gateway"],
 

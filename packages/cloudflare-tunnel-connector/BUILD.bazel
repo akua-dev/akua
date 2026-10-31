@@ -1,0 +1,53 @@
+"""Public Cluster tunnel Package and its input schema."""
+
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+
+exports_files(
+    [
+        "BUILD.bazel",
+        "input.schema.json",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "deployment_srcs",
+    srcs = [
+        ".gitignore",
+        "akua.lock",
+        "akua.toml",
+        "input.schema.json",
+        "inputs.yaml",
+        "package.k",
+    ] + glob([".akua/vendor/**"]),
+    visibility = ["//visibility:public"],
+)
+
+js_library(
+    name = "deployment_data",
+    # KCL reads these assets through runfiles; they are not JavaScript imports.
+    copy_data_to_bin = False,
+    data = [":deployment_srcs"],
+    visibility = ["//visibility:public"],
+)
+
+js_library(
+    name = "workspace_verification_package_store_src",
+    srcs = [
+        "input.schema.json",
+        "package.json",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "workspace_verification_production_package_src",
+    actual = ":workspace_verification_package_store_src",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "typescript_only_policy_srcs",
+    srcs = [],
+    visibility = ["//visibility:public"],
+)

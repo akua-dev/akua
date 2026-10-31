@@ -45,6 +45,14 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+js_library(
+    name = "deployment_data",
+    # KCL reads these assets through runfiles; they are not JavaScript imports.
+    copy_data_to_bin = False,
+    data = [":deployment_srcs"],
+    visibility = ["//visibility:public"],
+)
+
 alias(
     name = "workspace_verification_production_package_src",
     actual = ":workspace_verification_package_store_src",
