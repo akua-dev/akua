@@ -640,6 +640,16 @@
               }
             }
           },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Missing, invalid or expired credential.",
             "content": {
@@ -666,6 +676,96 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
                 }
               }
             }
@@ -735,6 +835,16 @@
               }
             }
           },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Missing, invalid or expired credential.",
             "content": {
@@ -761,6 +871,96 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
                 }
               }
             }
@@ -847,6 +1047,16 @@
               }
             }
           },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Missing, invalid or expired credential.",
             "content": {
@@ -877,12 +1087,92 @@
               }
             }
           },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
           "422": {
             "description": "The request is well-formed but cannot be processed.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
                 }
               }
             }
@@ -1717,6 +2007,801 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
+    "/clusters": {
+      "post": {
+        "tags": [
+          "clusters"
+        ],
+        "operationId": "clusters.create",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Cluster creation accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create a Cluster",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 32
+                  },
+                  "region_id": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 54
+                  }
+                },
+                "required": [
+                  "name",
+                  "region_id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      },
+      "get": {
+        "tags": [
+          "clusters"
+        ],
+        "operationId": "clusters.list",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?:[Ee][+-]?\\d+)?$"
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ClusterResourceList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClusterResourceList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List Clusters",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/clusters/{id}": {
+      "get": {
+        "tags": [
+          "clusters"
+        ],
+        "operationId": "clusters.get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ClusterResource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClusterResource"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get a Cluster",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "delete": {
+        "tags": [
+          "clusters"
+        ],
+        "operationId": "clusters.delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Cluster deletion accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires Workspace owner access. Customer Installs, Machines and join registrations must be removed before deletion.",
+        "summary": "Delete a Cluster",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
     "/clusters/{id}/capabilities": {
       "get": {
         "tags": [
@@ -1799,6 +2884,621 @@
         },
         "description": "Gets the last observed Kubernetes capability snapshot for a cluster.",
         "summary": "Get cluster capabilities",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/machines/join_commands": {
+      "post": {
+        "tags": [
+          "machines"
+        ],
+        "operationId": "machines.issueJoinCommand",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Machine and short-lived Join command created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineJoinCommand"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates a Machine waiting for Node Ready. The command joins an existing Machine as an outgoing Worker-Node. The default token lifetime is 900 seconds.",
+        "summary": "Issue a Machine Join command",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cluster_id": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 54
+                  },
+                  "node_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 63,
+                    "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$"
+                  },
+                  "ttl_seconds": {
+                    "type": "integer",
+                    "minimum": 60,
+                    "maximum": 3600
+                  }
+                },
+                "required": [
+                  "cluster_id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/machines/{id}:revokeJoinCommand": {
+      "post": {
+        "tags": [
+          "machines"
+        ],
+        "operationId": "machines.revokeJoinCommand",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MachineResource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineResource"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "Waits for durable token revocation. Revocation prevents a future Join and does not uninstall an already joined Node.",
+        "summary": "Revoke a Machine Join command",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/machines/{id}": {
+      "get": {
+        "tags": [
+          "machines"
+        ],
+        "operationId": "machines.get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MachineResource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineResource"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get Machine status",
         "x-platform-visibility": "PUBLIC"
       }
     }
@@ -2458,6 +4158,106 @@
           "success",
           "errors",
           "result"
+        ],
+        "additionalProperties": false
+      },
+      "MachineResource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 53
+          },
+          "cluster_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "region_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "node_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "waiting-for-join",
+              "joined"
+            ]
+          },
+          "join_token_state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "active",
+              "revoking",
+              "revoked",
+              "expired"
+            ]
+          },
+          "join_token_expires_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "etag": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "cluster_id",
+          "region_id",
+          "node_name",
+          "state",
+          "join_token_state",
+          "join_token_expires_at",
+          "created_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "MachineJoinCommand": {
+        "type": "object",
+        "properties": {
+          "machine": {
+            "$ref": "#/components/schemas/MachineResource"
+          },
+          "command": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Sensitive Join command. Returned only by the issuing action."
+          },
+          "expires_at": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "machine",
+          "command",
+          "expires_at"
         ],
         "additionalProperties": false
       },
@@ -3273,913 +5073,6 @@
             "type": "null"
           }
         ]
-      },
-      "ClusterObservationSnapshot": {
-        "type": "object",
-        "properties": {
-          "cluster_id": {
-            "type": "string",
-            "minLength": 3,
-            "maxLength": 54
-          },
-          "workspace_id": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 53
-          },
-          "generation": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "revision": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "continuity": {
-            "type": "string",
-            "enum": [
-              "fresh",
-              "resumed",
-              "gap"
-            ]
-          },
-          "observed_at": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "string",
-                "enum": [
-                  "Infinity",
-                  "-Infinity",
-                  "NaN"
-                ]
-              }
-            ]
-          },
-          "nodes": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "minLength": 1
-                },
-                "uid": {
-                  "type": "string",
-                  "minLength": 1
-                },
-                "ready": {
-                  "type": "boolean"
-                },
-                "reason": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "name",
-                "uid",
-                "ready",
-                "reason"
-              ],
-              "additionalProperties": false
-            }
-          }
-        },
-        "required": [
-          "cluster_id",
-          "workspace_id",
-          "generation",
-          "revision",
-          "continuity",
-          "observed_at",
-          "nodes"
-        ],
-        "additionalProperties": false
-      },
-      "ClusterObservationLease": {
-        "type": "object",
-        "properties": {
-          "generation": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "expires_at": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "string",
-                "enum": [
-                  "Infinity",
-                  "-Infinity",
-                  "NaN"
-                ]
-              }
-            ]
-          }
-        },
-        "required": [
-          "generation",
-          "expires_at"
-        ],
-        "additionalProperties": false
-      },
-      "PackageVersionInputs": {
-        "type": "object"
-      },
-      "PackageWithVersionsList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PackageWithVersions"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "PackageWithVersions": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 54
-          },
-          "name": {
-            "type": "string"
-          },
-          "display_image_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uri",
-                "maxLength": 2048
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "versions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PackageVersionSummary"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "display_image_url",
-          "versions"
-        ],
-        "additionalProperties": false
-      },
-      "PackageVersionSummary": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 55
-          },
-          "semver": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 128,
-            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
-          }
-        },
-        "required": [
-          "id",
-          "semver"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardProductList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardProduct"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardProduct": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "examples": [
-              "prod_j572abc123def456"
-            ],
-            "minLength": 1,
-            "maxLength": 55
-          },
-          "html_url": {
-            "type": "string",
-            "description": "Absolute dashboard URL for this resource. OUTPUT_ONLY.",
-            "format": "uri",
-            "examples": [
-              "https://akua.dev/products/prod_j572abc123def456"
-            ],
-            "maxLength": 2048
-          },
-          "name": {
-            "type": "string",
-            "examples": [
-              "PostgreSQL Managed"
-            ]
-          },
-          "workspace_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 53
-          },
-          "package": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "examples": [
-                  "pkg_j572abc123def456"
-                ],
-                "minLength": 1,
-                "maxLength": 54
-              },
-              "name": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "description": "Name of the backing Package, or null when the Package no longer exists."
-              },
-              "version_pin": {
-                "$ref": "#/components/schemas/PackageVersionPin"
-              },
-              "default_version_id": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 55
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "description": "Concrete PackageVersion currently resolved by the version pin, or null when latest has no published version yet."
-              }
-            },
-            "required": [
-              "id",
-              "version_pin",
-              "default_version_id"
-            ],
-            "additionalProperties": false,
-            "description": "Reference to the Package backing this product. Fetch full details via `GET /v1/packages/{id}`."
-          },
-          "custom_image": {
-            "type": "string",
-            "description": "Custom display image URL — overrides the package logo on dashboard catalog rows"
-          },
-          "marketplace": {
-            "$ref": "#/components/schemas/ProductMarketplaceState"
-          },
-          "created_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "updated_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "etag": {
-            "type": "string"
-          },
-          "state": {
-            "type": "string",
-            "enum": [
-              "active",
-              "archived"
-            ],
-            "description": "Product lifecycle state."
-          },
-          "archived_at": {
-            "type": "integer",
-            "description": "When the product was archived, expressed as Unix seconds since epoch.",
-            "minimum": 0
-          },
-          "archive_reason": {
-            "type": "string",
-            "description": "Reason supplied by the seller when archiving."
-          },
-          "cluster_count": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "region_count": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "offer_count": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "install_count": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "id",
-          "html_url",
-          "name",
-          "workspace_id",
-          "package",
-          "marketplace",
-          "created_at",
-          "updated_at",
-          "etag",
-          "state",
-          "cluster_count",
-          "region_count",
-          "offer_count",
-          "install_count"
-        ],
-        "additionalProperties": false
-      },
-      "ProductMarketplaceState": {
-        "anyOf": [
-          {
-            "type": "object",
-            "properties": {
-              "published": {
-                "type": "boolean",
-                "description": "Whether the product is publicly visible on the marketplace"
-              }
-            },
-            "required": [
-              "published"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "description": "Marketplace listing configuration. When null the product is not listed."
-      },
-      "PackageVersionPin": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "latest"
-                ]
-              }
-            },
-            "required": [
-              "kind"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "pinned"
-                ]
-              },
-              "version": {
-                "type": "string",
-                "examples": [
-                  "1.2.3"
-                ],
-                "minLength": 1,
-                "maxLength": 128,
-                "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
-              }
-            },
-            "required": [
-              "kind",
-              "version"
-            ],
-            "additionalProperties": false
-          }
-        ]
-      },
-      "DashboardRegionList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardRegion"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardRegion": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 54
-          },
-          "name": {
-            "type": "string",
-            "examples": [
-              "us-east-1"
-            ]
-          },
-          "icon": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Icon URL"
-          },
-          "workspace_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 53
-          },
-          "created_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "updated_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds) of the last change",
-            "minimum": 0
-          },
-          "etag": {
-            "type": "string",
-            "description": "Opaque version token. Send it as `If-Match` when updating or deleting."
-          },
-          "cluster_pool_health": {
-            "$ref": "#/components/schemas/ClusterPoolHealth"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "icon",
-          "workspace_id",
-          "created_at",
-          "updated_at",
-          "etag",
-          "cluster_pool_health"
-        ],
-        "additionalProperties": false
-      },
-      "ClusterPoolHealth": {
-        "type": "object",
-        "properties": {
-          "region_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 54
-          },
-          "target_size": {
-            "type": "number"
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "available": {
-            "type": "number"
-          },
-          "provisioning": {
-            "type": "number"
-          },
-          "allocation_requests": {
-            "type": "number"
-          },
-          "allocated_last_24h": {
-            "type": "number"
-          },
-          "deleted_last_24h": {
-            "type": "number"
-          },
-          "failed_last_24h": {
-            "type": "number"
-          },
-          "last_refill_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "last_error": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "region_id",
-          "target_size",
-          "enabled",
-          "available",
-          "provisioning",
-          "allocation_requests",
-          "allocated_last_24h",
-          "deleted_last_24h",
-          "failed_last_24h"
-        ],
-        "additionalProperties": false
-      },
-      "RegionList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Region"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "Region": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 54
-          },
-          "name": {
-            "type": "string",
-            "examples": [
-              "us-east-1"
-            ]
-          },
-          "icon": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Icon URL"
-          },
-          "workspace_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 53
-          },
-          "created_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "updated_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds) of the last change",
-            "minimum": 0
-          },
-          "etag": {
-            "type": "string",
-            "description": "Opaque version token. Send it as `If-Match` when updating or deleting."
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "icon",
-          "workspace_id",
-          "created_at",
-          "updated_at",
-          "etag"
-        ],
-        "additionalProperties": false
-      },
-      "WorkspaceList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Workspace"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "Workspace": {
-        "type": "object",
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 54
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Owning organization ID, or null for legacy Workspaces without an organization."
-          },
-          "id": {
-            "type": "string",
-            "description": "Workspace ID",
-            "examples": [
-              "ws_j572abc123def456"
-            ],
-            "minLength": 1,
-            "maxLength": 53
-          },
-          "name": {
-            "type": "string",
-            "description": "Display name",
-            "examples": [
-              "Acme Research"
-            ]
-          },
-          "slug": {
-            "type": "string",
-            "description": "URL-safe workspace slug"
-          },
-          "plan": {
-            "type": "object",
-            "properties": {
-              "tier": {
-                "type": "string"
-              },
-              "billed_by": {
-                "type": "string",
-                "enum": [
-                  "platform",
-                  "seller"
-                ]
-              }
-            },
-            "required": [
-              "tier",
-              "billed_by"
-            ],
-            "additionalProperties": false
-          },
-          "workspace_class": {
-            "type": "string",
-            "enum": [
-              "standard",
-              "platform",
-              "sandbox"
-            ]
-          },
-          "lifecycle": {
-            "$ref": "#/components/schemas/WorkspaceLifecycle"
-          },
-          "created_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "updated_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "etag": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "organization_id",
-          "id",
-          "name",
-          "slug",
-          "plan",
-          "workspace_class",
-          "lifecycle",
-          "created_at",
-          "updated_at",
-          "etag"
-        ],
-        "additionalProperties": false
-      },
-      "WorkspaceLifecycle": {
-        "type": "object",
-        "properties": {
-          "state": {
-            "type": "string",
-            "enum": [
-              "ACTIVE",
-              "DELETING",
-              "PURGED"
-            ],
-            "description": "Lifecycle state of the workspace. `DELETING` means deletion was accepted and the workspace is retained until `purge_at`."
-          },
-          "deletion_phase": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "ACCEPTED",
-                  "RUNNING",
-                  "SUCCEEDED",
-                  "FAILED"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Progress of the accepted deletion request, or null when no deletion has been recorded."
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "When deletion was accepted, or null."
-          },
-          "purge_at": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Scheduled retention expiry that #955 owns as the purge executor, or null."
-          }
-        },
-        "required": [
-          "state",
-          "deletion_phase",
-          "deleted_at",
-          "purge_at"
-        ],
-        "additionalProperties": false
-      },
-      "WorkspaceFeatureFlags": {
-        "type": "object",
-        "properties": {
-          "workspace_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "flags": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "boolean"
-            }
-          }
-        },
-        "required": [
-          "workspace_id",
-          "flags"
-        ],
-        "additionalProperties": false
       },
       "Operation": {
         "type": "object",
@@ -7056,6 +7949,976 @@
           }
         ]
       },
+      "ClusterResourceList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClusterResource"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterResource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 53
+          },
+          "region_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "provisioning",
+              "active",
+              "failed",
+              "deleting"
+            ]
+          },
+          "reconciling": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "etag": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "region_id",
+          "name",
+          "state",
+          "reconciling",
+          "created_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterObservationSnapshot": {
+        "type": "object",
+        "properties": {
+          "cluster_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 53
+          },
+          "generation": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "continuity": {
+            "type": "string",
+            "enum": [
+              "fresh",
+              "resumed",
+              "gap"
+            ]
+          },
+          "observed_at": {
+            "type": "number"
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uid": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "ready": {
+                  "type": "boolean"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "uid",
+                "ready",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "cluster_id",
+          "workspace_id",
+          "generation",
+          "revision",
+          "continuity",
+          "observed_at",
+          "nodes"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterObservationLease": {
+        "type": "object",
+        "properties": {
+          "generation": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "expires_at": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "generation",
+          "expires_at"
+        ],
+        "additionalProperties": false
+      },
+      "PackageVersionInputs": {
+        "type": "object"
+      },
+      "PackageWithVersionsList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageWithVersions"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "PackageWithVersions": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 54
+          },
+          "name": {
+            "type": "string"
+          },
+          "display_image_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageVersionSummary"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "display_image_url",
+          "versions"
+        ],
+        "additionalProperties": false
+      },
+      "PackageVersionSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "semver": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+          }
+        },
+        "required": [
+          "id",
+          "semver"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardProductList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardProduct"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardProduct": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "examples": [
+              "prod_j572abc123def456"
+            ],
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "html_url": {
+            "type": "string",
+            "description": "Absolute dashboard URL for this resource. OUTPUT_ONLY.",
+            "format": "uri",
+            "examples": [
+              "https://akua.dev/products/prod_j572abc123def456"
+            ],
+            "maxLength": 2048
+          },
+          "name": {
+            "type": "string",
+            "examples": [
+              "PostgreSQL Managed"
+            ]
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "package": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "examples": [
+                  "pkg_j572abc123def456"
+                ],
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Name of the backing Package, or null when the Package no longer exists."
+              },
+              "version_pin": {
+                "$ref": "#/components/schemas/PackageVersionPin"
+              },
+              "default_version_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 55
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Concrete PackageVersion currently resolved by the version pin, or null when latest has no published version yet."
+              }
+            },
+            "required": [
+              "id",
+              "version_pin",
+              "default_version_id"
+            ],
+            "additionalProperties": false,
+            "description": "Reference to the Package backing this product. Fetch full details via `GET /v1/packages/{id}`."
+          },
+          "custom_image": {
+            "type": "string",
+            "description": "Custom display image URL — overrides the package logo on dashboard catalog rows"
+          },
+          "marketplace": {
+            "$ref": "#/components/schemas/ProductMarketplaceState"
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "etag": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ],
+            "description": "Product lifecycle state."
+          },
+          "archived_at": {
+            "type": "integer",
+            "description": "When the product was archived, expressed as Unix seconds since epoch.",
+            "minimum": 0
+          },
+          "archive_reason": {
+            "type": "string",
+            "description": "Reason supplied by the seller when archiving."
+          },
+          "cluster_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "region_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offer_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "install_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "html_url",
+          "name",
+          "workspace_id",
+          "package",
+          "marketplace",
+          "created_at",
+          "updated_at",
+          "etag",
+          "state",
+          "cluster_count",
+          "region_count",
+          "offer_count",
+          "install_count"
+        ],
+        "additionalProperties": false
+      },
+      "ProductMarketplaceState": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "published": {
+                "type": "boolean",
+                "description": "Whether the product is publicly visible on the marketplace"
+              }
+            },
+            "required": [
+              "published"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Marketplace listing configuration. When null the product is not listed."
+      },
+      "PackageVersionPin": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "latest"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "pinned"
+                ]
+              },
+              "version": {
+                "type": "string",
+                "examples": [
+                  "1.2.3"
+                ],
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+              }
+            },
+            "required": [
+              "kind",
+              "version"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "DashboardRegionList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardRegion"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardRegion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 54
+          },
+          "name": {
+            "type": "string",
+            "examples": [
+              "us-east-1"
+            ]
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Icon URL"
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds) of the last change",
+            "minimum": 0
+          },
+          "etag": {
+            "type": "string",
+            "description": "Opaque version token. Send it as `If-Match` when updating or deleting."
+          },
+          "cluster_pool_health": {
+            "$ref": "#/components/schemas/ClusterPoolHealth"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "icon",
+          "workspace_id",
+          "created_at",
+          "updated_at",
+          "etag",
+          "cluster_pool_health"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterPoolHealth": {
+        "type": "object",
+        "properties": {
+          "region_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 54
+          },
+          "target_size": {
+            "type": "number"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "available": {
+            "type": "number"
+          },
+          "provisioning": {
+            "type": "number"
+          },
+          "allocation_requests": {
+            "type": "number"
+          },
+          "allocated_last_24h": {
+            "type": "number"
+          },
+          "deleted_last_24h": {
+            "type": "number"
+          },
+          "failed_last_24h": {
+            "type": "number"
+          },
+          "last_refill_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "last_error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "region_id",
+          "target_size",
+          "enabled",
+          "available",
+          "provisioning",
+          "allocation_requests",
+          "allocated_last_24h",
+          "deleted_last_24h",
+          "failed_last_24h"
+        ],
+        "additionalProperties": false
+      },
+      "RegionList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Region"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "Region": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 54
+          },
+          "name": {
+            "type": "string",
+            "examples": [
+              "us-east-1"
+            ]
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Icon URL"
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds) of the last change",
+            "minimum": 0
+          },
+          "etag": {
+            "type": "string",
+            "description": "Opaque version token. Send it as `If-Match` when updating or deleting."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "icon",
+          "workspace_id",
+          "created_at",
+          "updated_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "WorkspaceList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Workspace"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "Workspace": {
+        "type": "object",
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Owning organization ID, or null for legacy Workspaces without an organization."
+          },
+          "id": {
+            "type": "string",
+            "description": "Workspace ID",
+            "examples": [
+              "ws_j572abc123def456"
+            ],
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name",
+            "examples": [
+              "Acme Research"
+            ]
+          },
+          "slug": {
+            "type": "string",
+            "description": "URL-safe workspace slug"
+          },
+          "plan": {
+            "type": "object",
+            "properties": {
+              "tier": {
+                "type": "string"
+              },
+              "billed_by": {
+                "type": "string",
+                "enum": [
+                  "platform",
+                  "seller"
+                ]
+              }
+            },
+            "required": [
+              "tier",
+              "billed_by"
+            ],
+            "additionalProperties": false
+          },
+          "workspace_class": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "platform",
+              "sandbox"
+            ]
+          },
+          "lifecycle": {
+            "$ref": "#/components/schemas/WorkspaceLifecycle"
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "etag": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "organization_id",
+          "id",
+          "name",
+          "slug",
+          "plan",
+          "workspace_class",
+          "lifecycle",
+          "created_at",
+          "updated_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "WorkspaceLifecycle": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "DELETING",
+              "PURGED"
+            ],
+            "description": "Lifecycle state of the workspace. `DELETING` means deletion was accepted and the workspace is retained until `purge_at`."
+          },
+          "deletion_phase": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ACCEPTED",
+                  "RUNNING",
+                  "SUCCEEDED",
+                  "FAILED"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Progress of the accepted deletion request, or null when no deletion has been recorded."
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When deletion was accepted, or null."
+          },
+          "purge_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Scheduled retention expiry that #955 owns as the purge executor, or null."
+          }
+        },
+        "required": [
+          "state",
+          "deletion_phase",
+          "deleted_at",
+          "purge_at"
+        ],
+        "additionalProperties": false
+      },
+      "WorkspaceFeatureFlags": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "flags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          }
+        },
+        "required": [
+          "workspace_id",
+          "flags"
+        ],
+        "additionalProperties": false
+      },
       "DashboardInstallDetail": {
         "type": "object",
         "properties": {
@@ -8394,8 +10257,10 @@
       "x-platform-visibility": "INTERNAL"
     },
     {
-      "name": "clusters",
-      "x-platform-visibility": "INTERNAL"
+      "name": "clusters"
+    },
+    {
+      "name": "machines"
     },
     {
       "name": "routes",

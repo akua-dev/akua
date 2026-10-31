@@ -16,6 +16,10 @@ export const contract: ApiContract = {
 			"title": "installs"
 		},
 		{
+			"name": "machines",
+			"title": "machines"
+		},
+		{
 			"name": "operations",
 			"title": "operations"
 		},
@@ -179,6 +183,14 @@ export const contract: ApiContract = {
 				"description": "Pagination cursor from a previous response's `next_cursor`."
 			}
 		},
+		"query:cursor:2": {
+			"name": "cursor",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "string"
+			}
+		},
 		"query:limit": {
 			"name": "limit",
 			"in": "query",
@@ -189,6 +201,15 @@ export const contract: ApiContract = {
 				"default": 50,
 				"minimum": 1,
 				"maximum": 100
+			}
+		},
+		"query:limit:2": {
+			"name": "limit",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "string",
+				"pattern": "^[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?:[Ee][+-]?\\d+)?$"
 			}
 		},
 		"query:organization": {
@@ -251,6 +272,64 @@ export const contract: ApiContract = {
 			]
 		},
 		{
+			"id": "clusters.create",
+			"method": "POST",
+			"path": "/clusters",
+			"summary": "Create a Cluster",
+			"auth": true,
+			"parameters": [
+				"header:akua-context",
+				"header:idempotency-key"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string",
+							"minLength": 2,
+							"maxLength": 32
+						},
+						"region_id": {
+							"type": "string",
+							"minLength": 3,
+							"maxLength": 54
+						}
+					},
+					"required": [
+						"name",
+						"region_id"
+					],
+					"additionalProperties": false
+				}
+			}
+		},
+		{
+			"id": "clusters.delete",
+			"method": "DELETE",
+			"path": "/clusters/{id}",
+			"summary": "Delete a Cluster",
+			"auth": true,
+			"parameters": [
+				"path:id:4",
+				"header:akua-context",
+				"header:if-match",
+				"header:idempotency-key"
+			]
+		},
+		{
+			"id": "clusters.get",
+			"method": "GET",
+			"path": "/clusters/{id}",
+			"summary": "Get a Cluster",
+			"auth": true,
+			"parameters": [
+				"path:id:4",
+				"header:akua-context"
+			]
+		},
+		{
 			"id": "clusters.getCapabilities",
 			"method": "GET",
 			"path": "/clusters/{id}/capabilities",
@@ -259,6 +338,18 @@ export const contract: ApiContract = {
 			"parameters": [
 				"path:id:5",
 				"header:akua-context"
+			]
+		},
+		{
+			"id": "clusters.list",
+			"method": "GET",
+			"path": "/clusters",
+			"summary": "List Clusters",
+			"auth": true,
+			"parameters": [
+				"header:akua-context",
+				"query:cursor:2",
+				"query:limit:2"
 			]
 		},
 		{
@@ -325,6 +416,69 @@ export const contract: ApiContract = {
 				"header:akua-context",
 				"query:cursor",
 				"query:limit"
+			]
+		},
+		{
+			"id": "machines.get",
+			"method": "GET",
+			"path": "/machines/{id}",
+			"summary": "Get Machine status",
+			"auth": true,
+			"parameters": [
+				"path:id:4",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "machines.issueJoinCommand",
+			"method": "POST",
+			"path": "/machines/join_commands",
+			"summary": "Issue a Machine Join command",
+			"auth": true,
+			"parameters": [
+				"header:akua-context",
+				"header:idempotency-key"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"type": "object",
+					"properties": {
+						"cluster_id": {
+							"type": "string",
+							"minLength": 3,
+							"maxLength": 54
+						},
+						"node_name": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 63,
+							"pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$"
+						},
+						"ttl_seconds": {
+							"type": "integer",
+							"minimum": 60,
+							"maximum": 3600
+						}
+					},
+					"required": [
+						"cluster_id"
+					],
+					"additionalProperties": false
+				}
+			}
+		},
+		{
+			"id": "machines.revokeJoinCommand",
+			"method": "POST",
+			"path": "/machines/{id}:revokeJoinCommand",
+			"summary": "Revoke a Machine Join command",
+			"auth": true,
+			"parameters": [
+				"path:id:4",
+				"header:akua-context",
+				"header:if-match",
+				"header:idempotency-key"
 			]
 		},
 		{
