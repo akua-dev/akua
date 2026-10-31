@@ -4,6 +4,10 @@ import type { ApiContract } from '../api/contract';
 export const contract: ApiContract = {
 	"resources": [
 		{
+			"name": "cluster-observation",
+			"title": "clusterObservation"
+		},
+		{
 			"name": "clusters",
 			"title": "clusters"
 		},
@@ -38,6 +42,16 @@ export const contract: ApiContract = {
 				"minLength": 1,
 				"maxLength": 53,
 				"description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace."
+			}
+		},
+		"header:akua-context:2": {
+			"name": "akua-context",
+			"in": "header",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"minLength": 2,
+				"maxLength": 53
 			}
 		},
 		"header:idempotency-key": {
@@ -110,6 +124,16 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"type": "string",
+				"minLength": 3,
+				"maxLength": 54
+			}
+		},
+		"path:id:5": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
 				"description": "Cluster ID.",
 				"minLength": 1,
 				"maxLength": 54
@@ -134,6 +158,16 @@ export const contract: ApiContract = {
 				"type": "string",
 				"minLength": 1,
 				"maxLength": 55
+			}
+		},
+		"path:viewer_id": {
+			"name": "viewer_id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 128
 			}
 		},
 		"query:cursor": {
@@ -182,13 +216,48 @@ export const contract: ApiContract = {
 	},
 	"operations": [
 		{
+			"id": "clusterObservation.closeViewer",
+			"method": "DELETE",
+			"path": "/clusters/{id}/observation/viewers/{viewer_id}",
+			"summary": "Close a Cluster viewer",
+			"auth": true,
+			"parameters": [
+				"path:id:4",
+				"path:viewer_id",
+				"header:akua-context:2"
+			]
+		},
+		{
+			"id": "clusterObservation.getSnapshot",
+			"method": "GET",
+			"path": "/clusters/{id}/observation",
+			"summary": "Get the observed Cluster Nodes",
+			"auth": true,
+			"parameters": [
+				"path:id:4",
+				"header:akua-context:2"
+			]
+		},
+		{
+			"id": "clusterObservation.renewViewer",
+			"method": "PUT",
+			"path": "/clusters/{id}/observation/viewers/{viewer_id}",
+			"summary": "Renew a Cluster viewer",
+			"auth": true,
+			"parameters": [
+				"path:id:4",
+				"path:viewer_id",
+				"header:akua-context:2"
+			]
+		},
+		{
 			"id": "clusters.getCapabilities",
 			"method": "GET",
 			"path": "/clusters/{id}/capabilities",
 			"summary": "Get cluster capabilities",
 			"auth": true,
 			"parameters": [
-				"path:id:4",
+				"path:id:5",
 				"header:akua-context"
 			]
 		},
