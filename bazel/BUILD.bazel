@@ -493,6 +493,7 @@ filegroup(
         "//bazel/{}:starlark_sources".format(package)
         for package in [
             "bun",
+            "gateway",
             "npm",
             "platforms",
             "rust",

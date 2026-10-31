@@ -93,6 +93,7 @@ def stage_workspace_commands(sources, node_modules, workspace_links, workspace):
 
 def _bun_compile_impl(ctx):
     out = ctx.actions.declare_file(ctx.attr.out)
+    scan = ctx.actions.declare_file(ctx.label.name + "_path_scan.json")
     workspace = "_ws_" + ctx.label.name
     bun = ctx.toolchains[BUN_TOOLCHAIN_TYPE].executable
     sources = ctx.files.srcs
@@ -108,7 +109,7 @@ def _bun_compile_impl(ctx):
         # __dirname define replaces the absolute build path Bun would otherwise
         # embed for CommonJS modules: both describe where the action ran, not
         # its inputs, and would make the executable differ per machine.
-        "\"$ROOT/{bun}\" --no-install build --compile --minify-whitespace --define '__dirname=\"/$bunfs/root\"' --target={target} --compile-executable-path=\"$ROOT/{runtime}\" --outfile=\"$ROOT/{out}\" ./{entry}".format(
+        "\"$ROOT/{bun}\" --no-install build --compile --minify-whitespace --define '__dirname=\"/$bunfs/root\"' --define '__filename=import.meta.path' --target={target} --compile-executable-path=\"$ROOT/{runtime}\" --outfile=\"$ROOT/{out}\" ./{entry}".format(
             bun = bun.path,
             target = ctx.attr.target,
             runtime = ctx.file.target_runtime.path,
@@ -116,24 +117,27 @@ def _bun_compile_impl(ctx):
             entry = _repository_path(ctx.file.entry),
         ),
         "cd \"$ROOT\"",
-        # The artifact must name neither this action's root nor its staging directory.
-        "if grep -aqF -- \"$ROOT\" \"{out}\" || grep -aqF -- \"{workspace}/\" \"{out}\"; then echo \"{label}: the executable embeds a build path\" >&2; exit 1; fi".format(
-            out = out.path,
-            workspace = workspace,
-            label = ctx.label,
-        ),
+        # Normalize UTF-16LE bundles as well as ordinary UTF-8. Check the
+        # action root and any real dependency root, including local sandboxes.
+        "LC_ALL=C tr -d '\\000' < \"{out}\" > \"{scan}.text\"".format(out = out.path, scan = scan.path),
+        "scan_embedded=$(grep -acF -- \"$ROOT\" \"{scan}.text\" || true)".format(scan = scan.path),
+        "for candidate in $(grep -aoE '/[A-Za-z0-9._+@/-]*/bazel-out/[A-Za-z0-9._+@/-]*' \"{scan}.text\" | sort -u); do candidate_root=\"${{candidate%%/bazel-out/*}}\"; if [ -d \"$candidate_root/bazel-out\" ]; then scan_embedded=$((scan_embedded + 1)); fi; done".format(scan = scan.path),
+        "scan_staging=$(grep -acF -- '{workspace}/' \"{scan}.text\" || true)".format(workspace = workspace, scan = scan.path),
+        "rm -f \"{scan}.text\"".format(scan = scan.path),
+        "printf '{{\"embedded_execution_root\": %s, \"staging_directory\": %s}}\\n' \"$scan_embedded\" \"$scan_staging\" > \"{scan}\"".format(scan = scan.path),
+        "if [ \"$scan_embedded\" != 0 ] || [ \"$scan_staging\" != 0 ]; then echo \"{label}: the executable embeds a build path\" >&2; exit 1; fi".format(label = ctx.label),
         "rm -rf \"$ROOT/{}\"".format(workspace),
     ])
     ctx.actions.run_shell(
         inputs = depset(sources + node_modules + [ctx.file.target_runtime]),
-        outputs = [out],
+        outputs = [out, scan],
         tools = [bun],
         command = script,
         mnemonic = "BunCompile",
         progress_message = "Compiling %{label} for " + ctx.attr.target,
         execution_requirements = {"block-network": "1"},
     )
-    return [DefaultInfo(files = depset([out]), executable = out)]
+    return [DefaultInfo(files = depset([out]), executable = out), OutputGroupInfo(hermetic_path_scan = depset([scan]))]
 
 bun_compile = rule(
     doc = "Compiles a TypeScript entry point and its imports into a standalone executable for one target.",

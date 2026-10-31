@@ -1,0 +1,96 @@
+"""Gateway sources, shared wire contracts and the in-cluster Package."""
+
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+load("@bazel_lib//lib:copy_to_bin.bzl", "copy_to_bin")
+
+exports_files([
+    "BUILD.bazel",
+    "package.json",
+    "tsconfig.json",
+    "oci-config.json",
+    "src/index.ts",
+])
+
+filegroup(
+    name = "runtime_srcs",
+    srcs = glob(
+        ["src/**/*.ts"],
+        exclude = ["src/**/*.test.ts"],
+    ),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "test_srcs",
+    srcs = glob(["src/**/*.ts"]) + ["tsconfig.json"],
+    visibility = ["//visibility:public"],
+)
+
+js_library(
+    name = "workspace_verification_package_store_src",
+    srcs = [
+        "deploy/input.schema.json",
+        "package.json",
+        ":runtime_srcs",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "deployment_srcs",
+    srcs = glob([
+        "deploy/**",
+        "deploy/.akua/vendor/**",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "workspace_verification_production_package_src",
+    actual = ":workspace_verification_package_store_src",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "typescript_only_policy_srcs",
+    srcs = [
+        ":runtime_srcs",
+        ":test_srcs",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "authored_ts",
+    srcs = glob(["src/**/*.ts"]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "format_srcs",
+    srcs = [
+        "README.md",
+        "oci-config.json",
+        "package.json",
+        "tsconfig.json",
+        ":authored_ts",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+exports_files(
+    glob(["src/**/*.ts"]),
+    visibility = ["//visibility:public"],
+)
+
+copy_to_bin(
+    name = "tsconfig_bin",
+    srcs = ["tsconfig.json"],
+    visibility = ["//visibility:public"],
+)
+
+copy_to_bin(
+    name = "format_srcs_bin",
+    srcs = [":format_srcs"],
+    visibility = ["//visibility:public"],
+)

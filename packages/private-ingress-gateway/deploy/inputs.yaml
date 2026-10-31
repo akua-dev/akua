@@ -1,0 +1,3 @@
+values_private_ingress_gateway:
+  image:
+    repository: registry.example/private-ingress-gateway
