@@ -58,3 +58,7 @@ From this package directory, render it with
 Set `values_private_ingress_gateway.image.repository` to the image you built or
 received; the example registry is a placeholder. The Package mounts only the
 public key and route table and disables the Pod's ServiceAccount token.
+
+With `cluster_id`, the Package also creates `gw-<id>` after removing the
+`clu_` prefix. Both Services select the same gateway Pods and belong to the
+same Install. Cluster gateways require the `platform-system` namespace.

@@ -52,6 +52,7 @@ schema Input:
 
 input: Input = ctx.input()
 _values = input.values_private_ingress_gateway
+assert not input.cluster_id or _values.namespace == "platform-system", "Cluster gateways must use the platform-system namespace"
 _resource_requests = _values.resources.requests or {}
 _resource_limits = _values.resources.limits or {}
 _name = "private-ingress-gateway"
@@ -133,6 +134,11 @@ resources = [
         metadata = {name = _name, namespace = _values.namespace, labels = _labels}
         spec = {type = "ClusterIP", selector = _labels, ports = [{name = "http", port = _values.service.port, targetPort = "http"}]}
     }
+    if input.cluster_id:
+        corev1.Service {
+            metadata = {name = "gw-" + input.cluster_id.removeprefix("clu_"), namespace = _values.namespace, labels = _labels}
+            spec = {type = "ClusterIP", selector = _labels, ports = [{name = "http", port = 8080, targetPort = "http"}]}
+        }
     if _values.routeTable.createConfigMap:
         corev1.ConfigMap {
             metadata = {name = _values.env.routeTableConfigMapName, namespace = _values.namespace, labels = _labels}

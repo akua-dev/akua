@@ -1,6 +1,6 @@
 [package]
 name = "kaas-capability-private-ingress-gateway"
-version = "0.1.14"
+version = "0.1.15"
 edition = "akua.dev/v1alpha1"
 
 [dependencies.k8s]
