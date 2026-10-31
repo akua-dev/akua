@@ -62,7 +62,7 @@ That's it. akua does **not** specify `App`, `Environment`, `Cluster`, `Secret`, 
 
 ## Shipping checklists
 
-**New CLI verb**: this package owns it in TypeScript: `src/cli.ts` (command), its logic beside `render.effect.ts`, and a golden or contract case if it operates on a Package. New error codes go in `src/error-catalog.ts`. Refresh the generated CLI reference through its owning documentation generator. `akua pkg` gets it automatically: the akua CLI embeds this host.
+**New CLI verb**: this package owns it in TypeScript: `src/cli.ts` (command), its logic beside `render.ts`, and a golden or contract case if it operates on a Package. New error codes go in `src/error-catalog.ts`. Refresh the generated CLI reference through its owning documentation generator. `akua pkg` gets it automatically: the akua CLI embeds this host.
 
 **Touching `eval_kcl` or the Go engines**: the render worker (Rust to `wasm32-wasip1`) and the Helm/Kustomize engines (Go to `wasip1`) are wasm modules the executable embeds precompiled; Bazel rebuilds and re-precompiles them for every target. Verify by rendering the examples against their committed `rendered/` goldens.
 
@@ -116,7 +116,7 @@ intact.
 Untrusted Packages run inside **Wasmtime**, reached through a small
 **napi-rs addon** (`../../crates/wasm-sandbox`, `@akua-dev/wasm-sandbox`). The JS engine's own
 `WebAssembly` is used only where the environment already sandboxes the process
-(the browser, `src/host-js.effect.ts`).
+(the browser, `src/host-js.ts`).
 
 **Modules are precompiled at build time, per target.** `crates/wasm-sandbox/precompile`
 (Cranelift, every backend, build-time only) turns each `.wasm` into
@@ -134,7 +134,7 @@ process under an OS sandbox, with a wall-clock deadline that kills it.
 
 ## Rules
 
-- **`crates/wasm-sandbox/` stays generic.** It must not know about KCL, akua, Helm, Kustomize or any module ABI. Module-specific behaviour (reactor ABI, `_start`, the KCL bridge) belongs in `src/host-native.effect.ts`. Before adding Rust, check whether it can be TS over the addon's primitives.
+- **`crates/wasm-sandbox/` stays generic.** It must not know about KCL, akua, Helm, Kustomize or any module ABI. Module-specific behaviour (reactor ABI, `_start`, the KCL bridge) belongs in `src/host-native.ts`. Before adding Rust, check whether it can be TS over the addon's primitives.
 - **Rust changes only for a Wasmtime upgrade or a new sandbox guarantee.** Change engine settings only in `config.rs`; Bazel re-precompiles every target.
 - **The addon owns the guarantees and keeps them unconditional:** a memory cap that traps and reports `MemoryLimit`, fuel per call, read-only preopens, capped in-memory stdio, no env, no sockets, a wall clock fixed at the Unix epoch, NaN canonicalization.
 - **The monotonic clock and cryptographic randomness are the host's.** Go's scheduler and GC pace themselves by the monotonic clock; a stepping fake clock made large charts spin for minutes. Charts generate keys (`genCA`, `genSignedCert`); constant or seeded bytes either never terminate (prime search) or hand every user the same private key. Renders that draw no randomness stay byte-identical.

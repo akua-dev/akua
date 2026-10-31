@@ -4,7 +4,7 @@ import { HttpClient, HttpClientRequest, type HttpClientResponse } from "effect/h
 import * as TOML from "smol-toml"
 import { gunzip, untar } from "./archive"
 import { keyedSignatureRef, verifyKeyed } from "./cosign"
-import { cacheRoot as defaultCacheRoot, readBounded, sha256, unpackInto } from "./downloads.effect"
+import { cacheRoot as defaultCacheRoot, readBounded, sha256, unpackInto } from "./downloads"
 
 /**
  * OCI-distributed dependencies (`oci = "oci://<registry>/<repository>"`):

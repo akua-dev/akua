@@ -1,10 +1,10 @@
 import { Effect, FileSystem, Option, Path, Schema } from "effect"
 import { gunzip, gzip, tar, type TarFile, untar } from "./archive"
-import { CRDS_DIR } from "./crds.effect"
-import { sha256 } from "./downloads.effect"
+import { CRDS_DIR } from "./crds"
+import { sha256 } from "./downloads"
 import { osMessage } from "./errors"
 import { formatManifest, parseManifest } from "./manifest"
-import { collectFiles, comparePaths } from "./walk.effect"
+import { collectFiles, comparePaths } from "./walk"
 
 /**
  * The published form of a Package: a gzipped tarball of the workspace, the

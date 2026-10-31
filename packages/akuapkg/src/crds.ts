@@ -2,7 +2,7 @@ import { Effect, FileSystem, Option, Path, Schema } from "effect"
 import * as TOML from "smol-toml"
 import { CRD_CONVERTER_VERSION, CrdsInvalid } from "./crd-schemas"
 import { kclIdent } from "./manifest"
-import { loadSnapshot, type Snapshot, treeDigest } from "./snapshot.effect"
+import { loadSnapshot, type Snapshot, treeDigest } from "./snapshot"
 import { table, toToml } from "./toml-write"
 
 /**

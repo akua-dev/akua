@@ -1,9 +1,9 @@
 import { Effect, FileSystem, Path } from "effect"
 import { Command, Flag } from "effect/cli"
 import { type CliFailure, ExitCode, fail, usageFailure } from "../contract"
-import { cacheRoot } from "../downloads.effect"
+import { cacheRoot } from "../downloads"
 import { osMessage } from "../errors"
-import { comparePaths } from "../walk.effect"
+import { comparePaths } from "../walk"
 import { verb } from "./report"
 import { emit, universal } from "./universal"
 

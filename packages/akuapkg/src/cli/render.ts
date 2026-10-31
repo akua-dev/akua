@@ -1,7 +1,7 @@
 import { Effect, FileSystem, Option } from "effect"
 import { Command, Flag } from "effect/cli"
 import { renderSummaryJson, usageFailure } from "../contract"
-import { renderPackage } from "../render.effect"
+import { renderPackage } from "../render"
 import type { VerbContext } from "./context"
 import { writeStdout } from "./context"
 import { reportable, verb } from "./report"

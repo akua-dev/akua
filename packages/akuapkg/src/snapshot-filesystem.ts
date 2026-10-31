@@ -1,6 +1,6 @@
 import { ByteSize, Effect, FileSystem, Option, PlatformError } from "effect"
 import { PathEscape } from "./errors"
-import { resolveInSnapshot, type Snapshot } from "./snapshot.effect"
+import { resolveInSnapshot, type Snapshot } from "./snapshot"
 
 /** A read-only Package tree, with no ambient files or symlinks. */
 export const makeSnapshotFileSystem = Effect.fn("makeSnapshotFileSystem")(function*(snapshot: Snapshot) {

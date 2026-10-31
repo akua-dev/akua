@@ -1,7 +1,7 @@
 import { expect, it } from '@effect/vitest';
 import { Effect } from 'effect';
 import { WasmHost } from '../../akuapkg/src/host';
-import { JsWasmCompiler, JsWasmHost } from '../../akuapkg/src/host-js.effect';
+import { JsWasmCompiler, JsWasmHost } from '../../akuapkg/src/host-js';
 
 // (module (memory (export "memory") 1) (func (export "_start"))
 //   (func (export "akua_bridge_alloc") (param i32) (result i32) i32.const 0))

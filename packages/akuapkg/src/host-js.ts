@@ -2,7 +2,7 @@ import { Bytes, Context, Effect, Layer, Predicate } from "effect"
 import { ConsoleStdout, Directory, File, type Inode, OpenFile, PreopenDirectory, WASI } from "@bjorn3/browser_wasi_shim"
 import { EngineError, RenderError, WasmLoadError } from "./errors"
 import { type CommandRun, type MountedTree, type ReactorSpec, WasmHost } from "./host"
-import type { Snapshot } from "./snapshot.effect"
+import type { Snapshot } from "./snapshot"
 
 type Tree = Map<string, Tree | Uint8Array>
 

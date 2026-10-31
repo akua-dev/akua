@@ -1,9 +1,9 @@
 import { Effect, FileSystem, Path } from "effect"
 import { Argument, Command } from "effect/cli"
 import { type CliFailure, ExitCode, ExitWith, fail } from "../contract"
-import { sha256 } from "../downloads.effect"
+import { sha256 } from "../downloads"
 import { osMessage } from "../errors"
-import { comparePaths } from "../walk.effect"
+import { comparePaths } from "../walk"
 import { verb } from "./report"
 import { emit, universal } from "./universal"
 

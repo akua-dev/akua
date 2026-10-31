@@ -1,12 +1,12 @@
 import { Context, Effect, Layer, Schema } from "effect"
 import { Gzip, gzip, tar } from "./archive"
-import { HelmEngine, KustomizeEngine } from "./engines.effect"
+import { HelmEngine, KustomizeEngine } from "./engines"
 import { PluginError } from "./errors"
 import type { EngineBudget } from "./host"
 import { HelmTemplateArgs, KustomizeBuildArgs, PkgRenderArgs } from "./schemas"
-import type { ResolvedDependency } from "./dependencies.effect"
-import { resolveInSnapshot, type Snapshot, subtree } from "./snapshot.effect"
-import { comparePaths } from "./walk.effect"
+import type { ResolvedDependency } from "./dependencies"
+import { resolveInSnapshot, type Snapshot, subtree } from "./snapshot"
+import { comparePaths } from "./walk"
 import { parseEngineManifests, sortKeys } from "./yaml-compat"
 
 /**

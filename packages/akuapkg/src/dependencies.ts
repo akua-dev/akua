@@ -3,7 +3,7 @@ import { CliName } from "./cli-name"
 import { agentDetected } from "./agent"
 import { DependencyUnresolved } from "./errors"
 import { keyedSignatureRef } from "./cosign"
-import { readGeneratedCrds } from "./crds.effect"
+import { readGeneratedCrds } from "./crds"
 import { type Lock, type LockedPackage, parseLock, pinnedEntries } from "./lockfile"
 import {
   crdSelector,
@@ -14,11 +14,11 @@ import {
   type Manifest,
   parseManifest
 } from "./manifest"
-import { GitRemote } from "./git.effect"
-import { HelmRepository } from "./helm-repository.effect"
-import { OciRegistry } from "./oci.effect"
-import { loadSnapshot, type Snapshot, treeDigest } from "./snapshot.effect"
-import { UrlSource } from "./url-source.effect"
+import { GitRemote } from "./git"
+import { HelmRepository } from "./helm-repository"
+import { OciRegistry } from "./oci"
+import { loadSnapshot, type Snapshot, treeDigest } from "./snapshot"
+import { UrlSource } from "./url-source"
 
 /**
  * What a resolved dependency is, from the files at its root: a Helm chart

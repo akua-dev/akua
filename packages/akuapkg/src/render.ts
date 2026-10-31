@@ -3,8 +3,8 @@ import { Effect, FileSystem, Option, Path, Predicate } from "effect"
 import YAML from "yaml"
 import type { RenderSummary } from "./contract"
 import { HostError, InputsMissing, InputsParseError, osMessage, PackageMissing } from "./errors"
-import { loadSnapshot } from "./snapshot.effect"
-import { RenderWorker } from "./worker.effect"
+import { loadSnapshot } from "./snapshot"
+import { RenderWorker } from "./worker"
 
 export interface RenderRequest {
   /** Path to the Package file (`package.k`). */

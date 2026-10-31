@@ -1,11 +1,11 @@
 import { Console, Effect, Option } from "effect"
 import { crdSchemaTree } from "./crd-schemas"
-import { CRDS_KCL_MOD } from "./crds.effect"
-import type { ResolvedDependency } from "./dependencies.effect"
+import { CRDS_KCL_MOD } from "./crds"
+import type { ResolvedDependency } from "./dependencies"
 import { DependencyUnresolved, RenderError } from "./errors"
 import { kclIdent } from "./manifest"
 import { stubModule } from "./package-stubs"
-import type { Snapshot } from "./snapshot.effect"
+import type { Snapshot } from "./snapshot"
 import { kclStringLiteral, valuesSchemaKcl } from "./values-schema"
 
 /**

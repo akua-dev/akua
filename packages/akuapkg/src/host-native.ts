@@ -3,7 +3,7 @@ import type { CompiledModule, Instance, Outcome } from "@akua-dev/wasm-sandbox"
 import { EngineError, GuestFailure, RenderError, WasmLoadError } from "./errors"
 import { type CommandRun, type EngineBudget, type MountedTree, type ReactorSpec, WasmHost } from "./host"
 import { NativeSandbox } from "./native"
-import type { Snapshot } from "./snapshot.effect"
+import type { Snapshot } from "./snapshot"
 
 export interface SandboxLimits {
   /** Linear-memory cap for the render worker's store. */

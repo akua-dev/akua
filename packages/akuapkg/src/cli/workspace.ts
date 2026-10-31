@@ -9,8 +9,8 @@ import {
   PROVENANCE_FILE,
   staleGeneratedCrds,
   writeGeneratedCrds
-} from "../crds.effect"
-import { type ResolvedDependency, resolvePackage } from "../dependencies.effect"
+} from "../crds"
+import { type ResolvedDependency, resolvePackage } from "../dependencies"
 import { crdTree } from "../kcl-modules"
 import type { ManifestInvalid } from "../errors"
 import { emptyLock, formatLock, type Lock, type LockUpdate, parseLock } from "../lockfile"

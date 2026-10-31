@@ -1,7 +1,7 @@
 import { Context, Effect, FileSystem, Layer, Option, Path, Schema } from "effect"
 import { CliName } from "./cli-name"
 import { HttpClient, HttpClientRequest } from "effect/http"
-import { cacheRoot, readBounded, sha256, unpackInto } from "./downloads.effect"
+import { cacheRoot, readBounded, sha256, unpackInto } from "./downloads"
 
 /**
  * Single-file dependencies (`url = "https://..."`, CRD sources only): the

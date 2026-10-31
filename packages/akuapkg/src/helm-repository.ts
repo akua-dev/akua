@@ -4,7 +4,7 @@ import { CliName } from "./cli-name"
 import { HttpClient, HttpClientRequest } from "effect/http"
 import YAML from "yaml"
 import { gunzip, untar } from "./archive"
-import { cacheRoot, readBounded, sha256, unpackInto } from "./downloads.effect"
+import { cacheRoot, readBounded, sha256, unpackInto } from "./downloads"
 
 /**
  * Charts from classic HTTPS Helm repositories (`repo = "https://..."`,

@@ -1,5 +1,5 @@
 import { Bytes, Effect, Option, Schema } from "effect"
-import { sha256 } from "./downloads.effect"
+import { sha256 } from "./downloads"
 
 /**
  * Keyed cosign verification (`[signing].cosign_public_key`): the simple-signing

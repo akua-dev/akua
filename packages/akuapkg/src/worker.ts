@@ -1,6 +1,6 @@
 import { Cause, Context, Crypto, Effect, FileSystem, Layer, Path, Predicate, Schema, type Scope } from "effect"
 import YAML from "yaml"
-import { type ResolvedDependency, type ResolveOptions, resolvePackage } from "./dependencies.effect"
+import { type ResolvedDependency, type ResolveOptions, resolvePackage } from "./dependencies"
 import {
   type DependencyUnresolved,
   type GuestFailure,
@@ -11,11 +11,11 @@ import {
 } from "./errors"
 import { Artifacts, type EngineBudget, type MountedTree, WasmHost } from "./host"
 import { chartReference, chartsPackage, crdsPackage, kclModules, packageStubs } from "./kcl-modules"
-import { GitRemote } from "./git.effect"
-import { HelmRepository } from "./helm-repository.effect"
-import { OciRegistry } from "./oci.effect"
-import { UrlSource } from "./url-source.effect"
-import { KclPlugins, type PluginScope } from "./plugins.effect"
+import { GitRemote } from "./git"
+import { HelmRepository } from "./helm-repository"
+import { OciRegistry } from "./oci"
+import { UrlSource } from "./url-source"
+import { KclPlugins, type PluginScope } from "./plugins"
 import {
   ExportResponse,
   FormatResponse,
@@ -26,7 +26,7 @@ import {
   WorkerRequest,
   WorkerResponse
 } from "./schemas"
-import { type Snapshot, treeDigest } from "./snapshot.effect"
+import { type Snapshot, treeDigest } from "./snapshot"
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()

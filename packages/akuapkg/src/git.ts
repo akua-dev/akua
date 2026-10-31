@@ -2,7 +2,7 @@ import { Context, Effect, FileSystem, Layer, Option, Path, Redacted, Schema } fr
 import { CliName } from "./cli-name"
 import git from "isomorphic-git"
 import http from "isomorphic-git/http/web"
-import { cacheRoot, unpackInto } from "./downloads.effect"
+import { cacheRoot, unpackInto } from "./downloads"
 import type { BasicAuth } from "./host-auth"
 import { MemoryFs } from "./memory-fs"
 

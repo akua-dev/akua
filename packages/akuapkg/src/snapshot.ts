@@ -1,7 +1,7 @@
 import { Bytes, Crypto, Effect, FileSystem, Path } from "effect"
 import { Hex } from "effect/encoding"
 import { PathEscape } from "./errors"
-import { comparePaths } from "./walk.effect"
+import { comparePaths } from "./walk"
 
 /**
  * Immutable in-memory copy of a directory tree, keyed by POSIX path
