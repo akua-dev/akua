@@ -7,7 +7,7 @@
     "contact": {
       "name": "Akua API support",
       "email": "support@akua.dev",
-      "url": "https://akua.dev/docs"
+      "url": "https://docs.akua.dev/"
     }
   },
   "paths": {
@@ -1065,6 +1065,185 @@
         "summary": "List regions in workspace",
         "x-platform-visibility": "PUBLIC"
       }
+    },
+    "/packages/{id}/versions/{version_id}/inputs": {
+      "get": {
+        "tags": [
+          "packages"
+        ],
+        "operationId": "packages.getVersionInputs",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "version_id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package version input schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageVersionInputs"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns the version input schema used by the install wizard, typically generated JSON Schema.",
+        "summary": "Get package version input schema",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/clusters/{id}/capabilities": {
+      "get": {
+        "tags": [
+          "clusters"
+        ],
+        "operationId": "clusters.getCapabilities",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Cluster ID.",
+              "minLength": 1,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cluster capabilities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClusterCapabilities"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          }
+        },
+        "description": "Gets the last observed Kubernetes capability snapshot for a cluster.",
+        "summary": "Get cluster capabilities",
+        "x-platform-visibility": "PUBLIC"
+      }
     }
   },
   "components": {
@@ -1724,6 +1903,1160 @@
           "result"
         ],
         "additionalProperties": false
+      },
+      "ClusterCapabilities": {
+        "type": "object",
+        "properties": {
+          "catalog": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "required_baseline": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "cilium-cni",
+                        "incluster-api-proxy",
+                        "metrics-server",
+                        "gateway-api-crds",
+                        "coredns",
+                        "local-path-provisioner",
+                        "private-ingress-gateway",
+                        "cloudflare-tunnel-connector"
+                      ]
+                    }
+                  },
+                  "missing": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "cilium-cni",
+                        "incluster-api-proxy",
+                        "metrics-server",
+                        "gateway-api-crds",
+                        "coredns",
+                        "local-path-provisioner",
+                        "private-ingress-gateway",
+                        "cloudflare-tunnel-connector"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "required_baseline",
+                  "missing"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Managed Cluster catalog report derived from platform-owned Install package metadata. Null for imported Clusters. Required baseline names are separate from all compatible catalog names with no Install; Install presence does not imply readiness or health."
+          },
+          "api_groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "storage_classes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "provisioner": {
+                  "type": "string"
+                },
+                "is_default": {
+                  "type": "boolean"
+                },
+                "reclaim_policy": {
+                  "type": "string"
+                },
+                "volume_binding_mode": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "provisioner",
+                "is_default",
+                "reclaim_policy",
+                "volume_binding_mode"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "gateway_classes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "gateways": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "namespace": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "gateway_class_name": {
+                  "type": "string"
+                },
+                "listeners": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "protocol": {
+                        "type": "string"
+                      },
+                      "port": {
+                        "type": "number"
+                      },
+                      "hostname": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "protocol",
+                      "port"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "addresses": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "Ready",
+                    "Accepted",
+                    "Pending",
+                    "Error",
+                    "Unknown"
+                  ]
+                },
+                "status_message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "namespace",
+                "name",
+                "gateway_class_name",
+                "listeners"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "default_gateway": {
+            "type": "object",
+            "properties": {
+              "namespace": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "namespace",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "ingress_classes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cloudflare_tunnel_connectors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClusterTunnelConnectorReadiness"
+            }
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClusterNode"
+            }
+          },
+          "freshness": {
+            "$ref": "#/components/schemas/ClusterCapabilitiesFreshness"
+          }
+        },
+        "required": [
+          "catalog",
+          "api_groups",
+          "storage_classes",
+          "gateway_classes",
+          "gateways",
+          "ingress_classes",
+          "cloudflare_tunnel_connectors",
+          "nodes",
+          "freshness"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterCapabilitiesFreshness": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "missing"
+                ]
+              },
+              "max_age_seconds": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "age_seconds": {
+                "type": "null"
+              },
+              "last_successful_at": {
+                "type": "null"
+              },
+              "last_refresh_status": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "FAILED",
+                      "RUNNING"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "last_refresh_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "state",
+              "max_age_seconds",
+              "age_seconds",
+              "last_successful_at",
+              "last_refresh_status",
+              "last_refresh_error"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "fresh",
+                  "stale"
+                ]
+              },
+              "max_age_seconds": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "age_seconds": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "last_successful_at": {
+                "type": "integer",
+                "description": "Unix timestamp (seconds)",
+                "minimum": 0
+              },
+              "last_refresh_status": {
+                "type": "string",
+                "enum": [
+                  "SUCCESS",
+                  "FAILED",
+                  "RUNNING"
+                ]
+              },
+              "last_refresh_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "state",
+              "max_age_seconds",
+              "age_seconds",
+              "last_successful_at",
+              "last_refresh_status",
+              "last_refresh_error"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "ClusterNode": {
+        "type": "object",
+        "properties": {
+          "worker_bootstrap_id": {
+            "type": "string",
+            "description": "Worker bootstrap used to join this node, when reported by the node."
+          },
+          "name": {
+            "type": "string"
+          },
+          "ready": {
+            "type": "boolean"
+          },
+          "worker_capacity": {
+            "type": "boolean"
+          },
+          "schedulable": {
+            "type": "boolean"
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "status_message": {
+            "type": "string"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClusterNodeUsage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last observed resource usage. Null when metrics are unavailable. OUTPUT_ONLY.",
+            "readOnly": true
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "cpu_capacity": {
+            "type": "string"
+          },
+          "memory_capacity": {
+            "type": "string"
+          },
+          "os_image": {
+            "type": "string"
+          },
+          "operating_system": {
+            "type": "string"
+          },
+          "architecture": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "roles",
+          "version",
+          "cpu_capacity",
+          "memory_capacity",
+          "os_image",
+          "architecture"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterNodeUsage": {
+        "type": "object",
+        "properties": {
+          "cpu_cores": {
+            "type": "number",
+            "minimum": 0
+          },
+          "memory_bytes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "observed_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "cpu_cores",
+          "memory_bytes",
+          "observed_at"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterTunnelConnectorReadiness": {
+        "type": "object",
+        "properties": {
+          "namespace": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ready": {
+            "type": "boolean"
+          },
+          "desired_replicas": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "available_replicas": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "namespace",
+          "name",
+          "ready",
+          "desired_replicas",
+          "available_replicas",
+          "status_message"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardClusterList": {
+        "type": "object",
+        "properties": {
+          "clusters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardCluster"
+            }
+          },
+          "regions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardClusterRegion"
+            }
+          }
+        },
+        "required": [
+          "clusters",
+          "regions"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardClusterRegion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 54
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "icon",
+          "workspace_id",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardCluster": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 54
+          },
+          "html_url": {
+            "type": "string",
+            "description": "Absolute dashboard URL for this resource. OUTPUT_ONLY.",
+            "format": "uri",
+            "examples": [
+              "https://akua.dev/clusters/clu_j572abc123def456"
+            ],
+            "maxLength": 2048
+          },
+          "name": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "region_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 54
+          },
+          "region": {
+            "$ref": "#/components/schemas/DashboardClusterRegion"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "managed_kaas",
+              "imported_byoc"
+            ],
+            "description": "Cluster control-plane family: managed (`managed_kaas`) vs imported self-managed (`imported_byoc`)."
+          },
+          "kaas": {
+            "$ref": "#/components/schemas/ClusterKaas"
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "connection_failed",
+                  "capability_reconciliation_failed",
+                  "cluster_unhealthy",
+                  "cluster_operation_failed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "OUTPUT_ONLY. Failure class projected from persisted cluster status. Technical diagnostics remain in kaas.status_message."
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "product_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "installs_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "deployment_health": {
+            "$ref": "#/components/schemas/DashboardClusterDeploymentHealth"
+          },
+          "active_operation": {
+            "$ref": "#/components/schemas/DashboardClusterActiveOperation"
+          },
+          "etag": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "html_url",
+          "name",
+          "workspace_id",
+          "region_id",
+          "region",
+          "provider",
+          "kaas",
+          "status_reason",
+          "created_at",
+          "updated_at",
+          "product_count",
+          "installs_count",
+          "deployment_health",
+          "active_operation",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardClusterActiveOperation": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              },
+              "type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "started_at": {
+                "type": "integer",
+                "description": "Unix timestamp (seconds)",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "started_at"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The authoritative running operation for this cluster, independent of recent-operation pagination."
+      },
+      "DashboardClusterDeploymentHealth": {
+        "type": "object",
+        "properties": {
+          "healthy": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "degraded": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reconciling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "healthy",
+          "degraded",
+          "reconciling",
+          "failed"
+        ],
+        "additionalProperties": false,
+        "description": "Persisted deployment counts. Healthy, degraded, and failed are mutually exclusive lifecycle states; reconciling is an independent activity count and may overlap a health state."
+      },
+      "ClusterKaas": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "namespace": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "network_profile": {
+                "type": "string",
+                "enum": [
+                  "linux_cilium",
+                  "mixed_os_calico"
+                ],
+                "description": "Immutable networking profile for managed KaaS clusters. Defaults to `linux_cilium`. `mixed_os_calico` adds Windows worker support, which is not generally available yet: creating a cluster with it returns `403 Forbidden` unless Windows worker support is enabled for the workspace.",
+                "default": "linux_cilium"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "PROVISIONING",
+                  "RUNNING",
+                  "RECONCILING",
+                  "SUSPENDING",
+                  "SUSPENDED",
+                  "RESUMING",
+                  "DELETING",
+                  "ERROR",
+                  "DEGRADED"
+                ]
+              },
+              "status_message": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "suspended_at": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Unix timestamp (seconds)"
+              },
+              "suspended_by": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "namespace",
+              "version",
+              "network_profile",
+              "status",
+              "status_message",
+              "suspended_at",
+              "suspended_by"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "PackageVersionInputs": {
+        "type": "object"
+      },
+      "PackageWithVersionsList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageWithVersions"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "PackageWithVersions": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 54
+          },
+          "name": {
+            "type": "string"
+          },
+          "display_image_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageVersionSummary"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "display_image_url",
+          "versions"
+        ],
+        "additionalProperties": false
+      },
+      "PackageVersionSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "semver": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+          }
+        },
+        "required": [
+          "id",
+          "semver"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardProductList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardProduct"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardProduct": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "examples": [
+              "prod_j572abc123def456"
+            ],
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "html_url": {
+            "type": "string",
+            "description": "Absolute dashboard URL for this resource. OUTPUT_ONLY.",
+            "format": "uri",
+            "examples": [
+              "https://akua.dev/products/prod_j572abc123def456"
+            ],
+            "maxLength": 2048
+          },
+          "name": {
+            "type": "string",
+            "examples": [
+              "PostgreSQL Managed"
+            ]
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "package": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "examples": [
+                  "pkg_j572abc123def456"
+                ],
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Name of the backing Package, or null when the Package no longer exists."
+              },
+              "version_pin": {
+                "$ref": "#/components/schemas/PackageVersionPin"
+              },
+              "default_version_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 55
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Concrete PackageVersion currently resolved by the version pin, or null when latest has no published version yet."
+              }
+            },
+            "required": [
+              "id",
+              "version_pin",
+              "default_version_id"
+            ],
+            "additionalProperties": false,
+            "description": "Reference to the Package backing this product. Fetch full details via `GET /v1/packages/{id}`."
+          },
+          "custom_image": {
+            "type": "string",
+            "description": "Custom display image URL — overrides the package logo on dashboard catalog rows"
+          },
+          "marketplace": {
+            "$ref": "#/components/schemas/ProductMarketplaceState"
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "etag": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ],
+            "description": "Product lifecycle state."
+          },
+          "archived_at": {
+            "type": "integer",
+            "description": "When the product was archived, expressed as Unix seconds since epoch.",
+            "minimum": 0
+          },
+          "archive_reason": {
+            "type": "string",
+            "description": "Reason supplied by the seller when archiving."
+          },
+          "cluster_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "region_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offer_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "install_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "html_url",
+          "name",
+          "workspace_id",
+          "package",
+          "marketplace",
+          "created_at",
+          "updated_at",
+          "etag",
+          "state",
+          "cluster_count",
+          "region_count",
+          "offer_count",
+          "install_count"
+        ],
+        "additionalProperties": false
+      },
+      "ProductMarketplaceState": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "published": {
+                "type": "boolean",
+                "description": "Whether the product is publicly visible on the marketplace"
+              }
+            },
+            "required": [
+              "published"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Marketplace listing configuration. When null the product is not listed."
+      },
+      "PackageVersionPin": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "latest"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "pinned"
+                ]
+              },
+              "version": {
+                "type": "string",
+                "examples": [
+                  "1.2.3"
+                ],
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+              }
+            },
+            "required": [
+              "kind",
+              "version"
+            ],
+            "additionalProperties": false
+          }
+        ]
       },
       "DashboardRegionList": {
         "type": "object",
@@ -5049,6 +6382,911 @@
           }
         ]
       },
+      "DashboardInstallDetail": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "rendering",
+              "syncing",
+              "unknown",
+              "healthy",
+              "degraded",
+              "failed"
+            ],
+            "description": "Lifecycle state for an extant dashboard install. Deleted installs are excluded before list pagination."
+          },
+          "failure_message": {
+            "type": "string"
+          },
+          "operation_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 192
+          },
+          "reconciling": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "html_url": {
+            "type": "string",
+            "description": "Absolute dashboard URL for this resource. OUTPUT_ONLY.",
+            "format": "uri",
+            "examples": [
+              "https://akua.dev/installs/inst_j572abc123def456"
+            ],
+            "maxLength": 2048
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "cluster_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 54
+          },
+          "deploy_repository_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 55
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Authoritative install display name for this projection. Null when unavailable."
+          },
+          "is_standalone": {
+            "type": "boolean"
+          },
+          "argo_app_namespace": {
+            "type": "string"
+          },
+          "public_urls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallUrl"
+            }
+          },
+          "argo_status": {
+            "$ref": "#/components/schemas/DashboardInstallArgoStatus"
+          },
+          "cluster": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "name": {
+                "type": "string"
+              },
+              "region": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "icon": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "icon"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "region"
+            ],
+            "additionalProperties": false
+          },
+          "display_image_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "product": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 55
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "is_owner": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "is_owner"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "package": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 54
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "source_kind": {
+                    "type": "string",
+                    "enum": [
+                      "hosted",
+                      "oci"
+                    ]
+                  },
+                  "version": {
+                    "$ref": "#/components/schemas/PackageVersionSummary"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "source_kind",
+                  "version"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "demo_cleanup": {
+            "$ref": "#/components/schemas/InstallDemoCleanup"
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "etag": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "html_url",
+          "workspace_id",
+          "cluster_id",
+          "deploy_repository_id",
+          "name",
+          "is_standalone",
+          "argo_app_namespace",
+          "public_urls",
+          "argo_status",
+          "cluster",
+          "display_image_url",
+          "product",
+          "package",
+          "target_revision",
+          "created_at",
+          "updated_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "InstallDemoCleanup": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "scheduled"
+                ]
+              },
+              "cleanup_at": {
+                "type": "integer",
+                "description": "Unix timestamp when the non-billable demo install is scheduled for cleanup.",
+                "minimum": 0
+              },
+              "removable_by": {
+                "type": "string",
+                "enum": [
+                  "platform_policy",
+                  "platform_admin"
+                ],
+                "description": "Authority that may remove the scheduled cleanup policy."
+              },
+              "conversion_required": {
+                "type": "string",
+                "enum": [
+                  "paid_order",
+                  "platform_approval"
+                ],
+                "description": "Required approval path before the demo install can continue without cleanup."
+              },
+              "delivery_status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "running",
+                  "succeeded",
+                  "failed"
+                ],
+                "description": "Order delivery status for the install that owns this cleanup policy."
+              }
+            },
+            "required": [
+              "kind",
+              "cleanup_at",
+              "removable_by",
+              "conversion_required",
+              "delivery_status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "removed"
+                ]
+              },
+              "delivery_status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "running",
+                  "succeeded",
+                  "failed"
+                ],
+                "description": "Order delivery status for the demo install whose cleanup was removed."
+              }
+            },
+            "required": [
+              "kind",
+              "delivery_status"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Visible cleanup state for non-billable demo installs. Temporal workflow IDs and internal cleanup evidence are intentionally omitted."
+      },
+      "DashboardInstallArgoStatus": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "object",
+                "properties": {
+                  "health": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "status"
+                    ],
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": {}
+                      }
+                    ]
+                  },
+                  "sync": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string"
+                      },
+                      "revision": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "status"
+                    ],
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": {}
+                      }
+                    ]
+                  },
+                  "operation_state": {
+                    "type": "object",
+                    "properties": {
+                      "phase": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "phase"
+                    ],
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": {}
+                      }
+                    ]
+                  },
+                  "resources": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ResourceStatus"
+                    }
+                  }
+                },
+                "required": [
+                  "health",
+                  "sync",
+                  "resources"
+                ],
+                "allOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                ]
+              },
+              "updated_at": {
+                "type": "integer",
+                "description": "Unix timestamp (seconds)",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "status",
+              "updated_at"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "ResourceStatus": {
+        "type": "object",
+        "properties": {
+          "group": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "health": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "kind",
+          "name"
+        ],
+        "allOf": [
+          {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        ]
+      },
+      "InstallUrl": {
+        "type": "object",
+        "properties": {
+          "route_key": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "http",
+              "websocket",
+              "grpc"
+            ],
+            "description": "Transport class for route forwarding."
+          },
+          "routing_mode": {
+            "type": "string",
+            "enum": [
+              "through_dispatcher",
+              "bypass_dispatcher"
+            ],
+            "description": "Whether traffic uses the dispatcher Worker or bypasses it."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "provisioning",
+              "active",
+              "not_ready",
+              "failed"
+            ],
+            "description": "Customer-facing install URL routing state."
+          },
+          "reachability": {
+            "$ref": "#/components/schemas/InstallUrlReachability"
+          },
+          "error": {
+            "type": "string"
+          },
+          "last_observed_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "route_key",
+          "hostname",
+          "url",
+          "protocol",
+          "routing_mode",
+          "status",
+          "updated_at"
+        ],
+        "additionalProperties": false
+      },
+      "InstallUrlReachability": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "reachable",
+              "unreachable"
+            ]
+          },
+          "checked_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "http_status_class": {
+            "type": "number",
+            "enum": [
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "failure_kind": {
+            "type": "string",
+            "enum": [
+              "dispatcher_not_ready",
+              "origin_fetch_failed",
+              "timeout",
+              "upstream_5xx"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "checked_at",
+          "consecutive_failures"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardInstallList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardInstall"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardInstall": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "html_url": {
+            "type": "string",
+            "description": "Absolute dashboard URL for this resource. OUTPUT_ONLY.",
+            "format": "uri",
+            "examples": [
+              "https://akua.dev/installs/inst_j572abc123def456"
+            ],
+            "maxLength": 2048
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Authoritative install display name for this projection. Null when unavailable."
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "cluster_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 54
+          },
+          "cluster_name": {
+            "type": "string"
+          },
+          "node_names": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Observed pod node names. Null until placement is available. OUTPUT_ONLY.",
+            "readOnly": true
+          },
+          "region_name": {
+            "type": "string"
+          },
+          "region_icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "display_image_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/DashboardInstallSource"
+          },
+          "application_access": {
+            "$ref": "#/components/schemas/DashboardInstallApplicationAccess"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "rendering",
+              "syncing",
+              "unknown",
+              "healthy",
+              "degraded",
+              "failed"
+            ],
+            "description": "Lifecycle state for an extant dashboard install. Deleted installs are excluded before list pagination."
+          },
+          "failure_message": {
+            "type": "string"
+          },
+          "operation_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 192
+          },
+          "reconciling": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "etag": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "html_url",
+          "name",
+          "workspace_id",
+          "cluster_id",
+          "cluster_name",
+          "region_name",
+          "region_icon",
+          "display_image_url",
+          "source",
+          "application_access",
+          "state",
+          "reconciling",
+          "created_at",
+          "updated_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardInstallApplicationAccess": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "loading"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "available"
+                ]
+              },
+              "hostname": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "state",
+              "hostname",
+              "url"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "unavailable"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Public application access derived from persisted route state. Available URLs are authoritative; loading and unavailable states never fabricate a hostname."
+      },
+      "DashboardInstallSource": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "product"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 55
+              },
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "$ref": "#/components/schemas/PackageVersionSummary"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "name",
+              "version"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "package"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "$ref": "#/components/schemas/PackageVersionSummary"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "name",
+              "version"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Null only for legacy or incomplete persisted lineage; source identity and version are never fabricated."
+      },
       "InstallRender": {
         "type": "object",
         "properties": {
@@ -5461,6 +7699,15 @@
     },
     {
       "name": "adminAccess"
+    },
+    {
+      "name": "Dashboard Overview"
+    },
+    {
+      "name": "products"
+    },
+    {
+      "name": "packages"
     },
     {
       "name": "Auth"

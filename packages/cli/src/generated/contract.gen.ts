@@ -4,12 +4,20 @@ import type { ApiContract } from '../api/contract';
 export const contract: ApiContract = {
 	"resources": [
 		{
+			"name": "clusters",
+			"title": "clusters"
+		},
+		{
 			"name": "installs",
 			"title": "installs"
 		},
 		{
 			"name": "operations",
 			"title": "operations"
+		},
+		{
+			"name": "packages",
+			"title": "packages"
 		},
 		{
 			"name": "regions",
@@ -86,6 +94,27 @@ export const contract: ApiContract = {
 				"maxLength": 192
 			}
 		},
+		"path:id:3": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 54
+			}
+		},
+		"path:id:4": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"description": "Cluster ID.",
+				"minLength": 1,
+				"maxLength": 54
+			}
+		},
 		"path:render_id": {
 			"name": "render_id",
 			"in": "path",
@@ -95,6 +124,16 @@ export const contract: ApiContract = {
 				"description": "Render ID",
 				"minLength": 1,
 				"maxLength": 54
+			}
+		},
+		"path:version_id": {
+			"name": "version_id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 55
 			}
 		},
 		"query:cursor": {
@@ -142,6 +181,17 @@ export const contract: ApiContract = {
 		}
 	},
 	"operations": [
+		{
+			"id": "clusters.getCapabilities",
+			"method": "GET",
+			"path": "/clusters/{id}/capabilities",
+			"summary": "Get cluster capabilities",
+			"auth": true,
+			"parameters": [
+				"path:id:4",
+				"header:akua-context"
+			]
+		},
 		{
 			"id": "installs.create",
 			"method": "POST",
@@ -242,6 +292,18 @@ export const contract: ApiContract = {
 				"path:id:2",
 				"header:akua-context",
 				"query:timeout"
+			]
+		},
+		{
+			"id": "packages.getVersionInputs",
+			"method": "GET",
+			"path": "/packages/{id}/versions/{version_id}/inputs",
+			"summary": "Get package version input schema",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:version_id",
+				"header:akua-context"
 			]
 		},
 		{
