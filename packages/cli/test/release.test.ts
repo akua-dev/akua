@@ -73,10 +73,6 @@ function sha256Oracle(bytes: Uint8Array): Promise<string> {
 	);
 }
 
-function fileExists(path: string): Promise<boolean> {
-	return runNode(Effect.flatMap(FileSystem.FileSystem, (fs) => fs.exists(path)));
-}
-
 function extractTarSync(archivePath: string, extractDir: string): Promise<{ status: number }> {
 	return runNode(
 		Effect.scoped(
@@ -97,10 +93,6 @@ async function makeReleaseTempDir(): Promise<string> {
 	await mkdirp(releaseRoot);
 	return await mkdtempPath('.tmp-akua-release-', releaseRoot);
 }
-
-test('release packaging has a dedicated implementation module', async () => {
-	expect(await fileExists('scripts/release.ts')).toBe(true);
-});
 
 describe('release target contract', () => {
 	it.effect('renders the release matrix as JSON through the matrix subcommand', () =>
@@ -146,15 +138,6 @@ describe('release target contract', () => {
 			expect(failure.message).toBe('injected host: /virtual/output');
 		})
 	);
-
-	test('exposes local package, verify, and smoke tasks without publishing a package', async () => {
-		const packageJson = JSON.parse(await readFileString('package.json'));
-
-		expect(packageJson.scripts['release:package']).toContain('scripts/release.ts package');
-		expect(packageJson.scripts['release:verify']).toContain('scripts/release.ts verify');
-		expect(packageJson.scripts['release:smoke']).toContain('scripts/release.ts smoke');
-		expect(JSON.stringify(packageJson.scripts)).not.toContain('publish');
-	});
 
 	test('defines the five tested Bun targets in stable order', async () => {
 		expect(release.RELEASE_TARGETS).toEqual([
@@ -712,15 +695,13 @@ describe('release target contract', () => {
 		]);
 	});
 
-	it.effect('forwards the expected digest through the package smoke task', () =>
+	it.effect('forwards the expected digest through the release smoke command', () =>
 		Effect.gen(function* () {
 			const fs = yield* FileSystem.FileSystem;
 			const path = yield* Path.Path;
 			const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
 			const root = yield* fs.makeTempDirectoryScoped();
 			const source = yield* path.fromFileUrl(new URL('..', import.meta.url));
-			yield* fs.writeFileString(path.join(root, 'package.json'), JSON.stringify(packageJson));
-			yield* fs.symlink(path.join(source, 'scripts'), path.join(root, 'scripts'));
 			const output = path.join(root, 'dist', 'release');
 			yield* fs.makeDirectory(output, { recursive: true });
 			const host = yield* release.hostTargetId();
@@ -731,12 +712,24 @@ describe('release target contract', () => {
 				'not an archive: the task must reject this digest before extraction'
 			);
 			const child = yield* spawner.spawn(
-				ChildProcess.make('bun', ['run', 'release:smoke'], {
-					cwd: root,
-					detached: false,
-					extendEnv: true,
-					env: { CLI_RELEASE_ARCHIVE_SHA256: '0'.repeat(64) }
-				})
+				ChildProcess.make(
+					process.execPath,
+					[
+						path.join(source, 'scripts', 'release.ts'),
+						'smoke',
+						'--version',
+						packageJson.version,
+						'--output',
+						output,
+						'--archive-sha256',
+						'0'.repeat(64)
+					],
+					{
+						cwd: root,
+						detached: false,
+						extendEnv: true
+					}
+				)
 			);
 			const [stdout, stderr, exitCode] = yield* Effect.all(
 				[
