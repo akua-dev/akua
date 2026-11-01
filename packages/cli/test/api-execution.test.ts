@@ -3,10 +3,155 @@ import { describe, expect, it } from '@effect/vitest';
 import { Effect } from 'effect';
 import { Command } from 'effect/cli';
 
+import type { ApiContract } from '../src/api/contract';
 import { resourceCommands } from '../src/cli/api-commands';
 import { contract } from '../src/generated/contract.gen';
 
-import { runAkua, temporaryHome, writeConfigFile } from './fake-api';
+import { runAkua as runProgram, type RunOptions, temporaryHome, writeConfigFile } from './fake-api';
+
+/** Transport and secret handling are generic CLI features, independent of published routes. */
+const protocolContract: ApiContract = {
+	...contract,
+	resources: [...contract.resources, { name: 'protocol', title: 'Protocol fixture' }],
+	parameters: {
+		...contract.parameters,
+		'protocol:id': {
+			name: 'id',
+			in: 'path',
+			required: true,
+			schema: { type: 'string', minLength: 1 }
+		},
+		'protocol:path': { name: 'path', in: 'query', required: true, schema: { type: 'string' } },
+		'protocol:lookup': { name: 'lookup', in: 'query', required: true, schema: { type: 'string' } },
+		'protocol:tail': {
+			name: 'tail',
+			in: 'query',
+			required: false,
+			schema: { type: 'integer', minimum: 1, maximum: 100 }
+		},
+		'protocol:stream': { name: 'stream_id', in: 'path', required: true, schema: { type: 'string' } }
+	},
+	operations: [
+		...contract.operations,
+		{
+			id: 'protocol.privateString',
+			method: 'POST',
+			path: '/protocol/private-string',
+			summary: 'Send a private string',
+			auth: true,
+			parameters: [],
+			body: {
+				required: true,
+				schema: {
+					type: 'object',
+					properties: { name: { type: 'string' }, value: { type: 'string', format: 'password' } },
+					required: ['name', 'value'],
+					additionalProperties: false
+				}
+			}
+		},
+		{
+			id: 'protocol.privateObject',
+			method: 'POST',
+			path: '/protocol/private-object',
+			summary: 'Send a private object',
+			auth: true,
+			parameters: [],
+			body: {
+				required: true,
+				schema: {
+					type: 'object',
+					properties: {
+						name: { type: 'string' },
+						credentials: {
+							type: 'object',
+							properties: {
+								username: { type: 'string' },
+								password: { type: 'string', format: 'password' }
+							},
+							required: ['username', 'password'],
+							additionalProperties: false
+						}
+					},
+					required: ['name', 'credentials'],
+					additionalProperties: false
+				}
+			}
+		},
+		{
+			id: 'protocol.optional',
+			method: 'POST',
+			path: '/protocol/{id}:optional',
+			summary: 'Send an optional body',
+			auth: true,
+			parameters: ['protocol:id', 'header:if-match'],
+			body: {
+				required: false,
+				schema: {
+					type: 'object',
+					properties: { cascade: { type: 'boolean' } },
+					additionalProperties: false
+				}
+			}
+		},
+		{
+			id: 'protocol.resolve',
+			method: 'GET',
+			path: '/protocol/resolve',
+			summary: 'Resolve anonymously',
+			auth: false,
+			parameters: ['protocol:lookup']
+		},
+		{
+			id: 'protocol.events',
+			method: 'GET',
+			path: '/protocol/{id}:events',
+			summary: 'Read events',
+			auth: true,
+			parameters: ['protocol:id', 'protocol:tail'],
+			stream: { failureEvent: 'effect/http-api/stream/failure' }
+		},
+		{
+			id: 'protocol.upload',
+			method: 'POST',
+			path: '/protocol/{id}:upload',
+			summary: 'Upload bytes',
+			auth: true,
+			parameters: ['protocol:id', 'protocol:path'],
+			upload: { required: true }
+		},
+		{
+			id: 'protocol.download',
+			method: 'POST',
+			path: '/protocol/{id}:download',
+			summary: 'Download bytes',
+			auth: true,
+			parameters: ['protocol:id'],
+			download: true,
+			body: {
+				required: true,
+				schema: {
+					type: 'object',
+					properties: { path: { type: 'string' } },
+					required: ['path'],
+					additionalProperties: false
+				}
+			}
+		},
+		{
+			id: 'protocol.lines',
+			method: 'GET',
+			path: '/protocol/{id}/streams/{stream_id}',
+			summary: 'Read lines',
+			auth: true,
+			parameters: ['protocol:id', 'protocol:stream'],
+			lines: true
+		}
+	]
+};
+
+const runAkua = (argv: readonly string[], options: RunOptions = {}) =>
+	runProgram(argv, { ...options, contract: protocolContract });
 
 /** Signed in, workspace saved: what most commands run with. */
 const signedIn = Effect.gen(function* () {
@@ -17,48 +162,18 @@ const signedIn = Effect.gen(function* () {
 
 const accepted = () => ({ status: 202, body: { id: 'op_1', done: false } });
 
-describe('sandbox preview discovery before release', () => {
-	it('keeps preview cleanup public and omits creation and rotation from the generated contract', () => {
-		const ids = contract.operations.map((operation) => operation.id);
-		expect(ids.some((id) => id.startsWith('clusterRuntime.'))).toBe(false);
-		expect(ids.some((id) => id.startsWith('adminAccess.'))).toBe(false);
-		expect(ids).not.toContain('sandboxes.exposePort');
-		expect(ids).not.toContain('sandboxes.rotatePreviewToken');
-		expect(ids).toContain('sandboxes.listPreviews');
-		expect(ids).toContain('sandboxes.unexposePort');
-		expect(ids).toContain('sandboxes.runCommand');
-		expect(ids).toContain('sandboxes.writeFile');
-	});
-
-	it.effect(
-		'renders sandbox help with cleanup commands and without preview creation or rotation',
-		() =>
-			Effect.gen(function* () {
-				const help = yield* runAkua(['sandboxes', '--help'], { tty: true });
-				expect(help.exitCode).toBe(0);
-				expect(help.stdout).not.toMatch(/^\s+expose-port\s/mu);
-				expect(help.stdout).not.toMatch(/^\s+rotate-preview-token\s/mu);
-				expect(help.stdout).toContain('list-previews');
-				expect(help.stdout).toContain('unexpose-port');
-				expect(help.stdout).toContain('run-command');
-				expect(help.stdout).toContain('write-file');
-				expect(help.requests).toEqual([]);
-			})
-	);
-});
-
 describe('secret values', () => {
-	const createGeneric = ['secrets', 'create', '--name', 'token', '--kind', 'generic'];
+	const createGeneric = ['protocol', 'private-string', '--name', 'token'];
 
 	it.effect('keeps inline secrets redacted in parsed command diagnostics', () =>
 		Effect.gen(function* () {
 			const group = yield* Effect.fromNullishOr(
-				resourceCommands(contract, {}).find((resource) => resource.name === 'secrets')
+				resourceCommands(protocolContract, {}).find((resource) => resource.name === 'protocol')
 			);
 			const create = yield* Effect.fromNullishOr(
 				group.subcommands
 					.flatMap((commands) => commands.commands)
-					.find((command) => command.name === 'create')
+					.find((command) => command.name === 'private-string')
 			);
 			const diagnosticCommand = create.pipe(
 				Command.withHandler((input) =>
@@ -70,8 +185,6 @@ describe('secret values', () => {
 			yield* Command.runWith(diagnosticCommand, { version: 'test' })([
 				'--name',
 				'token',
-				'--kind',
-				'generic',
 				'--value',
 				'private-inline-value'
 			]);
@@ -131,7 +244,7 @@ describe('secret values', () => {
 				[...createGeneric, '--value-file', '-', '--input', '-', '--json'],
 				{
 					env,
-					inputs: { '-': '{"body":{"name":"token","kind":"generic","value":"from-input"}}' },
+					inputs: { '-': '{"body":{"name":"token","value":"from-input"}}' },
 					api: accepted
 				}
 			);
@@ -163,14 +276,10 @@ describe('secret values', () => {
 
 			const result = yield* runAkua(
 				[
-					'registry',
-					'create-credential',
+					'protocol',
+					'private-object',
 					'--name',
 					'ghcr',
-					'--registry-url',
-					'https://ghcr.io',
-					'--type',
-					'basic',
 					'--credentials-file',
 					'credentials.json',
 					'--json'
@@ -197,14 +306,10 @@ describe('secret values', () => {
 			const inlineValue = 'private-json-value';
 			const result = yield* runAkua(
 				[
-					'registry',
-					'create-credential',
+					'protocol',
+					'private-object',
 					'--name',
 					'ghcr',
-					'--registry-url',
-					'https://ghcr.io',
-					'--type',
-					'basic',
 					'--credentials',
 					JSON.stringify({ username: 'bot', password: inlineValue }),
 					'--json'
@@ -226,34 +331,18 @@ describe('request assembly', () => {
 		Effect.gen(function* () {
 			const env = yield* signedIn;
 
-			const proxied = yield* runAkua(
-				['clusters', 'proxy-kube', 'clu_1', 'api/v1/node:name', '--json'],
-				{
-					env,
-					api: () => ({ body: {} })
-				}
-			);
-			const selected = yield* runAkua(
-				[
-					'order-drafts',
-					'select-workspace',
-					'od/1',
-					'--if-match',
-					'etag_1',
-					'--kind',
-					'existing',
-					'--workspace-id',
-					'ws_1',
-					'--json'
-				],
-				{ env, api: () => ({ body: {} }) }
-			);
+			const proxied = yield* runAkua(['clusters', 'get', 'clu/a', '--json'], {
+				env,
+				api: () => ({ body: {} })
+			});
+			const selected = yield* runAkua(['operations', 'wait', 'op/1', '--timeout', '3', '--json'], {
+				env,
+				api: () => ({ body: {} })
+			});
 
-			expect(proxied.requests[0]?.url.pathname).toBe(
-				'/v1/clusters/clu_1/kube_proxy/api/v1/node%3Aname'
-			);
-			expect(selected.requests[0]?.url.pathname).toBe('/v1/order_drafts/od%2F1:selectWorkspace');
-			expect(selected.requests[0]?.body).toEqual({ kind: 'existing', workspace_id: 'ws_1' });
+			expect(proxied.requests[0]?.url.pathname).toBe('/v1/clusters/clu%2Fa');
+			expect(selected.requests[0]?.url.pathname).toBe('/v1/operations/op%2F1:wait');
+			expect(selected.requests[0]?.url.search).toBe('?timeout=3');
 		}).pipe(Effect.scoped)
 	);
 
@@ -262,20 +351,23 @@ describe('request assembly', () => {
 			const env = yield* signedIn;
 
 			const omitted = yield* runAkua(
-				['products', 'unarchive', 'prod_1', '--if-match', 'e', '--json'],
+				['protocol', 'optional', 'entry_1', '--if-match', 'e', '--json'],
 				{
 					env,
 					api: accepted
 				}
 			);
-			const explicit = yield* runAkua(['products', 'archive', 'prod_1', '--input', '-', '--json'], {
-				env,
-				inputs: { '-': '{"headers":{"if-match":"e"},"body":{"cascade_offers":true}}' },
-				api: accepted
-			});
+			const explicit = yield* runAkua(
+				['protocol', 'optional', 'entry_1', '--input', '-', '--json'],
+				{
+					env,
+					inputs: { '-': '{"headers":{"if-match":"e"},"body":{"cascade":true}}' },
+					api: accepted
+				}
+			);
 
 			expect(omitted.requests[0]?.body).toBeUndefined();
-			expect(explicit.requests[0]?.body).toEqual({ cascade_offers: true });
+			expect(explicit.requests[0]?.body).toEqual({ cascade: true });
 		}).pipe(Effect.scoped)
 	);
 
@@ -283,17 +375,20 @@ describe('request assembly', () => {
 		Effect.gen(function* () {
 			const env = yield* signedIn;
 
-			const nullBody = yield* runAkua(['products', 'archive', 'prod_1', '--input', '-', '--json'], {
+			const nullBody = yield* runAkua(
+				['protocol', 'optional', 'entry_1', '--input', '-', '--json'],
+				{
+					env,
+					inputs: { '-': '{"headers":{"if-match":"e"},"body":null}' },
+					api: accepted
+				}
+			);
+			const extraPartition = yield* runAkua(['clusters', 'get', '--input', '-', '--json'], {
 				env,
-				inputs: { '-': '{"headers":{"if-match":"e"},"body":null}' },
+				inputs: { '-': '{"path":{"id":"clu_1"},"query":{}}' },
 				api: accepted
 			});
-			const extraPartition = yield* runAkua(['machines', 'delete', '--input', '-', '--json'], {
-				env,
-				inputs: { '-': '{"path":{"id":"mch_1"},"query":{}}' },
-				api: accepted
-			});
-			const notJson = yield* runAkua(['machines', 'delete', '--input', '-', '--json'], {
+			const notJson = yield* runAkua(['clusters', 'get', '--input', '-', '--json'], {
 				env,
 				inputs: { '-': '{"path":' },
 				api: accepted
@@ -314,13 +409,13 @@ describe('authentication', () => {
 			const home = yield* temporaryHome;
 			yield* writeConfigFile(home, 'not an object');
 
-			const result = yield* runAkua(['offers', 'resolve', '--short-hash', 'abc', '--json'], {
+			const result = yield* runAkua(['protocol', 'resolve', '--lookup', 'abc', '--json'], {
 				env: { HOME: home, AKUA_API_TOKEN: 'environment-token' },
 				api: () => ({ body: { id: 'offer_1' } })
 			});
 
 			expect(result.exitCode).toBe(0);
-			expect(result.requests[0]?.url.search).toBe('?short_hash=abc');
+			expect(result.requests[0]?.url.search).toBe('?lookup=abc');
 			expect(result.requests[0]?.headers.authorization).toBeUndefined();
 		}).pipe(Effect.scoped)
 	);
@@ -393,17 +488,7 @@ describe('responses', () => {
 			};
 
 			const result = yield* runAkua(
-				[
-					'machines',
-					'create',
-					'--cluster-id',
-					'clu_1',
-					'--instance-type',
-					'cx23',
-					'--name',
-					sentinel,
-					'--json'
-				],
+				['clusters', 'create', '--region-id', 'reg_1', '--name', sentinel, '--json'],
 				{ env, api: () => ({ status: 409, body: apiError }) }
 			);
 
@@ -464,11 +549,11 @@ describe('responses', () => {
 			].join('');
 			const api = () => ({ text: events, contentType: 'text/event-stream' });
 
-			const machine = yield* runAkua(['installs', 'get-logs', 'inst_1', '--tail', '2', '--json'], {
+			const machine = yield* runAkua(['protocol', 'events', 'entry_1', '--tail', '2', '--json'], {
 				env,
 				api
 			});
-			const person = yield* runAkua(['installs', 'get-logs', 'inst_1'], { env, api, tty: true });
+			const person = yield* runAkua(['protocol', 'events', 'entry_1'], { env, api, tty: true });
 
 			expect(machine.requests[0]?.url.search).toBe('?tail=2');
 			expect(
@@ -479,15 +564,15 @@ describe('responses', () => {
 			).toEqual([
 				{
 					status: 'ok',
-					command: 'akua installs get-logs',
+					command: 'akua protocol events',
 					data: { event: 'message', data: '{"content":"hello","podName":"web-0"}' }
 				},
 				{
 					status: 'ok',
-					command: 'akua installs get-logs',
+					command: 'akua protocol events',
 					data: { event: 'message', data: '{"content":"world","podName":"web-0"}' }
 				},
-				{ status: 'ok', command: 'akua installs get-logs', data: { event: 'end', data: '{}' } }
+				{ status: 'ok', command: 'akua protocol events', data: { event: 'end', data: '{}' } }
 			]);
 			expect(person.stdout).toBe('hello\nworld\n');
 		}).pipe(Effect.scoped)
@@ -498,7 +583,7 @@ describe('responses', () => {
 			const env = yield* signedIn;
 			const failure = JSON.stringify([{ _tag: 'Fail', error: { error: 'Pod not found' } }]);
 
-			const result = yield* runAkua(['installs', 'get-logs', 'inst_1', '--json'], {
+			const result = yield* runAkua(['protocol', 'events', 'entry_1', '--json'], {
 				env,
 				api: () => ({
 					text: `event: effect/http-api/stream/failure\ndata: ${failure}\n\n`,
@@ -622,7 +707,7 @@ describe('inputs that must not reach the API or the terminal', () => {
 describe('raw byte and NDJSON operations', () => {
 	const encoder = new TextEncoder();
 	const fileBytes = new Uint8Array([0, 255, 10, 13, 128]);
-	const writeFile = ['sandboxes', 'write-file', 'sbx_1', '--path', '/work/a.bin', '--json'];
+	const writeFile = ['protocol', 'upload', 'entry_1', '--path', '/work/a.bin', '--json'];
 
 	it.effect('uploads a file as the raw request body with --body-file', () =>
 		Effect.gen(function* () {
@@ -638,7 +723,7 @@ describe('raw byte and NDJSON operations', () => {
 			expect(result.requests[0]).toMatchObject({ method: 'POST', body: undefined });
 			expect(result.requests[0]?.headers['content-type']).toBe('application/octet-stream');
 			expect(result.requests[0]?.bytes).toEqual(encoder.encode('raw é bytes'));
-			expect(result.requests[0]?.url.pathname).toBe('/v1/sandboxes/sbx_1:writeFile');
+			expect(result.requests[0]?.url.pathname).toBe('/v1/protocol/entry_1:upload');
 			expect(result.requests[0]?.url.searchParams.get('path')).toBe('/work/a.bin');
 		}).pipe(Effect.scoped)
 	);
@@ -684,7 +769,7 @@ describe('raw byte and NDJSON operations', () => {
 		}).pipe(Effect.scoped)
 	);
 
-	const readFile = ['sandboxes', 'read-file', 'sbx_1', '--path', '/work/a.bin'];
+	const readFile = ['protocol', 'download', 'entry_1', '--path', '/work/a.bin'];
 	const download = () => ({ bytes: fileBytes, contentType: 'application/octet-stream' });
 
 	it.effect('writes a downloaded file to stdout as raw bytes', () =>
@@ -735,16 +820,13 @@ describe('raw byte and NDJSON operations', () => {
 		Effect.gen(function* () {
 			const env = yield* signedIn;
 
-			const result = yield* runAkua(
-				['sandboxes', 'stream-command-logs', 'sbx_1', 'cmd_1', '--json'],
-				{
-					env,
-					api: () => ({
-						text: '{"stream":"stdout","data":"a"}\n\n{"stream":"stderr","data":"b"}\n',
-						contentType: 'application/x-ndjson'
-					})
-				}
-			);
+			const result = yield* runAkua(['protocol', 'lines', 'entry_1', 'stream_1', '--json'], {
+				env,
+				api: () => ({
+					text: '{"stream":"stdout","data":"a"}\n\n{"stream":"stderr","data":"b"}\n',
+					contentType: 'application/x-ndjson'
+				})
+			});
 
 			expect(result.exitCode).toBe(0);
 			expect(

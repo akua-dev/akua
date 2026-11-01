@@ -246,21 +246,11 @@ describe('typed flags', () => {
 			yield* writeConfigFile(home, { token: TOKEN, workspace: { id: 'ws_team' } });
 
 			const created = yield* runAkua(
-				[
-					'clusters',
-					'create',
-					'--name',
-					'demo',
-					'--region-id',
-					'reg_1',
-					'--network-profile',
-					'linux_cilium',
-					'--json'
-				],
+				['clusters', 'create', '--name', 'demo', '--region-id', 'reg_1', '--json'],
 				{ env: { HOME: home }, api }
 			);
-			const resumed = yield* runAkua(
-				['clusters', 'resume', 'clu_1', '--if-match', 'etag_1', '--json'],
+			const deleted = yield* runAkua(
+				['installs', 'delete', 'inst_1', '--if-match', 'etag_1', '--json'],
 				{
 					env: { HOME: home },
 					api: () => ({ status: 202, body: { id: 'op_2', done: false } })
@@ -272,12 +262,12 @@ describe('typed flags', () => {
 			expect(create?.url.pathname).toBe('/v1/clusters');
 			expect(create?.body).toEqual({
 				name: 'demo',
-				region_id: 'reg_1',
-				network_profile: 'linux_cilium'
+				region_id: 'reg_1'
 			});
 			expect(create?.headers.authorization).toBe(`Bearer ${TOKEN}`);
-			expect(resumed.requests[0]?.url.pathname).toBe('/v1/clusters/clu_1:resume');
-			expect(resumed.requests[0]?.headers['if-match']).toBe('etag_1');
+			expect(deleted.requests[0]?.url.pathname).toBe('/v1/installs/inst_1');
+			expect(deleted.requests[0]?.method).toBe('DELETE');
+			expect(deleted.requests[0]?.headers['if-match']).toBe('etag_1');
 		}).pipe(Effect.scoped)
 	);
 
@@ -337,7 +327,7 @@ describe('typed flags', () => {
 			const home = yield* temporaryHome;
 			yield* writeConfigFile(home, { token: TOKEN, workspace: { id: 'ws_team' } });
 
-			const result = yield* runAkua(['machines', 'create', '--cluster-id', 'clu_1', '--json'], {
+			const result = yield* runAkua(['clusters', 'create', '--name', 'demo', '--json'], {
 				env: { HOME: home },
 				api
 			});
@@ -346,7 +336,7 @@ describe('typed flags', () => {
 			expect(result.requests).toEqual([]);
 			expect(JSON.parse(result.stdout).error).toMatchObject({
 				code: 'AKUA_INPUT_INVALID',
-				message: 'Invalid input for akua machines create: --instance-type is required.'
+				message: 'Invalid input for akua clusters create: --region-id is required.'
 			});
 		}).pipe(Effect.scoped)
 	);
@@ -357,11 +347,11 @@ describe('typed flags', () => {
 			yield* writeConfigFile(home, { token: TOKEN, workspace: { id: 'ws_team' } });
 			const sentinel = 'request-value-must-not-be-rendered';
 
-			const result = yield* runAkua(['machines', 'create', '--input', '-', '--json'], {
+			const result = yield* runAkua(['clusters', 'create', '--input', '-', '--json'], {
 				env: { HOME: home },
 				inputs: {
 					'-': JSON.stringify({
-						body: { cluster_id: 'clu_1', instance_type: 'cx23', undeclared: sentinel }
+						body: { name: 'demo', region_id: 'reg_1', undeclared: sentinel }
 					})
 				},
 				api
@@ -370,7 +360,7 @@ describe('typed flags', () => {
 			expect(result.exitCode).toBe(2);
 			expect(result.requests).toEqual([]);
 			expect(JSON.parse(result.stdout).error.message).toBe(
-				'Invalid input for akua machines create: body.undeclared: Expected no excess property.'
+				'Invalid input for akua clusters create: body.undeclared: Expected no excess property.'
 			);
 			expect(result.stdout).not.toContain(sentinel);
 		}).pipe(Effect.scoped)

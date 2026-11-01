@@ -2,7 +2,9 @@ import { BunServices } from '@effect/platform-bun';
 import { ConfigProvider, Effect, FileSystem, Layer, Ref, Stream } from 'effect';
 import { HttpClient, HttpClientResponse } from 'effect/http';
 
-import { main } from '../src/bin/akua';
+import type { ApiContract } from '../src/api/contract';
+import { VERSION } from '../src/bin/akua';
+import { runAkua as runProgram } from '../src/cli/main';
 import {
 	Browser,
 	Console,
@@ -38,6 +40,7 @@ export interface FakeResponse {
 export type FakeApi = (request: RecordedRequest) => FakeResponse;
 
 export interface RunOptions {
+	readonly contract?: ApiContract;
 	readonly env?: Readonly<Record<string, string>>;
 	readonly api?: FakeApi;
 	/** `--input` sources by name (`-` is stdin). */
@@ -150,7 +153,7 @@ export const runAkua = Effect.fnUntraced(function* (
 		SecureConfigLive.pipe(Layer.provide(BunServices.layer))
 	);
 
-	const exitCode = yield* main(argv).pipe(
+	const exitCode = yield* runProgram(argv, VERSION, options.contract).pipe(
 		Effect.provide(services),
 		Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord({ ...options.env })))
 	);
