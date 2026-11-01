@@ -556,69 +556,37 @@ export const contract: ApiContract = {
 	],
 	"definitions": {
 		"CreateInstallBody": {
-			"anyOf": [
-				{
-					"type": "object",
-					"properties": {
-						"product_id": {
-							"type": "string",
-							"minLength": 3,
-							"maxLength": 55
-						},
-						"region_id": {
-							"type": "string",
-							"minLength": 3,
-							"maxLength": 54
-						},
-						"cluster_id": {
-							"type": "string",
-							"minLength": 3,
-							"maxLength": 54
-						},
-						"initial_values": {
-							"type": "object"
-						}
-					},
-					"required": [
-						"product_id",
-						"region_id"
-					],
-					"additionalProperties": false
+			"type": "object",
+			"properties": {
+				"package_id": {
+					"type": "string",
+					"minLength": 3,
+					"maxLength": 54
 				},
-				{
-					"type": "object",
-					"properties": {
-						"package_id": {
-							"type": "string",
-							"minLength": 3,
-							"maxLength": 54
-						},
-						"package_version_pin": {
-							"$ref": "#/$defs/InstallPackageVersionPin"
-						},
-						"region_id": {
-							"type": "string",
-							"minLength": 3,
-							"maxLength": 54
-						},
-						"cluster_id": {
-							"type": "string",
-							"minLength": 3,
-							"maxLength": 54
-						},
-						"initial_values": {
-							"type": "object"
-						}
-					},
-					"required": [
-						"package_id",
-						"package_version_pin",
-						"region_id"
-					],
-					"additionalProperties": false
+				"package_version_pin": {
+					"$ref": "#/$defs/InstallPackageVersionPin"
+				},
+				"region_id": {
+					"type": "string",
+					"minLength": 3,
+					"maxLength": 54
+				},
+				"cluster_id": {
+					"type": "string",
+					"minLength": 3,
+					"maxLength": 54
+				},
+				"initial_values": {
+					"type": "object"
 				}
+			},
+			"required": [
+				"package_id",
+				"package_version_pin",
+				"region_id"
 			],
-			"description": "Provide either `product_id` for product-based installations or `package_id` with `package_version_pin` for direct package installations."
+			"additionalProperties": false,
+			"description": "Install a Package version, identified by `package_id` and `package_version_pin`."
 		},
 		"InstallPackageVersionPin": {
 			"oneOf": [
