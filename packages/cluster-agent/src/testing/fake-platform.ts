@@ -25,6 +25,7 @@ import {
 	type UpdaterHeartbeat,
 	type UpdaterInstruction,
 	AuthenticatedAgent,
+	clusterAgentPrincipal,
 	ClusterUid
 } from '@platform/api-contract/services/cluster-agent';
 import { WorkloadAssertion } from '@platform/api-contract/caller';
@@ -111,10 +112,7 @@ const AuthorizationServer = Layer.effect(
 				return yield* Effect.provideService(httpEffect, AuthenticatedAgent, {
 					agentId: state.enrolledAgentId,
 					clusterUid: ClusterUid.make('00000000-0000-4000-8000-000000000001'),
-					caller: {
-						service: ids.service.subject.make('service:cluster-agent'),
-						workload: WorkloadAssertion.make(credential)
-					}
+					caller: { principal: clusterAgentPrincipal(state.enrolledAgentId) }
 				});
 			})
 		});
