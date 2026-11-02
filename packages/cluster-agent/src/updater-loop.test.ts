@@ -31,8 +31,7 @@ const layer = agentUpdaterLayer.pipe(
 				instruction: {
 					desired: v2,
 					verify_seconds: 120,
-					observed: null,
-					next_heartbeat_seconds: 30
+					observed: null
 				}
 			})
 		})
@@ -83,8 +82,7 @@ describe('updaterLoop', () => {
 				yield* push({
 					desired: null,
 					verify_seconds: 120,
-					observed: { version: v2.version, heartbeat_at: 1, accepted_at: 2 },
-					next_heartbeat_seconds: 30
+					observed: { version: v2.version, online_at: 1, accepted_at: 2 }
 				});
 				let phase = '';
 				for (let tick = 0; tick < 20 && phase !== 'steady'; tick += 1) {
@@ -103,7 +101,7 @@ describe('updaterLoop', () => {
 			}).pipe(Effect.provide(layer))
 	);
 
-	it.effect('rolls back with no-heartbeat when no push ever shows the new release', () =>
+	it.effect('rolls back with no-presence when no push ever shows the new release', () =>
 		Effect.gen(function* () {
 			yield* PlacementReconciler;
 			yield* channel(true);
@@ -114,15 +112,14 @@ describe('updaterLoop', () => {
 			yield* push({
 				desired: null,
 				verify_seconds: 120,
-				observed: null,
-				next_heartbeat_seconds: 30
+				observed: null
 			});
 			for (let tick = 0; tick < 20 && (yield* image) !== v1.image; tick += 1)
 				yield* TestClock.adjust('10 seconds');
 			assert.strictEqual(yield* image, v1.image);
 			for (let tick = 0; tick < 5; tick += 1) yield* TestClock.adjust('10 seconds');
 			const reported = (yield* phases).at(-1);
-			assert.strictEqual(reported?._tag === 'rolled-back' ? reported.reason : '', 'no-heartbeat');
+			assert.strictEqual(reported?._tag === 'rolled-back' ? reported.reason : '', 'no-presence');
 			yield* Fiber.interrupt(loop);
 		}).pipe(Effect.provide(layer))
 	);

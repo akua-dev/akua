@@ -1,12 +1,9 @@
 import {
 	Context,
-	Duration,
 	Effect,
 	Layer,
-	Option,
 	Redacted,
 	Ref,
-	Stream,
 	SubscriptionRef
 } from 'effect';
 import { HttpServer } from 'effect/http';
@@ -18,11 +15,9 @@ import {
 	ClusterAgentApi,
 	type DesiredState,
 	type EnrollRequest,
-	type Heartbeat,
 	type PlacementReport,
 	type PlacementSecrets,
 	type StatusBatch,
-	type UpdaterHeartbeat,
 	type UpdaterPhaseReport,
 	type UpdaterInstruction,
 	AuthenticatedAgent,
@@ -44,7 +39,6 @@ export interface FakePlatformState {
 	readonly enrollments: ReadonlyArray<typeof EnrollRequest.Type>;
 	readonly enrolledAgentId: typeof ids.clusterAgent.prefixedEffect.Type;
 	readonly tokensIssued: number;
-	readonly heartbeats: ReadonlyArray<typeof Heartbeat.Type>;
 	readonly reports: ReadonlyArray<{
 		readonly placementId: PlacementId;
 		readonly report: typeof PlacementReport.Type;
@@ -52,12 +46,11 @@ export interface FakePlatformState {
 	readonly statusBatches: ReadonlyArray<typeof StatusBatch.Type>;
 	readonly snapshotRequired: ReadonlyArray<PlacementId>;
 	readonly secrets: ReadonlyMap<PlacementId, typeof PlacementSecrets.Type>;
-	readonly updaterHeartbeats: ReadonlyArray<typeof UpdaterHeartbeat.Type>;
 	readonly updaterPhases: ReadonlyArray<typeof UpdaterPhaseReport.Type>;
 	readonly instruction: typeof UpdaterInstruction.Type;
 	/** Fail the next N calls of these endpoints with 503-like errors. */
-	readonly failing: ReadonlySet<'status' | 'report' | 'heartbeat'>;
-	/** While true every updater heartbeat fails, as during a platform outage. */
+	readonly failing: ReadonlySet<'status' | 'report'>;
+	/** While true every updater phase report fails, as during a platform outage. */
 	readonly updaterDown: boolean;
 }
 
@@ -74,8 +67,7 @@ export const fakeAgentId = ids.clusterAgent.prefixedEffect.make('cag_test');
 const initialInstruction: typeof UpdaterInstruction.Type = {
 	desired: null,
 	verify_seconds: 300,
-	observed: null,
-	next_heartbeat_seconds: 60
+	observed: null
 };
 
 export const fakePlatformState = (
@@ -85,12 +77,10 @@ export const fakePlatformState = (
 	enrollments: [],
 	enrolledAgentId: fakeAgentId,
 	tokensIssued: 0,
-	heartbeats: [],
 	reports: [],
 	statusBatches: [],
 	snapshotRequired: [],
 	secrets: new Map(),
-	updaterHeartbeats: [],
 	updaterPhases: [],
 	instruction: initialInstruction,
 	failing: new Set(),
@@ -122,10 +112,7 @@ const AuthorizationServer = Layer.effect(
 	})
 );
 
-const takeFailure = (
-	platform: FakePlatform['Service'],
-	endpoint: 'status' | 'report' | 'heartbeat'
-) =>
+const takeFailure = (platform: FakePlatform['Service'], endpoint: 'status' | 'report') =>
 	Ref.modify(platform.state, (state) =>
 		state.failing.has(endpoint)
 			? [
@@ -186,30 +173,7 @@ const AgentHandlers = HttpApiBuilder.group(
 	Effect.fn(function* (handlers) {
 		const platform = yield* FakePlatform;
 		return handlers
-			.handle('heartbeat', ({ payload }) =>
-				Effect.gen(function* () {
-					if (yield* takeFailure(platform, 'heartbeat'))
-						return yield* forbidden('heartbeat refused');
-					yield* Ref.update(platform.state, (state) => ({
-						...state,
-						heartbeats: [...state.heartbeats, payload]
-					}));
-					return { next_heartbeat_seconds: 30 };
-				})
-			)
-			.handle('desiredState', ({ query }) =>
-				Effect.gen(function* () {
-					const after = query.after ?? -1;
-					const next = yield* SubscriptionRef.changes(platform.desired).pipe(
-						Stream.filter((state) => state.revision > after),
-						Stream.runHead,
-						Effect.timeoutOption(Duration.seconds(55))
-					);
-					return Option.isSome(next) && Option.isSome(next.value)
-						? next.value.value
-						: yield* SubscriptionRef.get(platform.desired);
-				})
-			)
+			.handle('desiredState', () => SubscriptionRef.get(platform.desired))
 			.handle('report', ({ params, payload }) =>
 				Effect.gen(function* () {
 					if (yield* takeFailure(platform, 'report')) return yield* notFound('placement unknown');
@@ -249,17 +213,6 @@ const AgentHandlers = HttpApiBuilder.group(
 					const state = yield* Ref.updateAndGet(platform.state, (current) => ({
 						...current,
 						updaterPhases: [...current.updaterPhases, payload]
-					}));
-					return state.instruction;
-				})
-			)
-			.handle('updaterHeartbeat', ({ payload }) =>
-				Effect.gen(function* () {
-					if ((yield* Ref.get(platform.state)).updaterDown)
-						return yield* forbidden('platform unavailable');
-					const state = yield* Ref.updateAndGet(platform.state, (current) => ({
-						...current,
-						updaterHeartbeats: [...current.updaterHeartbeats, payload]
 					}));
 					return state.instruction;
 				})

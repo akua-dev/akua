@@ -21,7 +21,6 @@ const instruction = (
 	desired: null,
 	verify_seconds: 300,
 	observed: null,
-	next_heartbeat_seconds: 60,
 	...overrides
 });
 
@@ -69,7 +68,7 @@ describe('AgentUpdater', () => {
 	);
 
 	it.effect(
-		'verifies once rolled out with a heartbeat and an accepted reconcile from the new release',
+		'verifies once rolled out, connected and with an accepted reconcile from the new release',
 		() =>
 			Effect.gen(function* () {
 				const updater = yield* AgentUpdater;
@@ -80,14 +79,14 @@ describe('AgentUpdater', () => {
 				yield* fake.settle;
 				const verifying = yield* updater.step({
 					instruction: instruction({
-						observed: { version: v2.version, heartbeat_at: 10, accepted_at: null }
+						observed: { version: v2.version, online_at: 10, accepted_at: null }
 					}),
 					running: v2
 				});
 				assert.strictEqual(verifying._tag, 'verifying');
 				const verified = yield* updater.step({
 					instruction: instruction({
-						observed: { version: v2.version, heartbeat_at: 10, accepted_at: 20 }
+						observed: { version: v2.version, online_at: 10, accepted_at: 20 }
 					}),
 					running: v2
 				});
@@ -97,28 +96,26 @@ describe('AgentUpdater', () => {
 			}).pipe(Effect.provide(layer))
 	);
 
-	it.effect(
-		'rolls back with no-reconcile when the new release heartbeats but never reconciles',
-		() =>
-			Effect.gen(function* () {
-				const updater = yield* AgentUpdater;
-				const fake = yield* FakeAgentDeployment;
-				yield* startUpdate;
-				yield* fake.settle;
-				yield* TestClock.adjust('301 seconds');
-				const phase = yield* updater.step({
-					instruction: instruction({
-						observed: { version: v2.version, heartbeat_at: 10, accepted_at: null }
-					}),
-					running: v2
-				});
-				assert.strictEqual(phase._tag, 'rolled-back');
-				assert.strictEqual(phase._tag === 'rolled-back' ? phase.reason : '', 'no-reconcile');
-				assert.deepStrictEqual(yield* imageNow, { image: v1.image, env: v1.image });
-			}).pipe(Effect.provide(layer))
+	it.effect('rolls back with no-reconcile when the new release connects but never reconciles', () =>
+		Effect.gen(function* () {
+			const updater = yield* AgentUpdater;
+			const fake = yield* FakeAgentDeployment;
+			yield* startUpdate;
+			yield* fake.settle;
+			yield* TestClock.adjust('301 seconds');
+			const phase = yield* updater.step({
+				instruction: instruction({
+					observed: { version: v2.version, online_at: 10, accepted_at: null }
+				}),
+				running: v2
+			});
+			assert.strictEqual(phase._tag, 'rolled-back');
+			assert.strictEqual(phase._tag === 'rolled-back' ? phase.reason : '', 'no-reconcile');
+			assert.deepStrictEqual(yield* imageNow, { image: v1.image, env: v1.image });
+		}).pipe(Effect.provide(layer))
 	);
 
-	it.effect('rolls back with no-heartbeat when the platform never saw the new release', () =>
+	it.effect('rolls back with no-presence when the platform never saw the new release connect', () =>
 		Effect.gen(function* () {
 			const updater = yield* AgentUpdater;
 			const fake = yield* FakeAgentDeployment;
@@ -126,7 +123,7 @@ describe('AgentUpdater', () => {
 			yield* fake.settle;
 			yield* TestClock.adjust('301 seconds');
 			const phase = yield* updater.step({ instruction: instruction(), running: v2 });
-			assert.strictEqual(phase._tag === 'rolled-back' ? phase.reason : '', 'no-heartbeat');
+			assert.strictEqual(phase._tag === 'rolled-back' ? phase.reason : '', 'no-presence');
 		}).pipe(Effect.provide(layer))
 	);
 

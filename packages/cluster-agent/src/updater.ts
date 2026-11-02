@@ -229,7 +229,7 @@ export const runningRelease = (
 /**
  * One step of the updater state machine against the live agent Deployment:
  * start an offered update, follow its rollout, verify it within
- * `verify_seconds` (rollout Current with ready pods, then a heartbeat and an
+ * `verify_seconds` (rollout Current with ready pods, then a channel connection and an
  * accepted report or StatusBatch from the new release as the platform
  * observed them), or restore the previous release with a reason.
  */
@@ -280,7 +280,7 @@ export const agentUpdaterLayer = Layer.effect(
 				}
 				const observed = args.instruction.observed;
 				const fromNewRelease = observed !== null && observed.version === to.version;
-				if (fromNewRelease && observed.heartbeat_at !== null && observed.accepted_at !== null) {
+				if (fromNewRelease && observed.online_at !== null && observed.accepted_at !== null) {
 					yield* kubernetes
 						.patchAgentDeployment({
 							metadata: { annotations: { [updaterAnnotations.update]: null } }
@@ -295,7 +295,7 @@ export const agentUpdaterLayer = Layer.effect(
 					return yield* rollback(
 						from,
 						to,
-						!fromNewRelease || observed.heartbeat_at === null ? 'no-heartbeat' : 'no-reconcile'
+						!fromNewRelease || observed.online_at === null ? 'no-presence' : 'no-reconcile'
 					);
 				}
 				return { _tag: 'verifying', from, to, deadline } satisfies Phase;
@@ -386,8 +386,7 @@ export const updaterRpcHandlers = UpdaterChannelRpcs.toLayer(
 const initialInstruction: Instruction = {
 	desired: null,
 	verify_seconds: 300,
-	observed: null,
-	next_heartbeat_seconds: 60
+	observed: null
 };
 
 /** Without any push the updater looks again this often; the push is the normal path. */

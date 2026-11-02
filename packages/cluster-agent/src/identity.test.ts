@@ -99,7 +99,7 @@ describe('AgentIdentity', () => {
 			const platform = yield* FakePlatform;
 			assert.strictEqual((yield* Ref.get(platform.state)).tokensIssued, 1);
 			const api = yield* AgentApi;
-			const desired = yield* api.desiredState({ query: {} });
+			const desired = yield* api.desiredState();
 			assert.strictEqual(desired.revision, 0);
 		}).pipe(Effect.provide(layerFor(testSettings())))
 	);

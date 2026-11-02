@@ -708,7 +708,7 @@ export const desiredStateLoop = Effect.gen(function* () {
 	let fetched: number | null = null;
 	while (true) {
 		if (fetched !== null) yield* signal.above(fetched);
-		const state: typeof DesiredState.Type = yield* api.desiredState({ query: {} }).pipe(
+		const state: typeof DesiredState.Type = yield* api.desiredState().pipe(
 			Effect.tapError((error) =>
 				Effect.logWarning('desired state unavailable').pipe(
 					Effect.annotateLogs({ reason: error._tag })
