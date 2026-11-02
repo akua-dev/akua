@@ -1403,6 +1403,830 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
+    "/products": {
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "products.create",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Product created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResource"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiConflict"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates a Product in the Akua-Context Workspace from a published version of one of its Packages. Offers sell the Product at exactly that version. Retry with the same Idempotency-Key to receive the same Product.",
+        "summary": "Create product",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/products/{id}": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "products.get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Product ID",
+              "examples": [
+                "prod_j572abc..."
+              ],
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResource"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns a Product of a Workspace you belong to, with its pinned Package version.",
+        "summary": "Get product details",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/products/{id}:archive": {
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "products.archive",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Product ID",
+              "examples": [
+                "prod_j572abc..."
+              ],
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product archived",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResource"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiPreconditionFailed"
+                }
+              }
+            }
+          }
+        },
+        "description": "Archives the Product: no new Offers are made for it. Existing Offers and Installs are unaffected. Send the etag you read as If-Match; an archived Product answers unchanged.",
+        "summary": "Archive product",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/offers": {
+      "post": {
+        "tags": [
+          "offers"
+        ],
+        "operationId": "offers.create",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Offer created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferResource"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiConflict"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates an Offer for an active Product of the Akua-Context Workspace: its pinned Package version, at no charge, for an audience and a number of customer Workspaces. Share `url`; a customer who redeems it gets access to the Package version with the locked values. Retry with the same Idempotency-Key to receive the same Offer.",
+        "summary": "Create offer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOfferRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/offers/{id}": {
+      "get": {
+        "tags": [
+          "offers"
+        ],
+        "operationId": "offers.get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Offer ID",
+              "examples": [
+                "offer_j572abc..."
+              ],
+              "minLength": 1,
+              "maxLength": 56
+            },
+            "required": true
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "basic",
+                "full"
+              ],
+              "description": "`basic` (default) is what a customer the Offer is for may see; `full` is for members of the seller Workspace.",
+              "default": "basic"
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Offer details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferViewResource"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns an Offer. A customer it is for sees the basic view while it can be redeemed; archived or expired Offers answer 410 to them. Members of the seller Workspace may read the full view.",
+        "summary": "Get offer details",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/offers:resolve": {
+      "get": {
+        "tags": [
+          "offers"
+        ],
+        "operationId": "offers.resolve",
+        "parameters": [
+          {
+            "name": "short_hash",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Offer short hash from the customer link `/i/<short_hash>`",
+              "pattern": "^[0-9A-Za-z]{8}$"
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Offer resolved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferResolution"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          }
+        },
+        "description": "Answers the ID of the Offer a customer link names, when the signed-in caller may see it (AIP-122 alias). Read it with Get offer.",
+        "summary": "Resolve offer by short hash",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/offers/{id}:archive": {
+      "post": {
+        "tags": [
+          "offers"
+        ],
+        "operationId": "offers.archive",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Offer ID",
+              "examples": [
+                "offer_j572abc..."
+              ],
+              "minLength": 1,
+              "maxLength": 56
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Offer archived",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferResource"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiPreconditionFailed"
+                }
+              }
+            }
+          }
+        },
+        "description": "Archives the Offer: nobody can redeem it any more. Redemptions already made keep their access. Send the etag you read as If-Match; an archived Offer answers unchanged.",
+        "summary": "Archive offer",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
     "/packages": {
       "post": {
         "tags": [
@@ -14515,6 +15339,446 @@
         ],
         "additionalProperties": false
       },
+      "OfferResource": {
+        "type": "object",
+        "properties": {
+          "view": {
+            "type": "string",
+            "enum": [
+              "full"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 56
+          },
+          "short_hash": {
+            "type": "string",
+            "description": "The 8-character code of the customer link `/i/<short_hash>`",
+            "examples": [
+              "aB3xK9pQ"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "description": "The link the seller shares with customers.",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "html_url": {
+            "type": "string",
+            "description": "Absolute dashboard URL for this resource. OUTPUT_ONLY.",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "product_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "package": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "version": {
+                "type": "string"
+              },
+              "version_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 55
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "version_id"
+            ],
+            "additionalProperties": false,
+            "description": "The Package version the Offer installs."
+          },
+          "terms": {
+            "$ref": "#/components/schemas/OfferTerms"
+          },
+          "audience": {
+            "$ref": "#/components/schemas/OfferAudience"
+          },
+          "field_values": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/OfferFieldValueView"
+            }
+          },
+          "max_redemptions": {
+            "type": "integer"
+          },
+          "redemption_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Unix timestamp (seconds)",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "etag": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "view",
+          "id",
+          "short_hash",
+          "url",
+          "html_url",
+          "workspace_id",
+          "product_id",
+          "package",
+          "terms",
+          "audience",
+          "field_values",
+          "max_redemptions",
+          "redemption_count",
+          "expires_at",
+          "status",
+          "created_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "OfferFieldValueView": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "value": {},
+              "locked": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "value",
+              "locked"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "sensitive": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              },
+              "locked": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              },
+              "secret_version": {
+                "type": "string",
+                "description": "The pinned version in the Offer's vault that holds the value."
+              }
+            },
+            "required": [
+              "sensitive",
+              "locked",
+              "secret_version"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "OfferAudience": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "anyone-signed-in"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "emails"
+                ]
+              },
+              "emails": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "email",
+                  "maxLength": 254,
+                  "pattern": "^[^\\s@]+@[^\\s@]+$"
+                },
+                "minItems": 1,
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "kind",
+              "emails"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Who may redeem: anyone signed in with the link, or only people whose verified email is listed."
+      },
+      "OfferTerms": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "no-charge"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "What the customer pays: nothing, for now."
+      },
+      "OfferResolution": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The Offer the short hash names",
+            "minLength": 1,
+            "maxLength": 56
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "OfferViewResource": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/OfferResource"
+          },
+          {
+            "$ref": "#/components/schemas/OfferBasicResource"
+          }
+        ]
+      },
+      "OfferBasicResource": {
+        "type": "object",
+        "properties": {
+          "view": {
+            "type": "string",
+            "enum": [
+              "basic"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 56
+          },
+          "short_hash": {
+            "type": "string",
+            "description": "The 8-character code of the customer link `/i/<short_hash>`",
+            "examples": [
+              "aB3xK9pQ"
+            ]
+          },
+          "product_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "package": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "version": {
+                "type": "string"
+              },
+              "version_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 55
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "version_id"
+            ],
+            "additionalProperties": false,
+            "description": "The Package version the Offer installs."
+          },
+          "terms": {
+            "$ref": "#/components/schemas/OfferTerms"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Unix timestamp (seconds)",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input_schema": {
+            "type": "object",
+            "description": "The Package version's values schema, for the configure form."
+          },
+          "defaults": {
+            "type": "object",
+            "description": "The seller's prefilled and locked values, as one values object."
+          },
+          "locked_keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "JSON pointers of the inputs the seller locked. A locked sensitive input is listed here without a value."
+          }
+        },
+        "required": [
+          "view",
+          "id",
+          "short_hash",
+          "product_id",
+          "package",
+          "terms",
+          "status",
+          "expires_at",
+          "input_schema",
+          "defaults",
+          "locked_keys"
+        ],
+        "additionalProperties": false
+      },
+      "CreateOfferRequest": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "description": "An active Product of the Akua-Context Workspace; the Offer installs its Package version.",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "terms": {
+            "$ref": "#/components/schemas/OfferTerms"
+          },
+          "audience": {
+            "$ref": "#/components/schemas/OfferAudience"
+          },
+          "field_values": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "description": "JSON pointer to an input of the values schema",
+              "examples": [
+                "/auth/password"
+              ],
+              "maxLength": 512,
+              "pattern": "^(?:\\/[^/]*)+$"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "value": {},
+                "locked": {
+                  "type": "boolean",
+                  "description": "The customer cannot change a locked value; it is granted with the Package."
+                }
+              },
+              "required": [
+                "value",
+                "locked"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Prefilled and locked inputs, by JSON pointer into the version's values schema. An input marked sensitive (`x-ui.sensitive`) must be a locked string; Akua keeps it in the Offer's own vault and never shows it again."
+          },
+          "max_redemptions": {
+            "type": "integer",
+            "description": "How many customer Workspaces may redeem the Offer.",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "expires_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds) after which nobody can redeem.",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "product_id",
+          "terms",
+          "audience",
+          "max_redemptions"
+        ],
+        "additionalProperties": false
+      },
       "DashboardProductList": {
         "type": "object",
         "properties": {
@@ -14761,6 +16025,155 @@
             "additionalProperties": false
           }
         ]
+      },
+      "ProductResource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "examples": [
+              "prod_j572abc123def456"
+            ],
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "html_url": {
+            "type": "string",
+            "description": "Absolute dashboard URL for this resource. OUTPUT_ONLY.",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "support_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "package": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "version": {
+                "type": "string"
+              },
+              "version_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 55
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "version_id"
+            ],
+            "additionalProperties": false,
+            "description": "The Package version the Product is pinned to."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "etag": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "html_url",
+          "workspace_id",
+          "name",
+          "description",
+          "support_email",
+          "package",
+          "status",
+          "created_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "CreateProductRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "examples": [
+              "PostgreSQL Managed"
+            ],
+            "minLength": 2,
+            "maxLength": 64
+          },
+          "package_id": {
+            "type": "string",
+            "description": "A Package of the Akua-Context Workspace.",
+            "examples": [
+              "pkg_j572abc123def456"
+            ],
+            "minLength": 1,
+            "maxLength": 54
+          },
+          "package_version": {
+            "type": "string",
+            "examples": [
+              "1.2.3"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$",
+            "description": "The published Package version the Product offers. Offers made for the Product install exactly this version."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "support_email": {
+            "type": "string",
+            "description": "Shown to customers on Offer pages when they need help.",
+            "format": "email",
+            "maxLength": 254,
+            "pattern": "^[^\\s@]+@[^\\s@]+$"
+          }
+        },
+        "required": [
+          "name",
+          "package_id",
+          "package_version"
+        ],
+        "additionalProperties": false
       },
       "DashboardRegionList": {
         "type": "object",
@@ -16491,6 +17904,9 @@
     },
     {
       "name": "products"
+    },
+    {
+      "name": "offers"
     },
     {
       "name": "packages"
