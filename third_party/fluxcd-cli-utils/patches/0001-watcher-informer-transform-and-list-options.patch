@@ -1,5 +1,5 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-Subject: [PATCH 1/1] watcher: transform cached objects and narrow list options
+Subject: [PATCH 1/1] watcher: transform, narrow and share the informer cache
 
 STUB: this file states the intent and the exact change. The diff is
 written with the akua-apply engine implementation; until then no
@@ -23,7 +23,12 @@ Change.
    TweakListOptions to the ListWatch list and watch calls and calls
    informer.SetTransform(Transform) before the informer starts.
 2. DefaultStatusWatcher gains the same two fields and copies them into
-   the factory it builds in Watch, so callers keep using Watch.
+   the factory it builds in Watch, so callers keep using Watch. It also
+   accepts an optional `InformerFactory`, an interface with NewInformer
+   that ObjectStatusReporter.InformerFactory now holds instead of the
+   concrete type. akua-apply passes a factory that hands out informers
+   of its one shared cache, so ssa waits, generated-children reads and
+   live status never list the same objects twice.
 3. The engine supplies a Transform that removes metadata.managedFields,
    the kubectl.kubernetes.io/last-applied-configuration annotation,
    Secret .data and .stringData, and ConfigMap .data and .binaryData
