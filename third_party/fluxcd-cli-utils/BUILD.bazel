@@ -1,0 +1,16 @@
+"""Patches to fluxcd/cli-utils for the cluster agent engine (akua-apply)."""
+
+# When the engine's go.mod lands, apply the patch through go_deps in this
+# module and mirror it in the monorepo root, which owns go_deps overrides:
+#
+#   go_deps.module_override(
+#       patch_strip = 1,
+#       patches = ["//third_party/fluxcd-cli-utils:patches/0001-watcher-informer-transform-and-list-options.patch"],
+#       path = "github.com/fluxcd/cli-utils",
+#   )
+#
+# cli-utils is a Go module dependency of fluxcd/pkg/ssa resolved from go.sum,
+# so a module override patches the copy the build already uses; a separate
+# http_archive would add a second, unused copy. Until then nothing
+# references the patch, which is still a stub without hunks.
+exports_files(["LICENSE"] + glob(["patches/*.patch"]))
