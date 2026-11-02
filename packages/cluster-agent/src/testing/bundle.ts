@@ -29,10 +29,26 @@ type Release = typeof AgentRelease.Type;
 
 export const v1: Release = { version: '1.0.0', image: testImage('1'), protocol: 1 };
 export const v2: Release = { version: '1.1.0', image: testImage('2'), protocol: 1 };
+export const v3: Release = { version: '1.2.0', image: testImage('3'), protocol: 1 };
 
 export const bundlePlacementId = placementId('bundle1');
 export const revisionV1 = '1'.repeat(40);
 export const revisionV2 = '2'.repeat(40);
+export const revisionV3 = '3'.repeat(40);
+
+/** `length` characters gzip cannot shrink below 6 bits each: a fixed xorshift32 walk over base64. */
+export const incompressible = (length: number) => {
+	const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+	let state = 2463534242;
+	const characters: Array<string> = [];
+	for (let index = 0; index < length; index++) {
+		state ^= state << 13;
+		state ^= state >>> 17;
+		state ^= state << 5;
+		characters.push(alphabet[(state >>> 0) % 64] ?? 'A');
+	}
+	return characters.join('');
+};
 
 /**
  * The rendered agent chart of one release, as the platform commits it: the
@@ -42,7 +58,12 @@ export const revisionV2 = '2'.repeat(40);
  */
 export const bundleFiles = (
 	release: Release,
-	options: { readonly nodeVerbs?: ReadonlyArray<string>; readonly configMap: string }
+	options: {
+		readonly nodeVerbs?: ReadonlyArray<string>;
+		readonly configMap: string;
+		/** Extra ConfigMap data, to make the bundle as large as a test needs. */
+		readonly padding?: string;
+	}
 ) => [
 	file(
 		'manifests/bundle.yaml',
@@ -92,7 +113,7 @@ metadata:
     app.kubernetes.io/component: agent
 data:
   release: "${release.version}"
-`,
+${options.padding === undefined ? '' : `  padding: "${options.padding}"\n`}`,
 			`apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -188,6 +209,8 @@ export const updaterHarness = (
 		readonly platform?: Partial<FakePlatformState>;
 		/** The node verbs v2's ClusterRole grants; v1 grants get, list, watch. */
 		readonly v2NodeVerbs?: ReadonlyArray<string>;
+		/** v3's bundle (at `revisionV3`) with this much incompressible ConfigMap data. */
+		readonly v3Padding?: number;
 	} = {}
 ) =>
 	agentUpdaterLayer.pipe(
@@ -212,7 +235,18 @@ export const updaterHarness = (
 							configMap: 'agent-v2',
 							...(options.v2NodeVerbs === undefined ? {} : { nodeVerbs: options.v2NodeVerbs })
 						})
-					]
+					],
+					...(options.v3Padding === undefined
+						? []
+						: [
+								[
+									revisionV3,
+									bundleFiles(v3, {
+										configMap: 'agent-v3',
+										padding: incompressible(options.v3Padding)
+									})
+								] as const
+							])
 				])
 			})
 		)

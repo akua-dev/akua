@@ -5,14 +5,9 @@ import { TestClock } from 'effect/testing';
 import type { UpdaterInstruction } from '@platform/api-contract/services/cluster-agent';
 import { applySetParentName, inventoryOf } from './applyset';
 import { AgentUpdater } from './contract';
-import {
-	BundleRejection as BundleRejectionSchema,
-	bundleSecret,
-	BundleUpdate as BundleUpdateSchema,
-	CurrentBundle as CurrentBundleSchema,
-	releaseOfBundle,
-	sameContent
-} from './updater';
+import { type BundleState, bundleStateSecret } from './bundle-state';
+import { KubernetesExtras } from './kubernetes';
+import { bundleSecret, releaseOfBundle, sameContent } from './updater';
 import { FakeAgentDeployment } from './testing/fake-agent-deployment';
 import { FakeEngine, type FakeRequest } from './testing/fake-engine';
 import { FakeKubernetes } from './testing/fake-kubernetes';
@@ -23,10 +18,12 @@ import {
 	placeBundle,
 	revisionV1,
 	revisionV2,
+	revisionV3,
 	rollingEngine,
 	updaterHarness,
 	v1,
-	v2
+	v2,
+	v3
 } from './testing/bundle';
 
 const instruction = (
@@ -43,18 +40,11 @@ const step = (overrides: Partial<typeof UpdaterInstruction.Type> = {}, running =
 		updater.step({ instruction: instruction(overrides), running })
 	);
 
-const stateField = <A>(key: string, decode: (text: string) => Option.Option<A>) =>
-	Effect.gen(function* () {
-		const kubernetes = yield* FakeKubernetes;
-		const secret = (yield* Ref.get(kubernetes.state)).secrets.get(`akua-system/${bundleSecret}`);
-		const raw = secret?.data?.[key];
-		if (raw === undefined) return null;
-		const text = Base64.decodeString(raw);
-		return Result.isSuccess(text) ? Option.getOrNull(decode(text.success)) : null;
-	});
-const CurrentBundle = Schema.decodeUnknownOption(Schema.fromJsonString(CurrentBundleSchema));
-const BundleUpdate = Schema.decodeUnknownOption(Schema.fromJsonString(BundleUpdateSchema));
-const BundleRejection = Schema.decodeUnknownOption(Schema.fromJsonString(BundleRejectionSchema));
+/** One key of the updater's state Secret, read as the updater reads it (gzip-compressed JSON). */
+const stateField = <K extends keyof BundleState>(key: K) =>
+	Effect.flatMap(KubernetesExtras, (extras) => bundleStateSecret(extras, bundleSecret).read).pipe(
+		Effect.map((state) => state[key])
+	);
 
 const members = Effect.gen(function* () {
 	const kubernetes = yield* FakeKubernetes;
@@ -113,7 +103,7 @@ describe('AgentUpdater', () => {
 					'ClusterRole/akua-agent',
 					'ConfigMap/agent-v1'
 				]);
-				assert.strictEqual((yield* stateField('current', CurrentBundle))?.release.version, '1.0.0');
+				assert.strictEqual((yield* stateField('current'))?.release.version, '1.0.0');
 				assert.deepStrictEqual([...(yield* members)].sort(), [
 					'_akua-agent_rbac.authorization.k8s.io_ClusterRole',
 					'akua-system_agent-v1__ConfigMap',
@@ -139,7 +129,7 @@ describe('AgentUpdater', () => {
 			const fake = yield* FakeAgentDeployment;
 			const started = yield* startUpdate;
 			assert.strictEqual(started._tag, 'updating');
-			assert.strictEqual((yield* stateField('update', BundleUpdate))?.to.version, '1.1.0');
+			assert.strictEqual((yield* stateField('update'))?.to.version, '1.1.0');
 			assert.strictEqual(
 				(yield* Ref.get(fake.deployment)).spec?.template.spec?.containers[0]?.image,
 				v2.image
@@ -161,8 +151,8 @@ describe('AgentUpdater', () => {
 				prune?.stale.map((entry) => entry.key),
 				['akua-system_agent-v1__ConfigMap']
 			);
-			assert.strictEqual((yield* stateField('current', CurrentBundle))?.release.version, '1.1.0');
-			assert.strictEqual(yield* stateField('update', BundleUpdate), null);
+			assert.strictEqual((yield* stateField('current'))?.release.version, '1.1.0');
+			assert.strictEqual(yield* stateField('update'), null);
 			assert.isFalse((yield* members).includes('akua-system_agent-v1__ConfigMap'));
 			assert.deepStrictEqual(yield* reports, ['ready', 'ready']);
 		}).pipe(Effect.provide(updaterHarness()))
@@ -200,11 +190,8 @@ describe('AgentUpdater', () => {
 					['akua-system_agent-v2__ConfigMap']
 				);
 				assert.isFalse((yield* members).includes('akua-system_agent-v2__ConfigMap'));
-				assert.strictEqual(
-					(yield* stateField('rolled-back', BundleRejection))?.rejected.version,
-					'1.1.0'
-				);
-				assert.strictEqual((yield* stateField('current', CurrentBundle))?.release.version, '1.0.0');
+				assert.strictEqual((yield* stateField('rolled-back'))?.rejected.version, '1.1.0');
+				assert.strictEqual((yield* stateField('current'))?.release.version, '1.0.0');
 				assert.deepStrictEqual(yield* reports, ['ready', 'failed']);
 				// The rejected release is not applied again.
 				const again = yield* step({ desired: v2 });
@@ -262,7 +249,7 @@ describe('AgentUpdater', () => {
 				}));
 				yield* placeBundle(2, revisionV2, 2);
 				assert.strictEqual((yield* step({ desired: v2 }))._tag, 'updating');
-				const kept = yield* stateField('current', CurrentBundle);
+				const kept = yield* stateField('current');
 				assert.strictEqual(kept?.release.version, '1.0.0');
 				assert.strictEqual(kept?.objects.length, 1);
 				assert.isFalse(JSON.stringify(kept?.objects).includes('status'));
@@ -307,7 +294,7 @@ describe('AgentUpdater', () => {
 					)
 				);
 				assert.strictEqual((yield* requestsOf('apply')).length, 1, 'nothing applied');
-				assert.strictEqual(yield* stateField('update', BundleUpdate), null);
+				assert.strictEqual(yield* stateField('update'), null);
 				const last = (yield* Ref.get(platform.state)).reports.at(-1)?.report.outcome;
 				assert.strictEqual(last?._tag, 'access-denied');
 			}).pipe(
@@ -343,6 +330,52 @@ describe('AgentUpdater', () => {
 				})
 			)
 		)
+	);
+
+	it.effect('keeps its state gzip-compressed', () =>
+		Effect.gen(function* () {
+			yield* rollingEngine;
+			yield* placeBundle(1, revisionV1, 1);
+			yield* step();
+			const kubernetes = yield* FakeKubernetes;
+			const raw = (yield* Ref.get(kubernetes.state)).secrets.get(`akua-system/${bundleSecret}`)
+				?.data?.current;
+			const bytes = Base64.decode(raw ?? '');
+			assert.isTrue(Result.isSuccess(bytes));
+			// The gzip member header (RFC 1952).
+			assert.deepStrictEqual(
+				Result.isSuccess(bytes) ? [...bytes.success.subarray(0, 2)] : [],
+				[0x1f, 0x8b]
+			);
+		}).pipe(Effect.provide(updaterHarness()))
+	);
+
+	it.effect(
+		'refuses a bundle whose rollback state would not fit below the Secret limit, applying nothing',
+		() =>
+			Effect.gen(function* () {
+				yield* rollingEngine;
+				yield* placeBundle(1, revisionV1, 1);
+				yield* step();
+				yield* placeBundle(2, revisionV3, 2);
+				const refused = yield* step({ desired: v3 });
+				assert.deepStrictEqual(refused, {
+					_tag: 'rolled-back',
+					running: v1,
+					rejected: v3,
+					reason: 'bundle-too-large',
+					at: 0
+				});
+				// Only the adoption applied anything; the cluster still runs v1 from its kept bundle.
+				assert.strictEqual((yield* requestsOf('apply')).length, 1);
+				assert.strictEqual(yield* stateField('update'), null);
+				assert.strictEqual((yield* stateField('current'))?.release.version, '1.0.0');
+				assert.strictEqual((yield* stateField('rolled-back'))?.reason, 'bundle-too-large');
+				assert.deepStrictEqual(yield* reports, ['ready', 'failed']);
+				// Rejected here: never tried again.
+				assert.strictEqual((yield* step({ desired: v3 }))._tag, 'rolled-back');
+				assert.strictEqual((yield* requestsOf('apply')).length, 1);
+			}).pipe(Effect.provide(updaterHarness({ v3Padding: 1_500_000 })))
 	);
 });
 

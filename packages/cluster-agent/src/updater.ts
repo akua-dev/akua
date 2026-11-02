@@ -10,7 +10,6 @@ import {
 	Stream,
 	SubscriptionRef
 } from 'effect';
-import { Base64 } from 'effect/encoding';
 import { HttpClient, HttpClientRequest, type HttpClientError } from 'effect/http';
 import ids from '@platform/ids';
 import {
@@ -21,7 +20,6 @@ import {
 	type UpdaterInstruction,
 	type UpdaterPhase
 } from '@platform/api-contract/services/cluster-agent';
-import { GitCommit } from '@platform/api-contract/services/repositories';
 import { Deployment } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/apps/v1/Deployment';
 import { PodList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/PodList';
 import type { SelfSubjectAccessReview } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/authorization.k8s.io/v1/SelfSubjectAccessReview';
@@ -35,6 +33,12 @@ import {
 	staleEntries,
 	unionInventory
 } from './applyset';
+import {
+	type BundleState,
+	bundleStateSecret,
+	type BundleStateTooLarge,
+	type BundleUpdate
+} from './bundle-state';
 import type { ChannelState } from './channel';
 import {
 	agentDeployment,
@@ -42,7 +46,6 @@ import {
 	type ApplySetId,
 	AgentUpdater,
 	Engine,
-	Inventory,
 	type InventoryEntry,
 	KubernetesApi,
 	type KubernetesFailure,
@@ -74,8 +77,9 @@ export const agentContainer = 'agent';
 export const releaseAnnotation = 'akua.dev/release';
 
 /**
- * The updater's own state, in a Secret the chart creates empty in
- * akua-system and only the updater writes (its Role: get, update, patch):
+ * The updater's own state (`bundleStateSecret`), in a Secret the chart
+ * creates empty in akua-system and only the updater writes (its Role: get,
+ * update, patch):
  * - `current`: the last good bundle as rendered (or, before the first
  *   bundle, the live copy of what the first bundle replaces); a rollback
  *   re-applies it and nothing is ever fetched from the platform for it;
@@ -87,83 +91,6 @@ export const bundleSecret = 'akua-agent-bundle';
 
 /** Objects the chart labels as the updater's own; the agent applies those, never the updater. */
 export const updaterComponentLabel = ['app.kubernetes.io/component', 'updater'] as const;
-
-const BundleObjects = Schema.Array(Manifest).check(Schema.isMaxLength(200));
-
-export const CurrentBundle = Schema.Struct({ release: AgentRelease, objects: BundleObjects });
-
-export const BundleUpdate = Schema.Struct({
-	from: AgentRelease,
-	to: AgentRelease,
-	startedAt: Schema.Finite,
-	deadline: Schema.Finite,
-	placementId: ids.placement.prefixedEffect,
-	generation: Schema.Int,
-	revision: GitCommit,
-	/** The new bundle as rendered, stored as `current` once verified. */
-	objects: BundleObjects,
-	/** Every object of the new bundle; members not in it are pruned once verified. */
-	planned: Inventory,
-	/** What the updater applies: `planned` without what the customer's grant leaves to the customer. */
-	applied: Inventory,
-	/**
-	 * What a rollback prunes. Before the apply finished: every applied object
-	 * the last good bundle lacks; after it: those the apply reported created.
-	 */
-	created: Inventory,
-	/** null until the engine answered the apply; a restart before that applies again. */
-	appliedAt: Schema.NullOr(Schema.Finite)
-});
-
-export const BundleRejection = Schema.Struct({
-	rejected: AgentRelease,
-	reason: UpdateRollbackReason,
-	at: Schema.Finite
-});
-
-const fields = {
-	current: Schema.fromJsonString(CurrentBundle),
-	update: Schema.fromJsonString(BundleUpdate),
-	'rolled-back': Schema.fromJsonString(BundleRejection)
-} as const;
-type Field = keyof typeof fields;
-const encodeCurrent = Schema.encodeSync(fields.current);
-const encodeUpdate = Schema.encodeSync(fields.update);
-const encodeRejection = Schema.encodeSync(fields['rolled-back']);
-
-export interface BundleState {
-	readonly current: typeof CurrentBundle.Type | null;
-	readonly update: typeof BundleUpdate.Type | null;
-	readonly 'rolled-back': typeof BundleRejection.Type | null;
-}
-
-/**
- * Reads one key of the state Secret; a missing key is absent. An
- * undecodable one is a defect, never absent: treating a corrupt update as
- * none would abandon it without a rollback.
- */
-const readField = <K extends Field>(
-	data: Readonly<Record<string, string>> | undefined,
-	key: K
-): Effect.Effect<(typeof fields)[K]['Type'] | null> => {
-	const raw = data?.[key];
-	if (raw === undefined) return Effect.succeed(null);
-	const text = Base64.decodeString(raw);
-	if (Result.isFailure(text)) return Effect.die(`${bundleSecret} key ${key} is not base64`);
-	return Schema.decodeUnknownEffect(fields[key])(text.success).pipe(Effect.orDie);
-};
-
-/** The Secret data merge patch for the given keys; null removes a key. */
-export const stateData = (patch: Partial<BundleState>): Record<string, string | null> => {
-	const data: Record<string, string | null> = {};
-	const encoded = <A>(value: A | null, encode: (value: A) => string) =>
-		value === null ? null : Base64.encode(encode(value));
-	if (patch.current !== undefined) data.current = encoded(patch.current, encodeCurrent);
-	if (patch.update !== undefined) data.update = encoded(patch.update, encodeUpdate);
-	if (patch['rolled-back'] !== undefined)
-		data['rolled-back'] = encoded(patch['rolled-back'], encodeRejection);
-	return data;
-};
 
 /** The updater's reads of the agent Deployment and its Pods, for the health gate. */
 export class UpdaterKubernetes extends Context.Service<
@@ -425,16 +352,10 @@ export const agentUpdaterLayer = Layer.effect(
 		const git = yield* GitSource;
 		const platform = yield* AgentApi;
 
-		const readState = Effect.gen(function* () {
-			const data = (yield* extras.readOwnSecret(bundleSecret).pipe(Effect.orDie))?.data;
-			return {
-				current: yield* readField(data, 'current'),
-				update: yield* readField(data, 'update'),
-				'rolled-back': yield* readField(data, 'rolled-back')
-			} satisfies BundleState;
-		});
-		const writeState = (patch: Partial<BundleState>) =>
-			extras.patchOwnSecretData(bundleSecret, stateData(patch)).pipe(Effect.orDie);
+		const stateSecret = bundleStateSecret(extras, bundleSecret);
+		const readState = stateSecret.read;
+		/** After an update's first write fit: its later writes are no larger. */
+		const writeState = (patch: Partial<BundleState>) => stateSecret.write(patch).pipe(Effect.orDie);
 
 		/** Best effort: Placement's own wait covers a lost report. */
 		const report = Effect.fnUntraced(function* (
@@ -836,7 +757,23 @@ export const agentUpdaterLayer = Layer.effect(
 				.map((entry) => entry.object);
 			const entries = allowed.map((object) => object.entry);
 
+			const tooLarge = (error: BundleStateTooLarge) =>
+				report(placementId, bundle.placement.generation, {
+					_tag: 'failed',
+					reason: 'manifests-rejected',
+					object: null,
+					message: `Agent release ${bundle.release.version} needs ${error.bytes} bytes of rollback state, more than the ${error.limit} its Secret may hold; nothing was applied.`
+				});
+
 			if (args.adopt) {
+				const fits = yield* stateSecret
+					.fits({ current: { release: running, objects: bundle.objects } })
+					.pipe(Effect.result);
+				if (Result.isFailure(fits)) {
+					yield* tooLarge(fits.failure);
+					yield* Effect.logError('bundle of the running release too large to keep');
+					return { _tag: 'steady', running } satisfies Phase;
+				}
 				yield* writeParent(placementId, applySetId, running, unionInventory(inventory, entries));
 				const applied = yield* apply(applySetId, allowed);
 				if (applied.failure !== null) {
@@ -878,7 +815,26 @@ export const agentUpdaterLayer = Layer.effect(
 				created: entries.filter((entry) => !kept.has(entry.key)),
 				appliedAt: null
 			};
-			yield* writeState(state.current === null ? { current, update } : { update });
+			const recorded = yield* stateSecret
+				.write(state.current === null ? { current, update } : { update })
+				.pipe(Effect.result);
+			if (Result.isFailure(recorded)) {
+				// Refused before anything changed: the cluster could not keep its rollback copy.
+				yield* tooLarge(recorded.failure);
+				yield* writeState({
+					'rolled-back': { rejected: bundle.release, reason: 'bundle-too-large', at: now }
+				});
+				yield* Effect.logError('agent update refused: bundle state too large').pipe(
+					Effect.annotateLogs({ to: bundle.release.version, bytes: recorded.failure.bytes })
+				);
+				return {
+					_tag: 'rolled-back',
+					running,
+					rejected: bundle.release,
+					reason: 'bundle-too-large',
+					at: now
+				} satisfies Phase;
+			}
 			yield* Effect.logInfo('agent update started').pipe(
 				Effect.annotateLogs({ from: running.version, to: bundle.release.version })
 			);
