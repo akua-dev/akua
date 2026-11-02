@@ -16566,97 +16566,6 @@
       "PackageVersionInputs": {
         "type": "object"
       },
-      "PackageWithVersionsList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PackageWithVersions"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "PackageWithVersions": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 54
-          },
-          "name": {
-            "type": "string"
-          },
-          "display_image_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uri",
-                "maxLength": 2048
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "versions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PackageVersionSummary"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "display_image_url",
-          "versions"
-        ],
-        "additionalProperties": false
-      },
-      "PackageVersionSummary": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 55
-          },
-          "semver": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 128,
-            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
-          }
-        },
-        "required": [
-          "id",
-          "semver"
-        ],
-        "additionalProperties": false
-      },
       "CreatePackageVersionRequest": {
         "type": "object",
         "properties": {
@@ -19014,6 +18923,27 @@
           }
         ],
         "description": "Visible cleanup state for non-billable demo installs. Temporal workflow IDs and internal cleanup evidence are intentionally omitted."
+      },
+      "PackageVersionSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "semver": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+          }
+        },
+        "required": [
+          "id",
+          "semver"
+        ],
+        "additionalProperties": false
       },
       "DashboardInstallArgoStatus": {
         "anyOf": [
