@@ -669,7 +669,12 @@ export const desiredStateLoop = Effect.gen(function* () {
 			}
 		});
 
-	const apply = Effect.fnUntraced(function* (state: typeof DesiredState.Type) {
+	const apply = Effect.fnUntraced(function* (desiredState: typeof DesiredState.Type) {
+		// The agent's own bundle is the updater's to apply; the agent never touches it.
+		const state = {
+			...desiredState,
+			placements: desiredState.placements.filter((placement) => placement.applier === 'agent')
+		};
 		current = state;
 		yield* Ref.set(reserved, state.reserved);
 		// A Placement no longer listed is not reconciled any more; `absent` is how removal arrives.

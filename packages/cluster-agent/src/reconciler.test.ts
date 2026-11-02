@@ -6,7 +6,7 @@ import { applySetParentName, inventoryOf } from './applyset';
 import { DesiredRevision, DesiredSignal, desiredStateLoop, ReservedNames } from './reconciler';
 import { answerEverything, FakeEngine } from './testing/fake-engine';
 import { FakeKubernetes, fakeKubernetesState } from './testing/fake-kubernetes';
-import { emptyDesiredState, FakePlatform } from './testing/fake-platform';
+import { emptyDesiredState, FakePlatform, placementId } from './testing/fake-platform';
 import {
 	agentHarness,
 	configMap,
@@ -340,6 +340,35 @@ describe('desiredStateLoop', () => {
 				assert.strictEqual(state.reports[0]?.report.outcome._tag, 'ready');
 				yield* Fiber.interrupt(loop);
 			}).pipe(Effect.provide(agentHarness({ revisions })))
+	);
+
+	it.effect('never applies or reports the agent bundle the updater applies', () =>
+		Effect.gen(function* () {
+			const platform = yield* FakePlatform;
+			const engine = yield* FakeEngine;
+			const loop = yield* Effect.forkChild(desiredStateLoop);
+			const bundle = desiredPlacement({
+				placement_id: placementId('bundle1'),
+				namespace: 'akua-system',
+				privileged: true,
+				applier: 'updater'
+			});
+			yield* SubscriptionRef.set(
+				platform.desired,
+				emptyDesiredState(3, [bundle, desiredPlacement()])
+			);
+			yield* (yield* DesiredSignal).announce(3);
+			const revision = yield* DesiredRevision;
+			while ((yield* revision.get) !== 3) yield* TestClock.adjust('100 millis');
+			const state = yield* Ref.get(platform.state);
+			assert.deepStrictEqual(
+				state.reports.map((entry) => entry.placementId),
+				[placementId('app1')]
+			);
+			const applied = (yield* engine.requests).filter((request) => request._tag === 'apply');
+			assert.strictEqual(applied.length, 1);
+			yield* Fiber.interrupt(loop);
+		}).pipe(Effect.provide(agentHarness({ revisions })))
 	);
 
 	it.effect('runs a new pass when the generation changes', () =>

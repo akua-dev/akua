@@ -100,6 +100,7 @@ export const desiredPlacement = (
 	generation: 1,
 	presence: 'present',
 	privileged: false,
+	applier: 'agent',
 	source: {
 		url: new URL('https://git.akua.test/acme/r_app.git'),
 		revision: revisionA,
