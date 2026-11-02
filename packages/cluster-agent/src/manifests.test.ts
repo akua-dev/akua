@@ -51,7 +51,7 @@ describe('ApplySet', () => {
 			{ key: '_viewer_rbac.authorization.k8s.io_ClusterRole', version: 'v1' }
 		];
 		const parent = buildParent({
-			placementId: placementId('abc'),
+			name: applySetParentName(placementId('abc')),
 			namespace: 'app',
 			applySetId,
 			agentVersion: '1.0.0',

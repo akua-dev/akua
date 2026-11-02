@@ -1,4 +1,4 @@
-import { Bytes, Effect, Result, Schema, Stream } from 'effect';
+import { Bytes, Effect, Option, Result, Schema, Stream } from 'effect';
 import { Base64 } from 'effect/encoding';
 import ids from '@platform/ids';
 import { AgentRelease, UpdateRollbackReason } from '@platform/api-contract/services/cluster-agent';
@@ -13,6 +13,20 @@ import type { KubernetesExtras } from './kubernetes';
  * `akua-agent-bundle`; the agent keeps the updater's own objects in
  * `akua-updater-bundle`. Each key is gzip-compressed JSON.
  */
+
+/**
+ * The updater's state: the agent's part of the bundle. Only the updater
+ * writes it; the agent reads it (its Role: get) to apply the updater's
+ * part only once the updater verified the agent's at the same release.
+ */
+export const agentBundleSecret = 'akua-agent-bundle';
+
+/**
+ * The agent's state: the updater's own objects. Only the agent writes it;
+ * the updater reads it (its Role: get) and starts no agent update while
+ * the agent applies or gates the updater's part.
+ */
+export const updaterBundleSecret = 'akua-updater-bundle';
 
 const BundleObjects = Schema.Array(Manifest).check(Schema.isMaxLength(200));
 
@@ -60,6 +74,40 @@ export interface BundleState {
 	readonly 'rolled-back': typeof BundleRejection.Type | null;
 }
 
+/**
+ * Under key `reported` of the updater's state: the updater process of
+ * `version` had its own channel open and the platform answered a phase it
+ * reported with that version, at `at`. Part of the gate of the agent's
+ * apply of a new updater.
+ */
+export const UpdaterReported = Schema.Struct({
+	version: Schema.NonEmptyString.check(Schema.isMaxLength(64)),
+	at: Schema.Finite
+});
+const reportedJson = Schema.fromJsonString(UpdaterReported);
+const decodeReported = Schema.decodeUnknownOption(reportedJson);
+
+/** The updater's last attestation; none when absent or unreadable. */
+export const readReported = (extras: (typeof KubernetesExtras)['Service']) =>
+	extras.readOwnSecret(agentBundleSecret).pipe(
+		Effect.orDie,
+		Effect.map((secret) => {
+			const raw = secret?.data?.reported;
+			if (raw === undefined) return null;
+			const text = Base64.decodeString(raw);
+			return Result.isFailure(text) ? null : Option.getOrNull(decodeReported(text.success));
+		})
+	);
+
+/** Written by the updater only. */
+export const writeReported = (
+	extras: (typeof KubernetesExtras)['Service'],
+	reported: typeof UpdaterReported.Type
+) =>
+	extras.patchOwnSecretData(agentBundleSecret, {
+		reported: Base64.encode(Schema.encodeSync(reportedJson)(reported))
+	});
+
 /** Kubernetes refuses a Secret whose data values add up to more than 1 MiB (`MaxSecretSize`). */
 export const secretDataLimitBytes = 1024 * 1024;
 
@@ -67,7 +115,7 @@ export const secretDataLimitBytes = 1024 * 1024;
 export const stateBudgetBytes = secretDataLimitBytes - 64 * 1024;
 
 /** A key never inflates beyond this; a larger one is corrupt, not state. */
-const inflateLimitBytes = 16 * 1024 * 1024;
+const inflateLimitBytes = 8 * 1024 * 1024;
 
 /**
  * The state after a write would exceed `stateBudgetBytes`. Nothing was
@@ -153,6 +201,14 @@ export const bundleStateSecret = (extras: (typeof KubernetesExtras)['Service'], 
 			'rolled-back': yield* readField(secret, data, 'rolled-back')
 		} satisfies BundleState;
 	});
+	/** Without inflating the bundles: whether an update is recorded, and the rejection. */
+	const peek = Effect.gen(function* () {
+		const data = yield* readData;
+		return {
+			updating: data.update !== undefined,
+			rejected: yield* readField(secret, data, 'rolled-back')
+		};
+	});
 	/** The merge patch for `patch` (null removes a key), checked against the budget. */
 	const encode = Effect.fnUntraced(function* (patch: Partial<BundleState>) {
 		const encoded: Record<string, string | null> = {};
@@ -181,5 +237,5 @@ export const bundleStateSecret = (extras: (typeof KubernetesExtras)['Service'], 
 		);
 	/** Whether `patch` would fit, without writing. */
 	const fits = (patch: Partial<BundleState>) => Effect.asVoid(encode(patch));
-	return { read, write, fits };
+	return { read, peek, write, fits };
 };

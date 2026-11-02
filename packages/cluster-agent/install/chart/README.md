@@ -60,8 +60,13 @@ authority over workloads.
 ## Updates
 
 A release is this chart rendered for the cluster. The updater applies it as
-`akua-apply`, keeps the last good one in Secret `akua-agent-bundle`, and rolls
-back to it when the new agent does not pass its health gate. With the
+`akua-apply` without its own objects, keeps the last good one in Secret
+`akua-agent-bundle`, and rolls back to it when the new agent does not pass its
+health gate. Once the updater verified the new agent and is idle, the agent
+applies the updater's own objects the same way, keeps the last good ones in
+Secret `akua-updater-bundle`, and rolls back to them when the new updater does
+not become ready and report to the platform in time. They never update at
+the same time. With the
 `namespaces` grant, a release that changes cluster-scoped objects (such as
 the `akua-agent` ClusterRole) or bindings outside `akua-system` waits for you:
 Akua shows the missing permissions and the `helm upgrade` command, and the
@@ -74,11 +79,14 @@ rights stay with you.
 - ClusterRole and ClusterRoleBinding `akua-agent`: read nodes, read the
   `kube-system` namespace (for the cluster UID).
 - Role and RoleBinding `akua-agent`: impersonate `akua-apply`; get, update,
-  patch Secrets `akua-agent-identity` and `akua-tunnel-connector`.
+  patch Secrets `akua-agent-identity`, `akua-tunnel-connector` and
+  `akua-updater-bundle`; get Secret `akua-agent-bundle`.
 - Role and RoleBinding `akua-agent-updater`: impersonate `akua-apply`; get
-  Deployment `akua-agent`; read ReplicaSets and Pods; get Secret
-  `akua-agent-identity`; get, update, patch Secret `akua-agent-bundle`.
-- Secrets `akua-agent-identity`, `akua-tunnel-connector` and `akua-agent-bundle`: created empty with
+  Deployment `akua-agent`; read ReplicaSets and Pods; get Secrets
+  `akua-agent-identity` and `akua-updater-bundle`; get, update, patch Secret
+  `akua-agent-bundle`.
+- Secrets `akua-agent-identity`, `akua-tunnel-connector`, `akua-agent-bundle`
+  and `akua-updater-bundle`: created empty with
   `helm.sh/resource-policy: keep`. The agent may not create Secrets, so the
   chart creates them; the keys the agent writes are not declared by the chart
   and survive `helm upgrade` and `helm uninstall`.

@@ -1,6 +1,8 @@
 import { assert, describe, it } from '@effect/vitest';
 import { Effect, Fiber, Ref, Schema, SubscriptionRef } from 'effect';
 import { TestClock } from 'effect/testing';
+import { bundleStateSecret, readReported, updaterBundleSecret } from './bundle-state';
+import { KubernetesExtras } from './kubernetes';
 import { UpdaterInstructions, updaterLoop } from './updater';
 import { ConnectionId } from '@platform/api-contract/services/cluster-agent-channel';
 import type { UpdaterInstruction } from '@platform/api-contract/services/cluster-agent';
@@ -28,7 +30,8 @@ const offered = Effect.gen(function* () {
 	const updater = yield* AgentUpdater;
 	yield* updater.step({
 		instruction: { desired: null, verify_seconds: 120, observed: null },
-		running: v1
+		running: v1,
+		version: v1.version
 	});
 	yield* placeBundle(2, revisionV2, 2);
 });
@@ -118,5 +121,37 @@ describe('updaterLoop', () => {
 			assert.strictEqual(reported?._tag === 'rolled-back' ? reported.reason : '', 'no-presence');
 			yield* Fiber.interrupt(loop);
 		}).pipe(Effect.provide(layer))
+	);
+
+	it.effect(
+		'attests its version once its channel is open and a phase was answered, and reports the updater release the agent rejected',
+		() =>
+			Effect.gen(function* () {
+				const extras = yield* KubernetesExtras;
+				yield* rollingEngine;
+				yield* placeBundle(1, revisionV1, 1);
+				yield* bundleStateSecret(extras, updaterBundleSecret)
+					.write({ 'rolled-back': { rejected: v2, reason: 'no-presence', at: 1 } })
+					.pipe(Effect.orDie);
+				yield* channel(false);
+				const loop = yield* Effect.forkChild(updaterLoop('1.0.0'));
+				const reports = Effect.map(
+					Effect.flatMap(FakePlatform, (platform) => Ref.get(platform.state)),
+					(state) => state.updaterPhases
+				);
+				for (let tick = 0; tick < 20 && (yield* reports).length === 0; tick += 1) {
+					yield* TestClock.withLive(Effect.sleep('5 millis'));
+					yield* TestClock.adjust('1 second');
+				}
+				assert.strictEqual((yield* reports).at(-1)?.updater_rejected, '1.1.0');
+				assert.isTrue(yield* SubscriptionRef.get((yield* UpdaterInstructions).ready));
+				// Answered, but its own channel is not open yet: no attestation.
+				assert.strictEqual(yield* readReported(extras), null);
+				yield* channel(true);
+				for (let tick = 0; tick < 20 && (yield* readReported(extras)) === null; tick += 1)
+					yield* TestClock.withLive(Effect.sleep('5 millis'));
+				assert.strictEqual((yield* readReported(extras))?.version, '1.0.0');
+				yield* Fiber.interrupt(loop);
+			}).pipe(Effect.provide(updaterHarness()))
 	);
 });

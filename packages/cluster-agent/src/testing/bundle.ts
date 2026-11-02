@@ -1,12 +1,9 @@
 import { Effect, Layer, Option, Ref, Schema, SubscriptionRef } from 'effect';
 import type { AgentRelease } from '@platform/api-contract/services/cluster-agent';
 import { Deployment } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/apps/v1/Deployment';
-import {
-	agentUpdaterLayer,
-	bundleSecret,
-	releaseAnnotation,
-	UpdaterInstructions
-} from '../updater';
+import { releaseAnnotation } from '../bundle-apply';
+import { agentBundleSecret as bundleSecret, updaterBundleSecret } from '../bundle-state';
+import { agentUpdaterLayer, UpdaterInstructions } from '../updater';
 import { agentHarness, desiredPlacement, file } from './agent-harness';
 import {
 	agentDeploymentObject,
@@ -54,7 +51,7 @@ export const incompressible = (length: number) => {
  * The rendered agent chart of one release, as the platform commits it: the
  * agent Deployment carrying its release, the agent's ClusterRole (whose
  * rules `nodeVerbs` changes), a ConfigMap only this release has, and the
- * updater's own Deployment, which the updater must never apply.
+ * updater's own Deployment and ConfigMap, which only the agent applies.
  */
 export const bundleFiles = (
 	release: Release,
@@ -133,6 +130,19 @@ spec:
       containers:
         - name: updater
           image: ${release.image}
+          env:
+            - name: AKUA_AGENT_VERSION
+              value: "${release.version}"
+`,
+			`apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ${options.configMap}-updater
+  namespace: akua-system
+  labels:
+    app.kubernetes.io/component: updater
+data:
+  release: "${release.version}"
 `
 		].join('---\n')
 	)
@@ -187,16 +197,20 @@ export const kubernetesWithBundleSecret = (overrides: Partial<FakeKubernetesStat
 				new Map([['ClusterRole', { resource: 'clusterroles', namespaced: false }]])
 			]
 		]),
+		// Both state Secrets, created empty by the chart.
 		secrets: new Map([
 			...base.secrets,
-			[
-				`akua-system/${bundleSecret}`,
-				{
-					apiVersion: 'v1',
-					kind: 'Secret',
-					metadata: { name: bundleSecret, namespace: 'akua-system' }
-				}
-			]
+			...[bundleSecret, updaterBundleSecret].map(
+				(name) =>
+					[
+						`akua-system/${name}`,
+						{
+							apiVersion: 'v1' as const,
+							kind: 'Secret' as const,
+							metadata: { name, namespace: 'akua-system' }
+						}
+					] as const
+			)
 		]),
 		...overrides
 	});

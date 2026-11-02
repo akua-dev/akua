@@ -5,9 +5,14 @@ import { TestClock } from 'effect/testing';
 import type { UpdaterInstruction } from '@platform/api-contract/services/cluster-agent';
 import { applySetParentName, inventoryOf } from './applyset';
 import { AgentUpdater } from './contract';
-import { type BundleState, bundleStateSecret } from './bundle-state';
+import {
+	agentBundleSecret as bundleSecret,
+	type BundleState,
+	bundleStateSecret,
+	updaterBundleSecret
+} from './bundle-state';
 import { KubernetesExtras } from './kubernetes';
-import { bundleSecret, releaseOfBundle, sameContent } from './updater';
+import { releaseOfBundle, sameContent } from './bundle-apply';
 import { FakeAgentDeployment } from './testing/fake-agent-deployment';
 import { FakeEngine, type FakeRequest } from './testing/fake-engine';
 import { FakeKubernetes } from './testing/fake-kubernetes';
@@ -35,9 +40,10 @@ const instruction = (
 	...overrides
 });
 
+/** A step of the updater, which runs `v1` (the agent applies its part later). */
 const step = (overrides: Partial<typeof UpdaterInstruction.Type> = {}, running = v1) =>
 	Effect.flatMap(AgentUpdater, (updater) =>
-		updater.step({ instruction: instruction(overrides), running })
+		updater.step({ instruction: instruction(overrides), running, version: v1.version })
 	);
 
 /** One key of the updater's state Secret, read as the updater reads it (gzip-compressed JSON). */
@@ -330,6 +336,59 @@ describe('AgentUpdater', () => {
 				})
 			)
 		)
+	);
+
+	it.effect(
+		'starts no agent update while the agent applies the updater, nor as an updater the agent rejected',
+		() =>
+			Effect.gen(function* () {
+				yield* rollingEngine;
+				yield* placeBundle(1, revisionV1, 1);
+				yield* step();
+				yield* placeBundle(2, revisionV2, 2);
+				const agentState = Effect.map(KubernetesExtras, (extras) =>
+					bundleStateSecret(extras, updaterBundleSecret)
+				);
+				// The agent's record of its apply of the updater's own objects, in flight.
+				yield* Effect.flatMap(agentState, (state) =>
+					state
+						.write({
+							update: {
+								from: v1,
+								to: v2,
+								startedAt: 0,
+								deadline: 300_000,
+								placementId: bundlePlacementId,
+								generation: 2,
+								revision: revisionV2,
+								objects: [],
+								planned: [],
+								applied: [],
+								created: [],
+								appliedAt: null
+							}
+						})
+						.pipe(Effect.orDie)
+				);
+				assert.deepStrictEqual(yield* step({ desired: v2 }), { _tag: 'steady', running: v1 });
+				assert.deepStrictEqual(yield* Effect.flatMap(AgentUpdater, (u) => u.agentApply), {
+					inFlight: true,
+					rejected: null
+				});
+				// The agent rejected this updater's own release: it is being replaced, it starts nothing.
+				yield* Effect.flatMap(agentState, (state) =>
+					state
+						.write({ update: null, 'rolled-back': { rejected: v1, reason: 'no-presence', at: 1 } })
+						.pipe(Effect.orDie)
+				);
+				assert.deepStrictEqual(yield* step({ desired: v2 }), { _tag: 'steady', running: v1 });
+				assert.strictEqual((yield* requestsOf('apply')).length, 1);
+				// Done and not about this updater: the update starts.
+				yield* Effect.flatMap(agentState, (state) =>
+					state.write({ 'rolled-back': null }).pipe(Effect.orDie)
+				);
+				assert.strictEqual((yield* step({ desired: v2 }))._tag, 'updating');
+			}).pipe(Effect.provide(updaterHarness()))
 	);
 
 	it.effect('keeps its state gzip-compressed', () =>

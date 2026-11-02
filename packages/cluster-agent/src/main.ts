@@ -42,6 +42,7 @@ import {
 	updaterRpcHandlers
 } from './updater';
 import { KubernetesApi } from './contract';
+import { UpdaterRollout, updaterRolloutLoop } from './updater-rollout';
 
 const arch = process.arch === 'x64' ? 'amd64' : process.arch;
 
@@ -111,6 +112,10 @@ const agentLayer = Layer.unwrap(
 			Layer.provide(Layer.mergeAll(kubernetes, engine, git, agentApi, state, watchSet, live))
 		);
 		const rpcs = agentRpcHandlers.pipe(Layer.provide(Layer.mergeAll(kubernetes, live, state)));
+		// The updater's own objects; the updater applies everything else (never both at once).
+		const rollout = UpdaterRollout.layer.pipe(
+			Layer.provide(Layer.mergeAll(kubernetes, engine, agentApi, git))
+		);
 		const dialer = ChannelDialer.layer.pipe(Layer.provide(BunSocket.layerWebSocketConstructor));
 		const loops = Layer.effectDiscard(
 			Effect.gen(function* () {
@@ -137,6 +142,7 @@ const agentLayer = Layer.unwrap(
 					};
 				});
 				yield* Effect.forkScoped(desiredStateLoop);
+				yield* Effect.forkScoped(updaterRolloutLoop(config.release));
 				yield* Effect.forkScoped(
 					runChannel({
 						role: 'agent',
@@ -159,7 +165,7 @@ const agentLayer = Layer.unwrap(
 			})
 		).pipe(
 			Layer.provide(
-				Layer.mergeAll(reconciler, agentApi, kubernetes, state, live, credentials, dialer)
+				Layer.mergeAll(reconciler, agentApi, kubernetes, state, live, credentials, dialer, rollout)
 			)
 		);
 		return Layer.mergeAll(health, loops);
@@ -225,7 +231,12 @@ const updaterLayer = Layer.unwrap(
 				Layer.mergeAll(agentApi, updater, deployment, instructions, kubernetes, credentials, dialer)
 			)
 		);
-		return Layer.mergeAll(healthServer(port, Effect.succeed(true)), loop);
+		// `/readyz` is the updater Deployment's readiness probe, part of the agent's gate for it.
+		const health = healthServer(
+			port,
+			UpdaterInstructions.use(({ ready }) => SubscriptionRef.get(ready))
+		).pipe(Layer.provide(instructions));
+		return Layer.mergeAll(health, loop);
 	})
 ).pipe(Layer.provide(Layer.mergeAll(KubernetesConnection.inCluster, PlatformOrigin.fromEnv)));
 

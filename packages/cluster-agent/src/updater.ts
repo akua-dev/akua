@@ -1,22 +1,23 @@
 import {
 	Clock,
 	Context,
+	Deferred,
 	Duration,
 	Effect,
 	Layer,
 	Option,
 	Result,
+	Schedule,
 	Schema,
 	Stream,
 	SubscriptionRef
 } from 'effect';
 import { HttpClient, HttpClientRequest, type HttpClientError } from 'effect/http';
-import ids from '@platform/ids';
+import type ids from '@platform/ids';
 import {
 	AgentRelease,
-	type DesiredPlacement,
 	type PlacementReport,
-	UpdateRollbackReason,
+	type UpdateRollbackReason,
 	type UpdaterInstruction,
 	type UpdaterPhase
 } from '@platform/api-contract/services/cluster-agent';
@@ -24,38 +25,35 @@ import { Deployment } from '@platform/kubernetes-schemas/generated/kubernetes/1.
 import { PodList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/PodList';
 import type { SelfSubjectAccessReview } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/authorization.k8s.io/v1/SelfSubjectAccessReview';
 import { UpdaterChannelRpcs } from '@platform/api-contract/services/cluster-agent-channel';
+import { applySetParentName, unionInventory } from './applyset';
 import {
-	applySetIdOf,
-	applySetParentName,
-	buildParent,
-	computeApplySetId,
-	inventoryOf,
-	staleEntries,
-	unionInventory
-} from './applyset';
+	agentContainer,
+	agentObjectsOf,
+	attributesKey,
+	type Bundle,
+	bundleApplier,
+	decodeReleaseJson,
+	progressDeadlineExceeded,
+	readBundle,
+	releaseAnnotation,
+	rolloutCurrent,
+	sameContent
+} from './bundle-apply';
 import {
+	agentBundleSecret,
 	type BundleState,
 	bundleStateSecret,
 	type BundleStateTooLarge,
-	type BundleUpdate
+	type BundleUpdate,
+	readReported,
+	updaterBundleSecret,
+	writeReported
 } from './bundle-state';
 import type { ChannelState } from './channel';
-import {
-	agentDeployment,
-	agentNamespace,
-	type ApplySetId,
-	AgentUpdater,
-	Engine,
-	type InventoryEntry,
-	KubernetesApi,
-	type KubernetesFailure,
-	Manifest
-} from './contract';
+import { agentDeployment, agentNamespace, AgentUpdater, type KubernetesFailure } from './contract';
 import { GitSource } from './git-source';
 import { decodeAs, failureFor, KubernetesConnection, KubernetesExtras } from './kubernetes';
-import { parseManifests, planObjects, type PlannedObject } from './manifests';
 import { AgentApi } from './platform';
-import { exclusionSelector, forceSelector, requiredAccess } from './reconciler';
 
 type Release = typeof AgentRelease.Type;
 type Phase = typeof UpdaterPhase.Type;
@@ -63,34 +61,9 @@ type Instruction = typeof UpdaterInstruction.Type;
 type Reason = typeof UpdateRollbackReason.Type;
 type AgentDeploymentObject = typeof Deployment.Type;
 type Pods = typeof PodList.Type;
-type Json = typeof Manifest.Type;
-type Entry = typeof InventoryEntry.Type;
 type Review = typeof SelfSubjectAccessReview.Type;
 type Outcome = (typeof PlacementReport.Type)['outcome'];
 type PlacementId = typeof ids.placement.prefixedEffect.Type;
-type ApplySetIdValue = typeof ApplySetId.Type;
-
-/** The agent container, whose image identifies the running release. */
-export const agentContainer = 'agent';
-
-/** The chart writes the release it rendered here on the agent Deployment. */
-export const releaseAnnotation = 'akua.dev/release';
-
-/**
- * The updater's own state (`bundleStateSecret`), in a Secret the chart
- * creates empty in akua-system and only the updater writes (its Role: get,
- * update, patch):
- * - `current`: the last good bundle as rendered (or, before the first
- *   bundle, the live copy of what the first bundle replaces); a rollback
- *   re-applies it and nothing is ever fetched from the platform for it;
- * - `update`: the bundle being applied and gated, so an updater restart
- *   mid-update still finishes or rolls back;
- * - `rolled-back`: the release rejected here, never applied again.
- */
-export const bundleSecret = 'akua-agent-bundle';
-
-/** Objects the chart labels as the updater's own; the agent applies those, never the updater. */
-export const updaterComponentLabel = ['app.kubernetes.io/component', 'updater'] as const;
 
 /** The updater's reads of the agent Deployment and its Pods, for the health gate. */
 export class UpdaterKubernetes extends Context.Service<
@@ -144,25 +117,6 @@ const imageOf = (deployment: AgentDeploymentObject): string | undefined =>
 	deployment.spec?.template.spec?.containers.find((container) => container.name === agentContainer)
 		?.image;
 
-/** kstatus Current for a Deployment: observed, fully updated, ready and available, no old replicas left. */
-export const rolloutCurrent = (deployment: AgentDeploymentObject): boolean => {
-	const replicas = deployment.spec?.replicas ?? 1;
-	const status = deployment.status;
-	return (
-		(status?.observedGeneration ?? 0) >= (deployment.metadata?.generation ?? 0) &&
-		(status?.updatedReplicas ?? 0) === replicas &&
-		(status?.readyReplicas ?? 0) === replicas &&
-		(status?.availableReplicas ?? 0) === replicas &&
-		(status?.replicas ?? 0) === replicas
-	);
-};
-
-const progressDeadlineExceeded = (deployment: AgentDeploymentObject): boolean =>
-	(deployment.status?.conditions ?? []).some(
-		(condition) =>
-			condition.type === 'Progressing' && condition.reason === 'ProgressDeadlineExceeded'
-	);
-
 /** Why pods running `image` cannot become ready, read from their container states. */
 export const podTrouble = (pods: Pods, image: string): 'image-unavailable' | 'unhealthy' | null => {
 	let trouble: 'image-unavailable' | 'unhealthy' | null = null;
@@ -193,8 +147,6 @@ const selectorOf = (deployment: AgentDeploymentObject): string =>
 		.map(([key, value]) => `${key}=${value}`)
 		.join(',');
 
-const decodeReleaseJson = Schema.decodeUnknownOption(Schema.fromJsonString(AgentRelease));
-
 /** What the agent Deployment says is running; the image wins over a stale annotation. */
 export const runningRelease = (
 	deployment: AgentDeploymentObject,
@@ -211,118 +163,9 @@ export const runningRelease = (
 	});
 };
 
-const BundleDeployment = Schema.Struct({
-	kind: Schema.Literal('Deployment'),
-	metadata: Schema.Struct({
-		name: Schema.Literal(agentDeployment),
-		annotations: Schema.Struct({ [releaseAnnotation]: Schema.String })
-	}),
-	spec: Schema.Struct({
-		template: Schema.Struct({
-			spec: Schema.Struct({
-				containers: Schema.Array(Schema.Struct({ name: Schema.String, image: Schema.String }))
-			})
-		})
-	})
-});
-const decodeBundleDeployment = Schema.decodeUnknownOption(BundleDeployment);
-
-/**
- * The release a rendered bundle carries: the agent Deployment's release
- * annotation, only when its agent container runs that release's image (the
- * gate waits for that image).
- */
-export const releaseOfBundle = (objects: ReadonlyArray<Json>): Release | null => {
-	for (const object of objects) {
-		const deployment = decodeBundleDeployment(object);
-		if (Option.isNone(deployment)) continue;
-		const release = Option.getOrNull(
-			decodeReleaseJson(deployment.value.metadata.annotations[releaseAnnotation])
-		);
-		const image = deployment.value.spec.template.spec.containers.find(
-			(container) => container.name === agentContainer
-		)?.image;
-		return release !== null && release.image === image ? release : null;
-	}
-	return null;
-};
-
-const LabelsOnly = Schema.Struct({
-	metadata: Schema.optionalKey(
-		Schema.Struct({ labels: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)) })
-	)
-});
-const isUpdaterOwned = (object: Json): boolean => {
-	const decoded = Schema.decodeUnknownOption(LabelsOnly)(object);
-	return (
-		Option.isSome(decoded) &&
-		decoded.value.metadata?.labels?.[updaterComponentLabel[0]] === updaterComponentLabel[1]
-	);
-};
-
-/** The objects the updater applies: the bundle without the updater's own, which the agent applies. */
-export const agentObjectsOf = (objects: ReadonlyArray<Json>): ReadonlyArray<Json> =>
-	objects.filter((object) => !isUpdaterOwned(object));
-
-const metadataOf = (object: Json): Json =>
-	Option.getOrElse(Schema.decodeUnknownOption(Manifest)(object.metadata), () => ({}));
-
-/** One SelfSubjectAccessReview's question, as a key. */
-const attributesKey = (review: Review) => canonical(review.spec.resourceAttributes ?? {});
-
-/** Key-sorted JSON, so two objects compare by content. */
-const canonical = (value: unknown): string =>
-	JSON.stringify(value, (_key, inner: unknown) =>
-		inner !== null && typeof inner === 'object' && !Array.isArray(inner)
-			? Object.fromEntries(Object.entries(inner).sort(([a], [b]) => a.localeCompare(b)))
-			: inner
-	);
-
-/**
- * Equal apart from labels and annotations. Every release changes the
- * version labels; an object the customer's grant does not cover is only
- * worth a `helm upgrade` when what it grants or runs changed.
- */
-export const sameContent = (a: Json, b: Json): boolean => {
-	const strip = (object: Json) => {
-		const { labels: _labels, annotations: _annotations, ...metadata } = metadataOf(object);
-		return { ...object, metadata };
-	};
-	return canonical(strip(a)) === canonical(strip(b));
-};
-
-const serverFields = [
-	'managedFields',
-	'resourceVersion',
-	'uid',
-	'creationTimestamp',
-	'generation',
-	'selfLink'
-];
-
-/** A live object as an apply manifest: no status and none of the fields the server owns. */
-export const asManifest = (live: Json): Json => {
-	const { status: _status, ...object } = live;
-	return {
-		...object,
-		metadata: Object.fromEntries(
-			Object.entries(metadataOf(live)).filter(([key]) => !serverFields.includes(key))
-		)
-	};
-};
-
-interface Bundle {
-	readonly placement: typeof DesiredPlacement.Type;
-	readonly release: Release;
-	/** As rendered, the updater's own objects removed. */
-	readonly objects: ReadonlyArray<Json>;
-}
-
-const engineTimeoutSeconds = 300;
-
 /**
  * One step of the updater against the live agent Deployment and its own
- * state Secret (`bundleSecret`). The bundle is the Placement the platform
+ * state Secret (`agentBundleSecret`). The bundle is the Placement the platform
  * marks `applier: updater`: the whole rendered agent chart, which the
  * updater applies with the agent's building blocks (git source, ApplySet
  * parent, engine, kstatus), impersonating `akua-apply` like every apply.
@@ -346,13 +189,11 @@ export const agentUpdaterLayer = Layer.effect(
 	AgentUpdater,
 	Effect.gen(function* () {
 		const kubernetes = yield* UpdaterKubernetes;
-		const api = yield* KubernetesApi;
 		const extras = yield* KubernetesExtras;
-		const engine = yield* Engine;
 		const git = yield* GitSource;
 		const platform = yield* AgentApi;
 
-		const stateSecret = bundleStateSecret(extras, bundleSecret);
+		const stateSecret = bundleStateSecret(extras, agentBundleSecret);
 		const readState = stateSecret.read;
 		/** After an update's first write fit: its later writes are no larger. */
 		const writeState = (patch: Partial<BundleState>) => stateSecret.write(patch).pipe(Effect.orDie);
@@ -378,208 +219,25 @@ export const agentUpdaterLayer = Layer.effect(
 				);
 		});
 
-		/** The `applier: updater` Placement with its rendered objects, or null when absent or unreadable. */
-		const readBundle = Effect.gen(function* () {
-			// Never desiredState: that fetch acknowledges the agent's revision.
-			const fetched = yield* platform.updaterBundle().pipe(
-				Effect.tapError((error) =>
-					Effect.logWarning('agent bundle unavailable').pipe(
-						Effect.annotateLogs({ reason: error._tag })
-					)
-				),
-				Effect.option
-			);
-			if (Option.isNone(fetched)) return null;
-			const placement = fetched.value.placement;
-			if (placement === null || placement.presence !== 'present') return null;
-			const files = yield* git
-				.fetchManifests({
-					url: placement.source.url,
-					revision: placement.source.revision,
-					credential: placement.source.credential
-				})
-				.pipe(
-					Effect.tapError((error) =>
-						Effect.logWarning('bundle source unavailable').pipe(
-							Effect.annotateLogs({ message: error.message })
-						)
-					),
-					Effect.option
-				);
-			if (Option.isNone(files)) return null;
-			const parsed = parseManifests(files.value);
-			if (Result.isFailure(parsed)) {
-				yield* Effect.logWarning('bundle manifests unreadable').pipe(
-					Effect.annotateLogs({ message: parsed.failure.message })
-				);
-				return null;
-			}
-			const release = releaseOfBundle(parsed.success);
-			if (release === null) {
-				yield* Effect.logWarning('bundle names no release its agent Deployment runs');
-				return null;
-			}
-			return { placement, release, objects: agentObjectsOf(parsed.success) } satisfies Bundle;
-		});
+		const readAgentBundle = readBundle.pipe(
+			Effect.provideService(AgentApi, platform),
+			Effect.provideService(GitSource, git),
+			Effect.map((bundle) =>
+				bundle === null ? null : { ...bundle, objects: agentObjectsOf(bundle.objects) }
+			)
+		);
 
-		const applySet = Effect.fnUntraced(function* (placementId: PlacementId) {
-			const name = applySetParentName(placementId);
-			const applySetId = yield* computeApplySetId({ name, namespace: agentNamespace });
-			const parent = yield* api
-				.getApplySetParent({ name, namespace: agentNamespace })
-				.pipe(Effect.orDie);
-			const inventory =
-				parent === null || applySetIdOf(parent) !== applySetId ? [] : (inventoryOf(parent) ?? []);
-			return { applySetId, inventory };
-		});
+		const applier = yield* bundleApplier;
+		const parentOf = (update: { readonly placementId: PlacementId }) =>
+			applySetParentName(update.placementId);
 
-		const writeParent = (
-			placementId: PlacementId,
-			applySetId: ApplySetIdValue,
-			release: Release,
-			inventory: ReadonlyArray<Entry>
-		) =>
-			api
-				.applyApplySetParent({
-					parent: buildParent({
-						placementId,
-						namespace: agentNamespace,
-						applySetId,
-						agentVersion: release.version,
-						inventory
-					})
-				})
-				.pipe(Effect.orDie);
-
-		/** Labels the objects as ApplySet members, with one discovery per API version. */
-		const plan = Effect.fnUntraced(function* (
-			bundles: ReadonlyArray<ReadonlyArray<Json>>,
-			applySetId: ApplySetIdValue
-		) {
-			const apiVersions = [
-				...new Set(
-					bundles
-						.flat()
-						.flatMap((object) => (typeof object.apiVersion === 'string' ? [object.apiVersion] : []))
-				)
-			];
-			const discovery = new Map(
-				yield* Effect.forEach(
-					apiVersions,
-					(apiVersion) =>
-						extras.discover(apiVersion).pipe(
-							Effect.orDie,
-							Effect.map((resources) => [apiVersion, resources] as const)
-						),
-					{ concurrency: 4 }
-				)
-			);
-			return yield* Effect.forEach(bundles, (manifests) => {
-				const planned = planObjects({
-					manifests,
-					namespace: agentNamespace,
-					applySetId,
-					discovery
-				});
-				return Result.isFailure(planned)
-					? Effect.die(planned.failure)
-					: Effect.succeed(planned.success);
-			});
-		});
-
-		/** Per object, the checks the customer's grant to `akua-apply` denies (empty: covered). */
-		const deniedOf = Effect.fnUntraced(function* (objects: ReadonlyArray<PlannedObject>) {
-			const reviewed = new Map(
-				yield* Effect.forEach(
-					requiredAccess(objects),
-					(review) =>
-						api.reviewAccess({ review }).pipe(
-							Effect.orDie,
-							Effect.map((answer) => [attributesKey(review), answer] as const)
-						),
-					{ concurrency: 8 }
-				)
-			);
-			return objects.map((object) => ({
-				object,
-				denied: requiredAccess([object]).flatMap((review) => {
-					const answer = reviewed.get(attributesKey(review));
-					return answer?.status?.allowed === true ? [] : [answer ?? review];
-				})
-			}));
-		});
-
-		const apply = (applySetId: ApplySetIdValue, objects: ReadonlyArray<PlannedObject>) =>
-			engine
-				.apply({
-					applySetId,
-					manifests: objects.map((object) => object.manifest),
-					revisionChanged: true,
-					forceSelector,
-					exclusionSelector,
-					timeoutSeconds: engineTimeoutSeconds
-				})
-				.pipe(Effect.orDie);
-
-		const prune = (applySetId: ApplySetIdValue, stale: ReadonlyArray<Entry>) =>
-			stale.length === 0
-				? Effect.succeed<ReadonlyArray<Entry>>([])
-				: engine
-						.prune({ applySetId, stale, exclusionSelector, timeoutSeconds: engineTimeoutSeconds })
-						.pipe(
-							Effect.orDie,
-							Effect.map((pruned) => pruned.survivors.map((survivor) => survivor.entry))
-						);
-
-		/** The live copy of each object the first bundle replaces, readable as `akua-apply`. */
-		const snapshot = Effect.fnUntraced(function* (objects: ReadonlyArray<PlannedObject>) {
-			const live = yield* Effect.forEach(
-				objects,
-				(object) =>
-					object.resource === null || typeof object.manifest.apiVersion !== 'string'
-						? Effect.succeed(null)
-						: extras
-								.getObjectAsApply({
-									apiVersion: object.manifest.apiVersion,
-									resource: object.resource,
-									namespace: object.namespace === '' ? null : object.namespace,
-									name: object.name
-								})
-								.pipe(Effect.orElseSucceed(() => null)),
-				{ concurrency: 4 }
-			);
-			return live.flatMap((object) => (object === null ? [] : [asManifest(object)]));
-		});
-
-		/** Runs (or, after a restart, repeats) the recorded apply; the engine's answer narrows `created`. */
 		const applyUpdate = Effect.fnUntraced(function* (
 			state: BundleState,
 			update: typeof BundleUpdate.Type
 		) {
-			const { applySetId, inventory } = yield* applySet(update.placementId);
-			const [objects = []] = yield* plan([update.objects], applySetId);
-			const applying = new Set(update.applied.map((entry) => entry.key));
-			yield* writeParent(
-				update.placementId,
-				applySetId,
-				update.to,
-				unionInventory(inventory, update.applied)
-			);
-			const applied = yield* apply(
-				applySetId,
-				objects.filter((object) => applying.has(object.key))
-			);
-			const created = new Set(
-				applied.changes.filter((change) => change.action === 'created').map((change) => change.key)
-			);
-			const recorded = {
-				...update,
-				created: update.created.filter((entry) => created.has(entry.key)),
-				appliedAt: yield* Clock.currentTimeMillis
-			};
+			const { recorded, failure } = yield* applier.applyRecorded(parentOf(update), update);
 			yield* writeState({ update: recorded });
-			if (applied.failure !== null)
-				return yield* restore(state, recorded, 'apply-failed', applied.failure.message);
+			if (failure !== null) return yield* restore(state, recorded, 'apply-failed', failure.message);
 			return {
 				_tag: 'updating',
 				from: update.from,
@@ -595,32 +253,7 @@ export const agentUpdaterLayer = Layer.effect(
 			detail: string | null = null
 		): Effect.fn.Return<Phase> {
 			const now = yield* Clock.currentTimeMillis;
-			const { applySetId } = yield* applySet(update.placementId);
-			const [previous = []] = yield* plan([state.current?.objects ?? []], applySetId);
-			const allowed = (yield* deniedOf(previous))
-				.filter((entry) => entry.denied.length === 0)
-				.map((entry) => entry.object);
-			if (allowed.length > 0) {
-				const reapplied = yield* apply(applySetId, allowed);
-				if (reapplied.failure !== null)
-					yield* Effect.logError('last good bundle not fully re-applied').pipe(
-						Effect.annotateLogs({ message: reapplied.failure.message })
-					);
-			}
-			const keep = new Set(previous.map((object) => object.key));
-			const survivors = yield* prune(
-				applySetId,
-				update.created.filter((entry) => !keep.has(entry.key))
-			);
-			yield* writeParent(
-				update.placementId,
-				applySetId,
-				update.from,
-				unionInventory(
-					allowed.map((object) => object.entry),
-					survivors
-				)
-			);
+			yield* applier.rollBack(parentOf(update), state.current?.objects ?? [], update);
 			yield* report(update.placementId, update.generation, {
 				_tag: 'failed',
 				reason: reason === 'apply-failed' ? 'manifests-rejected' : 'unhealthy',
@@ -645,15 +278,7 @@ export const agentUpdaterLayer = Layer.effect(
 		});
 
 		const complete = Effect.fnUntraced(function* (update: typeof BundleUpdate.Type) {
-			const { applySetId, inventory } = yield* applySet(update.placementId);
-			// A member the grant no longer lets Akua write is the customer's now, never pruned.
-			const survivors = yield* prune(applySetId, staleEntries(inventory, update.planned));
-			yield* writeParent(
-				update.placementId,
-				applySetId,
-				update.to,
-				unionInventory(update.applied, survivors)
-			);
+			yield* applier.settle(parentOf(update), update);
 			yield* report(update.placementId, update.generation, {
 				_tag: 'ready',
 				revision: update.revision,
@@ -722,13 +347,14 @@ export const agentUpdaterLayer = Layer.effect(
 			const { state, bundle, running } = args;
 			const placementId = bundle.placement.placement_id;
 			const now = yield* Clock.currentTimeMillis;
-			const { applySetId, inventory } = yield* applySet(placementId);
-			const [objects = [], previous = []] = yield* plan(
+			const name = applySetParentName(placementId);
+			const { applySetId, inventory } = yield* applier.applySet(name);
+			const [objects = [], previous = []] = yield* applier.plan(
 				[bundle.objects, state.current?.objects ?? []],
 				applySetId
 			);
 			const previousByKey = new Map(previous.map((object) => [object.key, object]));
-			const reviewed = yield* deniedOf(objects);
+			const reviewed = yield* applier.deniedOf(objects);
 			const missing = new Map<string, Review>();
 			for (const { object, denied } of reviewed) {
 				if (denied.length === 0 || args.adopt) continue;
@@ -774,15 +400,15 @@ export const agentUpdaterLayer = Layer.effect(
 					yield* Effect.logError('bundle of the running release too large to keep');
 					return { _tag: 'steady', running } satisfies Phase;
 				}
-				yield* writeParent(placementId, applySetId, running, unionInventory(inventory, entries));
-				const applied = yield* apply(applySetId, allowed);
+				yield* applier.writeParent(name, applySetId, running, unionInventory(inventory, entries));
+				const applied = yield* applier.apply(applySetId, allowed);
 				if (applied.failure !== null) {
 					yield* Effect.logWarning('bundle of the running release not adopted').pipe(
 						Effect.annotateLogs({ message: applied.failure.message })
 					);
 					return { _tag: 'steady', running } satisfies Phase;
 				}
-				yield* writeParent(placementId, applySetId, running, entries);
+				yield* applier.writeParent(name, applySetId, running, entries);
 				yield* report(placementId, bundle.placement.generation, {
 					_tag: 'ready',
 					revision: bundle.placement.source.revision,
@@ -794,27 +420,17 @@ export const agentUpdaterLayer = Layer.effect(
 				return { _tag: 'steady', running } satisfies Phase;
 			}
 
-			// The rollback target is in the cluster before anything changes.
-			const current = state.current ?? { release: running, objects: yield* snapshot(allowed) };
-			const kept = new Set(
-				state.current === null
-					? (yield* plan([current.objects], applySetId)).flat().map((object) => object.key)
-					: previous.map((object) => object.key)
-			);
-			const update: typeof BundleUpdate.Type = {
-				from: running,
-				to: bundle.release,
-				startedAt: now,
-				deadline: now + args.verifySeconds * 1000,
-				placementId,
-				generation: bundle.placement.generation,
-				revision: bundle.placement.source.revision,
+			const { current, update } = yield* applier.prepare({
+				applySetId,
 				objects: bundle.objects,
-				planned: objects.map((object) => object.entry),
-				applied: entries,
-				created: entries.filter((entry) => !kept.has(entry.key)),
-				appliedAt: null
-			};
+				planned: objects,
+				previous,
+				allowed,
+				current: state.current,
+				from: running,
+				bundle,
+				verifySeconds: args.verifySeconds
+			});
 			const recorded = yield* stateSecret
 				.write(state.current === null ? { current, update } : { update })
 				.pipe(Effect.result);
@@ -841,12 +457,31 @@ export const agentUpdaterLayer = Layer.effect(
 			return yield* applyUpdate({ ...state, current }, update);
 		});
 
+		const agentApply = bundleStateSecret(extras, updaterBundleSecret).peek.pipe(
+			Effect.map((state) => ({
+				inFlight: state.updating,
+				rejected: state.rejected?.rejected.version ?? null
+			})),
+			// Unreadable: hold, as if the agent were applying the updater's part.
+			Effect.catchDefect((defect) =>
+				Effect.logError('agent state unreadable; holding').pipe(
+					Effect.annotateLogs({ defect: String(defect) }),
+					Effect.as({ inFlight: true, rejected: null })
+				)
+			)
+		);
+
 		const step = Effect.fn('AgentUpdater.step')(function* (args: {
 			readonly instruction: Instruction;
 			readonly running: Release;
+			readonly version: string;
 		}) {
 			const state = yield* readState;
 			if (state.update !== null) return yield* follow(state, state.update, args.instruction);
+			// Never both at once: not while the agent applies or gates the updater's part,
+			// and never as an updater release the agent rejected (it is being replaced).
+			const agent = yield* agentApply;
+			const held = agent.inFlight || agent.rejected === args.version;
 
 			const rejection = state['rolled-back'];
 			const desired = args.instruction.desired;
@@ -856,8 +491,8 @@ export const agentUpdaterLayer = Layer.effect(
 				rejection?.rejected.image !== desired.image
 					? desired
 					: null;
-			if (offered !== null || state.current === null) {
-				const bundle = yield* readBundle;
+			if (!held && (offered !== null || state.current === null)) {
+				const bundle = yield* readAgentBundle;
 				const adopt =
 					bundle !== null && state.current === null && bundle.release.image === args.running.image;
 				if (bundle !== null && (adopt || bundle.release.image === offered?.image))
@@ -890,7 +525,7 @@ export const agentUpdaterLayer = Layer.effect(
 			})
 		);
 
-		return AgentUpdater.of({ step, inFlight });
+		return AgentUpdater.of({ step, inFlight, agentApply });
 	})
 );
 
@@ -904,6 +539,8 @@ export class UpdaterInstructions extends Context.Service<
 	{
 		readonly latest: SubscriptionRef.SubscriptionRef<Instruction | null>;
 		readonly channel: SubscriptionRef.SubscriptionRef<ChannelState>;
+		/** `/readyz`: the loop read the agent Deployment and its state once. */
+		readonly ready: SubscriptionRef.SubscriptionRef<boolean>;
 	}
 >()('akua/cluster-agent/UpdaterInstructions') {
 	static readonly layer = Layer.effect(
@@ -915,7 +552,8 @@ export class UpdaterInstructions extends Context.Service<
 					_tag: 'connecting',
 					attempt: 0,
 					since: 0
-				})
+				}),
+				ready: yield* SubscriptionRef.make(false)
 			});
 		})
 	);
@@ -943,17 +581,42 @@ const idleRecheck = Duration.minutes(15);
 /**
  * The updater process: report its phase over HTTP whenever it changes,
  * take the newest instruction (the report's answer or a later push), step.
- * While an update is in flight it steps every 10 s; otherwise it waits for
- * the next push. While its channel is down the platform's observations are
- * unknown, not absent: an outage never rolls back a release it could not
- * see.
+ * While an update is in flight it steps every 10 s, while the agent applies
+ * the updater's part every 30 s; otherwise it waits for the next push.
+ * While its channel is down the platform's observations are unknown, not
+ * absent: an outage never rolls back a release it could not see. Once its
+ * channel is open and the platform answered a phase it reported, it writes
+ * `reported` with its version: the agent's gate for a new updater.
  */
 export const updaterLoop = (updaterVersion: string) =>
 	Effect.gen(function* () {
 		const api = yield* AgentApi;
 		const updater = yield* AgentUpdater;
 		const kubernetes = yield* UpdaterKubernetes;
-		const { latest, channel } = yield* UpdaterInstructions;
+		const extras = yield* KubernetesExtras;
+		const { latest, channel, ready } = yield* UpdaterInstructions;
+		const accepted = yield* Deferred.make<void>();
+		yield* Effect.forkChild(
+			Effect.gen(function* () {
+				yield* SubscriptionRef.changes(channel).pipe(
+					Stream.filter((state) => state._tag === 'open'),
+					Stream.runHead
+				);
+				yield* Deferred.await(accepted);
+				if ((yield* readReported(extras))?.version !== updaterVersion)
+					yield* writeReported(extras, {
+						version: updaterVersion,
+						at: yield* Clock.currentTimeMillis
+					}).pipe(
+						Effect.tapError((error) =>
+							Effect.logWarning('attestation not written; retrying').pipe(
+								Effect.annotateLogs({ reason: error._tag })
+							)
+						),
+						Effect.retry(Schedule.spaced(Duration.seconds(10)))
+					);
+			})
+		);
 		let reported: string | null = null;
 		let phase: Phase | null = null;
 		while (true) {
@@ -968,14 +631,23 @@ export const updaterLoop = (updaterVersion: string) =>
 			}
 			const current: Phase = phase ??
 				(yield* updater.inFlight) ?? { _tag: 'steady', running: running.value };
-			const key = JSON.stringify(current);
+			const agent = yield* updater.agentApply;
+			if (!(yield* SubscriptionRef.get(ready))) yield* SubscriptionRef.set(ready, true);
+			const key = JSON.stringify([current, agent.rejected]);
 			let unreported = key !== reported;
 			if (unreported) {
 				const answered = yield* api
-					.updaterPhase({ payload: { updater_version: updaterVersion, phase: current } })
+					.updaterPhase({
+						payload: {
+							updater_version: updaterVersion,
+							phase: current,
+							...(agent.rejected === null ? {} : { updater_rejected: agent.rejected })
+						}
+					})
 					.pipe(Effect.result);
 				if (Result.isSuccess(answered)) {
 					yield* SubscriptionRef.set(latest, answered.success);
+					yield* Deferred.succeed(accepted, undefined);
 					reported = key;
 					unreported = false;
 				} else {
@@ -991,7 +663,7 @@ export const updaterLoop = (updaterVersion: string) =>
 			}
 			const instruction = (yield* SubscriptionRef.get(latest)) ?? initialInstruction;
 			phase = yield* updater
-				.step({ instruction, running: running.value })
+				.step({ instruction, running: running.value, version: updaterVersion })
 				.pipe(
 					Effect.catchDefect((defect) =>
 						Effect.logWarning('updater step failed').pipe(
@@ -1004,7 +676,16 @@ export const updaterLoop = (updaterVersion: string) =>
 				yield* Effect.sleep(Duration.seconds(10));
 				continue;
 			}
-			if (JSON.stringify(phase) !== reported) continue;
+			if (JSON.stringify([phase, agent.rejected]) !== reported) {
+				// The platform did not take the last report: try again shortly, not at once.
+				if (unreported) yield* Effect.sleep(Duration.seconds(10));
+				continue;
+			}
+			if ((yield* updater.agentApply).inFlight) {
+				// The agent applies the updater's part; look again once it is done.
+				yield* Effect.sleep(Duration.seconds(30));
+				continue;
+			}
 			// Settled: wait for the platform's next instruction.
 			yield* SubscriptionRef.changes(latest).pipe(
 				Stream.drop(1),

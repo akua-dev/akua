@@ -40,6 +40,12 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
             - name: AKUA_HEALTH_PORT
               value: "8081"
+          # Part of the agent's gate when it applies a new updater.
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /healthz

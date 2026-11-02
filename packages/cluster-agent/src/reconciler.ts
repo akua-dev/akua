@@ -306,7 +306,7 @@ export const placementReconcilerLayer = Layer.effect(
 		) =>
 			kubernetes.applyApplySetParent({
 				parent: buildParent({
-					placementId: desired.placement_id,
+					name: applySetParentName(desired.placement_id),
 					namespace: desired.namespace,
 					applySetId,
 					agentVersion: config.release.version,

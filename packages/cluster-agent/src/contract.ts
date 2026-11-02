@@ -613,8 +613,12 @@ export class PlacementReconciler extends Context.Service<
  * StatusBatch from it. An agent that starts but cannot apply or report is
  * rolled back (`no-reconcile`), not kept. A rollback re-applies the last
  * good bundle kept in the cluster and prunes what the new one created. The
- * updater's own objects are excluded; the agent is to apply them (not yet
- * implemented), never both at once.
+ * updater's own objects are excluded: the agent applies them
+ * (`UpdaterRollout`), and never both at once. The updater starts no update
+ * while the agent's state records one in flight or rejects the updater's
+ * own release; the agent starts only once the updater verified the agent's
+ * part at the agent's release and is idle; the platform offers no release
+ * while the updater runs behind the agent unless the agent rejected it.
  */
 export class AgentUpdater extends Context.Service<
 	AgentUpdater,
@@ -622,7 +626,18 @@ export class AgentUpdater extends Context.Service<
 		step(args: {
 			readonly instruction: typeof UpdaterInstruction.Type;
 			readonly running: typeof AgentRelease.Type;
+			/** This updater's own version. */
+			readonly version: string;
 		}): Effect.Effect<typeof UpdaterPhase.Type, HttpClientError.HttpClientError>;
+		/**
+		 * The agent's apply of the updater's own objects, from the agent's
+		 * state Secret: whether one is in flight and the updater release the
+		 * agent rejected (reported as `updater_rejected`).
+		 */
+		readonly agentApply: Effect.Effect<{
+			readonly inFlight: boolean;
+			readonly rejected: string | null;
+		}>;
 		/**
 		 * The update recorded in the cluster, as a phase, without acting on it:
 		 * a restarted updater reports it instead of `steady`, so the platform
@@ -644,7 +659,7 @@ export const agentClusterRole = {
 	]
 } satisfies ClusterRole;
 
-/** In akua-system only: impersonate the apply account, keep its own identity and state. */
+/** In akua-system only: impersonate the apply account, keep its own identity and state, read the updater's. */
 export const agentRole = {
 	apiVersion: 'rbac.authorization.k8s.io/v1',
 	kind: 'Role',
@@ -659,8 +674,15 @@ export const agentRole = {
 		{
 			apiGroups: [''],
 			resources: ['secrets'],
-			resourceNames: ['akua-agent-identity', 'akua-tunnel-connector'],
+			resourceNames: ['akua-agent-identity', 'akua-tunnel-connector', 'akua-updater-bundle'],
 			verbs: ['get', 'update', 'patch']
+		},
+		/** The updater's state: the agent applies the updater's objects only while it is idle. */
+		{
+			apiGroups: [''],
+			resources: ['secrets'],
+			resourceNames: ['akua-agent-bundle'],
+			verbs: ['get']
 		}
 	]
 } satisfies Role;
@@ -698,10 +720,11 @@ export const updaterRole = {
 		},
 		{ apiGroups: ['apps'], resources: ['replicasets'], verbs: ['get', 'list'] },
 		{ apiGroups: [''], resources: ['pods'], verbs: ['get', 'list'] },
+		/** `akua-updater-bundle` is the agent's state: no agent update while it applies the updater. */
 		{
 			apiGroups: [''],
 			resources: ['secrets'],
-			resourceNames: ['akua-agent-identity'],
+			resourceNames: ['akua-agent-identity', 'akua-updater-bundle'],
 			verbs: ['get']
 		},
 		{

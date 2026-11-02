@@ -103,7 +103,8 @@ export const groupKinds = (entries: ReadonlyArray<Entry>): string =>
 		.join(',');
 
 export const buildParent = (args: {
-	readonly placementId: PlacementId;
+	/** `applySetParentName` of the Placement, or a bundle's own parent. */
+	readonly name: string;
 	readonly namespace: string;
 	readonly applySetId: typeof ApplySetId.Type;
 	readonly agentVersion: string;
@@ -121,7 +122,7 @@ export const buildParent = (args: {
 		kind: 'Secret',
 		type: 'Opaque',
 		metadata: {
-			name: applySetParentName(args.placementId),
+			name: args.name,
 			namespace: args.namespace,
 			labels: { [applySetLabels.id]: args.applySetId },
 			annotations: {
