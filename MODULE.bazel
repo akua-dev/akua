@@ -12,9 +12,11 @@ module(name = "akua")
 bazel_dep(name = "aspect_rules_js", version = "3.4.0")
 bazel_dep(name = "bazel_lib", version = "3.7.0")
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "gazelle", version = "0.47.0")
 bazel_dep(name = "hermetic_cc_toolchain", version = "4.3.0")
 bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "rules_cc", version = "0.2.17")
+bazel_dep(name = "rules_go", version = "0.59.0")
 bazel_dep(name = "rules_pkg", version = "1.3.0")
 bazel_dep(name = "rules_rust", version = "0.67.0")
 
@@ -370,4 +372,40 @@ img_pull(
     registry = "gcr.io",
     repository = "distroless/base-debian12",
     tag = "nonroot",
+)
+
+# ---------------------------------------------------------------------------
+# Go: the akua-apply engine of the cluster agent (packages/cluster-agent/engine).
+# ---------------------------------------------------------------------------
+
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_mod = "//packages/cluster-agent/engine:go.mod")
+use_repo(
+    go_deps,
+    "com_github_fluxcd_cli_utils",
+    "com_github_fluxcd_pkg_ssa",
+    "io_k8s_api",
+    "io_k8s_apimachinery",
+    "io_k8s_client_go",
+    "io_k8s_klog_v2",
+    "io_k8s_sigs_controller_runtime",
+    "io_k8s_sigs_yaml",
+)
+
+# gazelle accepts go_deps overrides and named Go SDKs only from the root
+# module (go_deps.bzl _fail_on_non_root_overrides), so these apply to a
+# standalone checkout; the monorepo root mirrors the cli-utils override.
+go_sdk_root = use_extension("@rules_go//go:extensions.bzl", "go_sdk", dev_dependency = True)
+go_sdk_root.download(version = "1.27.3")
+
+go_deps_root = use_extension("@gazelle//:extensions.bzl", "go_deps", dev_dependency = True)
+go_deps_root.module_override(
+    patch_strip = 1,
+    patches = ["//third_party/fluxcd-cli-utils:patches/0001-watcher-informer-transform-and-list-options.patch"],
+    path = "github.com/fluxcd/cli-utils",
+)
+go_deps_root.module_override(
+    patch_strip = 1,
+    patches = ["//third_party/kustomize-kyaml:patches/0001-openapi-embed-builtin-schema.patch"],
+    path = "sigs.k8s.io/kustomize/kyaml",
 )

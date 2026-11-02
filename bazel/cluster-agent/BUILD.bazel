@@ -1,0 +1,272 @@
+"""The akua-apply engine: the Go binary the cluster agent image ships, and its tests.
+
+Built only from fluxcd/pkg/ssa and fluxcd/cli-utils (patched by
+//third_party/fluxcd-cli-utils through go_deps.module_override).
+"""
+
+load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("//bazel:version.bzl", "PACKAGE_SOURCE_VERSION")
+
+_SRC = "//packages/cluster-agent/engine"
+
+_IMPORT = "github.com/akua-dev/akua/packages/cluster-agent/engine"
+
+go_library(
+    name = "protocol",
+    srcs = [_SRC + ":protocol_srcs"],
+    importpath = _IMPORT + "/internal/protocol",
+    deps = [
+        "@com_github_fluxcd_cli_utils//pkg/object",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+    ],
+)
+
+go_library(
+    name = "cache",
+    srcs = [_SRC + ":cache_srcs"],
+    importpath = _IMPORT + "/internal/cache",
+    deps = [
+        "@com_github_fluxcd_cli_utils//pkg/kstatus/polling/clusterreader",
+        "@com_github_fluxcd_cli_utils//pkg/kstatus/polling/engine",
+        "@com_github_fluxcd_cli_utils//pkg/kstatus/watcher",
+        "@com_github_fluxcd_cli_utils//pkg/object",
+        "@io_k8s_apimachinery//pkg/api/errors",
+        "@io_k8s_apimachinery//pkg/api/meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
+        "@io_k8s_apimachinery//pkg/labels",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_apimachinery//pkg/watch",
+        "@io_k8s_client_go//dynamic",
+        "@io_k8s_client_go//tools/cache",
+        "@io_k8s_klog_v2//:klog",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+    ],
+)
+
+go_library(
+    name = "live",
+    srcs = [_SRC + ":live_srcs"],
+    importpath = _IMPORT + "/internal/live",
+    deps = [
+        ":cache",
+        ":protocol",
+        "@com_github_fluxcd_cli_utils//pkg/kstatus/polling/event",
+        "@com_github_fluxcd_cli_utils//pkg/kstatus/status",
+        "@com_github_fluxcd_cli_utils//pkg/kstatus/watcher",
+        "@com_github_fluxcd_cli_utils//pkg/object",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/api/errors",
+        "@io_k8s_apimachinery//pkg/api/meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_apimachinery//pkg/types",
+        "@io_k8s_client_go//tools/cache",
+        "@io_k8s_klog_v2//:klog",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+    ],
+)
+
+go_library(
+    name = "ops",
+    srcs = [_SRC + ":ops_srcs"],
+    importpath = _IMPORT + "/internal/ops",
+    deps = [
+        ":cache",
+        ":protocol",
+        "@com_github_fluxcd_cli_utils//pkg/kstatus/polling",
+        "@com_github_fluxcd_cli_utils//pkg/kstatus/status",
+        "@com_github_fluxcd_cli_utils//pkg/object",
+        "@com_github_fluxcd_pkg_ssa//:ssa",
+        "@com_github_fluxcd_pkg_ssa//utils",
+        "@io_k8s_apimachinery//pkg/api/errors",
+        "@io_k8s_apimachinery//pkg/api/meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
+        "@io_k8s_apimachinery//pkg/util/wait",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+    ],
+)
+
+go_library(
+    name = "serve",
+    srcs = [_SRC + ":serve_srcs"],
+    importpath = _IMPORT + "/internal/serve",
+    deps = [
+        ":protocol",
+        "@io_k8s_klog_v2//:klog",
+    ],
+)
+
+go_library(
+    name = "akua_apply_lib",
+    srcs = [_SRC + ":akua_apply_srcs"],
+    importpath = _IMPORT + "/cmd/akua-apply",
+    visibility = ["//visibility:private"],
+    deps = [
+        ":cache",
+        ":live",
+        ":ops",
+        ":protocol",
+        ":serve",
+        "@io_k8s_client_go//dynamic",
+        "@io_k8s_client_go//rest",
+        "@io_k8s_client_go//tools/clientcmd",
+        "@io_k8s_klog_v2//:klog",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+        "@io_k8s_sigs_controller_runtime//pkg/client/apiutil",
+        "@io_k8s_sigs_controller_runtime//pkg/log",
+    ],
+)
+
+# The engine binary of the cluster agent image (/usr/local/bin/akua-apply),
+# one per image architecture; `ready` reports PACKAGE_SOURCE_VERSION.
+[
+    go_binary(
+        name = "akua_apply_linux_" + arch,
+        out = "akua-apply-linux-" + arch,
+        embed = [":akua_apply_lib"],
+        gc_linkopts = [
+            "-s",
+            "-w",
+        ],
+        goarch = arch,
+        goos = "linux",
+        pure = "on",
+        visibility = ["//visibility:public"],
+        x_defs = {"main.version": PACKAGE_SOURCE_VERSION},
+    )
+    for arch in [
+        "amd64",
+        "arm64",
+    ]
+]
+
+go_test(
+    name = "protocol_test",
+    size = "small",
+    srcs = [_SRC + ":protocol_test_srcs"],
+    embed = [":protocol"],
+    deps = [
+        "@com_github_fluxcd_cli_utils//pkg/object",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+    ],
+)
+
+go_test(
+    name = "cache_test",
+    size = "small",
+    srcs = [_SRC + ":cache_test_srcs"],
+    embed = [":cache"],
+    deps = [
+        "@com_github_fluxcd_cli_utils//pkg/kstatus/polling/event",
+        "@com_github_fluxcd_cli_utils//pkg/kstatus/status",
+        "@com_github_fluxcd_cli_utils//pkg/kstatus/watcher",
+        "@com_github_fluxcd_cli_utils//pkg/object",
+        "@io_k8s_apimachinery//pkg/api/errors",
+        "@io_k8s_apimachinery//pkg/api/meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_apimachinery//pkg/types",
+        "@io_k8s_client_go//dynamic/fake",
+        "@io_k8s_client_go//testing",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+    ],
+)
+
+go_test(
+    name = "live_test",
+    size = "small",
+    srcs = [_SRC + ":live_test_srcs"],
+    embed = [":live"],
+    deps = [
+        ":cache",
+        ":protocol",
+        "@io_k8s_apimachinery//pkg/api/meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_client_go//dynamic/fake",
+        "@io_k8s_client_go//kubernetes/scheme",
+        "@io_k8s_sigs_controller_runtime//pkg/client/fake",
+        "@io_k8s_sigs_yaml//:yaml",
+    ],
+)
+
+go_test(
+    name = "ops_test",
+    size = "small",
+    srcs = [_SRC + ":ops_test_srcs"],
+    embed = [":ops"],
+    deps = [
+        ":cache",
+        ":protocol",
+        "@com_github_fluxcd_cli_utils//pkg/object",
+        "@com_github_fluxcd_pkg_ssa//:ssa",
+        "@com_github_fluxcd_pkg_ssa//errors",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/api/errors",
+        "@io_k8s_apimachinery//pkg/api/meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_client_go//dynamic/fake",
+        "@io_k8s_client_go//kubernetes/scheme",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+        "@io_k8s_sigs_controller_runtime//pkg/client/fake",
+        "@io_k8s_sigs_controller_runtime//pkg/client/interceptor",
+    ],
+)
+
+go_test(
+    name = "serve_test",
+    size = "small",
+    srcs = [_SRC + ":serve_test_srcs"],
+    embed = [":serve"],
+    deps = [":protocol"],
+)
+
+# ClusterAgent.ts liveReasonFixtures.reasonTest: every Argo CD health
+# fixture through the engine's node builder, against reviewed verdicts.
+go_test(
+    name = "live_reason_fixtures_test",
+    size = "small",
+    srcs = [_SRC + ":fixture_test_srcs"],
+    data = [_SRC + ":fixture_testdata"],
+    rundir = "packages/cluster-agent/engine",
+    deps = [
+        ":live",
+        ":protocol",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
+        "@io_k8s_sigs_yaml//:yaml",
+    ],
+)
+
+test_suite(
+    name = "engine_tests",
+    tests = [
+        ":cache_test",
+        ":live_reason_fixtures_test",
+        ":live_test",
+        ":ops_test",
+        ":protocol_test",
+        ":serve_test",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "akua_apply_binaries",
+    srcs = [
+        ":akua_apply_linux_amd64",
+        ":akua_apply_linux_arm64",
+    ],
+    visibility = ["//visibility:public"],
+)
