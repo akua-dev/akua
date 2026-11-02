@@ -3,7 +3,13 @@ import { Base64, Base64Url } from 'effect/encoding';
 import { parseAllDocuments } from 'yaml';
 import type { GeneratedSecretPlan } from '@platform/api-contract/internal/generated-secrets';
 import type { DesiredState } from '@platform/api-contract/services/cluster-agent';
-import { applySetLabels, type ApplySetId, type InventoryEntry, Manifest } from './contract';
+import {
+	agentNamespace,
+	applySetLabels,
+	type ApplySetId,
+	type InventoryEntry,
+	Manifest
+} from './contract';
 import { objectKey, splitApiVersion } from './applyset';
 import type { DiscoveredResource } from './kubernetes';
 import type { SourceFile } from './git-source';
@@ -182,7 +188,8 @@ export const reservedViolation = (
 	objects: ReadonlyArray<PlannedObject>,
 	reserved: (typeof DesiredState.Type)['reserved']
 ): PlannedObject | null => {
-	const namespaces = new Set<string>(reserved.namespaces);
+	// akua-system is always the manager's, whatever the desired state lists.
+	const namespaces = new Set<string>([...reserved.namespaces, agentNamespace]);
 	for (const object of objects) {
 		if (object.namespace !== '' && namespaces.has(object.namespace)) return object;
 		if (object.group === '' && object.kind === 'Namespace' && namespaces.has(object.name))

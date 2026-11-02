@@ -100,10 +100,15 @@ metadata:
   labels:
     {{- include "akua.componentLabels" (dict "root" . "component" "updater") | nindent 4 }}
 rules:
+  # The agent bundle is applied as akua-apply, so the customer's grant decides.
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    resourceNames: ["akua-apply"]
+    verbs: ["impersonate"]
   - apiGroups: ["apps"]
     resources: ["deployments"]
     resourceNames: ["akua-agent"]
-    verbs: ["get", "patch"]
+    verbs: ["get"]
   - apiGroups: ["apps"]
     resources: ["replicasets"]
     verbs: ["get", "list"]
@@ -114,6 +119,10 @@ rules:
     resources: ["secrets"]
     resourceNames: ["akua-agent-identity"]
     verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["akua-agent-bundle"]
+    verbs: ["get", "update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

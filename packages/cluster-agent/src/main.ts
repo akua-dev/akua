@@ -12,7 +12,7 @@ import { agentRpcHandlers } from './agent-rpcs';
 import { ChannelDialer, type ChannelState, runChannel } from './channel';
 import { detectDistribution } from './cluster-reads';
 import { AgentConfig, PlatformOrigin } from './config';
-import { agentUserAgent, updaterUserAgent } from './contract';
+import { agentUserAgent, enginePath, updaterUserAgent } from './contract';
 import { engineLayer, EngineStatus } from './engine';
 import { GitSource } from './git-source';
 import { healthServer } from './health';
@@ -182,7 +182,12 @@ const updaterLayer = Layer.unwrap(
 		);
 		const agentApi = agentApiLive.pipe(Layer.provide(Layer.mergeAll(http, credentials)));
 		const deployment = UpdaterKubernetes.layer.pipe(Layer.provide(http));
-		const updater = agentUpdaterLayer.pipe(Layer.provide(deployment));
+		// Its own engine process: the agent may be the broken part.
+		const engine = engineLayer({ path: enginePath, userAgent: updaterUserAgent(version) });
+		const git = GitSource.layer.pipe(Layer.provide(http));
+		const updater = agentUpdaterLayer.pipe(
+			Layer.provide(Layer.mergeAll(deployment, kubernetes, engine, git, agentApi))
+		);
 		const instructions = UpdaterInstructions.layer;
 		const rpcs = updaterRpcHandlers.pipe(Layer.provide(instructions));
 		const dialer = ChannelDialer.layer.pipe(Layer.provide(BunSocket.layerWebSocketConstructor));

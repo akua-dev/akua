@@ -1,42 +1,37 @@
 import { assert, describe, it } from '@effect/vitest';
-import { Effect, Fiber, Layer, Ref, Schema, SubscriptionRef } from 'effect';
+import { Effect, Fiber, Ref, Schema, SubscriptionRef } from 'effect';
 import { TestClock } from 'effect/testing';
-import { agentUpdaterLayer, updaterAnnotations, UpdaterInstructions, updaterLoop } from './updater';
+import { UpdaterInstructions, updaterLoop } from './updater';
 import { ConnectionId } from '@platform/api-contract/services/cluster-agent-channel';
 import type { UpdaterInstruction } from '@platform/api-contract/services/cluster-agent';
+import { FakeAgentDeployment } from './testing/fake-agent-deployment';
+import { FakePlatform } from './testing/fake-platform';
+import { AgentUpdater } from './contract';
 import {
-	agentDeploymentObject,
-	FakeAgentDeployment,
-	fakeAgentDeploymentLayer
-} from './testing/fake-agent-deployment';
-import { agentHarness } from './testing/agent-harness';
-import { FakePlatform, fakePlatformState } from './testing/fake-platform';
-import { testEnrollmentCode, testImage } from './testing/settings';
-import { PlacementReconciler } from './contract';
+	placeBundle,
+	revisionV1,
+	revisionV2,
+	rollingEngine,
+	updaterHarness,
+	v1,
+	v2
+} from './testing/bundle';
 
-const v1 = { version: '1.0.0', image: testImage('1'), protocol: 1 };
-const v2 = { version: '1.1.0', image: testImage('2'), protocol: 1 };
+const layer = updaterHarness({
+	platform: { instruction: { desired: v2, verify_seconds: 120, observed: null } }
+});
 
-const layer = agentUpdaterLayer.pipe(
-	Layer.provideMerge(UpdaterInstructions.layer),
-	Layer.provideMerge(
-		fakeAgentDeploymentLayer(
-			agentDeploymentObject(v1.image, { [updaterAnnotations.release]: JSON.stringify(v1) })
-		)
-	),
-	Layer.provideMerge(
-		agentHarness({
-			platform: fakePlatformState({
-				enrollmentCode: testEnrollmentCode,
-				instruction: {
-					desired: v2,
-					verify_seconds: 120,
-					observed: null
-				}
-			})
-		})
-	)
-);
+/** v1's bundle adopted, v2's placed: what the loop finds when Cluster offers v2. */
+const offered = Effect.gen(function* () {
+	yield* rollingEngine;
+	yield* placeBundle(1, revisionV1, 1);
+	const updater = yield* AgentUpdater;
+	yield* updater.step({
+		instruction: { desired: null, verify_seconds: 120, observed: null },
+		running: v1
+	});
+	yield* placeBundle(2, revisionV2, 2);
+});
 
 const image = Effect.gen(function* () {
 	const deployment = yield* Ref.get((yield* FakeAgentDeployment).deployment);
@@ -68,8 +63,7 @@ describe('updaterLoop', () => {
 		'reports its phase on change, keeps a verifying release while its channel is down, then verifies it from a push',
 		() =>
 			Effect.gen(function* () {
-				// The harness enrolls the agent, so the updater shares its identity.
-				yield* PlacementReconciler;
+				yield* offered;
 				yield* channel(true);
 				const fake = yield* FakeAgentDeployment;
 				const loop = yield* Effect.forkChild(updaterLoop('1.0.0'));
@@ -86,6 +80,8 @@ describe('updaterLoop', () => {
 				});
 				let phase = '';
 				for (let tick = 0; tick < 20 && phase !== 'steady'; tick += 1) {
+					// The fake platform answers on the real event loop; give it a turn.
+					yield* TestClock.withLive(Effect.sleep('5 millis'));
 					yield* TestClock.adjust('10 seconds');
 					phase = (yield* phases).at(-1)?._tag ?? '';
 				}
@@ -103,7 +99,7 @@ describe('updaterLoop', () => {
 
 	it.effect('rolls back with no-presence when no push ever shows the new release', () =>
 		Effect.gen(function* () {
-			yield* PlacementReconciler;
+			yield* offered;
 			yield* channel(true);
 			const fake = yield* FakeAgentDeployment;
 			const loop = yield* Effect.forkChild(updaterLoop('1.0.0'));

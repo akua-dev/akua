@@ -54,6 +54,18 @@ authority over workloads.
 - `{"cluster": {}}`: ClusterRoleBinding `akua-apply` to ClusterRole `cluster-admin`.
 - `{"namespaces": ["a", "b"]}`: in each listed namespace, RoleBinding
   `akua-apply` to ClusterRole `admin`. The namespaces must already exist.
+  RoleBinding `akua-apply-system` also binds `admin` in `akua-system`, Akua's
+  own namespace, so the namespaced objects of a release update without you.
+
+## Updates
+
+A release is this chart rendered for the cluster. The updater applies it as
+`akua-apply`, keeps the last good one in Secret `akua-agent-bundle`, and rolls
+back to it when the new agent does not pass its health gate. With the
+`namespaces` grant, a release that changes cluster-scoped objects (such as
+the `akua-agent` ClusterRole) or bindings outside `akua-system` waits for you:
+Akua shows the missing permissions and the `helm upgrade` command, and the
+rights stay with you.
 
 ## Objects
 
@@ -63,9 +75,10 @@ authority over workloads.
   `kube-system` namespace (for the cluster UID).
 - Role and RoleBinding `akua-agent`: impersonate `akua-apply`; get, update,
   patch Secrets `akua-agent-identity` and `akua-tunnel-connector`.
-- Role and RoleBinding `akua-agent-updater`: get, patch Deployment
-  `akua-agent`; read ReplicaSets and Pods; get Secret `akua-agent-identity`.
-- Secrets `akua-agent-identity` and `akua-tunnel-connector`: created empty with
+- Role and RoleBinding `akua-agent-updater`: impersonate `akua-apply`; get
+  Deployment `akua-agent`; read ReplicaSets and Pods; get Secret
+  `akua-agent-identity`; get, update, patch Secret `akua-agent-bundle`.
+- Secrets `akua-agent-identity`, `akua-tunnel-connector` and `akua-agent-bundle`: created empty with
   `helm.sh/resource-policy: keep`. The agent may not create Secrets, so the
   chart creates them; the keys the agent writes are not declared by the chart
   and survive `helm upgrade` and `helm uninstall`.
@@ -73,5 +86,5 @@ authority over workloads.
   method with a non-empty code.
 - Deployment `akua-agent`: one replica, `Recreate`, so two agents never
   reconcile at once.
-- Deployment `akua-agent-updater`: one replica, `Recreate`; patches the agent
-  image after a release is chosen on the platform.
+- Deployment `akua-agent-updater`: one replica, `Recreate`; applies a release
+  chosen on the platform and gates it (see Updates).

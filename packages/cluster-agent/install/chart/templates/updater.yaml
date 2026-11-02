@@ -30,6 +30,8 @@ spec:
           env:
             - name: AKUA_PLATFORM_ORIGIN
               value: {{ .Values.platformOrigin | quote }}
+            - name: AKUA_AGENT_VERSION
+              value: {{ default .Chart.AppVersion .Values.release.version | quote }}
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -46,11 +48,12 @@ spec:
             periodSeconds: 10
             failureThreshold: 6
           resources:
+            # Room for its own akua-apply engine while it applies a bundle.
             requests:
               cpu: 10m
-              memory: 32Mi
+              memory: 64Mi
             limits:
-              memory: 128Mi
+              memory: 256Mi
           securityContext:
             {{- include "akua.containerSecurityContext" . | nindent 12 }}
           volumeMounts:

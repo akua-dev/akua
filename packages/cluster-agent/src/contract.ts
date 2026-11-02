@@ -39,7 +39,7 @@ export const agentNamespace = 'akua-system';
 export const agentServiceAccount = 'akua-agent';
 /** Impersonated for every apply and prune; the customer's RoleBindings to it are the authority. */
 export const applyServiceAccount = 'akua-apply';
-/** Runs the updater; may patch only the agent Deployment. */
+/** Runs the updater; applies the agent bundle as `akua-apply` and keeps its own state Secret. */
 export const updaterServiceAccount = 'akua-agent-updater';
 export const agentDeployment = 'akua-agent';
 export const updaterDeployment = 'akua-agent-updater';
@@ -602,16 +602,19 @@ export class PlacementReconciler extends Context.Service<
 >()('akua/cluster-agent/PlacementReconciler') {}
 
 /**
- * The updater: a second, rarely changing Deployment that only reads its
- * instruction and patches the agent Deployment's image. Health gate, all
- * within `verify_seconds`: the new ReplicaSet is kstatus Current, the
- * agent's local `/readyz` passes (engine `ready` with the same version),
- * and `UpdaterInstruction.observed` shows a heartbeat from the new release
- * and an accepted Placement report or StatusBatch from it. An agent that
- * starts but cannot apply or report is rolled back (`no-reconcile`), not
- * kept. Otherwise it restores the previous image and reports `rolled-back`. The
- * agent applies the updater's own Deployment through its baseline Placement,
- * with the same gate run by the agent, and never both at once.
+ * The updater: a second, rarely changing Deployment that applies the agent
+ * bundle (the Placement marked `applier: updater`, the whole rendered
+ * chart without the updater's own objects) with the agent's building
+ * blocks and its own engine process. Health gate, all within
+ * `verify_seconds`: the agent Deployment runs the new image and is kstatus
+ * Current (its readiness probe is the agent's `/readyz`: engine `ready`
+ * with the same version), and `UpdaterInstruction.observed` shows the new
+ * release online on its channel and an accepted Placement report or
+ * StatusBatch from it. An agent that starts but cannot apply or report is
+ * rolled back (`no-reconcile`), not kept. A rollback re-applies the last
+ * good bundle kept in the cluster and prunes what the new one created. The
+ * updater's own objects are excluded; the agent is to apply them (not yet
+ * implemented), never both at once.
  */
 export class AgentUpdater extends Context.Service<
 	AgentUpdater,
@@ -620,6 +623,12 @@ export class AgentUpdater extends Context.Service<
 			readonly instruction: typeof UpdaterInstruction.Type;
 			readonly running: typeof AgentRelease.Type;
 		}): Effect.Effect<typeof UpdaterPhase.Type, HttpClientError.HttpClientError>;
+		/**
+		 * The update recorded in the cluster, as a phase, without acting on it:
+		 * a restarted updater reports it instead of `steady`, so the platform
+		 * answers with its observations before any deadline is judged.
+		 */
+		readonly inFlight: Effect.Effect<typeof UpdaterPhase.Type | null>;
 	}
 >()('akua/cluster-agent/AgentUpdater') {}
 
@@ -666,17 +675,26 @@ export const updaterClusterRole = {
 	]
 } satisfies ClusterRole;
 
-/** In akua-system only: the updater can change exactly one Deployment and read its rollout. */
+/**
+ * In akua-system only: apply as `akua-apply` (whose grant decides what the
+ * bundle may change), read the agent's rollout, keep the bundle state.
+ */
 export const updaterRole = {
 	apiVersion: 'rbac.authorization.k8s.io/v1',
 	kind: 'Role',
 	metadata: { name: 'akua-agent-updater', namespace: agentNamespace },
 	rules: [
 		{
+			apiGroups: [''],
+			resources: ['serviceaccounts'],
+			resourceNames: [applyServiceAccount],
+			verbs: ['impersonate']
+		},
+		{
 			apiGroups: ['apps'],
 			resources: ['deployments'],
 			resourceNames: [agentDeployment],
-			verbs: ['get', 'patch']
+			verbs: ['get']
 		},
 		{ apiGroups: ['apps'], resources: ['replicasets'], verbs: ['get', 'list'] },
 		{ apiGroups: [''], resources: ['pods'], verbs: ['get', 'list'] },
@@ -685,11 +703,17 @@ export const updaterRole = {
 			resources: ['secrets'],
 			resourceNames: ['akua-agent-identity'],
 			verbs: ['get']
+		},
+		{
+			apiGroups: [''],
+			resources: ['secrets'],
+			resourceNames: ['akua-agent-bundle'],
+			verbs: ['get', 'update', 'patch']
 		}
 	]
 } satisfies Role;
 
-/** The agent Deployment the updater patches; only `spec.template.spec.containers[agent].image` changes. */
+/** The agent Deployment whose rollout the updater gates. */
 export type AgentDeployment = Deployment;
 
 /**
