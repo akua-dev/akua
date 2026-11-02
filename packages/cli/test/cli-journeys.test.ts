@@ -295,10 +295,12 @@ describe('typed flags', () => {
 				[
 					'installs',
 					'create',
-					'--product-id',
-					'prod_1',
-					'--region-id',
-					'reg_1',
+					'--package-id',
+					'pkg_1',
+					'--package-version-pin',
+					'{"kind":"latest"}',
+					'--cluster-id',
+					'clu_1',
 					'--initial-values',
 					'{"replicas":2}',
 					'--json'
@@ -308,8 +310,9 @@ describe('typed flags', () => {
 
 			expect(listed.requests[0]?.url.searchParams.get('limit')).toBe('5');
 			expect(installed.requests[0]?.body).toEqual({
-				product_id: 'prod_1',
-				region_id: 'reg_1',
+				package_id: 'pkg_1',
+				package_version_pin: { kind: 'latest' },
+				cluster_id: 'clu_1',
 				initial_values: { replicas: 2 }
 			});
 		}).pipe(Effect.scoped)
