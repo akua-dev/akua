@@ -19,7 +19,6 @@ import {
 	type ResourceNode,
 	type WarningEvent
 } from '@platform/api-contract/services/cluster-agent';
-import { AcceptedTracker } from './accepted';
 import { Engine, EngineEvent, engineSupervision } from './contract';
 import { EngineStatus } from './engine';
 import { AgentApi } from './platform';
@@ -117,11 +116,15 @@ interface PlacementLive {
 }
 
 /**
- * Live status between reconciles: folds engine events per Placement and
- * posts StatusBatches, debounced 2 s after the first change, one in flight,
- * at most 100 entries. Snapshots go out once a Placement's informers synced
- * after each engine start, after every reconcile, every 5 minutes and when
- * the platform asks; a lost batch turns its Placements into snapshots.
+ * Live status between reconciles: folds engine events for every watched
+ * Placement and posts StatusBatches only for the Placements the platform
+ * subscribed (`Subscribe.v1`), debounced 2 s after the first change, one in
+ * flight, at most 100 entries. A subscribed Placement gets a snapshot when
+ * its subscription starts, once its informers synced after each engine
+ * start, after every reconcile, every 5 minutes and when the platform asks;
+ * a lost batch turns its Placements into snapshots. Unsubscribed Placements
+ * keep their tree in memory (for `Describe.v1` and `TailLogs.v1`) and send
+ * nothing.
  */
 export class LiveStatus extends Context.Service<
 	LiveStatus,
@@ -131,6 +134,10 @@ export class LiveStatus extends Context.Service<
 			placements: ReadonlyArray<{ readonly placementId: PlacementId; readonly generation: number }>
 		) => Effect.Effect<void>;
 		readonly requestSnapshot: (placementId: PlacementId) => Effect.Effect<void>;
+		/** The Placements whose live status the platform wants now; replaces the previous set. */
+		readonly subscribe: (placements: ReadonlyArray<PlacementId>) => Effect.Effect<void>;
+		/** The object as a node of the Placement's tree (an ApplySet member or a child of one); null otherwise. */
+		readonly treeNode: (placementId: PlacementId, key: string) => Effect.Effect<Node | null>;
 	}
 >()('akua/cluster-agent/LiveStatus') {
 	static readonly layer = Layer.effect(
@@ -139,8 +146,8 @@ export class LiveStatus extends Context.Service<
 			const engine = yield* Engine;
 			const engineStatus = yield* EngineStatus;
 			const api = yield* AgentApi;
-			const accepted = yield* AcceptedTracker;
 			const placements = new Map<PlacementId, PlacementLive>();
+			let subscribed = new Set<PlacementId>();
 			const changed = yield* Queue.sliding<void>(1);
 			// Starting at the clock keeps sequences increasing across agent restarts.
 			const sequenceBase = yield* Clock.currentTimeMillis;
@@ -264,6 +271,11 @@ export class LiveStatus extends Context.Service<
 				let deferred = false;
 				for (const [placementId, live] of placements) {
 					if (entries.length >= max) break;
+					if (!subscribed.has(placementId)) {
+						// Nobody looks: drop the delta; a later subscription starts with a snapshot.
+						clearDelta(live);
+						continue;
+					}
 					let added = false;
 					if (live.stale !== null) {
 						entries.push({
@@ -365,7 +377,6 @@ export class LiveStatus extends Context.Service<
 					yield* Effect.sleep(Duration.millis(liveStatusPolicy.retryAfterFailureMillis));
 					return true;
 				}
-				yield* accepted.markAccepted('status-batch');
 				for (const placementId of outcome.success.snapshot_required) {
 					const live = placements.get(placementId);
 					if (live !== undefined) live.needsSnapshot = true;
@@ -402,7 +413,8 @@ export class LiveStatus extends Context.Service<
 			);
 
 			const periodicSnapshots = Effect.gen(function* () {
-				for (const live of placements.values()) live.needsSnapshot = true;
+				for (const [placementId, live] of placements)
+					if (subscribed.has(placementId)) live.needsSnapshot = true;
 				yield* signal;
 			}).pipe(
 				Effect.repeat(Schedule.spaced(Duration.millis(liveStatusPolicy.snapshotIntervalMillis)))
@@ -432,6 +444,18 @@ export class LiveStatus extends Context.Service<
 						}
 						yield* signal;
 					}),
+				subscribe: (next) =>
+					Effect.gen(function* () {
+						const added = next.filter((placementId) => !subscribed.has(placementId));
+						subscribed = new Set(next);
+						for (const placementId of added) {
+							const live = placements.get(placementId);
+							if (live !== undefined) live.needsSnapshot = true;
+						}
+						if (added.length > 0) yield* signal;
+					}),
+				treeNode: (placementId, key) =>
+					Effect.sync(() => placements.get(placementId)?.nodes.get(key) ?? null),
 				requestSnapshot: (placementId) =>
 					Effect.gen(function* () {
 						const live = placements.get(placementId);

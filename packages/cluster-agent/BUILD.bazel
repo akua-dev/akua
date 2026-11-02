@@ -41,12 +41,6 @@ js_library(
 )
 
 filegroup(
-    name = "deploy_srcs",
-    srcs = glob(["deploy/**"]),
-    visibility = ["//visibility:public"],
-)
-
-filegroup(
     name = "typescript_only_policy_srcs",
     srcs = glob(["src/**/*.ts"]),
     visibility = ["//visibility:public"],

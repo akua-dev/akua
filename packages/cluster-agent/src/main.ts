@@ -1,14 +1,20 @@
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunServices from '@effect/platform-bun/BunServices';
+import * as BunSocket from '@effect/platform-bun/BunSocket';
 import { Config, Effect, Layer, Option, Schedule, SubscriptionRef } from 'effect';
 import { Command } from 'effect/cli';
-import { AcceptedTracker } from './accepted';
+import {
+	AgentChannelRpcs,
+	channelProtocol
+} from '@platform/api-contract/services/cluster-agent-channel';
+import { agentRpcHandlers } from './agent-rpcs';
+import { ChannelDialer, type ChannelState, runChannel } from './channel';
+import { detectDistribution } from './cluster-reads';
 import { AgentConfig, PlatformOrigin } from './config';
 import { agentUserAgent, updaterUserAgent } from './contract';
 import { engineLayer, EngineStatus } from './engine';
 import { GitSource } from './git-source';
 import { healthServer } from './health';
-import { DesiredRevision, detectDistribution, heartbeatLoop, WatchedNamespaces } from './heartbeat';
 import { AgentHttpClientLive } from './http';
 import {
 	agentCredentialsLive,
@@ -19,7 +25,14 @@ import {
 import { KubernetesConnection, KubernetesExtras, kubernetesLayer } from './kubernetes';
 import { LiveStatus } from './live-status';
 import { agentApiLive, identityApiLive } from './platform';
-import { desiredStateLoop, placementReconcilerLayer, ReservedNames, WatchSet } from './reconciler';
+import {
+	DesiredRevision,
+	DesiredSignal,
+	desiredStateLoop,
+	placementReconcilerLayer,
+	ReservedNames,
+	WatchSet
+} from './reconciler';
 import { agentUpdaterLayer, UpdaterKubernetes, updaterLoop } from './updater';
 import { KubernetesApi } from './contract';
 
@@ -37,7 +50,7 @@ const agentUserAgentLayer = Layer.unwrap(
 			const extras = yield* KubernetesExtras;
 			const kubernetes = yield* KubernetesApi;
 			const gitVersion = yield* extras.readVersion();
-			const nodes = yield* kubernetes.listNodes();
+			const { nodes } = yield* kubernetes.listNodes({ limit: 500, continue: null });
 			return {
 				gitVersion,
 				distribution: Option.getOrElse(config.distribution, () =>
@@ -83,27 +96,65 @@ const agentLayer = Layer.unwrap(
 			Layer.provide(Layer.mergeAll(identity, identityApi))
 		);
 		const agentApi = agentApiLive.pipe(Layer.provide(Layer.mergeAll(http, credentials)));
-		const state = Layer.mergeAll(
-			AcceptedTracker.layer,
-			DesiredRevision.layer,
-			WatchedNamespaces.layer,
-			ReservedNames.layer
-		);
+		const state = Layer.mergeAll(DesiredRevision.layer, DesiredSignal.layer, ReservedNames.layer);
 		const live = LiveStatus.layer.pipe(Layer.provide(Layer.mergeAll(engine, agentApi, state)));
 		const watchSet = WatchSet.layer.pipe(Layer.provide(Layer.mergeAll(engine, live)));
 		const git = GitSource.layer.pipe(Layer.provide(http));
 		const reconciler = placementReconcilerLayer.pipe(
 			Layer.provide(Layer.mergeAll(kubernetes, engine, git, agentApi, state, watchSet, live))
 		);
+		const rpcs = agentRpcHandlers.pipe(Layer.provide(Layer.mergeAll(kubernetes, live, state)));
+		const dialer = ChannelDialer.layer.pipe(Layer.provide(BunSocket.layerWebSocketConstructor));
 		const loops = Layer.effectDiscard(
 			Effect.gen(function* () {
-				yield* Effect.forkScoped(heartbeatLoop);
+				const kubernetesApi = yield* KubernetesApi;
+				const revision = yield* DesiredRevision;
+				const signal = yield* DesiredSignal;
+				const status = yield* LiveStatus;
+				const channelState = yield* SubscriptionRef.make<ChannelState>({
+					_tag: 'connecting',
+					attempt: 0,
+					since: 0
+				});
+				const hello = Effect.gen(function* () {
+					const clusterUid = yield* kubernetesApi
+						.readClusterUid()
+						.pipe(Effect.retry(retryForever), Effect.orDie);
+					return {
+						_tag: 'agent' as const,
+						protocol: channelProtocol,
+						release: config.release,
+						cluster_uid: clusterUid,
+						serves: [...AgentChannelRpcs.requests.keys()],
+						desired_revision: yield* revision.get
+					};
+				});
 				yield* Effect.forkScoped(desiredStateLoop);
+				yield* Effect.forkScoped(
+					runChannel({
+						role: 'agent',
+						group: AgentChannelRpcs,
+						handlers: rpcs,
+						hello,
+						state: channelState,
+						onWelcome: (welcome) =>
+							Effect.gen(function* () {
+								if (welcome.desired_revision !== null)
+									yield* signal.announce(welcome.desired_revision);
+								if (welcome.subscriptions !== null)
+									yield* status.subscribe(welcome.subscriptions.status);
+							})
+					})
+				);
 				yield* Effect.logInfo('agent running').pipe(
 					Effect.annotateLogs({ version: config.release.version })
 				);
 			})
-		).pipe(Layer.provide(Layer.mergeAll(reconciler, agentApi, kubernetes, state)));
+		).pipe(
+			Layer.provide(
+				Layer.mergeAll(reconciler, agentApi, kubernetes, state, live, credentials, dialer)
+			)
+		);
 		return Layer.mergeAll(health, loops);
 	})
 ).pipe(

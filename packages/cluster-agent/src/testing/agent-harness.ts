@@ -1,13 +1,17 @@
 import { Context, Effect, FileSystem, Layer, Redacted, Ref } from 'effect';
 import type { DesiredPlacement } from '@platform/api-contract/services/cluster-agent';
-import { AcceptedTracker } from '../accepted';
 import { AgentConfig, type AgentSettings, PlatformOrigin } from '../config';
 import { engineLayer } from '../engine';
 import { GitSource, type SourceFile } from '../git-source';
-import { DesiredRevision, WatchedNamespaces } from '../heartbeat';
 import { agentCredentialsLive, agentIdentityLive } from '../identity';
 import { LiveStatus } from '../live-status';
-import { placementReconcilerLayer, ReservedNames, WatchSet } from '../reconciler';
+import {
+	DesiredRevision,
+	DesiredSignal,
+	placementReconcilerLayer,
+	ReservedNames,
+	WatchSet
+} from '../reconciler';
 import { fakeEngineLayer } from './fake-engine';
 import {
 	fakeKubernetesLayer,
@@ -69,9 +73,8 @@ export const agentHarness = (
 		FileSystem.layerNoop({}),
 		fakePlatformCore(options.platform ?? fakePlatformState({ enrollmentCode: testEnrollmentCode })),
 		fakeGitLayer(options.revisions ?? new Map()),
-		AcceptedTracker.layer,
 		DesiredRevision.layer,
-		WatchedNamespaces.layer,
+		DesiredSignal.layer,
 		ReservedNames.layer
 	);
 	const engine = engineLayer({

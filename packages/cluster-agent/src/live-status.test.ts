@@ -50,6 +50,7 @@ const ready = Effect.gen(function* () {
 	);
 	const live = yield* LiveStatus;
 	yield* live.watch([{ placementId: placement, generation: 3 }]);
+	yield* live.subscribe([placement]);
 });
 
 const flush = TestClock.adjust('2100 millis').pipe(Effect.andThen(Effect.yieldNow));
@@ -110,6 +111,30 @@ describe('health', () => {
 });
 
 describe('LiveStatus', () => {
+	it.effect(
+		'sends nothing for an unsubscribed Placement and a snapshot once it is subscribed',
+		() =>
+			Effect.gen(function* () {
+				yield* ready;
+				const live = yield* LiveStatus;
+				yield* live.subscribe([]);
+				yield* emit({ _tag: 'node', placementId: placement, node: node('app_a__ConfigMap') });
+				yield* emit({ _tag: 'synced', placementId: placement });
+				yield* flush;
+				yield* flush;
+				assert.strictEqual((yield* batches).length, 0, 'nothing while nobody subscribed');
+				assert.strictEqual(
+					(yield* live.treeNode(placement, 'app_a__ConfigMap'))?.uid,
+					'uid-app_a__ConfigMap',
+					'the tree is still known for reads'
+				);
+				yield* live.subscribe([placement]);
+				yield* until((all) => all.length >= 1);
+				const [snapshot] = entries(yield* batches);
+				assert.strictEqual(snapshot?._tag, 'snapshot');
+			}).pipe(Effect.provide(agentHarness()))
+	);
+
 	it.effect(
 		'sends a snapshot once the Placement synced, then deltas with increasing sequence',
 		() =>

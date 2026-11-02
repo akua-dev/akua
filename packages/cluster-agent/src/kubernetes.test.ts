@@ -140,7 +140,7 @@ describe('KubernetesApi', () => {
 		() =>
 			Effect.gen(function* () {
 				const { seen, layer } = yield* harness((request) => {
-					if (request.url.endsWith('/api/v1/nodes')) {
+					if (request.url.includes('/api/v1/nodes?')) {
 						return {
 							status: 200,
 							body: {
@@ -164,7 +164,7 @@ describe('KubernetesApi', () => {
 				yield* Effect.gen(function* () {
 					const kubernetes = yield* KubernetesApi;
 					const extras = yield* KubernetesExtras;
-					const nodes = yield* kubernetes.listNodes();
+					const { nodes } = yield* kubernetes.listNodes({ limit: 500, continue: null });
 					assert.deepStrictEqual(
 						nodes.map((node) => [node.kind, node.metadata?.name]),
 						[['Node', 'n1']]

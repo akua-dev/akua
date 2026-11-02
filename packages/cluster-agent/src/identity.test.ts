@@ -1,7 +1,6 @@
 import { assert, describe, it } from '@effect/vitest';
 import { Effect, FileSystem, Layer, Redacted, Ref } from 'effect';
 import { Base64, Base64Url } from 'effect/encoding';
-import { ClusterUid } from '@platform/api-contract/services/cluster-agent';
 import { AgentConfig, type AgentSettings, PlatformOrigin } from './config';
 import {
 	agentCredentialsLive,
@@ -100,24 +99,8 @@ describe('AgentIdentity', () => {
 			const platform = yield* FakePlatform;
 			assert.strictEqual((yield* Ref.get(platform.state)).tokensIssued, 1);
 			const api = yield* AgentApi;
-			const response = yield* api.heartbeat({
-				payload: {
-					release: testSettings().release,
-					cluster_uid: ClusterUid.make((yield* Ref.get((yield* FakeKubernetes).state)).clusterUid),
-					kubernetes_version: 'v1.34.1',
-					distribution: 'k0s',
-					access: {
-						scope: { _tag: 'cluster' },
-						createNamespaces: true,
-						reviews: [],
-						observedAt: 0
-					},
-					nodes: [],
-					desired_revision: 0,
-					last_accepted: null
-				}
-			});
-			assert.strictEqual(response.next_heartbeat_seconds, 30);
+			const desired = yield* api.desiredState({ query: {} });
+			assert.strictEqual(desired.revision, 0);
 		}).pipe(Effect.provide(layerFor(testSettings())))
 	);
 });

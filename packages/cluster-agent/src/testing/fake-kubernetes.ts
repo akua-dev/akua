@@ -1,7 +1,10 @@
-import { Context, Effect, Layer, Ref } from 'effect';
+import { Context, Effect, Layer, Ref, Stream } from 'effect';
+import type { Schema } from 'effect';
 import { ClusterUid } from '@platform/api-contract/services/cluster-agent';
 import type { Secret } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Secret';
 import type { Node } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Node';
+import type { EventList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/EventList';
+import type { PodList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/PodList';
 import { KubernetesApi, KubernetesFailure } from '../contract';
 import { type DiscoveredResource, KubernetesExtras } from '../kubernetes';
 
@@ -24,7 +27,23 @@ export interface FakeKubernetesState {
 		readonly namespace: string;
 	}) => boolean;
 	readonly rulesNamespaces: ReadonlySet<string>;
+	/** Pods for drains, as listed by node. */
+	readonly pods: (typeof PodList.Type)['items'];
+	/** Pods whose eviction a PodDisruptionBudget refuses (`namespace/name`). */
+	readonly evictionBlocked: ReadonlySet<string>;
+	/** Objects by `apiVersion|resource|namespace|name` (namespace empty when cluster-scoped). */
+	readonly objects: ReadonlyMap<string, typeof Schema.JsonObject.Type>;
+	readonly events: (typeof EventList.Type)['items'];
+	/** Log text by `namespace/pod/container`. */
+	readonly logs: ReadonlyMap<string, string>;
 }
+
+export const objectKey = (args: {
+	readonly apiVersion: string;
+	readonly resource: string;
+	readonly namespace: string | null;
+	readonly name: string;
+}) => [args.apiVersion, args.resource, args.namespace ?? '', args.name].join('|');
 
 export class FakeKubernetes extends Context.Service<
 	FakeKubernetes,
@@ -72,6 +91,11 @@ export const fakeKubernetesState = (
 	discovery: defaultDiscovery,
 	allow: () => true,
 	rulesNamespaces: new Set(),
+	pods: [],
+	evictionBlocked: new Set(),
+	objects: new Map(),
+	events: [],
+	logs: new Map(),
 	...overrides
 });
 
@@ -126,7 +150,17 @@ export const fakeKubernetesLayer = (initial: FakeKubernetesState = fakeKubernete
 							}
 						}))
 					),
-				listNodes: () => Ref.get(state).pipe(Effect.map((current) => current.nodes)),
+				listNodes: (args) =>
+					Ref.get(state).pipe(
+						Effect.map((current) => {
+							const start = args.continue === null ? 0 : Number(args.continue);
+							const end = start + args.limit;
+							return {
+								nodes: current.nodes.slice(start, end),
+								continue: end < current.nodes.length ? String(end) : null
+							};
+						})
+					),
 				readClusterUid: () =>
 					Ref.get(state).pipe(Effect.map((current) => ClusterUid.make(current.clusterUid)))
 			});
@@ -152,7 +186,78 @@ export const fakeKubernetesLayer = (initial: FakeKubernetesState = fakeKubernete
 				getSecretAsApply: (args) => read(args.namespace, args.name),
 				discover: (apiVersion) =>
 					Ref.get(state).pipe(Effect.map((current) => current.discovery.get(apiVersion) ?? null)),
-				readVersion: () => Ref.get(state).pipe(Effect.map((current) => current.gitVersion))
+				readVersion: () => Ref.get(state).pipe(Effect.map((current) => current.gitVersion)),
+				getNode: (name) =>
+					Ref.get(state).pipe(
+						Effect.map(
+							(current) => current.nodes.find((node) => node.metadata?.name === name) ?? null
+						)
+					),
+				cordonNode: (name) =>
+					Ref.update(state, (current) => ({
+						...current,
+						nodes: current.nodes.map((node) =>
+							node.metadata?.name === name
+								? { ...node, spec: { ...node.spec, unschedulable: true } }
+								: node
+						)
+					})),
+				listPodsOnNode: (name) =>
+					Ref.get(state).pipe(
+						Effect.map((current) => ({
+							apiVersion: 'v1' as const,
+							kind: 'PodList' as const,
+							metadata: {},
+							items: current.pods.filter((pod) => pod.spec?.nodeName === name)
+						}))
+					),
+				evictPod: (args) =>
+					Ref.modify(state, (current) =>
+						current.evictionBlocked.has(`${args.namespace}/${args.name}`)
+							? (['blocked' as const, current] as const)
+							: ([
+									'evicted' as const,
+									{
+										...current,
+										pods: current.pods.filter(
+											(pod) =>
+												pod.metadata?.namespace !== args.namespace ||
+												pod.metadata?.name !== args.name
+										)
+									}
+								] as const)
+					),
+				deleteNode: (name) =>
+					Ref.update(state, (current) => ({
+						...current,
+						nodes: current.nodes.filter((node) => node.metadata?.name !== name)
+					})),
+				getObjectAsApply: (args) =>
+					Ref.get(state).pipe(
+						Effect.map((current) => current.objects.get(objectKey(args)) ?? null)
+					),
+				listEventsAsApply: (args) =>
+					Ref.get(state).pipe(
+						Effect.map((current) => ({
+							apiVersion: 'v1' as const,
+							kind: 'EventList' as const,
+							metadata: {},
+							items: current.events.filter((event) => event.involvedObject.uid === args.uid)
+						}))
+					),
+				podLogsAsApply: (args) =>
+					Stream.unwrap(
+						Ref.get(state).pipe(
+							Effect.map((current) => {
+								const text = current.logs.get(`${args.namespace}/${args.pod}/${args.container}`);
+								return text === undefined
+									? Stream.fail(
+											new KubernetesFailure({ reason: 'not-found', status: 404, message: args.pod })
+										)
+									: Stream.make(new TextEncoder().encode(text));
+							})
+						)
+					)
 			});
 			return Context.make(KubernetesApi, kubernetes).pipe(
 				Context.add(KubernetesExtras, extras),

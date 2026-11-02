@@ -11,7 +11,7 @@ import {
 	staleEntries
 } from './applyset';
 import { generateSecretValue, parseManifests, planObjects, reservedViolation } from './manifests';
-import { detectDistribution, trimNode } from './heartbeat';
+import { detectDistribution, trimNode } from './cluster-reads';
 import { defaultDiscovery } from './testing/fake-kubernetes';
 import { file } from './testing/agent-harness';
 import { placementId } from './testing/fake-platform';
@@ -149,7 +149,7 @@ describe('generated values', () => {
 	});
 });
 
-describe('heartbeat helpers', () => {
+describe('cluster read helpers', () => {
 	it('detects the distribution from the server version and node labels', () => {
 		assert.strictEqual(detectDistribution('v1.34.1+k0s', []), 'k0s');
 		assert.strictEqual(detectDistribution('v1.33.2+k3s1', []), 'k3s');

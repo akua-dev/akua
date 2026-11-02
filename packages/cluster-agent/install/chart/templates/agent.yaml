@@ -62,8 +62,6 @@ spec:
             - name: AKUA_FEDERATED_TOKEN_PATH
               value: /var/run/secrets/akua.dev/serviceaccount/token
             {{- end }}
-            - name: AKUA_ACCESS_NAMESPACES
-              value: {{ join "," (.Values.access.namespaces | default list) | quote }}
             {{- with .Values.distribution }}
             - name: AKUA_DISTRIBUTION
               value: {{ . | quote }}

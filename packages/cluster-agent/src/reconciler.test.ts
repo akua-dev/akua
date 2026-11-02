@@ -3,9 +3,7 @@ import { Effect, Fiber, Ref, SubscriptionRef } from 'effect';
 import { TestClock } from 'effect/testing';
 import { applySetLabels, PlacementReconciler } from './contract';
 import { applySetParentName, inventoryOf } from './applyset';
-import { DesiredRevision } from './heartbeat';
-import { AcceptedTracker } from './accepted';
-import { desiredStateLoop, ReservedNames } from './reconciler';
+import { DesiredRevision, DesiredSignal, desiredStateLoop, ReservedNames } from './reconciler';
 import { answerEverything, FakeEngine } from './testing/fake-engine';
 import { FakeKubernetes, fakeKubernetesState } from './testing/fake-kubernetes';
 import { emptyDesiredState, FakePlatform } from './testing/fake-platform';
@@ -332,6 +330,7 @@ describe('desiredStateLoop', () => {
 				const platform = yield* FakePlatform;
 				const loop = yield* Effect.forkChild(desiredStateLoop);
 				yield* SubscriptionRef.set(platform.desired, emptyDesiredState(7, [desiredPlacement()]));
+				yield* (yield* DesiredSignal).announce(7);
 				const revision = yield* DesiredRevision;
 				yield* Effect.gen(function* () {
 					while ((yield* revision.get) !== 7) yield* TestClock.adjust('100 millis');
@@ -339,8 +338,6 @@ describe('desiredStateLoop', () => {
 				const state = yield* Ref.get(platform.state);
 				assert.strictEqual(state.reports.length, 1);
 				assert.strictEqual(state.reports[0]?.report.outcome._tag, 'ready');
-				const accepted = yield* (yield* AcceptedTracker).lastAccepted;
-				assert.strictEqual(accepted?.kind, 'report');
 				yield* Fiber.interrupt(loop);
 			}).pipe(Effect.provide(agentHarness({ revisions })))
 	);
@@ -350,6 +347,8 @@ describe('desiredStateLoop', () => {
 			const platform = yield* FakePlatform;
 			const loop = yield* Effect.forkChild(desiredStateLoop);
 			yield* SubscriptionRef.set(platform.desired, emptyDesiredState(1, [desiredPlacement()]));
+			const signal = yield* DesiredSignal;
+			yield* signal.announce(1);
 			const revision = yield* DesiredRevision;
 			while ((yield* revision.get) !== 1) yield* TestClock.adjust('100 millis');
 			yield* SubscriptionRef.set(
@@ -361,6 +360,7 @@ describe('desiredStateLoop', () => {
 					})
 				])
 			);
+			yield* signal.announce(2);
 			while ((yield* revision.get) !== 2) yield* TestClock.adjust('100 millis');
 			const reports = (yield* Ref.get(platform.state)).reports;
 			assert.deepStrictEqual(

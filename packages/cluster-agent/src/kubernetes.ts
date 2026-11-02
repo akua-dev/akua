@@ -1,4 +1,4 @@
-import { Config, Context, Effect, FileSystem, Layer, Predicate, Schema } from 'effect';
+import { Config, Context, Effect, FileSystem, Layer, Predicate, Schema, Stream } from 'effect';
 import { HttpClient, HttpClientRequest, type HttpClientError } from 'effect/http';
 import { ClusterUid } from '@platform/api-contract/services/cluster-agent';
 import { Secret } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Secret';
@@ -6,6 +6,8 @@ import { Namespace } from '@platform/kubernetes-schemas/generated/kubernetes/1.3
 import { Node } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Node';
 import { NodeList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/NodeList';
 import { APIResourceList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/APIResourceList';
+import { EventList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/EventList';
+import { PodList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/PodList';
 import { SelfSubjectAccessReview } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/authorization.k8s.io/v1/SelfSubjectAccessReview';
 import { SelfSubjectRulesReview } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/authorization.k8s.io/v1/SelfSubjectRulesReview';
 import {
@@ -150,6 +152,53 @@ export class KubernetesExtras extends Context.Service<
 			KubernetesFailure | HttpClientError.HttpClientError
 		>;
 		readVersion(): Effect.Effect<string, KubernetesFailure | HttpClientError.HttpClientError>;
+		getNode(
+			name: string
+		): Effect.Effect<typeof Node.Type | null, KubernetesFailure | HttpClientError.HttpClientError>;
+		/** As `akua-apply`: `spec.unschedulable` true. */
+		cordonNode(
+			name: string
+		): Effect.Effect<void, KubernetesFailure | HttpClientError.HttpClientError>;
+		/** As `akua-apply`: every Pod bound to the node. */
+		listPodsOnNode(
+			name: string
+		): Effect.Effect<typeof PodList.Type, KubernetesFailure | HttpClientError.HttpClientError>;
+		/** As `akua-apply`, through the Eviction API; `blocked` when a PodDisruptionBudget refuses it now (429). */
+		evictPod(args: {
+			readonly namespace: string;
+			readonly name: string;
+		}): Effect.Effect<'evicted' | 'blocked', KubernetesFailure | HttpClientError.HttpClientError>;
+		/** As `akua-apply`; an absent node is already deleted. */
+		deleteNode(
+			name: string
+		): Effect.Effect<void, KubernetesFailure | HttpClientError.HttpClientError>;
+		/** As `akua-apply`: one object by discovered resource; null when absent. */
+		getObjectAsApply(args: {
+			readonly apiVersion: string;
+			readonly resource: string;
+			readonly namespace: string | null;
+			readonly name: string;
+		}): Effect.Effect<
+			typeof Schema.JsonObject.Type | null,
+			KubernetesFailure | HttpClientError.HttpClientError
+		>;
+		/** As `akua-apply`: the events whose involved object has this UID. */
+		listEventsAsApply(args: {
+			readonly namespace: string;
+			readonly uid: string;
+		}): Effect.Effect<typeof EventList.Type, KubernetesFailure | HttpClientError.HttpClientError>;
+		/** As `akua-apply`: a container's log as raw bytes, `kubectl logs` parameters. */
+		podLogsAsApply(args: {
+			readonly namespace: string;
+			readonly pod: string;
+			readonly container: string;
+			readonly previous: boolean;
+			readonly tailLines: number;
+			readonly sinceSeconds: number | null;
+			readonly follow: boolean;
+			readonly timestamps: boolean;
+			readonly limitBytes: number;
+		}): Stream.Stream<Uint8Array, KubernetesFailure | HttpClientError.HttpClientError>;
 	}
 >()('akua/cluster-agent/KubernetesExtras') {}
 
@@ -244,19 +293,28 @@ export const kubernetesLayer = Layer.effectContext(
 				if (result === null) return yield* failureFor(404, null);
 				return yield* decodeAs(SelfSubjectRulesReview)(result.status)(result.body);
 			}),
-			listNodes: Effect.fn('KubernetesApi.listNodes')(function* () {
-				const result = yield* send(HttpClientRequest.get('/api/v1/nodes'), {
-					impersonate: false,
-					allowNotFound: false
-				});
-				if (result === null) return [];
+			listNodes: Effect.fn('KubernetesApi.listNodes')(function* (args) {
+				const result = yield* send(
+					HttpClientRequest.get('/api/v1/nodes').pipe(
+						HttpClientRequest.setUrlParams({
+							limit: String(args.limit),
+							...(args.continue === null ? {} : { continue: args.continue })
+						})
+					),
+					{ impersonate: false, allowNotFound: false }
+				);
+				if (result === null) return { nodes: [], continue: null };
 				const list = yield* decodeAs(NodeList)(result.status)(result.body);
-				// List items omit apiVersion and kind; the list's decode already validated the rest.
-				return list.items.map((item): typeof Node.Type => ({
-					...item,
-					apiVersion: 'v1',
-					kind: 'Node'
-				}));
+				const next = list.metadata?.continue;
+				return {
+					// List items omit apiVersion and kind; the list's decode already validated the rest.
+					nodes: list.items.map((item): typeof Node.Type => ({
+						...item,
+						apiVersion: 'v1',
+						kind: 'Node'
+					})),
+					continue: next === undefined || next === '' ? null : next
+				};
 			}),
 			readClusterUid: Effect.fn('KubernetesApi.readClusterUid')(function* () {
 				const result = yield* send(HttpClientRequest.get('/api/v1/namespaces/kube-system'), {
@@ -269,7 +327,118 @@ export const kubernetesLayer = Layer.effectContext(
 			})
 		});
 
+		const nodePath = (name: string) => `/api/v1/nodes/${encodeURIComponent(name)}`;
+		const asApply = { impersonate: true, allowNotFound: false } as const;
+
 		const extras = KubernetesExtras.of({
+			getNode: Effect.fn('KubernetesApi.getNode')(function* (name) {
+				const result = yield* send(HttpClientRequest.get(nodePath(name)), {
+					impersonate: false,
+					allowNotFound: true
+				});
+				if (result === null) return null;
+				return yield* decodeAs(Node)(result.status)(result.body);
+			}),
+			cordonNode: Effect.fn('KubernetesApi.cordonNode')(function* (name) {
+				yield* send(
+					HttpClientRequest.patch(nodePath(name)).pipe(
+						jsonBody('application/merge-patch+json', { spec: { unschedulable: true } })
+					),
+					asApply
+				);
+			}),
+			listPodsOnNode: Effect.fn('KubernetesApi.listPodsOnNode')(function* (name) {
+				const result = yield* send(
+					HttpClientRequest.get('/api/v1/pods').pipe(
+						HttpClientRequest.setUrlParams({ fieldSelector: `spec.nodeName=${name}` })
+					),
+					asApply
+				);
+				if (result === null) return yield* failureFor(404, null);
+				return yield* decodeAs(PodList)(result.status)(result.body);
+			}),
+			evictPod: Effect.fn('KubernetesApi.evictPod')(function* (args) {
+				const path = `/api/v1/namespaces/${encodeURIComponent(args.namespace)}/pods/${encodeURIComponent(args.name)}/eviction`;
+				// An already deleted Pod (404) is evicted; 429 is a PodDisruptionBudget refusing it now.
+				return yield* send(
+					HttpClientRequest.post(path).pipe(
+						jsonBody('application/json', {
+							apiVersion: 'policy/v1',
+							kind: 'Eviction',
+							metadata: { name: args.name, namespace: args.namespace }
+						})
+					),
+					{ impersonate: true, allowNotFound: true }
+				).pipe(
+					Effect.as('evicted' as const),
+					Effect.catchIf(
+						(error) => error._tag === 'KubernetesFailure' && error.status === 429,
+						() => Effect.succeed('blocked' as const)
+					)
+				);
+			}),
+			deleteNode: Effect.fn('KubernetesApi.deleteNode')(function* (name) {
+				yield* send(HttpClientRequest.delete(nodePath(name)), {
+					impersonate: true,
+					allowNotFound: true
+				});
+			}),
+			getObjectAsApply: Effect.fn('KubernetesApi.getObjectAsApply')(function* (args) {
+				const base = args.apiVersion.includes('/')
+					? `/apis/${args.apiVersion}`
+					: `/api/${args.apiVersion}`;
+				const scope =
+					args.namespace === null ? '' : `/namespaces/${encodeURIComponent(args.namespace)}`;
+				const result = yield* send(
+					HttpClientRequest.get(
+						`${base}${scope}/${encodeURIComponent(args.resource)}/${encodeURIComponent(args.name)}`
+					),
+					{ impersonate: true, allowNotFound: true }
+				);
+				if (result === null) return null;
+				return yield* decodeAs(Schema.JsonObject)(result.status)(result.body);
+			}),
+			listEventsAsApply: Effect.fn('KubernetesApi.listEventsAsApply')(function* (args) {
+				const result = yield* send(
+					HttpClientRequest.get(
+						`/api/v1/namespaces/${encodeURIComponent(args.namespace)}/events`
+					).pipe(
+						HttpClientRequest.setUrlParams({ fieldSelector: `involvedObject.uid=${args.uid}` })
+					),
+					asApply
+				);
+				if (result === null) return yield* failureFor(404, null);
+				return yield* decodeAs(EventList)(result.status)(result.body);
+			}),
+			podLogsAsApply: (args) =>
+				Stream.unwrap(
+					Effect.gen(function* () {
+						const token = yield* connection.token;
+						const response = yield* client.execute(
+							HttpClientRequest.get(
+								`/api/v1/namespaces/${encodeURIComponent(args.namespace)}/pods/${encodeURIComponent(args.pod)}/log`
+							).pipe(
+								HttpClientRequest.setUrlParams({
+									container: args.container,
+									previous: String(args.previous),
+									tailLines: String(args.tailLines),
+									follow: String(args.follow),
+									timestamps: String(args.timestamps),
+									limitBytes: String(args.limitBytes),
+									...(args.sinceSeconds === null ? {} : { sinceSeconds: String(args.sinceSeconds) })
+								}),
+								HttpClientRequest.prependUrl(connection.baseUrl),
+								HttpClientRequest.bearerToken(token),
+								HttpClientRequest.setHeader('Impersonate-User', engineImpersonation)
+							)
+						);
+						if (response.status < 200 || response.status >= 300) {
+							const body = yield* response.json.pipe(Effect.orElseSucceed(() => null));
+							return yield* failureFor(response.status, body);
+						}
+						return response.stream;
+					})
+				),
 			readOwnSecret: Effect.fn('KubernetesApi.readOwnSecret')(function* (name) {
 				return yield* getSecret(agentNamespace, name, false);
 			}),

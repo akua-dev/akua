@@ -3,19 +3,15 @@ import ids from '@platform/ids';
 import {
 	AgentImage,
 	AgentRelease,
-	EnrollmentCode,
-	Heartbeat
+	EnrollmentCode
 } from '@platform/api-contract/services/cluster-agent';
-import { ClusterNamespace } from '@platform/api-contract/ClusterNamespace';
-import { agentNamespace, enginePath } from './contract';
+import { agentNamespace, Distribution, enginePath } from './contract';
 
 /**
  * Everything the agent reads from its environment. The chart sets the
  * Deployment values; the release version and protocol come from the image
  * itself (its OCI config env), so an image patch alone changes them.
  */
-export const Distribution = Heartbeat.fields.distribution;
-
 export const EnrollmentSettings = Schema.Union([
 	Schema.TaggedStruct('code', { code: Schema.NullOr(EnrollmentCode) }),
 	Schema.TaggedStruct('federated', {
@@ -29,7 +25,6 @@ export interface AgentSettings {
 	readonly release: typeof AgentRelease.Type;
 	readonly enrollment: typeof EnrollmentSettings.Type;
 	readonly distribution: Option.Option<typeof Distribution.Type>;
-	readonly accessNamespaces: ReadonlyArray<typeof ClusterNamespace.Type>;
 	readonly healthPort: number;
 	readonly enginePath: string;
 	readonly namespace: string;
@@ -65,23 +60,11 @@ export class AgentConfig extends Context.Service<AgentConfig, AgentSettings>()(
 		const distribution = yield* Config.schema(Distribution, 'AKUA_DISTRIBUTION').pipe(
 			Config.option
 		);
-		const accessNamespaces = yield* Config.String('AKUA_ACCESS_NAMESPACES').pipe(
-			Config.withDefault(''),
-			Config.mapEffect((raw) =>
-				Schema.decodeUnknownEffect(Schema.Array(ClusterNamespace))(
-					raw
-						.split(',')
-						.map((entry) => entry.trim())
-						.filter((entry) => entry.length > 0)
-				).pipe(Effect.mapError((cause) => new Config.ConfigError(cause)))
-			)
-		);
 		return AgentConfig.of({
 			platformOrigin,
 			release: { version, image, protocol },
 			enrollment,
 			distribution,
-			accessNamespaces,
 			healthPort: yield* Config.Port('AKUA_HEALTH_PORT').pipe(Config.withDefault(8080)),
 			enginePath: yield* Config.NonEmptyString('AKUA_ENGINE_PATH').pipe(
 				Config.withDefault(enginePath)

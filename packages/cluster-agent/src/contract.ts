@@ -6,7 +6,6 @@ import {
 	AgentRelease,
 	ClusterUid,
 	DesiredPlacement,
-	Heartbeat,
 	ObjectKey,
 	ObjectStatus,
 	ResourceNode,
@@ -50,11 +49,22 @@ export const updaterDeployment = 'akua-agent-updater';
  * its own kube-apiserver requests (`rest.Config.UserAgent`). RFC 9110
  * product and comment, like the CLI's `buildUserAgent`. For diagnostics,
  * logs and edge blocking of a broken release only, never for
- * authorization; the authoritative version is `release` in the Heartbeat.
+ * authorization; the authoritative version is `release` in the channel's Hello.
  */
+/** The Kubernetes distribution, detected from the server version or set by the chart. */
+export const Distribution = Schema.Literals([
+	'k0s',
+	'k3s',
+	'kubeadm',
+	'eks',
+	'gke',
+	'aks',
+	'other'
+]);
+
 export const agentUserAgent = (args: {
 	readonly version: string;
-	readonly distribution: (typeof Heartbeat.Type)['distribution'];
+	readonly distribution: typeof Distribution.Type;
 	readonly kubernetesVersion: string;
 	readonly arch: string;
 }): string =>
@@ -553,8 +563,12 @@ export class KubernetesApi extends Context.Service<
 			typeof SelfSubjectRulesReview.Type,
 			KubernetesFailure | HttpClientError.HttpClientError
 		>;
-		listNodes(): Effect.Effect<
-			ReadonlyArray<typeof Node.Type>,
+		/** One page of nodes; `continue` is the Kubernetes list token of the next page, null on the last. */
+		listNodes(args: {
+			readonly limit: number;
+			readonly continue: string | null;
+		}): Effect.Effect<
+			{ readonly nodes: ReadonlyArray<typeof Node.Type>; readonly continue: string | null },
 			KubernetesFailure | HttpClientError.HttpClientError
 		>;
 		/** GET namespace `kube-system`, `metadata.uid` only. */
@@ -609,7 +623,7 @@ export class AgentUpdater extends Context.Service<
 	}
 >()('akua/cluster-agent/AgentUpdater') {}
 
-/** Read-only cluster scope the agent needs for heartbeats; it cannot write anything cluster-wide. */
+/** Read-only cluster scope for the platform's node reads; node actions run as `akua-apply`, so the customer's grant decides them. */
 export const agentClusterRole = {
 	apiVersion: 'rbac.authorization.k8s.io/v1',
 	kind: 'ClusterRole',

@@ -13,7 +13,9 @@ import {
 	Result,
 	Schedule,
 	Schema,
-	Semaphore
+	Semaphore,
+	Stream,
+	SubscriptionRef
 } from 'effect';
 import type ids from '@platform/ids';
 import type {
@@ -23,7 +25,6 @@ import type {
 	PlacementReport
 } from '@platform/api-contract/services/cluster-agent';
 import type { SelfSubjectAccessReview } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/authorization.k8s.io/v1/SelfSubjectAccessReview';
-import { AcceptedTracker } from './accepted';
 import {
 	applySetIdOf,
 	applySetParentName,
@@ -45,7 +46,6 @@ import {
 	type WatchedPlacement
 } from './contract';
 import { GitSource } from './git-source';
-import { DesiredRevision, WatchedNamespaces } from './heartbeat';
 import { KubernetesExtras } from './kubernetes';
 import { LiveStatus } from './live-status';
 import {
@@ -67,6 +67,56 @@ type Entry = typeof InventoryEntry.Type;
 /** Opt-in and opt-out labels, the Flux annotations' counterparts. */
 export const forceSelector = { 'akua.dev/force': 'enabled' } as const;
 export const exclusionSelector = { 'akua.dev/reconcile': 'disabled' } as const;
+
+/** The desired-state revision the agent has fully applied or reported; `Hello.v1` carries it. */
+export class DesiredRevision extends Context.Service<
+	DesiredRevision,
+	{
+		readonly set: (revision: number) => Effect.Effect<void>;
+		readonly get: Effect.Effect<number>;
+	}
+>()('akua/cluster-agent/DesiredRevision') {
+	static readonly layer = Layer.effect(
+		DesiredRevision,
+		Effect.gen(function* () {
+			const ref = yield* Ref.make(0);
+			return DesiredRevision.of({ set: (revision) => Ref.set(ref, revision), get: Ref.get(ref) });
+		})
+	);
+}
+
+/**
+ * The newest desired-state revision the platform announced: Welcome
+ * `desired_revision` at each connect and `DesiredChanged.v1` while
+ * connected. The desired-state loop fetches whenever it passes the
+ * revision it fetched last.
+ */
+export class DesiredSignal extends Context.Service<
+	DesiredSignal,
+	{
+		readonly announce: (revision: number) => Effect.Effect<void>;
+		/** Waits until an announced revision is above `fetched`. */
+		readonly above: (fetched: number) => Effect.Effect<number>;
+	}
+>()('akua/cluster-agent/DesiredSignal') {
+	static readonly layer = Layer.effect(
+		DesiredSignal,
+		Effect.gen(function* () {
+			const announced = yield* SubscriptionRef.make(-1);
+			return DesiredSignal.of({
+				announce: (revision) =>
+					SubscriptionRef.update(announced, (current) => Math.max(current, revision)),
+				above: (fetched) =>
+					SubscriptionRef.changes(announced).pipe(
+						Stream.filter((revision) => revision > fetched),
+						Stream.runHead,
+						Effect.flatMap(Effect.fromOption),
+						Effect.orDie
+					)
+			});
+		})
+	);
+}
 
 /** What non-privileged Placements may not touch; replaced by every DesiredState. */
 export class ReservedNames extends Context.Service<
@@ -547,7 +597,8 @@ interface Worker {
 }
 
 /**
- * Pulls desired state with the long poll and runs one worker per
+ * Fetches desired state once at start and again whenever the platform
+ * announces a newer revision (DesiredSignal), and runs one worker per
  * Placement: reconcile on change, again at `reconcile_interval_seconds`
  * with 10% jitter while ready, and with exponential backoff after a pass
  * that did not end ready. Reports go to the platform after every pass.
@@ -556,9 +607,8 @@ export const desiredStateLoop = Effect.gen(function* () {
 	const api = yield* AgentApi;
 	const reconciler = yield* PlacementReconciler;
 	const reserved = yield* ReservedNames;
-	const accepted = yield* AcceptedTracker;
 	const revision = yield* DesiredRevision;
-	const watchedNamespaces = yield* WatchedNamespaces;
+	const signal = yield* DesiredSignal;
 	const workers = new Map<PlacementId, Worker>();
 	const concurrency = yield* Semaphore.make(4);
 	let current: typeof DesiredState.Type | null = null;
@@ -574,7 +624,6 @@ export const desiredStateLoop = Effect.gen(function* () {
 	const postReport = (placementId: PlacementId, report: Report) =>
 		api.report({ params: { placement_id: placementId }, payload: report }).pipe(
 			Effect.retry({ schedule: Schedule.exponential('1 second'), times: 4 }),
-			Effect.tap(() => accepted.markAccepted('report')),
 			Effect.as(true),
 			Effect.catch((error) =>
 				Effect.logWarning('report not accepted').pipe(
@@ -623,7 +672,6 @@ export const desiredStateLoop = Effect.gen(function* () {
 	const apply = Effect.fnUntraced(function* (state: typeof DesiredState.Type) {
 		current = state;
 		yield* Ref.set(reserved, state.reserved);
-		yield* watchedNamespaces.set(state.placements.map((placement) => placement.namespace));
 		// A Placement no longer listed is not reconciled any more; `absent` is how removal arrives.
 		const listed = new Set(state.placements.map((placement) => placement.placement_id));
 		for (const [placementId, worker] of workers) {
@@ -657,25 +705,28 @@ export const desiredStateLoop = Effect.gen(function* () {
 		yield* settleRevision;
 	});
 
-	let after: number | null = null;
+	let fetched: number | null = null;
 	while (true) {
-		const state: typeof DesiredState.Type = yield* api
-			.desiredState({ query: after === null ? {} : { after } })
-			.pipe(
-				Effect.tapError((error) =>
-					Effect.logWarning('desired state unavailable').pipe(
-						Effect.annotateLogs({ reason: error._tag })
-					)
-				),
-				Effect.retry(
-					Schedule.min([Schedule.exponential('1 second'), Schedule.spaced('1 minute')]).pipe(
-						Schedule.jittered
-					)
-				),
-				Effect.orDie
-			);
-		if (after !== null && state.revision <= after) continue;
-		after = state.revision;
+		if (fetched !== null) yield* signal.above(fetched);
+		const state: typeof DesiredState.Type = yield* api.desiredState({ query: {} }).pipe(
+			Effect.tapError((error) =>
+				Effect.logWarning('desired state unavailable').pipe(
+					Effect.annotateLogs({ reason: error._tag })
+				)
+			),
+			Effect.retry(
+				Schedule.min([Schedule.exponential('1 second'), Schedule.spaced('1 minute')]).pipe(
+					Schedule.jittered
+				)
+			),
+			Effect.orDie
+		);
+		if (fetched !== null && state.revision <= fetched) {
+			// Announced but not yet readable: try again shortly instead of spinning.
+			yield* Effect.sleep(Duration.seconds(1));
+			continue;
+		}
+		fetched = state.revision;
 		yield* apply(state);
 	}
 });

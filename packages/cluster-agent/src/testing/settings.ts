@@ -12,7 +12,6 @@ export const testSettings = (overrides: Partial<AgentSettings> = {}): AgentSetti
 	release: { version: '1.0.0', image: testImage('1'), protocol: 1 },
 	enrollment: { _tag: 'code', code: EnrollmentCode.make(Redacted.make(testEnrollmentCode)) },
 	distribution: Option.none(),
-	accessNamespaces: [],
 	healthPort: 8080,
 	enginePath: '/usr/local/bin/akua-apply',
 	namespace: 'akua-system',
