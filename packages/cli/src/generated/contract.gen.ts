@@ -566,6 +566,11 @@ export const contract: ApiContract = {
 				"package_version_pin": {
 					"$ref": "#/$defs/InstallPackageVersionPin"
 				},
+				"region_id": {
+					"type": "string",
+					"minLength": 3,
+					"maxLength": 54
+				},
 				"cluster_id": {
 					"type": "string",
 					"minLength": 3,
@@ -578,7 +583,7 @@ export const contract: ApiContract = {
 			"required": [
 				"package_id",
 				"package_version_pin",
-				"cluster_id"
+				"region_id"
 			],
 			"additionalProperties": false,
 			"description": "Install a Package version, identified by `package_id` and `package_version_pin`."

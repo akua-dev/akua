@@ -10010,6 +10010,11 @@
             "minLength": 3,
             "maxLength": 54
           },
+          "region_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
           "package_id": {
             "type": "string",
             "minLength": 3,
@@ -10077,6 +10082,7 @@
           "html_url",
           "workspace_id",
           "cluster_id",
+          "region_id",
           "package_id",
           "package_version",
           "state",
@@ -10100,6 +10106,11 @@
           "package_version_pin": {
             "$ref": "#/components/schemas/InstallPackageVersionPin"
           },
+          "region_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
           "cluster_id": {
             "type": "string",
             "minLength": 3,
@@ -10112,7 +10123,7 @@
         "required": [
           "package_id",
           "package_version_pin",
-          "cluster_id"
+          "region_id"
         ],
         "additionalProperties": false,
         "description": "Install a Package version, identified by `package_id` and `package_version_pin`."
