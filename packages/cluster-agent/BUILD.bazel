@@ -1,4 +1,4 @@
-"""Cluster agent and updater sources, their Helm chart and the Akua package around it.
+"""Cluster agent and updater sources and their Helm chart, which is also the Akua package.
 
 Sources only, like every package of this module: the binary, image, tests
 and type check live in the parent repository's //tools/cluster-agent,

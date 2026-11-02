@@ -3,5 +3,7 @@ name = "akua-cluster-agent"
 version = "0.0.1"
 edition = "akua.dev/v1alpha1"
 
+# This directory is both the Akua package and its Helm chart, so the
+# published chart version carries the package that renders it.
 [dependencies.agent_chart]
-path = "./chart"
+path = "."

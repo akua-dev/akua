@@ -40,10 +40,11 @@ a hosted cluster, so its `akua-apply` is cluster-admin and the chart refuses
 any other grant there. Connected clusters use `code` and keep the minimal
 grant their owner chose.
 
-The Akua package in the parent directory (`../akua.toml`, `../package.k`)
-renders this chart unchanged, with the chart's values as its typed inputs, so
+This directory is also an Akua package (`akua.toml`, `package.k`) that
+renders the chart unchanged, with the chart's values as its typed inputs, so
 `helm upgrade --install` and an Akua install produce the same objects. The
-chart is the only source of the agent's manifests.
+chart is the only source of the agent's manifests, and a published chart
+version carries the package that renders it.
 
 ## Access
 

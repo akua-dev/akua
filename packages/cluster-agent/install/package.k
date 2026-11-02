@@ -1,5 +1,5 @@
-# The Akua package for the cluster agent. It renders the Helm chart in
-# ./chart, which is the single source of every agent manifest, so
+# The Akua package for the cluster agent. It renders the Helm chart in this
+# same directory, which is the single source of every agent manifest, so
 # `helm upgrade --install` and an Akua install produce the same objects.
 # Inputs are the chart's values, typed from its values.schema.json.
 
