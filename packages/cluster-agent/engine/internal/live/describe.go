@@ -175,7 +175,7 @@ func containerState(s corev1.ContainerStatus, init bool, reasons map[string]bool
 			reasons[reason] = true
 		}
 		if w.Reason == "CrashLoopBackOff" && s.LastTerminationState.Terminated != nil {
-			if last := terminationReason(s.LastTerminationState.Terminated); last != "Other" {
+			if last := terminationReason(s.LastTerminationState.Terminated); last != "Completed" {
 				reasons[last] = true
 			}
 		}
@@ -184,7 +184,7 @@ func containerState(s corev1.ContainerStatus, init bool, reasons map[string]bool
 	case s.State.Terminated != nil:
 		t := termination(s.State.Terminated)
 		out.State.Terminated = &t
-		if t.Reason != "Other" {
+		if t.Reason != "Completed" {
 			reasons[t.Reason] = true
 		}
 	default:
@@ -207,6 +207,8 @@ func waitingReason(reason string) string {
 	return "Other"
 }
 
+// terminationReason is a LiveReason, or the benign `Completed` of
+// cluster-agent.ts ContainerExitReason for a container that exited 0.
 func terminationReason(t *corev1.ContainerStateTerminated) string {
 	switch {
 	case t.Reason == "OOMKilled":
@@ -214,7 +216,7 @@ func terminationReason(t *corev1.ContainerStateTerminated) string {
 	case t.ExitCode != 0:
 		return "ContainerError"
 	}
-	return "Other"
+	return "Completed"
 }
 
 func termination(t *corev1.ContainerStateTerminated) protocol.Termination {

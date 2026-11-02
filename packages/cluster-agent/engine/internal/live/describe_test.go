@@ -62,7 +62,7 @@ func TestDescribeCrashLoopingPod(t *testing.T) {
 	want := []protocol.ContainerState{
 		{
 			Name: "migrate", Init: true, Ready: true,
-			State: protocol.StateValue{Terminated: &protocol.Termination{Reason: "Other", ExitCode: 0, FinishedAt: 1767225610000}},
+			State: protocol.StateValue{Terminated: &protocol.Termination{Reason: "Completed", ExitCode: 0, FinishedAt: 1767225610000}},
 		},
 		{
 			Name: "app", RestartCount: 7,
