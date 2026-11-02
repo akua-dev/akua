@@ -1,11 +1,4 @@
-import {
-	Context,
-	Effect,
-	Layer,
-	Redacted,
-	Ref,
-	SubscriptionRef
-} from 'effect';
+import { Context, Effect, Layer, Redacted, Ref, SubscriptionRef } from 'effect';
 import { HttpServer } from 'effect/http';
 import { HttpApiBuilder, HttpApiMiddleware, HttpApiTest } from 'effect/http-api';
 import ids from '@platform/ids';
@@ -52,6 +45,8 @@ export interface FakePlatformState {
 	readonly failing: ReadonlySet<'status' | 'report'>;
 	/** While true every updater phase report fails, as during a platform outage. */
 	readonly updaterDown: boolean;
+	/** `desiredState` calls, each of which acknowledges the revision on the real platform. */
+	readonly desiredFetches: number;
 }
 
 export class FakePlatform extends Context.Service<
@@ -85,6 +80,7 @@ export const fakePlatformState = (
 	instruction: initialInstruction,
 	failing: new Set(),
 	updaterDown: false,
+	desiredFetches: 0,
 	...overrides
 });
 
@@ -173,7 +169,20 @@ const AgentHandlers = HttpApiBuilder.group(
 	Effect.fn(function* (handlers) {
 		const platform = yield* FakePlatform;
 		return handlers
-			.handle('desiredState', () => SubscriptionRef.get(platform.desired))
+			.handle('desiredState', () =>
+				Ref.update(platform.state, (state) => ({
+					...state,
+					desiredFetches: state.desiredFetches + 1
+				})).pipe(Effect.andThen(SubscriptionRef.get(platform.desired)))
+			)
+			.handle('updaterBundle', () =>
+				Effect.map(SubscriptionRef.get(platform.desired), (desired) => ({
+					placement:
+						desired.placements.find(
+							(placement) => placement.applier === 'updater' && placement.presence === 'present'
+						) ?? null
+				}))
+			)
 			.handle('report', ({ params, payload }) =>
 				Effect.gen(function* () {
 					if (yield* takeFailure(platform, 'report')) return yield* notFound('placement unknown');

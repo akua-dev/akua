@@ -459,19 +459,18 @@ export const agentUpdaterLayer = Layer.effect(
 
 		/** The `applier: updater` Placement with its rendered objects, or null when absent or unreadable. */
 		const readBundle = Effect.gen(function* () {
-			const desired = yield* platform.desiredState().pipe(
+			// Never desiredState: that fetch acknowledges the agent's revision.
+			const fetched = yield* platform.updaterBundle().pipe(
 				Effect.tapError((error) =>
-					Effect.logWarning('desired state unavailable').pipe(
+					Effect.logWarning('agent bundle unavailable').pipe(
 						Effect.annotateLogs({ reason: error._tag })
 					)
 				),
 				Effect.option
 			);
-			if (Option.isNone(desired)) return null;
-			const placement = desired.value.placements.find(
-				(entry) => entry.applier === 'updater' && entry.presence === 'present'
-			);
-			if (placement === undefined) return null;
+			if (Option.isNone(fetched)) return null;
+			const placement = fetched.value.placement;
+			if (placement === null || placement.presence !== 'present') return null;
 			const files = yield* git
 				.fetchManifests({
 					url: placement.source.url,

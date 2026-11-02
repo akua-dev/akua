@@ -153,6 +153,8 @@ describe('AgentUpdater', () => {
 				v2
 			);
 			assert.deepStrictEqual(verified, { _tag: 'steady', running: v2 });
+			// The updater reads its bundle without acknowledging the agent's desired revision.
+			assert.strictEqual((yield* Ref.get((yield* FakePlatform).state)).desiredFetches, 0);
 			// What only v1 had is pruned once v2 is verified.
 			const [prune] = yield* requestsOf('prune');
 			assert.deepStrictEqual(
