@@ -23,6 +23,7 @@ import {
 	type PlacementSecrets,
 	type StatusBatch,
 	type UpdaterHeartbeat,
+	type UpdaterPhaseReport,
 	type UpdaterInstruction,
 	AuthenticatedAgent,
 	clusterAgentPrincipal,
@@ -52,6 +53,7 @@ export interface FakePlatformState {
 	readonly snapshotRequired: ReadonlyArray<PlacementId>;
 	readonly secrets: ReadonlyMap<PlacementId, typeof PlacementSecrets.Type>;
 	readonly updaterHeartbeats: ReadonlyArray<typeof UpdaterHeartbeat.Type>;
+	readonly updaterPhases: ReadonlyArray<typeof UpdaterPhaseReport.Type>;
 	readonly instruction: typeof UpdaterInstruction.Type;
 	/** Fail the next N calls of these endpoints with 503-like errors. */
 	readonly failing: ReadonlySet<'status' | 'report' | 'heartbeat'>;
@@ -89,6 +91,7 @@ export const fakePlatformState = (
 	snapshotRequired: [],
 	secrets: new Map(),
 	updaterHeartbeats: [],
+	updaterPhases: [],
 	instruction: initialInstruction,
 	failing: new Set(),
 	updaterDown: false,
@@ -237,6 +240,17 @@ const AgentHandlers = HttpApiBuilder.group(
 						}
 					]);
 					return { snapshot_required: required };
+				})
+			)
+			.handle('updaterPhase', ({ payload }) =>
+				Effect.gen(function* () {
+					if ((yield* Ref.get(platform.state)).updaterDown)
+						return yield* forbidden('platform unavailable');
+					const state = yield* Ref.updateAndGet(platform.state, (current) => ({
+						...current,
+						updaterPhases: [...current.updaterPhases, payload]
+					}));
+					return state.instruction;
 				})
 			)
 			.handle('updaterHeartbeat', ({ payload }) =>

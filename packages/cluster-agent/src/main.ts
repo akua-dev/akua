@@ -5,7 +5,8 @@ import { Config, Effect, Layer, Option, Schedule, SubscriptionRef } from 'effect
 import { Command } from 'effect/cli';
 import {
 	AgentChannelRpcs,
-	channelProtocol
+	channelProtocol,
+	UpdaterChannelRpcs
 } from '@platform/api-contract/services/cluster-agent-channel';
 import { agentRpcHandlers } from './agent-rpcs';
 import { ChannelDialer, type ChannelState, runChannel } from './channel';
@@ -33,7 +34,13 @@ import {
 	ReservedNames,
 	WatchSet
 } from './reconciler';
-import { agentUpdaterLayer, UpdaterKubernetes, updaterLoop } from './updater';
+import {
+	agentUpdaterLayer,
+	UpdaterInstructions,
+	UpdaterKubernetes,
+	updaterLoop,
+	updaterRpcHandlers
+} from './updater';
 import { KubernetesApi } from './contract';
 
 const arch = process.arch === 'x64' ? 'amd64' : process.arch;
@@ -176,9 +183,43 @@ const updaterLayer = Layer.unwrap(
 		const agentApi = agentApiLive.pipe(Layer.provide(Layer.mergeAll(http, credentials)));
 		const deployment = UpdaterKubernetes.layer.pipe(Layer.provide(http));
 		const updater = agentUpdaterLayer.pipe(Layer.provide(deployment));
+		const instructions = UpdaterInstructions.layer;
+		const rpcs = updaterRpcHandlers.pipe(Layer.provide(instructions));
+		const dialer = ChannelDialer.layer.pipe(Layer.provide(BunSocket.layerWebSocketConstructor));
 		const loop = Layer.effectDiscard(
-			Effect.forkScoped(updaterLoop(version).pipe(Effect.retry(Schedule.spaced('15 seconds'))))
-		).pipe(Layer.provide(Layer.mergeAll(agentApi, updater, deployment)));
+			Effect.gen(function* () {
+				const kubernetesApi = yield* KubernetesApi;
+				const { channel } = yield* UpdaterInstructions;
+				// Its own connection, so the updater stays reachable when the agent is broken.
+				yield* Effect.forkScoped(
+					runChannel({
+						role: 'updater',
+						group: UpdaterChannelRpcs,
+						handlers: rpcs,
+						state: channel,
+						hello: kubernetesApi.readClusterUid().pipe(
+							Effect.retry(retryForever),
+							Effect.orDie,
+							Effect.map((clusterUid) => ({
+								_tag: 'updater' as const,
+								protocol: channelProtocol,
+								updater_version: version,
+								cluster_uid: clusterUid,
+								serves: [...UpdaterChannelRpcs.requests.keys()]
+							}))
+						),
+						onWelcome: () => Effect.void
+					})
+				);
+				yield* Effect.forkScoped(
+					updaterLoop(version).pipe(Effect.retry(Schedule.spaced('15 seconds')))
+				);
+			})
+		).pipe(
+			Layer.provide(
+				Layer.mergeAll(agentApi, updater, deployment, instructions, kubernetes, credentials, dialer)
+			)
+		);
 		return Layer.mergeAll(healthServer(port, Effect.succeed(true)), loop);
 	})
 ).pipe(Layer.provide(Layer.mergeAll(KubernetesConnection.inCluster, PlatformOrigin.fromEnv)));

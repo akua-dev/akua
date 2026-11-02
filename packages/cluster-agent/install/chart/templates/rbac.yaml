@@ -1,6 +1,7 @@
 {{- $ns := include "akua.namespace" . -}}
-# These rules are the contract objects agentClusterRole, agentRole and
-# updaterRole in packages/cluster-agent/src/contract.ts. Change both together.
+# These rules are the contract objects agentClusterRole, agentRole,
+# updaterClusterRole and updaterRole in packages/cluster-agent/src/contract.ts.
+# Change both together.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -62,6 +63,33 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: akua-agent
+    namespace: {{ $ns }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: akua-agent-updater
+  labels:
+    {{- include "akua.componentLabels" (dict "root" . "component" "updater") | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    resourceNames: ["kube-system"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: akua-agent-updater
+  labels:
+    {{- include "akua.componentLabels" (dict "root" . "component" "updater") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: akua-agent-updater
+subjects:
+  - kind: ServiceAccount
+    name: akua-agent-updater
     namespace: {{ $ns }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1

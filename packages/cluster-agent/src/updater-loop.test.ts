@@ -1,7 +1,9 @@
 import { assert, describe, it } from '@effect/vitest';
-import { Effect, Fiber, Layer, Ref } from 'effect';
+import { Effect, Fiber, Layer, Ref, Schema, SubscriptionRef } from 'effect';
 import { TestClock } from 'effect/testing';
-import { agentUpdaterLayer, updaterAnnotations, updaterLoop } from './updater';
+import { agentUpdaterLayer, updaterAnnotations, UpdaterInstructions, updaterLoop } from './updater';
+import { ConnectionId } from '@platform/api-contract/services/cluster-agent-channel';
+import type { UpdaterInstruction } from '@platform/api-contract/services/cluster-agent';
 import {
 	agentDeploymentObject,
 	FakeAgentDeployment,
@@ -16,6 +18,7 @@ const v1 = { version: '1.0.0', image: testImage('1'), protocol: 1 };
 const v2 = { version: '1.1.0', image: testImage('2'), protocol: 1 };
 
 const layer = agentUpdaterLayer.pipe(
+	Layer.provideMerge(UpdaterInstructions.layer),
 	Layer.provideMerge(
 		fakeAgentDeploymentLayer(
 			agentDeploymentObject(v1.image, { [updaterAnnotations.release]: JSON.stringify(v1) })
@@ -41,70 +44,86 @@ const image = Effect.gen(function* () {
 	return deployment.spec?.template.spec?.containers[0]?.image;
 });
 
+/** The updater's own channel connection as open or down. */
+const channel = (open: boolean) =>
+	Effect.gen(function* () {
+		const { channel } = yield* UpdaterInstructions;
+		yield* SubscriptionRef.set(
+			channel,
+			open
+				? { _tag: 'open', connectionId: Schema.decodeSync(ConnectionId)(1), protocol: 1, since: 0 }
+				: { _tag: 'connecting', attempt: 1, since: 0 }
+		);
+	});
+
+/** What Cluster pushes on the channel (`Instruct.v1`). */
+const push = (instruction: typeof UpdaterInstruction.Type) =>
+	UpdaterInstructions.use(({ latest }) => SubscriptionRef.set(latest, instruction));
+
+const phases = Effect.gen(function* () {
+	return (yield* Ref.get((yield* FakePlatform).state)).updaterPhases.map((report) => report.phase);
+});
+
 describe('updaterLoop', () => {
 	it.effect(
-		'does not roll back a verifying release while the platform is unreachable, then verifies it',
+		'reports its phase on change, keeps a verifying release while its channel is down, then verifies it from a push',
 		() =>
 			Effect.gen(function* () {
 				// The harness enrolls the agent, so the updater shares its identity.
 				yield* PlacementReconciler;
-				const platform = yield* FakePlatform;
+				yield* channel(true);
 				const fake = yield* FakeAgentDeployment;
 				const loop = yield* Effect.forkChild(updaterLoop('1.0.0'));
 				while ((yield* image) !== v2.image) yield* TestClock.adjust('1 second');
 				yield* fake.settle;
-				yield* Ref.update(platform.state, (state) => ({ ...state, updaterDown: true }));
-				yield* TestClock.adjust('10 seconds');
-				yield* TestClock.adjust('10 seconds');
-				yield* TestClock.adjust('300 seconds');
-				for (let tick = 0; tick < 20; tick += 1) yield* TestClock.adjust('10 seconds');
-				assert.strictEqual(yield* image, v2.image, 'kept during the outage');
-				yield* Ref.update(platform.state, (state) => ({
-					...state,
-					updaterDown: false,
-					instruction: {
-						...state.instruction,
-						desired: null,
-						observed: { version: v2.version, heartbeat_at: 1, accepted_at: 2 }
-					}
-				}));
+				yield* channel(false);
+				for (let tick = 0; tick < 40; tick += 1) yield* TestClock.adjust('10 seconds');
+				assert.strictEqual(yield* image, v2.image, 'kept while observations are unknown');
+				yield* channel(true);
+				yield* push({
+					desired: null,
+					verify_seconds: 120,
+					observed: { version: v2.version, heartbeat_at: 1, accepted_at: 2 },
+					next_heartbeat_seconds: 30
+				});
 				let phase = '';
 				for (let tick = 0; tick < 20 && phase !== 'steady'; tick += 1) {
 					yield* TestClock.adjust('10 seconds');
-					const beats = (yield* Ref.get(platform.state)).updaterHeartbeats;
-					phase = beats.at(-1)?.phase._tag ?? '';
+					phase = (yield* phases).at(-1)?._tag ?? '';
 				}
 				assert.strictEqual(phase, 'steady');
 				assert.strictEqual(yield* image, v2.image);
+				// One report per phase change, not one per tick.
+				const tags = (yield* phases).map((reported) => reported._tag);
+				assert.deepStrictEqual(
+					tags.filter((tag, index) => tag !== tags[index - 1]),
+					tags
+				);
 				yield* Fiber.interrupt(loop);
 			}).pipe(Effect.provide(layer))
 	);
 
-	it.effect(
-		'rolls back with no-heartbeat when the platform answers but never sees the new release',
-		() =>
-			Effect.gen(function* () {
-				yield* PlacementReconciler;
-				const platform = yield* FakePlatform;
-				const fake = yield* FakeAgentDeployment;
-				const loop = yield* Effect.forkChild(updaterLoop('1.0.0'));
-				while ((yield* image) !== v2.image) yield* TestClock.adjust('1 second');
-				yield* fake.settle;
-				yield* Ref.update(platform.state, (state) => ({
-					...state,
-					instruction: { ...state.instruction, desired: null }
-				}));
-				for (let tick = 0; tick < 20 && (yield* image) !== v1.image; tick += 1)
-					yield* TestClock.adjust('10 seconds');
-				assert.strictEqual(yield* image, v1.image);
-				const last = (yield* Ref.get(platform.state)).updaterHeartbeats.at(-1)?.phase;
-				for (let tick = 0; tick < 5; tick += 1) yield* TestClock.adjust('30 seconds');
-				const reported = (yield* Ref.get(platform.state)).updaterHeartbeats.at(-1)?.phase;
-				assert.strictEqual(
-					reported?._tag === 'rolled-back' ? reported.reason : last?._tag,
-					'no-heartbeat'
-				);
-				yield* Fiber.interrupt(loop);
-			}).pipe(Effect.provide(layer))
+	it.effect('rolls back with no-heartbeat when no push ever shows the new release', () =>
+		Effect.gen(function* () {
+			yield* PlacementReconciler;
+			yield* channel(true);
+			const fake = yield* FakeAgentDeployment;
+			const loop = yield* Effect.forkChild(updaterLoop('1.0.0'));
+			while ((yield* image) !== v2.image) yield* TestClock.adjust('1 second');
+			yield* fake.settle;
+			yield* push({
+				desired: null,
+				verify_seconds: 120,
+				observed: null,
+				next_heartbeat_seconds: 30
+			});
+			for (let tick = 0; tick < 20 && (yield* image) !== v1.image; tick += 1)
+				yield* TestClock.adjust('10 seconds');
+			assert.strictEqual(yield* image, v1.image);
+			for (let tick = 0; tick < 5; tick += 1) yield* TestClock.adjust('10 seconds');
+			const reported = (yield* phases).at(-1);
+			assert.strictEqual(reported?._tag === 'rolled-back' ? reported.reason : '', 'no-heartbeat');
+			yield* Fiber.interrupt(loop);
+		}).pipe(Effect.provide(layer))
 	);
 });

@@ -656,6 +656,16 @@ export const agentRole = {
 	]
 } satisfies Role;
 
+/** Only to read `metadata.uid` of `kube-system`, the ClusterUid its channel Hello names. */
+export const updaterClusterRole = {
+	apiVersion: 'rbac.authorization.k8s.io/v1',
+	kind: 'ClusterRole',
+	metadata: { name: 'akua-agent-updater' },
+	rules: [
+		{ apiGroups: [''], resources: ['namespaces'], resourceNames: ['kube-system'], verbs: ['get'] }
+	]
+} satisfies ClusterRole;
+
 /** In akua-system only: the updater can change exactly one Deployment and read its rollout. */
 export const updaterRole = {
 	apiVersion: 'rbac.authorization.k8s.io/v1',

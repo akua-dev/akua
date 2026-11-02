@@ -1,4 +1,15 @@
-import { Clock, Context, Duration, Effect, Layer, Option, Result, Schema } from 'effect';
+import {
+	Clock,
+	Context,
+	Duration,
+	Effect,
+	Layer,
+	Option,
+	Result,
+	Schema,
+	Stream,
+	SubscriptionRef
+} from 'effect';
 import { HttpClient, HttpClientRequest, type HttpClientError } from 'effect/http';
 import {
 	AgentRelease,
@@ -8,6 +19,8 @@ import {
 } from '@platform/api-contract/services/cluster-agent';
 import { Deployment } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/apps/v1/Deployment';
 import { PodList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/PodList';
+import { UpdaterChannelRpcs } from '@platform/api-contract/services/cluster-agent-channel';
+import type { ChannelState } from './channel';
 import { agentDeployment, agentNamespace, AgentUpdater, type KubernetesFailure } from './contract';
 import { decodeAs, failureFor, KubernetesConnection } from './kubernetes';
 import { AgentApi } from './platform';
@@ -334,22 +347,67 @@ export const agentUpdaterLayer = Layer.effect(
 );
 
 /**
- * The updater process: heartbeat its phase, take the instruction, step.
- * While an update is in flight it polls every 10 s; otherwise it waits the
- * interval the platform answers. A failed heartbeat keeps the previous
- * instruction, so a verification still ends at its deadline.
+ * What the platform pushed on the updater's own channel connection
+ * (`Instruct.v1`), and whether that connection is open. The HTTP answer to
+ * a phase report lands here too, so the loop always reads the newest.
+ */
+export class UpdaterInstructions extends Context.Service<
+	UpdaterInstructions,
+	{
+		readonly latest: SubscriptionRef.SubscriptionRef<Instruction | null>;
+		readonly channel: SubscriptionRef.SubscriptionRef<ChannelState>;
+	}
+>()('akua/cluster-agent/UpdaterInstructions') {
+	static readonly layer = Layer.effect(
+		UpdaterInstructions,
+		Effect.gen(function* () {
+			return UpdaterInstructions.of({
+				latest: yield* SubscriptionRef.make<Instruction | null>(null),
+				channel: yield* SubscriptionRef.make<ChannelState>({
+					_tag: 'connecting',
+					attempt: 0,
+					since: 0
+				})
+			});
+		})
+	);
+}
+
+/** The updater's side of `UpdaterChannelRpcs`. */
+export const updaterRpcHandlers = UpdaterChannelRpcs.toLayer(
+	Effect.gen(function* () {
+		const { latest } = yield* UpdaterInstructions;
+		return UpdaterChannelRpcs.of({
+			'Instruct.v1': (instruction) => SubscriptionRef.set(latest, instruction)
+		});
+	})
+);
+
+const initialInstruction: Instruction = {
+	desired: null,
+	verify_seconds: 300,
+	observed: null,
+	next_heartbeat_seconds: 60
+};
+
+/** Without any push the updater looks again this often; the push is the normal path. */
+const idleRecheck = Duration.minutes(15);
+
+/**
+ * The updater process: report its phase over HTTP whenever it changes,
+ * take the newest instruction (the report's answer or a later push), step.
+ * While an update is in flight it steps every 10 s; otherwise it waits for
+ * the next push. While its channel is down the platform's observations are
+ * unknown, not absent: an outage never rolls back a release it could not
+ * see.
  */
 export const updaterLoop = (updaterVersion: string) =>
 	Effect.gen(function* () {
 		const api = yield* AgentApi;
 		const updater = yield* AgentUpdater;
 		const kubernetes = yield* UpdaterKubernetes;
-		let instruction: Instruction = {
-			desired: null,
-			verify_seconds: 300,
-			observed: null,
-			next_heartbeat_seconds: 60
-		};
+		const { latest, channel } = yield* UpdaterInstructions;
+		let reported: string | null = null;
 		let phase: Phase | null = null;
 		while (true) {
 			const deployment = yield* kubernetes.getAgentDeployment.pipe(Effect.result);
@@ -362,21 +420,28 @@ export const updaterLoop = (updaterVersion: string) =>
 				continue;
 			}
 			const current: Phase = phase ?? { _tag: 'steady', running: running.value };
-			const answered = yield* api
-				.updaterHeartbeat({ payload: { updater_version: updaterVersion, phase: current } })
-				.pipe(Effect.result);
-			if (Result.isSuccess(answered)) instruction = answered.success;
-			else {
-				yield* Effect.logWarning('updater heartbeat failed').pipe(
-					Effect.annotateLogs({ reason: answered.failure._tag })
-				);
+			const key = JSON.stringify(current);
+			let unreported = key !== reported;
+			if (unreported) {
+				const answered = yield* api
+					.updaterPhase({ payload: { updater_version: updaterVersion, phase: current } })
+					.pipe(Effect.result);
+				if (Result.isSuccess(answered)) {
+					yield* SubscriptionRef.set(latest, answered.success);
+					reported = key;
+					unreported = false;
+				} else {
+					yield* Effect.logWarning('updater phase not reported').pipe(
+						Effect.annotateLogs({ reason: answered.failure._tag })
+					);
+				}
 			}
-			// Without a fresh answer the platform's observations are unknown, not
-			// absent: an outage must not roll back a release it could not see.
-			if (Result.isFailure(answered) && current._tag === 'verifying') {
+			const open = (yield* SubscriptionRef.get(channel))._tag === 'open';
+			if (current._tag === 'verifying' && (unreported || !open)) {
 				yield* Effect.sleep(Duration.seconds(10));
 				continue;
 			}
+			const instruction = (yield* SubscriptionRef.get(latest)) ?? initialInstruction;
 			phase = yield* updater
 				.step({ instruction, running: running.value })
 				.pipe(
@@ -387,7 +452,16 @@ export const updaterLoop = (updaterVersion: string) =>
 						)
 					)
 				);
-			const inFlight = phase._tag === 'updating' || phase._tag === 'verifying';
-			yield* Effect.sleep(Duration.seconds(inFlight ? 10 : instruction.next_heartbeat_seconds));
+			if (phase._tag === 'updating' || phase._tag === 'verifying') {
+				yield* Effect.sleep(Duration.seconds(10));
+				continue;
+			}
+			if (JSON.stringify(phase) !== reported) continue;
+			// Settled: wait for the platform's next instruction.
+			yield* SubscriptionRef.changes(latest).pipe(
+				Stream.drop(1),
+				Stream.runHead,
+				Effect.timeoutOption(idleRecheck)
+			);
 		}
 	});
