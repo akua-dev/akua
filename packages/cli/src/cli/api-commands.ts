@@ -19,12 +19,7 @@ import { decodeRequest } from '../api/request';
 import type { CliFailure } from '../runtime/effect-runtime';
 import type { NextStep } from '../runtime/errors';
 import type { RenderEnvelope } from '../runtime/render';
-import {
-	Console,
-	PublicInput,
-	PublicOutput,
-	type SecureConfig
-} from '../runtime/services';
+import { Console, PublicInput, PublicOutput, type SecureConfig } from '../runtime/services';
 import { respond } from './invocation';
 import {
 	commandExamples,
