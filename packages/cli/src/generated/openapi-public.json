@@ -174,6 +174,127 @@
           "required": true
         },
         "x-platform-visibility": "PUBLIC"
+      },
+      "get": {
+        "tags": [
+          "installs"
+        ],
+        "operationId": "installs.list",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Pagination cursor from a previous response's `next_cursor`."
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (1-100, default 50)",
+              "default": 50,
+              "examples": [
+                50
+              ],
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Installs list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Lists installs in the current workspace. With `product_id`, lists installs attributed to that product for product-owner support visibility, newest first.",
+        "summary": "List installs",
+        "x-platform-visibility": "PUBLIC",
+        "x-platform-live": {
+          "visibility": "PUBLIC",
+          "transport": "convex",
+          "convexQuery": "install.listInstallsForApi"
+        }
       }
     },
     "/installs/{id}": {
@@ -2132,6 +2253,7 @@
           }
         ],
         "security": [
+          {},
           {
             "BearerAuth": []
           }
@@ -2222,6 +2344,7 @@
           }
         ],
         "security": [
+          {},
           {
             "BearerAuth": []
           }
@@ -2426,6 +2549,752 @@
         },
         "description": "Archives the Offer: nobody can redeem it any more. Redemptions already made keep their access. Send the etag you read as If-Match; an archived Offer answers unchanged.",
         "summary": "Archive offer",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/order_drafts": {
+      "post": {
+        "tags": [
+          "Order Drafts"
+        ],
+        "operationId": "orderDrafts.create",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Order draft created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDraft"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Starts redeeming an Offer for the signed-in customer, from its ID or the short hash of its link. Any draft field may be set now or later, in any order. The answer lists what is still `missing` and the `problems` to fix. Retrying with the same Idempotency-Key answers the same draft.",
+        "summary": "Create order draft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderDraftBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/order_drafts/{id}": {
+      "get": {
+        "tags": [
+          "Order Drafts"
+        ],
+        "operationId": "orderDrafts.get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Order draft ID",
+              "examples": [
+                "odft_j572abc..."
+              ],
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order draft, with what is missing and wrong now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDraft"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns the customer's own order draft. `missing` and `problems` are computed from the Offer, the Workspace and the Cluster at the time of the request.",
+        "summary": "Get order draft",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "patch": {
+        "tags": [
+          "Order Drafts"
+        ],
+        "operationId": "orderDrafts.update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Order draft ID",
+              "examples": [
+                "odft_j572abc..."
+              ],
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": true
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order draft updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDraft"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Sets the fields present in the body and keeps the others; the fields can be set in any order. Only a `draft` before `expires_at` changes (410 after). A new Workspace is created at once.",
+        "summary": "Update order draft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrderDraftBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/order_drafts/{id}:redeem": {
+      "post": {
+        "tags": [
+          "Order Drafts"
+        ],
+        "operationId": "orderDrafts.redeem",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Order draft ID",
+              "examples": [
+                "odft_j572abc..."
+              ],
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": true
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Offer redeemed and Install started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDraft"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Checks the draft and the sensitive values together (422 names what is missing or wrong, and nothing changes), then redeems the Offer into the Workspace and creates the Install with the Offer's pinned Package version. The answer is `installing` with `install_id` and `operation_id`. A retry resumes the same redemption and Install whatever its Idempotency-Key; resend the sensitive values with it (an Install already created keeps the ones it was created with).",
+        "summary": "Redeem order draft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemOrderDraftBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/order_drafts/{id}:cancel": {
+      "post": {
+        "tags": [
+          "Order Drafts"
+        ],
+        "operationId": "orderDrafts.cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Order draft ID",
+              "examples": [
+                "odft_j572abc..."
+              ],
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": true
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order draft cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDraft"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Ends a `draft`. Once `:redeem` started the draft cannot be cancelled (409), because the redemption may already be spent. Cancelling a cancelled draft answers it unchanged.",
+        "summary": "Cancel order draft",
         "x-platform-visibility": "PUBLIC"
       }
     },
@@ -16578,6 +17447,506 @@
         ],
         "additionalProperties": false
       },
+      "OrderDraft": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Order draft ID",
+            "examples": [
+              "odft_j572abc..."
+            ],
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "offer_id": {
+            "type": "string",
+            "description": "The Offer this draft redeems"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderDraftStatus"
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cluster_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "values": {
+            "type": "object",
+            "description": "The customer's configuration values, without the Offer's values and without sensitive values."
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderDraftMissing"
+            }
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderDraftProblem"
+            }
+          },
+          "install_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "operation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "The Install's create Operation; poll /v1/operations"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "failure_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "redeemed_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Unix timestamp (seconds)",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "expires_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "allOf": [
+              {
+                "minimum": 0,
+                "description": "After this time a `draft` can no longer change or redeem."
+              }
+            ]
+          },
+          "etag": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "status",
+          "workspace_id",
+          "cluster_id",
+          "values",
+          "missing",
+          "problems",
+          "install_id",
+          "operation_id",
+          "failure_message",
+          "redeemed_at",
+          "created_at",
+          "updated_at",
+          "expires_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "OrderDraftProblem": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "offer"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "not_found",
+                  "not_for_you",
+                  "unavailable",
+                  "exhausted"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "description": "Why, for the customer to read"
+              }
+            },
+            "required": [
+              "kind",
+              "reason",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "workspace"
+                ]
+              },
+              "workspace_id": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "not_allowed",
+                  "deleting"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "description": "Why, for the customer to read"
+              }
+            },
+            "required": [
+              "kind",
+              "workspace_id",
+              "reason",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "cluster"
+                ]
+              },
+              "cluster_id": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "not_found",
+                  "other_workspace",
+                  "not_ready",
+                  "access_unreported",
+                  "namespaces_not_allowed"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "description": "Why, for the customer to read"
+              }
+            },
+            "required": [
+              "kind",
+              "cluster_id",
+              "reason",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "value"
+                ]
+              },
+              "pointer": {
+                "type": "string",
+                "description": "JSON pointer into the configuration values, such as `/auth/password`",
+                "examples": [
+                  "/replicas"
+                ],
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "invalid",
+                  "locked"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "description": "Why, for the customer to read"
+              }
+            },
+            "required": [
+              "kind",
+              "pointer",
+              "reason",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "expired"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "description": "Why, for the customer to read"
+              }
+            },
+            "required": [
+              "kind",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Something wrong now; `:redeem` refuses while any is present."
+      },
+      "OrderDraftMissing": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "workspace"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "cluster"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "value"
+                ]
+              },
+              "pointer": {
+                "type": "string",
+                "description": "JSON pointer into the configuration values, such as `/auth/password`",
+                "examples": [
+                  "/replicas"
+                ],
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "sensitive": {
+                "type": "boolean",
+                "description": "A sensitive value is sent only with `:redeem` and never stored on the draft; it stays missing until then."
+              }
+            },
+            "required": [
+              "kind",
+              "pointer",
+              "sensitive"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Something `:redeem` still needs."
+      },
+      "OrderDraftStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "redeeming",
+          "installing",
+          "cancelled",
+          "failed"
+        ],
+        "description": "`draft`: editable. `redeeming`: fields frozen while the Offer is redeemed and the Install created; `:redeem` again resumes it. `installing`: the Install exists (`install_id`, `operation_id`). `failed`: the Offer redeemed but the Install could not be created (`failure_message`). `cancelled`: ended by the customer."
+      },
+      "RedeemOrderDraftBody": {
+        "type": "object",
+        "properties": {
+          "sensitive_values": {
+            "type": "object",
+            "description": "The sensitive configuration values, as a values object holding only those fields. They go to the Install and its vault and are never stored on the draft."
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateOrderDraftBody": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "$ref": "#/components/schemas/OrderDraftWorkspace"
+          },
+          "cluster_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 55
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A Cluster in the Workspace; `null` clears it. To use a new hosted Cluster, create it (and its server) through /v1/clusters first."
+          },
+          "values": {
+            "type": "object",
+            "description": "Replaces the configuration values as a whole. Sensitive fields (`x-ui.sensitive`) are refused here; send them with `:redeem`."
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrderDraftWorkspace": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "existing"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              }
+            },
+            "required": [
+              "kind",
+              "workspace_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "new"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              }
+            },
+            "required": [
+              "kind",
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "An existing Workspace of the customer, or a new one, created at once and owned by the customer. Setting the same new name again on this draft answers the same Workspace."
+      },
+      "CreateOrderDraftBody": {
+        "type": "object",
+        "properties": {
+          "offer": {
+            "type": "string",
+            "description": "The Offer ID (`offer_...`) or the 8-character short hash from the Offer link",
+            "examples": [
+              "offer_j572abc...",
+              "aB3dE5fG"
+            ],
+            "minLength": 1,
+            "maxLength": 56
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/OrderDraftWorkspace"
+          },
+          "cluster_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 55
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A Cluster in the Workspace; `null` clears it. To use a new hosted Cluster, create it (and its server) through /v1/clusters first."
+          },
+          "values": {
+            "type": "object",
+            "description": "Replaces the configuration values as a whole. Sensitive fields (`x-ui.sensitive`) are refused here; send them with `:redeem`."
+          }
+        },
+        "required": [
+          "offer"
+        ],
+        "additionalProperties": false
+      },
       "OfferResource": {
         "type": "object",
         "properties": {
@@ -19268,6 +20637,163 @@
         ],
         "additionalProperties": false
       },
+      "InstallList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallCatalogEntry"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "InstallCatalogEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "html_url": {
+            "type": "string",
+            "description": "Absolute dashboard URL for this resource. OUTPUT_ONLY.",
+            "format": "uri",
+            "examples": [
+              "https://akua.dev/installs/inst_j572abc123def456"
+            ],
+            "maxLength": 2048
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "customer_workspace": {
+            "$ref": "#/components/schemas/InstallCustomerWorkspace"
+          },
+          "cluster_id": {
+            "type": "string",
+            "description": "Cluster ID. Omitted from product-owner support projections for customer-owned installs.",
+            "minLength": 1,
+            "maxLength": 54
+          },
+          "product_id": {
+            "type": "string",
+            "description": "Product ID for product-based installations. Omitted for direct installations.",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "package_version_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "rendering",
+              "syncing",
+              "unknown",
+              "healthy",
+              "degraded",
+              "failed",
+              "deleted"
+            ],
+            "description": "Install lifecycle state from the control plane perspective."
+          },
+          "failure_message": {
+            "type": "string"
+          },
+          "operation_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 192
+          },
+          "reconciling": {
+            "type": "boolean"
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallUrl"
+            }
+          },
+          "demo_cleanup": {
+            "$ref": "#/components/schemas/InstallDemoCleanup"
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "etag": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "html_url",
+          "workspace_id",
+          "customer_workspace",
+          "package_version_id",
+          "state",
+          "reconciling",
+          "urls",
+          "created_at",
+          "updated_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "InstallCustomerWorkspace": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
+      },
       "Install": {
         "type": "object",
         "properties": {
@@ -19487,6 +21013,9 @@
     },
     {
       "name": "offers"
+    },
+    {
+      "name": "Order Drafts"
     },
     {
       "name": "packages"
