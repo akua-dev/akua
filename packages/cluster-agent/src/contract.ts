@@ -155,8 +155,11 @@ export const Manifest = Schema.JsonObject;
  *   Placement does not own its namespace (`WatchedPlacement.namespaceExclusive`
  *   false, connected clusters).
  * `safetyNet` is not the bound, only the backstop: past `maxWatchedObjects`
- * the engine reports `overloaded` and the agent falls back to snapshots
- * after each reconcile. Follow-up: upstream the factory hooks to
+ * the engine reports `overloaded`, stops live status until it restarts
+ * and the agent falls back to snapshots after each reconcile. There is no
+ * hysteresis: with live status stopped the cache no longer measures the
+ * watched set, so a lower threshold would only restart and stop it again.
+ * Follow-up: upstream the factory hooks to
  * fluxcd/cli-utils and drop the patch once released.
  */
 export const informerCache = {
@@ -259,11 +262,13 @@ export const EngineRequest = Schema.Union([
 		)
 	}),
 	/**
-	 * `ResourceManager.DeleteAll(stale)` with `DeleteOptions.Inclusions` = the
-	 * ApplySet `part-of` label and `Exclusions` = `exclusionSelector`. The
-	 * agent computes `stale` (previous inventory minus applied, cli-utils
-	 * `ObjMetadataSet.Diff` semantics); removing a Placement prunes its whole
-	 * inventory.
+	 * `ResourceManager.Delete` per `stale` entry in `DeleteAll` order with
+	 * `DeleteOptions.Exclusions` = `exclusionSelector` and no label
+	 * inclusion: the inventory decides membership, so members that lost
+	 * their `part-of` label are pruned too; an excluded object is neither
+	 * deleted nor a survivor. The agent computes `stale` (previous inventory
+	 * minus applied, cli-utils `ObjMetadataSet.Diff` semantics); removing a
+	 * Placement prunes its whole inventory.
 	 */
 	Schema.TaggedStruct('prune', {
 		id: RequestId,
@@ -482,8 +487,10 @@ export class Engine extends Context.Service<
  * `recorded`: scenarios Argo CD's testdata lacks (it has no OOMKilled,
  * Unschedulable or FailedMount fixture), recorded once from `akua-apply
  * serve` stdout against a kind cluster as golden EngineMessage NDJSON plus
- * the expected LiveHealth and liveReasonFailures. `goldenTest` replays them
- * through the agent's fold into LiveSnapshot; no cluster runs in CI.
+ * the expected LiveHealth and liveReasonFailures. `recordedTest` checks
+ * that each stream decodes and shows its scenario's reasons; `goldenTest`
+ * replays them through the agent's fold into LiveSnapshot; no cluster runs
+ * in CI. Engine targets live in the akua module's `bazel/cluster-agent`.
  * Re-recorded only when the engine protocol changes.
  */
 export const liveReasonFixtures = {
@@ -502,7 +509,8 @@ export const liveReasonFixtures = {
 		destination: 'packages/cluster-agent/engine/testdata/kind',
 		scenarios: ['bad-image', 'crash-loop-back-off', 'oom-killed', 'unschedulable', 'failed-mount']
 	},
-	reasonTest: '//packages/cluster-agent/engine:live_reason_fixtures_test',
+	reasonTest: '@akua//bazel/cluster-agent:live_reason_fixtures_test',
+	recordedTest: '@akua//bazel/cluster-agent:recorded_scenarios_test',
 	goldenTest: '//packages/cluster-agent:live_status_golden_test'
 } as const;
 
