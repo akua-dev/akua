@@ -170,7 +170,7 @@ func deref(s *string) string {
 	return *s
 }
 
-func TestPruneDeletesOnlyLabelledMembersAndKeepsFailures(t *testing.T) {
+func TestPruneDeletesTheInventoryAndKeepsFailures(t *testing.T) {
 	labelled := manifest("v1", "ConfigMap", "shop", "old", true)
 	unlabelled := manifest("v1", "ConfigMap", "shop", "adopted", false)
 	excluded := manifest("v1", "ConfigMap", "shop", "kept", true)
@@ -204,7 +204,8 @@ func TestPruneDeletesOnlyLabelledMembersAndKeepsFailures(t *testing.T) {
 	for _, e := range got.Deleted {
 		deleted[e.Key] = true
 	}
-	if !reflect.DeepEqual(deleted, map[string]bool{"shop_old__ConfigMap": true, "shop_gone__ConfigMap": true}) {
+	// The inventory wins: a member that lost its part-of label is pruned too.
+	if !reflect.DeepEqual(deleted, map[string]bool{"shop_old__ConfigMap": true, "shop_adopted__ConfigMap": true, "shop_gone__ConfigMap": true}) {
 		t.Errorf("deleted = %v", got.Deleted)
 	}
 	if len(got.Survivors) != 1 || got.Survivors[0].Entry.Key != "shop_locked__Secret" {
@@ -215,8 +216,8 @@ func TestPruneDeletesOnlyLabelledMembersAndKeepsFailures(t *testing.T) {
 	if err := c.List(context.Background(), remaining); err != nil {
 		t.Fatal(err)
 	}
-	if len(remaining.Items) != 2 {
-		t.Errorf("remaining ConfigMaps = %d, want adopted and kept", len(remaining.Items))
+	if len(remaining.Items) != 1 || remaining.Items[0].GetName() != "kept" {
+		t.Errorf("remaining ConfigMaps = %v, want only the excluded one", remaining.Items)
 	}
 }
 

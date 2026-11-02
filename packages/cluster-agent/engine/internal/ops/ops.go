@@ -262,11 +262,12 @@ func entryObject(e protocol.InventoryEntry) (*unstructured.Unstructured, object.
 	return u, id, nil
 }
 
-// Prune is `ResourceManager.DeleteAll(stale)` with the ApplySet part-of
-// label as inclusion and the customer's exclusion selector. Objects are
-// deleted one by one in DeleteAll's order so each failure keeps its own
-// message; skipped objects (excluded, or no longer labelled) are neither
-// deleted nor survivors.
+// Prune deletes the stale inventory entries the way
+// `ResourceManager.DeleteAll` does, one by one in its order so each
+// failure keeps its own message. The inventory decides membership, so a
+// member that lost its part-of label is still pruned; only the customer's
+// exclusion selector skips an object, and a skipped object is neither
+// deleted nor a survivor.
 func (o *Ops) Prune(ctx context.Context, r *protocol.Prune) protocol.Pruned {
 	out := protocol.Pruned{ID: r.ID}
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(r.TimeoutSeconds)*time.Second)
@@ -288,7 +289,6 @@ func (o *Ops) Prune(ctx context.Context, r *protocol.Prune) protocol.Pruned {
 	m := ssa.NewResourceManager(o.Client, nil, o.owner())
 	opts := ssa.DeleteOptions{
 		PropagationPolicy: metav1.DeletePropagationBackground,
-		Inclusions:        map[string]string{protocol.PartOfLabel: r.ApplySetID},
 		Exclusions:        r.ExclusionSelector,
 	}
 	for _, u := range objects {
