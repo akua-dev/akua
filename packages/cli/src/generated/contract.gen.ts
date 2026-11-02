@@ -387,6 +387,16 @@ export const contract: ApiContract = {
 				"description": "Absolute path inside the sandbox."
 			}
 		},
+		"query:product_id": {
+			"name": "product_id",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 55
+			}
+		},
 		"query:short_hash": {
 			"name": "short_hash",
 			"in": "query",
@@ -449,11 +459,11 @@ export const contract: ApiContract = {
 			"schema": {
 				"type": "string",
 				"enum": [
+					"public",
 					"basic",
 					"full"
 				],
-				"description": "`basic` (default) is what a customer the Offer is for may see; `full` is for members of the seller Workspace.",
-				"default": "basic"
+				"description": "`public` is what anyone with the link sees, also without a session (only for an Offer open to anyone signed in); `basic` (the default when signed in) is what a customer the Offer is for may see; `full` is for members of the seller Workspace. Without a session the answer is `public`."
 			}
 		},
 		"query:view:2": {
@@ -780,6 +790,19 @@ export const contract: ApiContract = {
 			]
 		},
 		{
+			"id": "offers.list",
+			"method": "GET",
+			"path": "/offers",
+			"summary": "List offers in workspace",
+			"auth": true,
+			"parameters": [
+				"header:akua-context",
+				"query:cursor",
+				"query:limit",
+				"query:product_id"
+			]
+		},
+		{
 			"id": "offers.resolve",
 			"method": "GET",
 			"path": "/offers:resolve",
@@ -922,6 +945,18 @@ export const contract: ApiContract = {
 			"parameters": [
 				"path:id:3",
 				"header:akua-context"
+			]
+		},
+		{
+			"id": "products.list",
+			"method": "GET",
+			"path": "/products",
+			"summary": "List products in workspace",
+			"auth": true,
+			"parameters": [
+				"header:akua-context",
+				"query:cursor",
+				"query:limit"
 			]
 		},
 		{

@@ -1404,6 +1404,102 @@
       }
     },
     "/products": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "products.list",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Pagination cursor from a previous response's `next_cursor`."
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (1-100, default 50)",
+              "default": 50,
+              "examples": [
+                50
+              ],
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResourceList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns the Products of the Akua-Context Workspace a page at a time, in a stable order; pass `next_cursor` as `cursor` for the next page.",
+        "summary": "List products in workspace",
+        "x-platform-visibility": "PUBLIC"
+      },
       "post": {
         "tags": [
           "products"
@@ -1766,6 +1862,112 @@
       }
     },
     "/offers": {
+      "get": {
+        "tags": [
+          "offers"
+        ],
+        "operationId": "offers.list",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Pagination cursor from a previous response's `next_cursor`."
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (1-100, default 50)",
+              "default": 50,
+              "examples": [
+                50
+              ],
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of offers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferSummaryList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns the Offers of the Akua-Context Workspace, optionally of one Product, a page at a time in a stable order; pass `next_cursor` as `cursor` for the next page.",
+        "summary": "List offers in workspace",
+        "x-platform-visibility": "PUBLIC"
+      },
       "post": {
         "tags": [
           "offers"
@@ -1920,11 +2122,11 @@
             "schema": {
               "type": "string",
               "enum": [
+                "public",
                 "basic",
                 "full"
               ],
-              "description": "`basic` (default) is what a customer the Offer is for may see; `full` is for members of the seller Workspace.",
-              "default": "basic"
+              "description": "`public` is what anyone with the link sees, also without a session (only for an Offer open to anyone signed in); `basic` (the default when signed in) is what a customer the Offer is for may see; `full` is for members of the seller Workspace. Without a session the answer is `public`."
             },
             "required": false
           }
@@ -1996,7 +2198,7 @@
             }
           }
         },
-        "description": "Returns an Offer. A customer it is for sees the basic view while it can be redeemed; archived or expired Offers answer 410 to them. Members of the seller Workspace may read the full view.",
+        "description": "Returns an Offer. Without a session, an Offer open to anyone signed in shows its public view; an email-restricted one answers 401 until you sign in. A customer it is for sees the basic view while it can be redeemed; archived or expired Offers answer 410 to them. Members of the seller Workspace may read the full view.",
         "summary": "Get offer details",
         "x-platform-visibility": "PUBLIC"
       }
@@ -2086,7 +2288,7 @@
             }
           }
         },
-        "description": "Answers the ID of the Offer a customer link names, when the signed-in caller may see it (AIP-122 alias). Read it with Get offer.",
+        "description": "Answers the ID of the Offer a customer link names (AIP-122 alias), when the caller may see it: without a session only for an Offer open to anyone signed in. Read it with Get offer.",
         "summary": "Resolve offer by short hash",
         "x-platform-visibility": "PUBLIC"
       }
@@ -15609,8 +15811,121 @@
           },
           {
             "$ref": "#/components/schemas/OfferBasicResource"
+          },
+          {
+            "$ref": "#/components/schemas/OfferPublicResource"
           }
         ]
+      },
+      "OfferPublicResource": {
+        "type": "object",
+        "properties": {
+          "view": {
+            "type": "string",
+            "enum": [
+              "public"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 56
+          },
+          "short_hash": {
+            "type": "string",
+            "description": "The 8-character code of the customer link `/i/<short_hash>`",
+            "examples": [
+              "aB3xK9pQ"
+            ]
+          },
+          "terms": {
+            "$ref": "#/components/schemas/OfferTerms"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Unix timestamp (seconds)",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "product": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "description"
+            ],
+            "additionalProperties": false,
+            "description": "The Product as named when the Offer was made."
+          },
+          "seller": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false,
+            "description": "The seller Workspace as named when the Offer was made."
+          },
+          "package": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "version"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "view",
+          "id",
+          "short_hash",
+          "terms",
+          "status",
+          "expires_at",
+          "product",
+          "seller",
+          "package"
+        ],
+        "additionalProperties": false
       },
       "OfferBasicResource": {
         "type": "object",
@@ -15653,15 +15968,55 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 55
+              },
+              "name": {
+                "type": "string"
               }
             },
             "required": [
               "id",
               "version",
-              "version_id"
+              "version_id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "product": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "description"
             ],
             "additionalProperties": false,
-            "description": "The Package version the Offer installs."
+            "description": "The Product as named when the Offer was made."
+          },
+          "seller": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false,
+            "description": "The seller Workspace as named when the Offer was made."
           },
           "terms": {
             "$ref": "#/components/schemas/OfferTerms"
@@ -15707,6 +16062,8 @@
           "short_hash",
           "product_id",
           "package",
+          "product",
+          "seller",
           "terms",
           "status",
           "expires_at",
@@ -15776,6 +16133,160 @@
           "terms",
           "audience",
           "max_redemptions"
+        ],
+        "additionalProperties": false
+      },
+      "OfferSummaryList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfferSummaryResource"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "OfferSummaryResource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 56
+          },
+          "short_hash": {
+            "type": "string",
+            "description": "The 8-character code of the customer link `/i/<short_hash>`",
+            "examples": [
+              "aB3xK9pQ"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "description": "The link the seller shares with customers.",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "html_url": {
+            "type": "string",
+            "description": "Absolute dashboard URL for this resource. OUTPUT_ONLY.",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "product_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 55
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "package": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "version": {
+                "type": "string"
+              },
+              "version_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 55
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "version_id"
+            ],
+            "additionalProperties": false,
+            "description": "The Package version the Offer installs."
+          },
+          "audience": {
+            "$ref": "#/components/schemas/OfferAudience"
+          },
+          "max_redemptions": {
+            "type": "integer"
+          },
+          "redemption_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Unix timestamp (seconds)",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "etag": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "short_hash",
+          "url",
+          "html_url",
+          "workspace_id",
+          "product_id",
+          "product_name",
+          "package",
+          "audience",
+          "max_redemptions",
+          "redemption_count",
+          "expires_at",
+          "status",
+          "created_at",
+          "etag"
         ],
         "additionalProperties": false
       },
@@ -16172,6 +16683,38 @@
           "name",
           "package_id",
           "package_version"
+        ],
+        "additionalProperties": false
+      },
+      "ProductResourceList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductResource"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
         ],
         "additionalProperties": false
       },
