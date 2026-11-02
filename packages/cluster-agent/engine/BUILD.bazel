@@ -45,14 +45,25 @@ exports_files(
 filegroup(
     name = "fixture_test_srcs",
     srcs = [
+        "golden_test.go",
         "live_reason_fixtures_test.go",
         "versions_test.go",
     ],
     visibility = ["//visibility:public"],
 )
 
-# Argo CD's health testdata (testdata/argo-cd/UPSTREAM), the reviewed
-# verdicts, and go.mod for the pinned-version check.
+filegroup(
+    name = "recorded_test_srcs",
+    srcs = [
+        "golden_test.go",
+        "recorded_scenarios_test.go",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Argo CD's health testdata (testdata/argo-cd/UPSTREAM), the recorded kind
+# scenarios (testdata/kind), the reviewed verdicts, and go.mod for the
+# pinned-version check.
 filegroup(
     name = "fixture_testdata",
     srcs = ["go.mod"] + glob(["testdata/**"]),

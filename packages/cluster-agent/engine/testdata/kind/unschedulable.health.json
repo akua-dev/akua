@@ -1,0 +1,9 @@
+{
+  "status": "InProgress",
+  "reasons": [
+    "Unschedulable"
+  ],
+  "restarts": 0,
+  "readyPods": 0,
+  "pods": 1
+}

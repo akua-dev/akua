@@ -1,0 +1,10 @@
+{
+  "status": "InProgress",
+  "reasons": [
+    "CrashLoopBackOff",
+    "OOMKilled"
+  ],
+  "restarts": 4,
+  "readyPods": 0,
+  "pods": 1
+}

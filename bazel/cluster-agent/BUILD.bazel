@@ -249,6 +249,20 @@ go_test(
     ],
 )
 
+# ClusterAgent contract liveReasonFixtures.recordedTest: the kind
+# recordings decode with today's protocol and fold to their reasons.
+go_test(
+    name = "recorded_scenarios_test",
+    size = "small",
+    srcs = [_SRC + ":recorded_test_srcs"],
+    data = [_SRC + ":fixture_testdata"],
+    rundir = "packages/cluster-agent/engine",
+    deps = [
+        ":live",
+        ":protocol",
+    ],
+)
+
 test_suite(
     name = "engine_tests",
     tests = [
@@ -257,6 +271,7 @@ test_suite(
         ":live_test",
         ":ops_test",
         ":protocol_test",
+        ":recorded_scenarios_test",
         ":serve_test",
     ],
     visibility = ["//visibility:public"],

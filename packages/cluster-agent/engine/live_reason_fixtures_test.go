@@ -1,8 +1,6 @@
 package engine_test
 
 import (
-	"encoding/json"
-	"flag"
 	"os"
 	"path/filepath"
 	"sort"
@@ -14,11 +12,6 @@ import (
 
 	"github.com/akua-dev/akua/packages/cluster-agent/engine/internal/live"
 )
-
-// Golden files next to the copied Argo CD testdata. Regenerate with
-// `go test -run TestLiveReasonFixtures -update` and review the diff: a
-// changed line is a changed verdict.
-var update = flag.Bool("update", false, "rewrite the reviewed expectation files")
 
 const (
 	argoCD             = "testdata/argo-cd"
@@ -48,28 +41,6 @@ func loadObject(t *testing.T, path string) *unstructured.Unstructured {
 		t.Fatalf("%s: %v", path, err)
 	}
 	return u
-}
-
-func compareGolden(t *testing.T, path string, got any) {
-	t.Helper()
-	encoded, err := json.MarshalIndent(got, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	encoded = append(encoded, '\n')
-	if *update {
-		if err := os.WriteFile(path, encoded, 0o644); err != nil {
-			t.Fatal(err)
-		}
-		return
-	}
-	want, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(want) != string(encoded) {
-		t.Errorf("%s does not match the engine; rerun with -update and review the diff.\n got:\n%s", path, encoded)
-	}
 }
 
 // Every core Argo CD fixture (Pod, Deployment, Job, PVC, ...) must produce

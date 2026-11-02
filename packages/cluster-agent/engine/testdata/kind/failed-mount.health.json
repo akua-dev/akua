@@ -1,0 +1,9 @@
+{
+  "status": "InProgress",
+  "reasons": [
+    "FailedMount"
+  ],
+  "restarts": 0,
+  "readyPods": 0,
+  "pods": 1
+}

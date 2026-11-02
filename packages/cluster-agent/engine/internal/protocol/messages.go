@@ -3,6 +3,7 @@ package protocol
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 )
 
 type ChangeEntry struct {
@@ -287,4 +288,80 @@ func limitNode(n ResourceNode) ResourceNode {
 		n.Scheduling = &s
 	}
 	return n
+}
+
+func (s *StateValue) UnmarshalJSON(b []byte) error {
+	var head struct {
+		Tag string `json:"_tag"`
+	}
+	if err := json.Unmarshal(b, &head); err != nil {
+		return err
+	}
+	*s = StateValue{}
+	switch head.Tag {
+	case "waiting":
+		s.Waiting = &Waiting{}
+		return json.Unmarshal(b, s.Waiting)
+	case "running":
+		s.Running = &Running{}
+		return json.Unmarshal(b, s.Running)
+	case "terminated":
+		s.Terminated = &Termination{}
+		return json.Unmarshal(b, s.Terminated)
+	}
+	return fmt.Errorf("unknown container state %q", head.Tag)
+}
+
+// DecodeMessage reads one stdout line back into the value Encode wrote, so
+// recorded streams can be checked against the current wire shapes.
+func DecodeMessage(line []byte) (any, error) {
+	var head struct {
+		Tag string `json:"_tag"`
+	}
+	if err := json.Unmarshal(line, &head); err != nil {
+		return nil, err
+	}
+	decode := func(into any) (any, error) {
+		if err := json.Unmarshal(line, into); err != nil {
+			return nil, fmt.Errorf("%s: %w", head.Tag, err)
+		}
+		return into, nil
+	}
+	var msg any
+	var err error
+	switch head.Tag {
+	case "applied":
+		msg, err = decode(&Applied{})
+	case "pruned":
+		msg, err = decode(&Pruned{})
+	case "waited":
+		msg, err = decode(&Waited{})
+	case "subscribed":
+		msg, err = decode(&Subscribed{})
+	case "rejected":
+		msg, err = decode(&Rejected{})
+	case "stopping":
+		msg, err = decode(&Stopping{})
+	case "ready":
+		msg, err = decode(&Ready{})
+	case "node":
+		msg, err = decode(&Node{})
+	case "removed":
+		msg, err = decode(&Removed{})
+	case "warning":
+		msg, err = decode(&Warning{})
+	case "synced":
+		msg, err = decode(&Synced{})
+	case "overloaded":
+		msg, err = decode(&Overloaded{})
+	case "error":
+		msg, err = decode(&EngineError{})
+	default:
+		return nil, fmt.Errorf("unknown message %q", head.Tag)
+	}
+	if err != nil {
+		return nil, err
+	}
+	// Encode takes values, not pointers.
+	return reflect.ValueOf(msg).Elem().Interface(), nil
 }
