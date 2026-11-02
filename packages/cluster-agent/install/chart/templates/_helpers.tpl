@@ -46,6 +46,10 @@ app.kubernetes.io/component: {{ . }}
 {{- if and (hasKey $a "namespaces") (empty $a.namespaces) -}}
 {{- fail "access.namespaces must list at least one namespace" -}}
 {{- end -}}
+{{- /* Akua fully manages a hosted cluster; a connected one keeps the grant its owner chose. */ -}}
+{{- if and (eq .Values.enrollment.method "federated") (not (hasKey $a "cluster")) -}}
+{{- fail "hosted clusters (enrollment.method federated) grant akua-apply cluster-admin: set access: {cluster: {}}" -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "akua.podSecurityContext" -}}

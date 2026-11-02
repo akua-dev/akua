@@ -35,7 +35,15 @@ keeps its identity and ignores the code.
 | `priorityClassName`, `nodeSelector`, `tolerations`, `affinity` | Passed to both pods. |
 
 Hosted clusters install this chart as a k0s Helm extension with
-`enrollment.method=federated`; connected clusters use `code`.
+`enrollment.method=federated` and `access: {cluster: {}}`: Akua fully manages
+a hosted cluster, so its `akua-apply` is cluster-admin and the chart refuses
+any other grant there. Connected clusters use `code` and keep the minimal
+grant their owner chose.
+
+The Akua package in the parent directory (`../akua.toml`, `../package.k`)
+renders this chart unchanged, with the chart's values as its typed inputs, so
+`helm upgrade --install` and an Akua install produce the same objects. The
+chart is the only source of the agent's manifests.
 
 ## Access
 

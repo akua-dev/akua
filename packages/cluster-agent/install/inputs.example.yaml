@@ -1,0 +1,10 @@
+platformOrigin: https://api.akua.dev
+image:
+  repository: pkg.akua.dev/akua/cluster-agent
+  digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+access:
+  namespaces:
+    - app
+enrollment:
+  method: code
+  code: akua_enr_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA

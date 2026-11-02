@@ -1,0 +1,7 @@
+[package]
+name = "akua-cluster-agent"
+version = "0.0.1"
+edition = "akua.dev/v1alpha1"
+
+[dependencies.agent_chart]
+path = "./chart"

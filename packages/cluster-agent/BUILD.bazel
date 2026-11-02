@@ -1,4 +1,4 @@
-"""Cluster agent and updater sources, and their Helm chart.
+"""Cluster agent and updater sources, their Helm chart and the Akua package around it.
 
 Sources only, like every package of this module: the binary, image, tests
 and type check live in the parent repository's //tools/cluster-agent,
@@ -41,8 +41,8 @@ js_library(
 )
 
 filegroup(
-    name = "chart_srcs",
-    srcs = glob(["chart/**"]),
+    name = "deploy_srcs",
+    srcs = glob(["deploy/**"]),
     visibility = ["//visibility:public"],
 )
 
