@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["platformOrigin", "image", "access", "enrollment"],
+  "properties": {
+    "platformOrigin": { "type": "string", "pattern": "^https://[^\\s/]+(/[^\\s]*)?$" },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "digest"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": { "type": "string" },
+        "protocol": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "updater": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "repository": { "type": "string" },
+            "digest": {
+              "type": "string",
+              "anyOf": [{ "const": "" }, { "pattern": "^sha256:[a-f0-9]{64}$" }]
+            }
+          }
+        }
+      }
+    },
+    "access": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cluster"],
+          "properties": { "cluster": { "type": "object", "additionalProperties": false } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["namespaces"],
+          "properties": {
+            "namespaces": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 256,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "maxLength": 63,
+                "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "enrollment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method"],
+      "properties": {
+        "method": { "enum": ["code", "federated"] },
+        "code": {
+          "type": "string",
+          "anyOf": [{ "const": "" }, { "pattern": "^akua_enr_[A-Za-z0-9_-]{43}$" }]
+        },
+        "agentId": {
+          "type": "string",
+          "anyOf": [{ "const": "" }, { "pattern": "^cag_[A-Za-z0-9]+$" }]
+        },
+        "federatedAudience": { "type": "string" }
+      }
+    },
+    "distribution": {
+      "enum": ["", "k0s", "k3s", "kubeadm", "eks", "gke", "aks", "other"]
+    },
+    "priorityClassName": { "type": "string" },
+    "nodeSelector": { "type": "object" },
+    "tolerations": { "type": "array", "items": { "type": "object" } },
+    "affinity": { "type": "object" }
+  }
+}

@@ -1,0 +1,104 @@
+{{- $ns := include "akua.namespace" . -}}
+# These rules are the contract objects agentClusterRole, agentRole and
+# updaterRole in packages/cluster-agent/src/contract.ts. Change both together.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: akua-agent
+  labels:
+    {{- include "akua.componentLabels" (dict "root" . "component" "agent") | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    resourceNames: ["kube-system"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: akua-agent
+  labels:
+    {{- include "akua.componentLabels" (dict "root" . "component" "agent") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: akua-agent
+subjects:
+  - kind: ServiceAccount
+    name: akua-agent
+    namespace: {{ $ns }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: akua-agent
+  namespace: {{ $ns }}
+  labels:
+    {{- include "akua.componentLabels" (dict "root" . "component" "agent") | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    resourceNames: ["akua-apply"]
+    verbs: ["impersonate"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["akua-agent-identity", "akua-tunnel-connector"]
+    verbs: ["get", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: akua-agent
+  namespace: {{ $ns }}
+  labels:
+    {{- include "akua.componentLabels" (dict "root" . "component" "agent") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: akua-agent
+subjects:
+  - kind: ServiceAccount
+    name: akua-agent
+    namespace: {{ $ns }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: akua-agent-updater
+  namespace: {{ $ns }}
+  labels:
+    {{- include "akua.componentLabels" (dict "root" . "component" "updater") | nindent 4 }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    resourceNames: ["akua-agent"]
+    verbs: ["get", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["akua-agent-identity"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: akua-agent-updater
+  namespace: {{ $ns }}
+  labels:
+    {{- include "akua.componentLabels" (dict "root" . "component" "updater") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: akua-agent-updater
+subjects:
+  - kind: ServiceAccount
+    name: akua-agent-updater
+    namespace: {{ $ns }}
