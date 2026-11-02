@@ -246,7 +246,17 @@ describe('typed flags', () => {
 			yield* writeConfigFile(home, { token: TOKEN, workspace: { id: 'ws_team' } });
 
 			const created = yield* runAkua(
-				['clusters', 'create', '--name', 'demo', '--region-id', 'reg_1', '--json'],
+				[
+					'clusters',
+					'create',
+					'--kind',
+					'hosted',
+					'--name',
+					'demo',
+					'--region-id',
+					'reg_1',
+					'--json'
+				],
 				{ env: { HOME: home }, api }
 			);
 			const deleted = yield* runAkua(
@@ -261,6 +271,7 @@ describe('typed flags', () => {
 			expect(create?.method).toBe('POST');
 			expect(create?.url.pathname).toBe('/v1/clusters');
 			expect(create?.body).toEqual({
+				kind: 'hosted',
 				name: 'demo',
 				region_id: 'reg_1'
 			});
@@ -313,12 +324,18 @@ describe('typed flags', () => {
 				['clusters', 'create', '--input', 'cluster.json', '--name', 'from-flag', '--json'],
 				{
 					env: { HOME: home },
-					inputs: { 'cluster.json': '{"body":{"name":"from-file","region_id":"reg_1"}}' },
+					inputs: {
+						'cluster.json': '{"body":{"kind":"hosted","name":"from-file","region_id":"reg_1"}}'
+					},
 					api
 				}
 			);
 
-			expect(result.requests[0]?.body).toEqual({ name: 'from-flag', region_id: 'reg_1' });
+			expect(result.requests[0]?.body).toEqual({
+				kind: 'hosted',
+				name: 'from-flag',
+				region_id: 'reg_1'
+			});
 		}).pipe(Effect.scoped)
 	);
 
@@ -327,10 +344,13 @@ describe('typed flags', () => {
 			const home = yield* temporaryHome;
 			yield* writeConfigFile(home, { token: TOKEN, workspace: { id: 'ws_team' } });
 
-			const result = yield* runAkua(['clusters', 'create', '--name', 'demo', '--json'], {
-				env: { HOME: home },
-				api
-			});
+			const result = yield* runAkua(
+				['clusters', 'create', '--kind', 'hosted', '--name', 'demo', '--json'],
+				{
+					env: { HOME: home },
+					api
+				}
+			);
 
 			expect(result.exitCode).toBe(2);
 			expect(result.requests).toEqual([]);
@@ -351,7 +371,7 @@ describe('typed flags', () => {
 				env: { HOME: home },
 				inputs: {
 					'-': JSON.stringify({
-						body: { name: 'demo', region_id: 'reg_1', undeclared: sentinel }
+						body: { kind: 'hosted', name: 'demo', region_id: 'reg_1', undeclared: sentinel }
 					})
 				},
 				api
@@ -394,7 +414,17 @@ describe('output', () => {
 			yield* writeConfigFile(home, { token: TOKEN, workspace: { id: 'ws_team' } });
 
 			const result = yield* runAkua(
-				['clusters', 'create', '--name', 'demo', '--region-id', 'reg_1', '--json'],
+				[
+					'clusters',
+					'create',
+					'--kind',
+					'hosted',
+					'--name',
+					'demo',
+					'--region-id',
+					'reg_1',
+					'--json'
+				],
 				{
 					env: { HOME: home },
 					api

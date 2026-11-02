@@ -488,6 +488,7 @@ describe('akua entrypoint', () => {
 				inputPath,
 				JSON.stringify({
 					body: {
+						kind: 'hosted',
 						name: 'demo',
 						region_id: 'reg_1',
 						undeclared: sentinel

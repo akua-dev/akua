@@ -488,7 +488,17 @@ describe('responses', () => {
 			};
 
 			const result = yield* runAkua(
-				['clusters', 'create', '--region-id', 'reg_1', '--name', sentinel, '--json'],
+				[
+					'clusters',
+					'create',
+					'--kind',
+					'hosted',
+					'--region-id',
+					'reg_1',
+					'--name',
+					sentinel,
+					'--json'
+				],
 				{ env, api: () => ({ status: 409, body: apiError }) }
 			);
 
@@ -610,7 +620,7 @@ describe('inputs that must not reach the API or the terminal', () => {
 			expect(result.exitCode).toBe(2);
 			expect(result.requests).toEqual([]);
 			expect(JSON.parse(result.stdout).error.message).toBe(
-				'Invalid input for akua clusters create: --name is required; --region-id is required.'
+				'Invalid input for akua clusters create: --kind is required; --name is required.'
 			);
 		}).pipe(Effect.scoped)
 	);

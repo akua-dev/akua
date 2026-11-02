@@ -209,18 +209,18 @@ export const contract: ApiContract = {
 			"in": "path",
 			"required": true,
 			"schema": {
-				"type": "string",
-				"description": "Cluster ID.",
-				"minLength": 1,
-				"maxLength": 54
+				"$ref": "#/$defs/SandboxId"
 			}
 		},
-		"path:id:9": {
-			"name": "id",
+		"path:name": {
+			"name": "name",
 			"in": "path",
 			"required": true,
 			"schema": {
-				"$ref": "#/$defs/SandboxId"
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 253,
+				"pattern": "^[a-z0-9](?:[-a-z0-9.]*[a-z0-9])?$"
 			}
 		},
 		"path:port": {
@@ -243,6 +243,15 @@ export const contract: ApiContract = {
 				"description": "Render ID",
 				"minLength": 1,
 				"maxLength": 54
+			}
+		},
+		"path:token_id": {
+			"name": "token_id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"pattern": "^[a-z0-9]{6}$"
 			}
 		},
 		"path:version_id": {
@@ -298,14 +307,6 @@ export const contract: ApiContract = {
 			"in": "query",
 			"required": false,
 			"schema": {
-				"type": "string"
-			}
-		},
-		"query:cursor:3": {
-			"name": "cursor",
-			"in": "query",
-			"required": false,
-			"schema": {
 				"type": "string",
 				"maxLength": 512,
 				"description": "Pagination cursor from a previous response's `next_cursor`."
@@ -338,8 +339,11 @@ export const contract: ApiContract = {
 			"in": "query",
 			"required": false,
 			"schema": {
-				"type": "string",
-				"pattern": "^[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?:[Ee][+-]?\\d+)?$"
+				"type": "integer",
+				"description": "Items per page (1-500, default 50)",
+				"default": 50,
+				"minimum": 1,
+				"maximum": 500
 			}
 		},
 		"query:offset": {
@@ -529,22 +533,35 @@ export const contract: ApiContract = {
 			"body": {
 				"required": true,
 				"schema": {
+					"$ref": "#/$defs/ClusterCreateBody"
+				}
+			}
+		},
+		{
+			"id": "clusters.createJoinToken",
+			"method": "POST",
+			"path": "/clusters/{id}/join_tokens",
+			"summary": "Create a join token",
+			"auth": true,
+			"parameters": [
+				"path:id:7",
+				"header:akua-context",
+				"header:idempotency-key"
+			],
+			"body": {
+				"required": true,
+				"schema": {
 					"type": "object",
 					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 2,
-							"maxLength": 32
-						},
-						"region_id": {
-							"type": "string",
-							"minLength": 3,
-							"maxLength": 54
+						"ttl_seconds": {
+							"type": "integer",
+							"description": "Lifetime of the token in seconds.",
+							"minimum": 60,
+							"maximum": 86400
 						}
 					},
 					"required": [
-						"name",
-						"region_id"
+						"ttl_seconds"
 					],
 					"additionalProperties": false
 				}
@@ -559,8 +576,8 @@ export const contract: ApiContract = {
 			"parameters": [
 				"path:id:7",
 				"header:akua-context",
-				"header:if-match",
-				"header:idempotency-key"
+				"header:idempotency-key",
+				"header:if-match"
 			]
 		},
 		{
@@ -575,15 +592,43 @@ export const contract: ApiContract = {
 			]
 		},
 		{
-			"id": "clusters.getCapabilities",
+			"id": "clusters.getNode",
 			"method": "GET",
-			"path": "/clusters/{id}/capabilities",
-			"summary": "Get cluster capabilities",
+			"path": "/clusters/{id}/nodes/{name}",
+			"summary": "Get a node",
 			"auth": true,
 			"parameters": [
-				"path:id:8",
+				"path:id:7",
+				"path:name",
 				"header:akua-context"
 			]
+		},
+		{
+			"id": "clusters.issueAgentInstall",
+			"method": "POST",
+			"path": "/clusters/{id}/agent_install",
+			"summary": "Issue the agent install command",
+			"auth": true,
+			"parameters": [
+				"path:id:7",
+				"header:akua-context",
+				"header:idempotency-key"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"type": "object",
+					"properties": {
+						"access": {
+							"$ref": "#/$defs/ClusterAccess"
+						}
+					},
+					"required": [
+						"access"
+					],
+					"additionalProperties": false
+				}
+			}
 		},
 		{
 			"id": "clusters.list",
@@ -593,8 +638,60 @@ export const contract: ApiContract = {
 			"auth": true,
 			"parameters": [
 				"header:akua-context",
-				"query:cursor:2",
+				"query:cursor",
+				"query:limit"
+			]
+		},
+		{
+			"id": "clusters.listJoinTokens",
+			"method": "GET",
+			"path": "/clusters/{id}/join_tokens",
+			"summary": "List join tokens",
+			"auth": true,
+			"parameters": [
+				"path:id:7",
+				"header:akua-context",
+				"query:cursor",
+				"query:limit"
+			]
+		},
+		{
+			"id": "clusters.listNodes",
+			"method": "GET",
+			"path": "/clusters/{id}/nodes",
+			"summary": "List nodes",
+			"auth": true,
+			"parameters": [
+				"path:id:7",
+				"header:akua-context",
+				"query:cursor",
 				"query:limit:2"
+			]
+		},
+		{
+			"id": "clusters.removeNode",
+			"method": "DELETE",
+			"path": "/clusters/{id}/nodes/{name}",
+			"summary": "Remove a node",
+			"auth": true,
+			"parameters": [
+				"path:id:7",
+				"path:name",
+				"header:akua-context",
+				"header:idempotency-key"
+			]
+		},
+		{
+			"id": "clusters.revokeJoinToken",
+			"method": "DELETE",
+			"path": "/clusters/{id}/join_tokens/{token_id}",
+			"summary": "Revoke a join token",
+			"auth": true,
+			"parameters": [
+				"path:id:7",
+				"path:token_id",
+				"header:akua-context",
+				"header:idempotency-key"
 			]
 		},
 		{
@@ -978,7 +1075,7 @@ export const contract: ApiContract = {
 			"summary": "Cancel a command",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"path:command_id",
 				"header:akua-context"
 			]
@@ -1007,7 +1104,7 @@ export const contract: ApiContract = {
 			"summary": "Delete a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context",
 				"header:idempotency-key",
 				"header:if-match"
@@ -1020,7 +1117,7 @@ export const contract: ApiContract = {
 			"summary": "Fork a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
@@ -1038,7 +1135,7 @@ export const contract: ApiContract = {
 			"summary": "Get a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context"
 			]
 		},
@@ -1049,7 +1146,7 @@ export const contract: ApiContract = {
 			"summary": "Get a command",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"path:command_id",
 				"header:akua-context"
 			]
@@ -1061,7 +1158,7 @@ export const contract: ApiContract = {
 			"summary": "Grant access to a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context"
 			],
 			"body": {
@@ -1079,7 +1176,7 @@ export const contract: ApiContract = {
 			"auth": true,
 			"parameters": [
 				"header:akua-context",
-				"query:cursor:3",
+				"query:cursor:2",
 				"query:limit",
 				"query:state:2",
 				"query:opencode"
@@ -1092,9 +1189,9 @@ export const contract: ApiContract = {
 			"summary": "List access grants",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context",
-				"query:cursor:3",
+				"query:cursor:2",
 				"query:limit"
 			]
 		},
@@ -1105,9 +1202,9 @@ export const contract: ApiContract = {
 			"summary": "List commands",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context",
-				"query:cursor:3",
+				"query:cursor:2",
 				"query:limit",
 				"query:state:3"
 			]
@@ -1119,7 +1216,7 @@ export const contract: ApiContract = {
 			"summary": "List files",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context"
 			],
 			"body": {
@@ -1136,7 +1233,7 @@ export const contract: ApiContract = {
 			"summary": "List previews",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context"
 			]
 		},
@@ -1147,7 +1244,7 @@ export const contract: ApiContract = {
 			"summary": "Make a directory",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context"
 			],
 			"body": {
@@ -1164,7 +1261,7 @@ export const contract: ApiContract = {
 			"summary": "Move a file",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context"
 			],
 			"body": {
@@ -1181,7 +1278,7 @@ export const contract: ApiContract = {
 			"summary": "Read a file",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context"
 			],
 			"body": {
@@ -1199,7 +1296,7 @@ export const contract: ApiContract = {
 			"summary": "Remove files",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context"
 			],
 			"body": {
@@ -1216,7 +1313,7 @@ export const contract: ApiContract = {
 			"summary": "Resume a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context",
 				"header:idempotency-key",
 				"header:if-match"
@@ -1229,7 +1326,7 @@ export const contract: ApiContract = {
 			"summary": "Revoke access to a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"path:grant_id",
 				"header:akua-context"
 			]
@@ -1241,7 +1338,7 @@ export const contract: ApiContract = {
 			"summary": "Run a command",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context"
 			],
 			"body": {
@@ -1258,7 +1355,7 @@ export const contract: ApiContract = {
 			"summary": "Get file metadata",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context"
 			],
 			"body": {
@@ -1275,7 +1372,7 @@ export const contract: ApiContract = {
 			"summary": "Stream command output",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"path:command_id",
 				"header:akua-context",
 				"query:offset",
@@ -1290,7 +1387,7 @@ export const contract: ApiContract = {
 			"summary": "Suspend a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context",
 				"header:idempotency-key",
 				"header:if-match"
@@ -1303,7 +1400,7 @@ export const contract: ApiContract = {
 			"summary": "Unexpose a port",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"path:port",
 				"header:akua-context"
 			]
@@ -1315,7 +1412,7 @@ export const contract: ApiContract = {
 			"summary": "Update a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context",
 				"header:if-match"
 			],
@@ -1333,7 +1430,7 @@ export const contract: ApiContract = {
 			"summary": "Write to a command’s input",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"path:command_id",
 				"header:akua-context"
 			],
@@ -1351,7 +1448,7 @@ export const contract: ApiContract = {
 			"summary": "Write a file",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context",
 				"query:path",
 				"query:create_parents"
@@ -1367,7 +1464,7 @@ export const contract: ApiContract = {
 			"summary": "Write several files",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:8",
 				"header:akua-context"
 			],
 			"body": {
@@ -1391,6 +1488,120 @@ export const contract: ApiContract = {
 		}
 	],
 	"definitions": {
+		"ClusterAccess": {
+			"oneOf": [
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"cluster"
+							]
+						}
+					},
+					"required": [
+						"kind"
+					],
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"namespaces"
+							]
+						},
+						"namespaces": {
+							"type": "array",
+							"prefixItems": [
+								{
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 63
+								}
+							],
+							"minItems": 1,
+							"items": {
+								"type": "string",
+								"minLength": 1,
+								"maxLength": 63
+							},
+							"maxItems": 256
+						}
+					},
+					"required": [
+						"kind",
+						"namespaces"
+					],
+					"additionalProperties": false
+				}
+			]
+		},
+		"ClusterCreateBody": {
+			"anyOf": [
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"hosted"
+							],
+							"description": "Akua runs the control plane in the Region; you join your own servers."
+						},
+						"name": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 63,
+							"pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
+							"description": "A DNS label, unique in the Workspace."
+						},
+						"region_id": {
+							"type": "string",
+							"minLength": 3,
+							"maxLength": 54
+						}
+					},
+					"required": [
+						"kind",
+						"name",
+						"region_id"
+					],
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"connected"
+							],
+							"description": "An existing Kubernetes cluster that runs the Akua cluster agent."
+						},
+						"name": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 63,
+							"pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
+							"description": "A DNS label, unique in the Workspace."
+						},
+						"access": {
+							"$ref": "#/$defs/ClusterAccess"
+						}
+					},
+					"required": [
+						"kind",
+						"name",
+						"access"
+					],
+					"additionalProperties": false
+				}
+			]
+		},
 		"CreateInstallBody": {
 			"type": "object",
 			"properties": {
