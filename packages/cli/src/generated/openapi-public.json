@@ -20057,10 +20057,6 @@
       "name": "Auth"
     },
     {
-      "name": "repositories",
-      "x-platform-visibility": "INTERNAL"
-    },
-    {
       "name": "clusters"
     },
     {
