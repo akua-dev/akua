@@ -50,7 +50,7 @@ import { KubernetesExtras } from './kubernetes';
 import { LiveStatus } from './live-status';
 import {
 	generatedSecretManifest,
-	mountedSecretManifests,
+	withMountedSecrets,
 	parseManifests,
 	planObjects,
 	type PlannedObject,
@@ -351,7 +351,7 @@ export const placementReconcilerLayer = Layer.effect(
 			const parent = yield* readParent(desired);
 			if (parent.conflict !== null) return parent.conflict;
 
-			// Generated secrets keep their existing values; mounted secrets come by reference.
+			// Generated secrets keep their existing values; mounted values fill Secret keys by reference.
 			const extra: Array<(typeof rendered.success)[number]> = [];
 			for (const plan of desired.generated_secrets) {
 				const existing = yield* extras.getSecretAsApply({
@@ -370,6 +370,7 @@ export const placementReconcilerLayer = Layer.effect(
 				}
 				extra.push(generatedSecretManifest(plan, existing?.data ?? {}));
 			}
+			let mounted: ReadonlyArray<{ name: string; key: string; value: string }> = [];
 			if (desired.secret_mounts.length > 0) {
 				const secrets = yield* api
 					.placementSecrets({
@@ -380,19 +381,18 @@ export const placementReconcilerLayer = Layer.effect(
 				if (Result.isFailure(secrets) || secrets.success.generation !== desired.generation) {
 					return yield* Effect.fail(new Transient({ message: 'placement secrets unavailable' }));
 				}
-				extra.push(
-					...mountedSecretManifests(
-						desired.namespace,
-						secrets.success.values.map((value) => ({
-							name: value.name,
-							key: value.key,
-							value: Redacted.value(value.value)
-						}))
-					)
-				);
+				mounted = secrets.success.values.map((value) => ({
+					name: value.name,
+					key: value.key,
+					value: Redacted.value(value.value)
+				}));
 			}
 
-			const manifests = [...rendered.success, ...extra];
+			const manifests = withMountedSecrets(
+				[...rendered.success, ...extra],
+				desired.namespace,
+				mounted
+			);
 			const apiVersions = [
 				...new Set(
 					manifests.flatMap((manifest) =>

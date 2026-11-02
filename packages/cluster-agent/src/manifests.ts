@@ -257,8 +257,14 @@ export const generatedSecretManifest = (
 	};
 };
 
-/** One Secret per mount name, values from the placement secrets endpoint. */
-export const mountedSecretManifests = (
+/**
+ * Mounted values (sensitive inputs, from the placement secrets endpoint) merged into the
+ * manifests: a key of a Secret the Placement renders or generates under the same name is filled
+ * in place, so the platform renders that Secret without the value; a mount naming no such Secret
+ * becomes its own Opaque Secret.
+ */
+export const withMountedSecrets = (
+	manifests: ReadonlyArray<Json>,
 	namespace: string,
 	values: ReadonlyArray<{ readonly name: string; readonly key: string; readonly value: string }>
 ): ReadonlyArray<Json> => {
@@ -268,11 +274,37 @@ export const mountedSecretManifests = (
 		data[value.key] = Base64.encode(value.value);
 		byName.set(value.name, data);
 	}
-	return [...byName].map(([name, data]) => ({
-		apiVersion: 'v1',
-		kind: 'Secret',
-		type: 'Opaque',
-		metadata: { name, namespace },
-		data
-	}));
+	const isTarget = (manifest: Json, name: string) => {
+		const metadata = asRecord(manifest.metadata);
+		return (
+			manifest.kind === 'Secret' &&
+			manifest.apiVersion === 'v1' &&
+			metadata['name'] === name &&
+			(metadata['namespace'] === undefined || metadata['namespace'] === namespace)
+		);
+	};
+	const merged = manifests.map((manifest) => {
+		const name = asRecord(manifest.metadata)['name'];
+		const mounted = typeof name === 'string' ? byName.get(name) : undefined;
+		if (mounted === undefined || !isTarget(manifest, String(name))) return manifest;
+		const stringData = { ...asRecord(manifest.stringData) };
+		for (const key of Object.keys(mounted)) Reflect.deleteProperty(stringData, key);
+		return {
+			...manifest,
+			stringData,
+			data: { ...asRecord(manifest.data), ...mounted }
+		};
+	});
+	const standalone = [...byName]
+		.filter(([name]) => !manifests.some((manifest) => isTarget(manifest, name)))
+		.map(
+			([name, data]): Json => ({
+				apiVersion: 'v1',
+				kind: 'Secret',
+				type: 'Opaque',
+				metadata: { name, namespace },
+				data
+			})
+		);
+	return [...merged, ...standalone];
 };

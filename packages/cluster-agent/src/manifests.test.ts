@@ -10,7 +10,13 @@ import {
 	inventoryOf,
 	staleEntries
 } from './applyset';
-import { generateSecretValue, parseManifests, planObjects, reservedViolation } from './manifests';
+import {
+	generateSecretValue,
+	parseManifests,
+	planObjects,
+	reservedViolation,
+	withMountedSecrets
+} from './manifests';
 import { detectDistribution, trimNode } from './cluster-reads';
 import { defaultDiscovery } from './testing/fake-kubernetes';
 import { file } from './testing/agent-harness';
@@ -185,5 +191,33 @@ describe('cluster read helpers', () => {
 			metadata: { name: 'n1', labels: { a: 'b' } },
 			status: { conditions: [{ type: 'Ready', status: 'True' }] }
 		});
+	});
+
+	it('fills a mounted key into the rendered Secret of that name, else adds one', () => {
+		const rendered = {
+			apiVersion: 'v1',
+			kind: 'Secret',
+			metadata: { name: 'db', namespace: 'app' },
+			data: { user: Base64.encode('app') },
+			stringData: { password: 'platform-sensitive-input-placeholder' }
+		};
+		const merged = withMountedSecrets([rendered], 'app', [
+			{ name: 'db', key: 'password', value: 'pw-1' },
+			{ name: 'smtp', key: 'token', value: 'tok-2' }
+		]);
+		assert.deepStrictEqual(merged, [
+			{
+				...rendered,
+				stringData: {},
+				data: { user: Base64.encode('app'), password: Base64.encode('pw-1') }
+			},
+			{
+				apiVersion: 'v1',
+				kind: 'Secret',
+				type: 'Opaque',
+				metadata: { name: 'smtp', namespace: 'app' },
+				data: { token: Base64.encode('tok-2') }
+			}
+		]);
 	});
 });
