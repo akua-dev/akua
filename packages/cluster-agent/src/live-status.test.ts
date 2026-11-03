@@ -7,6 +7,7 @@ import { aggregateStatus, healthOf, LiveStatus } from './live-status';
 import { FakeEngine } from './testing/fake-engine';
 import { FakePlatform, placementId } from './testing/fake-platform';
 import { agentHarness } from './testing/agent-harness';
+import { advanceUntil } from './testing/advance-until';
 
 const placement = placementId('live1');
 
@@ -59,16 +60,10 @@ const flush = TestClock.adjust('2100 millis').pipe(Effect.andThen(Effect.yieldNo
 const until = (
 	done: (all: ReadonlyArray<(typeof StatusBatch.Type)['entries'][number]>) => boolean
 ) =>
-	Effect.gen(function* () {
-		for (let attempt = 0; attempt < 60; attempt += 1) {
-			if (done(entries(yield* batches))) return;
-			yield* TestClock.adjust('500 millis');
-			yield* Effect.yieldNow;
-		}
-		assert.fail(
-			`condition not reached; entries: ${JSON.stringify(entries(yield* batches).map((e) => e._tag))}`
-		);
-	});
+	advanceUntil(
+		Effect.map(batches, (all) => done(entries(all))),
+		'500 millis'
+	);
 
 describe('health', () => {
 	it('aggregates member kstatus the way Flux does', () => {

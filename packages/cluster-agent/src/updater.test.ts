@@ -43,7 +43,12 @@ const instruction = (
 /** A step of the updater, which runs `v1` (the agent applies its part later). */
 const step = (overrides: Partial<typeof UpdaterInstruction.Type> = {}, running = v1) =>
 	Effect.flatMap(AgentUpdater, (updater) =>
-		updater.step({ instruction: instruction(overrides), running, version: v1.version })
+		updater.step({
+			instruction: instruction(overrides),
+			running,
+			version: v1.version,
+			observations: 'known'
+		})
 	);
 
 /** One key of the updater's state Secret, read as the updater reads it (gzip-compressed JSON). */

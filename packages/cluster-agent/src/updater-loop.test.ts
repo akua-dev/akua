@@ -1,5 +1,5 @@
 import { assert, describe, it } from '@effect/vitest';
-import { Effect, Fiber, Ref, Schema, SubscriptionRef } from 'effect';
+import { Clock, Duration, Effect, Fiber, Ref, Schema, SubscriptionRef } from 'effect';
 import { TestClock } from 'effect/testing';
 import { bundleStateSecret, readReported, updaterBundleSecret } from './bundle-state';
 import { KubernetesExtras } from './kubernetes';
@@ -9,6 +9,7 @@ import type { UpdaterInstruction } from '@platform/api-contract/services/cluster
 import { FakeAgentDeployment } from './testing/fake-agent-deployment';
 import { FakePlatform } from './testing/fake-platform';
 import { AgentUpdater } from './contract';
+import { advanceUntil } from './testing/advance-until';
 import {
 	placeBundle,
 	revisionV1,
@@ -31,7 +32,8 @@ const offered = Effect.gen(function* () {
 	yield* updater.step({
 		instruction: { desired: null, verify_seconds: 120, observed: null },
 		running: v1,
-		version: v1.version
+		version: v1.version,
+		observations: 'known'
 	});
 	yield* placeBundle(2, revisionV2, 2);
 });
@@ -70,7 +72,10 @@ describe('updaterLoop', () => {
 				yield* channel(true);
 				const fake = yield* FakeAgentDeployment;
 				const loop = yield* Effect.forkChild(updaterLoop('1.0.0'));
-				while ((yield* image) !== v2.image) yield* TestClock.adjust('1 second');
+				yield* advanceUntil(
+					Effect.map(image, (current) => current === v2.image),
+					'1 second'
+				);
 				yield* fake.settle;
 				yield* channel(false);
 				for (let tick = 0; tick < 40; tick += 1) yield* TestClock.adjust('10 seconds');
@@ -81,14 +86,10 @@ describe('updaterLoop', () => {
 					verify_seconds: 120,
 					observed: { version: v2.version, online_at: 1, accepted_at: 2 }
 				});
-				let phase = '';
-				for (let tick = 0; tick < 20 && phase !== 'steady'; tick += 1) {
-					// The fake platform answers on the real event loop; give it a turn.
-					yield* TestClock.withLive(Effect.sleep('5 millis'));
-					yield* TestClock.adjust('10 seconds');
-					phase = (yield* phases).at(-1)?._tag ?? '';
-				}
-				assert.strictEqual(phase, 'steady');
+				yield* advanceUntil(
+					Effect.map(phases, (reported) => reported.at(-1)?._tag === 'steady'),
+					'10 seconds'
+				);
 				assert.strictEqual(yield* image, v2.image);
 				// One report per phase change, not one per tick.
 				const tags = (yield* phases).map((reported) => reported._tag);
@@ -100,23 +101,62 @@ describe('updaterLoop', () => {
 			}).pipe(Effect.provide(layer))
 	);
 
+	it.effect(
+		'keeps a release whose rollout becomes Current only at its deadline while its channel is down',
+		() =>
+			Effect.gen(function* () {
+				yield* offered;
+				yield* channel(true);
+				const fake = yield* FakeAgentDeployment;
+				const loop = yield* Effect.forkChild(updaterLoop('1.0.0'));
+				yield* advanceUntil(
+					Effect.map(image, (current) => current === v2.image),
+					'1 second'
+				);
+				yield* channel(false);
+				// Still `updating` (the rollout is not Current) until just before the 120 s deadline.
+				yield* advanceUntil(
+					Effect.map(Clock.currentTimeMillis, (now) => now >= 115_000),
+					'1 second'
+				);
+				yield* fake.settle;
+				for (let tick = 0; tick < 20; tick += 1) {
+					yield* TestClock.withLive(Effect.sleep('2 millis'));
+					yield* TestClock.adjust('10 seconds');
+				}
+				assert.strictEqual(yield* image, v2.image, 'kept while observations are unknown');
+				assert.notInclude(
+					(yield* phases).map((reported) => reported._tag),
+					'rolled-back'
+				);
+				yield* Fiber.interrupt(loop);
+			}).pipe(Effect.provide(layer))
+	);
+
 	it.effect('rolls back with no-presence when no push ever shows the new release', () =>
 		Effect.gen(function* () {
 			yield* offered;
 			yield* channel(true);
 			const fake = yield* FakeAgentDeployment;
 			const loop = yield* Effect.forkChild(updaterLoop('1.0.0'));
-			while ((yield* image) !== v2.image) yield* TestClock.adjust('1 second');
+			yield* advanceUntil(
+				Effect.map(image, (current) => current === v2.image),
+				'1 second'
+			);
 			yield* fake.settle;
 			yield* push({
 				desired: null,
 				verify_seconds: 120,
 				observed: null
 			});
-			for (let tick = 0; tick < 20 && (yield* image) !== v1.image; tick += 1)
-				yield* TestClock.adjust('10 seconds');
-			assert.strictEqual(yield* image, v1.image);
-			for (let tick = 0; tick < 5; tick += 1) yield* TestClock.adjust('10 seconds');
+			yield* advanceUntil(
+				Effect.map(image, (current) => current === v1.image),
+				'10 seconds'
+			);
+			yield* advanceUntil(
+				Effect.map(phases, (reported) => reported.at(-1)?._tag === 'rolled-back'),
+				'10 seconds'
+			);
 			const reported = (yield* phases).at(-1);
 			assert.strictEqual(reported?._tag === 'rolled-back' ? reported.reason : '', 'no-presence');
 			yield* Fiber.interrupt(loop);
@@ -139,17 +179,19 @@ describe('updaterLoop', () => {
 					Effect.flatMap(FakePlatform, (platform) => Ref.get(platform.state)),
 					(state) => state.updaterPhases
 				);
-				for (let tick = 0; tick < 20 && (yield* reports).length === 0; tick += 1) {
-					yield* TestClock.withLive(Effect.sleep('5 millis'));
-					yield* TestClock.adjust('1 second');
-				}
+				yield* advanceUntil(
+					Effect.map(reports, (all) => all.length > 0),
+					'1 second'
+				);
 				assert.strictEqual((yield* reports).at(-1)?.updater_rejected, '1.1.0');
 				assert.isTrue(yield* SubscriptionRef.get((yield* UpdaterInstructions).ready));
 				// Answered, but its own channel is not open yet: no attestation.
 				assert.strictEqual(yield* readReported(extras), null);
 				yield* channel(true);
-				for (let tick = 0; tick < 20 && (yield* readReported(extras)) === null; tick += 1)
-					yield* TestClock.withLive(Effect.sleep('5 millis'));
+				yield* advanceUntil(
+					Effect.map(readReported(extras), (reported) => reported !== null),
+					Duration.zero
+				);
 				assert.strictEqual((yield* readReported(extras))?.version, '1.0.0');
 				yield* Fiber.interrupt(loop);
 			}).pipe(Effect.provide(updaterHarness()))

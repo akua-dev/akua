@@ -628,6 +628,12 @@ export class AgentUpdater extends Context.Service<
 			readonly running: typeof AgentRelease.Type;
 			/** This updater's own version. */
 			readonly version: string;
+			/**
+			 * `unknown` while the updater's channel is down or its phase is
+			 * unreported: `instruction.observed` may be stale, so a deadline
+			 * passes without a `no-presence` or `no-reconcile` verdict.
+			 */
+			readonly observations: 'known' | 'unknown';
 		}): Effect.Effect<typeof UpdaterPhase.Type, HttpClientError.HttpClientError>;
 		/**
 		 * The agent's apply of the updater's own objects, from the agent's

@@ -301,7 +301,8 @@ export const agentUpdaterLayer = Layer.effect(
 		const follow = Effect.fnUntraced(function* (
 			state: BundleState,
 			update: typeof BundleUpdate.Type,
-			instruction: Instruction
+			instruction: Instruction,
+			observations: 'known' | 'unknown'
 		) {
 			if (update.appliedAt === null) return yield* applyUpdate(state, update);
 			const { from, to, startedAt, deadline } = update;
@@ -324,7 +325,7 @@ export const agentUpdaterLayer = Layer.effect(
 			const fromNewRelease = observed !== null && observed.version === to.version;
 			if (fromNewRelease && observed.online_at !== null && observed.accepted_at !== null)
 				return yield* complete(update);
-			if (now >= deadline)
+			if (now >= deadline && observations === 'known')
 				return yield* restore(
 					state,
 					update,
@@ -475,9 +476,11 @@ export const agentUpdaterLayer = Layer.effect(
 			readonly instruction: Instruction;
 			readonly running: Release;
 			readonly version: string;
+			readonly observations: 'known' | 'unknown';
 		}) {
 			const state = yield* readState;
-			if (state.update !== null) return yield* follow(state, state.update, args.instruction);
+			if (state.update !== null)
+				return yield* follow(state, state.update, args.instruction, args.observations);
 			// Never both at once: not while the agent applies or gates the updater's part,
 			// and never as an updater release the agent rejected (it is being replaced).
 			const agent = yield* agentApply;
@@ -633,8 +636,8 @@ export const updaterLoop = (updaterVersion: string) =>
 				(yield* updater.inFlight) ?? { _tag: 'steady', running: running.value };
 			const agent = yield* updater.agentApply;
 			if (!(yield* SubscriptionRef.get(ready))) yield* SubscriptionRef.set(ready, true);
-			const key = JSON.stringify([current, agent.rejected]);
-			let unreported = key !== reported;
+			const key: string = JSON.stringify([current, agent.rejected]);
+			let unreported: boolean = key !== reported;
 			if (unreported) {
 				const answered = yield* api
 					.updaterPhase({
@@ -657,13 +660,14 @@ export const updaterLoop = (updaterVersion: string) =>
 				}
 			}
 			const open = (yield* SubscriptionRef.get(channel))._tag === 'open';
-			if (current._tag === 'verifying' && (unreported || !open)) {
-				yield* Effect.sleep(Duration.seconds(10));
-				continue;
-			}
 			const instruction = (yield* SubscriptionRef.get(latest)) ?? initialInstruction;
 			phase = yield* updater
-				.step({ instruction, running: running.value, version: updaterVersion })
+				.step({
+					instruction,
+					running: running.value,
+					version: updaterVersion,
+					observations: open && !unreported ? 'known' : 'unknown'
+				})
 				.pipe(
 					Effect.catchDefect((defect) =>
 						Effect.logWarning('updater step failed').pipe(
