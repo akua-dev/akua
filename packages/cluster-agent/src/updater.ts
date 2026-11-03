@@ -15,6 +15,7 @@ import {
 import { HttpClient, HttpClientRequest, type HttpClientError } from 'effect/http';
 import type ids from '@platform/ids';
 import {
+	agentImageRegistry,
 	AgentRelease,
 	type PlacementReport,
 	type UpdateRollbackReason,
@@ -488,9 +489,11 @@ export const agentUpdaterLayer = Layer.effect(
 
 			const rejection = state['rolled-back'];
 			const desired = args.instruction.desired;
+			// Only from the registry the running image came from: a platform that names another is not followed.
 			const offered =
 				desired !== null &&
 				desired.image !== args.running.image &&
+				agentImageRegistry(desired.image) === agentImageRegistry(args.running.image) &&
 				rejection?.rejected.image !== desired.image
 					? desired
 					: null;

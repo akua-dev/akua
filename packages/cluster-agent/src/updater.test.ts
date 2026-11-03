@@ -2,7 +2,7 @@ import { assert, describe, it } from '@effect/vitest';
 import { Effect, Option, Ref, Result, Schema } from 'effect';
 import { Base64 } from 'effect/encoding';
 import { TestClock } from 'effect/testing';
-import type { UpdaterInstruction } from '@platform/api-contract/services/cluster-agent';
+import { AgentImage, type UpdaterInstruction } from '@platform/api-contract/services/cluster-agent';
 import { applySetParentName, inventoryOf } from './applyset';
 import { AgentUpdater } from './contract';
 import {
@@ -134,6 +134,22 @@ describe('AgentUpdater', () => {
 			assert.strictEqual((yield* requestsOf('apply')).length, 1);
 		}).pipe(Effect.provide(updaterHarness()))
 	);
+
+	it.effect('takes no release from a registry other than its own image came from', () => {
+		const elsewhere = {
+			...v2,
+			image: AgentImage.make(`registry.example/akua/cluster-agent@sha256:${'2'.repeat(64)}`)
+		};
+		return Effect.gen(function* () {
+			yield* rollingEngine;
+			yield* placeBundle(1, revisionV1, 1);
+			yield* step();
+			yield* placeBundle(2, revisionV2, 2);
+			const phase = yield* step({ desired: elsewhere });
+			assert.deepStrictEqual(phase, { _tag: 'steady', running: v1 });
+			assert.strictEqual((yield* requestsOf('apply')).length, 1);
+		}).pipe(Effect.provide(updaterHarness({ v2Release: elsewhere })));
+	});
 
 	it.effect('applies the new bundle, gates it and keeps it once verified', () =>
 		Effect.gen(function* () {

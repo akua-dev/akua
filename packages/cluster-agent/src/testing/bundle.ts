@@ -225,6 +225,8 @@ export const updaterHarness = (
 		readonly v2NodeVerbs?: ReadonlyArray<string>;
 		/** v3's bundle (at `revisionV3`) with this much incompressible ConfigMap data. */
 		readonly v3Padding?: number;
+		/** The release whose bundle `revisionV2` holds; v2 when absent. */
+		readonly v2Release?: Release;
 	} = {}
 ) =>
 	agentUpdaterLayer.pipe(
@@ -245,7 +247,7 @@ export const updaterHarness = (
 					[revisionV1, bundleFiles(v1, { configMap: 'agent-v1' })],
 					[
 						revisionV2,
-						bundleFiles(v2, {
+						bundleFiles(options.v2Release ?? v2, {
 							configMap: 'agent-v2',
 							...(options.v2NodeVerbs === undefined ? {} : { nodeVerbs: options.v2NodeVerbs })
 						})
