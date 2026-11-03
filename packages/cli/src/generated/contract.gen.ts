@@ -4,6 +4,10 @@ import type { ApiContract } from '../api/contract';
 export const contract: ApiContract = {
 	"resources": [
 		{
+			"name": "api-tokens",
+			"title": "API Tokens"
+		},
+		{
 			"name": "clusters",
 			"title": "clusters"
 		},
@@ -535,6 +539,51 @@ export const contract: ApiContract = {
 		}
 	},
 	"operations": [
+		{
+			"id": "apiTokens.create",
+			"method": "POST",
+			"path": "/api_tokens",
+			"summary": "Create an API token",
+			"auth": true,
+			"parameters": [],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/CreateApiTokenRequest"
+				}
+			}
+		},
+		{
+			"id": "apiTokens.get",
+			"method": "GET",
+			"path": "/api_tokens/{id}",
+			"summary": "Get an API token",
+			"auth": true,
+			"parameters": [
+				"path:id:9"
+			]
+		},
+		{
+			"id": "apiTokens.list",
+			"method": "GET",
+			"path": "/api_tokens",
+			"summary": "List API tokens",
+			"auth": true,
+			"parameters": [
+				"query:cursor",
+				"query:limit"
+			]
+		},
+		{
+			"id": "apiTokens.revoke",
+			"method": "DELETE",
+			"path": "/api_tokens/{id}",
+			"summary": "Revoke an API token",
+			"auth": true,
+			"parameters": [
+				"path:id:9"
+			]
+		},
 		{
 			"id": "clusters.create",
 			"method": "POST",
@@ -2014,6 +2063,67 @@ export const contract: ApiContract = {
 				}
 			]
 		},
+		"CreateApiTokenRequest": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"description": "Human-readable name for the token",
+					"minLength": 1,
+					"maxLength": 100
+				},
+				"expires_at": {
+					"anyOf": [
+						{
+							"type": "integer",
+							"minimum": 0
+						},
+						{
+							"type": "null"
+						}
+					],
+					"description": "Unix timestamp (seconds) when the token expires. Omit or pass null for no expiry."
+				},
+				"workspace_id": {
+					"anyOf": [
+						{
+							"type": "string",
+							"minLength": 2,
+							"maxLength": 53
+						},
+						{
+							"type": "null"
+						}
+					],
+					"description": "The only Workspace the token may act in. Omitted or null: every Workspace the person may use."
+				},
+				"roles": {
+					"anyOf": [
+						{
+							"type": "array",
+							"prefixItems": [
+								{
+									"$ref": "#/$defs/RoleName"
+								}
+							],
+							"minItems": 1,
+							"items": {
+								"$ref": "#/$defs/RoleName"
+							},
+							"maxItems": 16
+						},
+						{
+							"type": "null"
+						}
+					],
+					"description": "A ceiling of IAM roles: the token may do only what one of these roles includes, and only what the person may. Omitted or null: the rights of the person."
+				}
+			},
+			"required": [
+				"name"
+			],
+			"additionalProperties": false
+		},
 		"CreateInstallBody": {
 			"type": "object",
 			"properties": {
@@ -2719,6 +2829,12 @@ export const contract: ApiContract = {
 				"paths"
 			],
 			"additionalProperties": false
+		},
+		"RoleName": {
+			"type": "string",
+			"pattern": "^roles\\/(owner|admin|member|viewer|[a-z][a-z0-9-]{0,62}\\.[a-z][A-Za-z]{0,62})$",
+			"title": "RoleName",
+			"description": "A basic role `roles/<name>` or a predefined role `roles/<service>.<role>`"
 		},
 		"RunSandboxCommandBody": {
 			"anyOf": [

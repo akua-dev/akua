@@ -3750,6 +3750,298 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
+    "/api_tokens": {
+      "get": {
+        "tags": [
+          "API Tokens"
+        ],
+        "operationId": "apiTokens.list",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Pagination cursor from a previous response's `next_cursor`."
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (1-100, default 50)",
+              "default": 50,
+              "examples": [
+                50
+              ],
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Your API tokens, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTokenList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns metadata for your own API tokens. Full token values are never shown after creation.",
+        "summary": "List API tokens",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "post": {
+        "tags": [
+          "API Tokens"
+        ],
+        "operationId": "apiTokens.create",
+        "parameters": [],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Token created. The `token` field is shown only once.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedApiToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates an API token that acts as you, optionally limited to one Workspace and to a ceiling of IAM roles. Requires a signed-in session; an API token cannot create another. The full plaintext token is returned once and never shown again - store it securely.",
+        "summary": "Create an API token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/api_tokens/{id}": {
+      "get": {
+        "tags": [
+          "API Tokens"
+        ],
+        "operationId": "apiTokens.get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiToken"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns the metadata of one of your API tokens.",
+        "summary": "Get an API token",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "delete": {
+        "tags": [
+          "API Tokens"
+        ],
+        "operationId": "apiTokens.revoke",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Token revoked"
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          }
+        },
+        "description": "Revokes one of your API tokens. It stops authenticating requests immediately.",
+        "summary": "Revoke an API token",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
     "/clusters": {
       "get": {
         "tags": [
@@ -19982,6 +20274,336 @@
         ],
         "additionalProperties": false
       },
+      "ApiToken": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "examples": [
+              "My CLI token"
+            ]
+          },
+          "prefix": {
+            "type": "string",
+            "description": "The first 12 characters of the token, for recognizing it. Never the secret.",
+            "examples": [
+              "sk_akua_a3B2"
+            ]
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 53
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The only Workspace the token may act in. Omitted or null: every Workspace the person may use."
+          },
+          "roles": {
+            "anyOf": [
+              {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "$ref": "#/components/schemas/RoleName"
+                  }
+                ],
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/components/schemas/RoleName"
+                },
+                "maxItems": 16,
+                "examples": [
+                  [
+                    "roles/viewer"
+                  ]
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A ceiling of IAM roles: the token may do only what one of these roles includes, and only what the person may. Omitted or null: the rights of the person."
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix timestamp (seconds)"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unix timestamp (seconds) of last use, or null if never used"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unix timestamp (seconds) when the token expires, or null if never"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "workspace_id",
+          "roles",
+          "created_at",
+          "last_used_at",
+          "expires_at"
+        ],
+        "additionalProperties": false
+      },
+      "RoleName": {
+        "type": "string",
+        "pattern": "^roles\\/(owner|admin|member|viewer|[a-z][a-z0-9-]{0,62}\\.[a-z][A-Za-z]{0,62})$",
+        "title": "RoleName",
+        "description": "A basic role `roles/<name>` or a predefined role `roles/<service>.<role>`",
+        "examples": [
+          "roles/admin",
+          "roles/vault.secretAccessor"
+        ]
+      },
+      "CreatedApiToken": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "examples": [
+              "My CLI token"
+            ]
+          },
+          "prefix": {
+            "type": "string",
+            "description": "The first 12 characters of the token, for recognizing it. Never the secret.",
+            "examples": [
+              "sk_akua_a3B2"
+            ]
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 53
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The only Workspace the token may act in. Omitted or null: every Workspace the person may use."
+          },
+          "roles": {
+            "anyOf": [
+              {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "$ref": "#/components/schemas/RoleName"
+                  }
+                ],
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/components/schemas/RoleName"
+                },
+                "maxItems": 16,
+                "examples": [
+                  [
+                    "roles/viewer"
+                  ]
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A ceiling of IAM roles: the token may do only what one of these roles includes, and only what the person may. Omitted or null: the rights of the person."
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix timestamp (seconds)"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unix timestamp (seconds) of last use, or null if never used"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unix timestamp (seconds) when the token expires, or null if never"
+          },
+          "token": {
+            "type": "string",
+            "description": "The full token. This is shown only once - store it securely.",
+            "examples": [
+              "sk_akua_a3B2c4D5e6F7g8H9i0J1k2L3m4N5o6P73jZRME"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "workspace_id",
+          "roles",
+          "created_at",
+          "last_used_at",
+          "expires_at",
+          "token"
+        ],
+        "additionalProperties": false
+      },
+      "CreateApiTokenRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable name for the token",
+            "examples": [
+              "My CLI token"
+            ],
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unix timestamp (seconds) when the token expires. Omit or pass null for no expiry.",
+            "examples": [
+              1742169600
+            ]
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 53
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The only Workspace the token may act in. Omitted or null: every Workspace the person may use."
+          },
+          "roles": {
+            "anyOf": [
+              {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "$ref": "#/components/schemas/RoleName"
+                  }
+                ],
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/components/schemas/RoleName"
+                },
+                "maxItems": 16,
+                "examples": [
+                  [
+                    "roles/viewer"
+                  ]
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A ceiling of IAM roles: the token may do only what one of these roles includes, and only what the person may. Omitted or null: the rights of the person."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "ApiTokenList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiToken"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
       "PackageVersionInputs": {
         "type": "object"
       },
@@ -22591,6 +23213,9 @@
     },
     {
       "name": "Auth"
+    },
+    {
+      "name": "API Tokens"
     },
     {
       "name": "clusters"
