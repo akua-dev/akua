@@ -128,7 +128,7 @@ function keyValues(object: Readonly<Record<string, unknown>>): string[] {
 	const entries = Object.entries(flatten(object));
 	if (entries.length === 0) return ['Done.'];
 	const width = Math.max(...entries.map(([key]) => key.length));
-	return entries.map(([key, value]) => `${key.padEnd(width)}  ${cell(key, value, Infinity)}`);
+	return entries.map(([key, value]) => `${key.padEnd(width)}  ${cell(key, value, Infinity, true)}`);
 }
 
 /** Lifts one level of nested objects into `parent.child` keys. */
@@ -144,19 +144,22 @@ function flatten(object: Readonly<Record<string, unknown>>): Record<string, unkn
 	return flat;
 }
 
-function cell(key: string, value: unknown, limit = MAX_CELL): string {
-	const text = cellText(key, value);
+function cell(key: string, value: unknown, limit = MAX_CELL, full = false): string {
+	const text = cellText(key, value, full);
 	return text.length > limit ? `${text.slice(0, limit - 1)}…` : text;
 }
 
-function cellText(key: string, value: unknown): string {
+/** `full` (key-value blocks) spells nested arrays out; table cells only count them. */
+function cellText(key: string, value: unknown, full: boolean): string {
 	if (value === null || value === undefined) return '-';
 	if (Predicate.isNumber(value) && key.endsWith('_at')) return timestamp(value);
 	if (Array.isArray(value)) {
 		if (value.length === 0) return '-';
 		return value.every((item) => !Predicate.isObject(item) && !Array.isArray(item))
 			? value.map(String).join(', ')
-			: `${value.length} items`;
+			: full
+				? JSON.stringify(value)
+				: `${value.length} items`;
 	}
 	if (Predicate.isObject(value)) return JSON.stringify(value);
 	return String(value);

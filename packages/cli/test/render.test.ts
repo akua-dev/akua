@@ -23,6 +23,44 @@ describe('renderSuccess', () => {
 		expect(output).toContain('next_steps[1]{command}:');
 	});
 
+	test('keeps nested arrays and objects of table rows in agent output', () => {
+		const output = renderSuccess(
+			{
+				command: 'akua organizations get-iam-policy',
+				data: {
+					bindings: [
+						{ role: 'roles/owner', members: ['user:a', 'user:b'], condition: { title: 'office' } }
+					]
+				}
+			},
+			'agent'
+		);
+
+		expect(output).toContain(
+			[
+				'  bindings[1]:',
+				'    - role: roles/owner',
+				'      members[2]:',
+				'        user:a',
+				'        user:b',
+				'      condition:',
+				'        title: office'
+			].join('\n')
+		);
+	});
+
+	test('spells nested arrays out in human key-value output', () => {
+		const output = renderSuccess(
+			{
+				command: 'akua organizations get-iam-policy',
+				data: { bindings: [{ role: 'roles/owner', members: ['user:a'] }] }
+			},
+			'human'
+		);
+
+		expect(output).toContain('[{"role":"roles/owner","members":["user:a"]}]');
+	});
+
 	test('renders deterministic json', () => {
 		const output = renderSuccess({ command: 'akua', data: { version: '0.0.0' } }, 'json');
 		expect(JSON.parse(output)).toEqual({
