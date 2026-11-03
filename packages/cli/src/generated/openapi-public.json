@@ -1360,7 +1360,7 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 54,
-              "description": "Filter by owning organization. Requires membership; excludes managed customer Workspaces."
+              "description": "Filter by owning organization. Requires membership."
             },
             "required": false
           },
@@ -18668,17 +18668,10 @@
         "type": "object",
         "properties": {
           "organization_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 54
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Owning organization ID, or null for legacy Workspaces without an organization."
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 54,
+            "description": "ID of the organization that owns this workspace."
           },
           "id": {
             "type": "string",

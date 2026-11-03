@@ -367,7 +367,7 @@ export const contract: ApiContract = {
 				"type": "string",
 				"minLength": 1,
 				"maxLength": 54,
-				"description": "Filter by owning organization. Requires membership; excludes managed customer Workspaces."
+				"description": "Filter by owning organization. Requires membership."
 			}
 		},
 		"query:path": {
