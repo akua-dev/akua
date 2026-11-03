@@ -7038,12 +7038,12 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
-    "/clusters/{id}/nodes": {
+    "/clusters/{id}/node_pools": {
       "get": {
         "tags": [
-          "clusters"
+          "Node pools"
         ],
-        "operationId": "clusters.listNodes",
+        "operationId": "nodePools.list",
         "parameters": [
           {
             "name": "id",
@@ -7074,7 +7074,7 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "description": "Pagination cursor from a previous response's `next_cursor`."
+              "maxLength": 512
             },
             "required": false
           },
@@ -7083,10 +7083,1071 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "description": "Items per page (1-500, default 50)",
-              "default": 50,
               "minimum": 1,
-              "maximum": 500
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Node pools, by ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodePoolList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List node pools",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "post": {
+        "tags": [
+          "Node pools"
+        ],
+        "operationId": "nodePools.create",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "node_pool_id",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/NodePoolId"
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Node pool creation accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "Hosted Clusters. Creates `node_count` Machines of `machine_type` in the Cluster’s Region, each joined as a node, and returns the creation Operation; it succeeds once every node is ready. Machine creation needs an active billing account; the first `cx23` of a person is the free trial. Adding one Akua server is a pool of size 1.",
+        "summary": "Create a node pool",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNodePoolBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/clusters/{id}/node_pools/{node_pool_id}": {
+      "get": {
+        "tags": [
+          "Node pools"
+        ],
+        "operationId": "nodePools.get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "node_pool_id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/NodePoolId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The node pool",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodePool"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get a node pool",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "delete": {
+        "tags": [
+          "Node pools"
+        ],
+        "operationId": "nodePools.delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "node_pool_id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/NodePoolId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Node pool deletion accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "Drains its nodes (PodDisruptionBudgets honoured, bounded), removes them and deletes their Machines. A repeated delete returns the same Operation.",
+        "summary": "Delete a node pool",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/clusters/{id}/node_pools/{node_pool_id}:setSize": {
+      "post": {
+        "tags": [
+          "Node pools"
+        ],
+        "operationId": "nodePools.setSize",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "node_pool_id",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/NodePoolId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Size change accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "Adds Machines or drains and deletes nodes, newest first, until the pool has `node_count` nodes.",
+        "summary": "Resize a node pool",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetNodePoolSizeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/clusters/{id}/nodes": {
+      "get": {
+        "tags": [
+          "Nodes"
+        ],
+        "operationId": "nodes.list",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          },
+          {
+            "name": "node_pool_id",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/NodePoolId"
             },
             "required": false
           }
@@ -7102,7 +8163,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ClusterNodeList"
+                  "$ref": "#/components/schemas/NodeList"
                 }
               }
             }
@@ -7245,9 +8306,9 @@
     "/clusters/{id}/nodes/{name}": {
       "get": {
         "tags": [
-          "clusters"
+          "Nodes"
         ],
-        "operationId": "clusters.getNode",
+        "operationId": "nodes.get",
         "parameters": [
           {
             "name": "id",
@@ -7296,7 +8357,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ClusterNode"
+                  "$ref": "#/components/schemas/Node"
                 }
               }
             }
@@ -7437,9 +8498,9 @@
       },
       "delete": {
         "tags": [
-          "clusters"
+          "Nodes"
         ],
-        "operationId": "clusters.removeNode",
+        "operationId": "nodes.remove",
         "parameters": [
           {
             "name": "id",
@@ -7638,328 +8699,9 @@
             }
           }
         },
-        "description": "Cordons and drains the node (PodDisruptionBudgets honoured, bounded), then deletes it, as an Operation.",
+        "description": "A joined server: cordons and drains the node (PodDisruptionBudgets honoured, bounded), then removes it from the Cluster; the server is left running. A node pool’s node answers 422: resize its pool instead.",
         "summary": "Remove a node",
         "x-platform-visibility": "PUBLIC"
-      }
-    },
-    "/machines": {
-      "post": {
-        "tags": [
-          "machines"
-        ],
-        "operationId": "machines.create",
-        "parameters": [
-          {
-            "name": "akua-context",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 53,
-              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
-              "examples": [
-                "ws_j572abc123def4"
-              ]
-            },
-            "required": false
-          },
-          {
-            "name": "idempotency-key",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
-              "examples": [
-                "create-prod-2026-05-07"
-              ]
-            },
-            "required": false
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "Machine creation accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MachineOperation"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The request is malformed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiBadRequest"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired credential.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnauthorized"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The credential may not act in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiForbidden"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The resource was not found in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiNotFound"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The request conflicts with existing resource state or immutable intent. | The idempotency key was already used for a different request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ApiConflict"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is well-formed but cannot be processed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnprocessable"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The service is temporarily unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiServiceUnavailable"
-                }
-              }
-            }
-          }
-        },
-        "description": "Orders a server for a hosted Cluster, joins it as a node and returns a long-running operation that succeeds once the node is Ready. Invalid node names and names already used in the cluster return a typed Validation error at body.node_name.",
-        "summary": "Create machine",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "cluster_id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 54
-                  },
-                  "instance_type": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "Server type Akua orders for the Machine in the Cluster's Region. The Free plan covers one 2-core server (`cx23`); plan CPU quotas are checked when the Machine is created.",
-                    "examples": [
-                      "cx23"
-                    ]
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 120
-                  },
-                  "node_name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 63,
-                    "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
-                    "description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must be unique in the cluster. Defaults to `m-` plus the first twelve hex characters of the machine ID."
-                  }
-                },
-                "required": [
-                  "cluster_id",
-                  "instance_type"
-                ],
-                "additionalProperties": false
-              }
-            }
-          },
-          "required": true
-        },
-        "x-platform-visibility": "PUBLIC"
-      },
-      "get": {
-        "tags": [
-          "machines"
-        ],
-        "operationId": "machines.list",
-        "parameters": [
-          {
-            "name": "akua-context",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 53,
-              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
-              "examples": [
-                "ws_j572abc123def4"
-              ]
-            },
-            "required": false
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "description": "Pagination cursor from a previous response's `next_cursor`."
-            },
-            "required": false
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "description": "Items per page (1-100, default 50)",
-              "default": 50,
-              "examples": [
-                50
-              ],
-              "minimum": 1,
-              "maximum": 100
-            },
-            "required": false
-          },
-          {
-            "name": "cluster_id",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 54
-            },
-            "required": false
-          },
-          {
-            "name": "state",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "ACTIVE",
-                "PROVISIONING",
-                "SUSPENDING",
-                "SUSPENDED",
-                "RESUMING",
-                "DELETING",
-                "FAILED"
-              ],
-              "description": "Machine lifecycle state."
-            },
-            "required": false
-          },
-          {
-            "name": "view",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "basic",
-                "full"
-              ],
-              "default": "basic"
-            },
-            "required": false
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Machine list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MachineList"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The request is malformed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiBadRequest"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired credential.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnauthorized"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The credential may not act in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiForbidden"
-                }
-              }
-            }
-          }
-        },
-        "description": "Lists all machines in the workspace.",
-        "summary": "List machines",
-        "x-platform-visibility": "PUBLIC",
-        "x-platform-live": {
-          "visibility": "PUBLIC",
-          "transport": "convex",
-          "convexQuery": "compute.ui.listMachinesForApi"
-        }
       }
     },
     "/machines/{id}": {
@@ -7974,7 +8716,7 @@
             "in": "path",
             "schema": {
               "type": "string",
-              "minLength": 1,
+              "minLength": 3,
               "maxLength": 54
             },
             "required": true
@@ -8006,6 +8748,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Machine"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
                 }
               }
             }
@@ -8056,7 +8808,7 @@
             "in": "path",
             "schema": {
               "type": "string",
-              "minLength": 1,
+              "minLength": 3,
               "maxLength": 54
             },
             "required": true
@@ -8080,14 +8832,14 @@
             "in": "header",
             "schema": {
               "type": "string",
-              "description": "Required caller key for idempotent machine lifecycle operations.",
-              "examples": [
-                "suspend-worker-2026-07-18"
-              ],
               "minLength": 1,
-              "maxLength": 64
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
             },
-            "required": true
+            "required": false
           },
           {
             "name": "if-match",
@@ -8115,7 +8867,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MachineOperation"
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
                 }
               }
             }
@@ -8178,8 +8940,123 @@
             }
           }
         },
-        "description": "Deletes a machine and returns a long-running operation envelope.",
+        "description": "Deletes the server and returns a long-running Operation. A Machine a node pool created is deleted by resizing or deleting the pool: deleting it here answers 409.",
         "summary": "Delete machine",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/machines": {
+      "get": {
+        "tags": [
+          "machines"
+        ],
+        "operationId": "machines.list",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Pagination cursor from a previous response's `next_cursor`."
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (1-100, default 50)",
+              "default": 50,
+              "examples": [
+                50
+              ],
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PROVISIONING",
+                "RUNNING",
+                "SUSPENDING",
+                "SUSPENDED",
+                "DELETING",
+                "FAILED"
+              ],
+              "description": "Machine lifecycle state."
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Machine list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          }
+        },
+        "description": "Lists the Machines of the Workspace, including those its node pools created (`created_by`).",
+        "summary": "List machines",
         "x-platform-visibility": "PUBLIC"
       }
     },
@@ -16972,6 +17849,7 @@
               "workspace",
               "machine",
               "cluster",
+              "node_pool",
               "package",
               "sandbox"
             ],
@@ -16979,7 +17857,7 @@
           },
           "owner_id": {
             "type": "string",
-            "description": "Prefixed ID of the entity this operation acts on. Prefix matches `owner_type` (`ws_`, `mch_`, `clu_`, `pkg_`, `inst_`, `rcr_`, `repo_`, `sbx_`)."
+            "description": "Prefixed ID of the entity this operation acts on. Prefix matches `owner_type` (`ws_`, `mch_`, `clu_`, `pkg_`, `inst_`, `rcr_`, `repo_`, `sbx_`); a node pool is `clu_<id>/node_pools/<node pool id>`."
           },
           "parent_operation_id": {
             "anyOf": [
@@ -17348,6 +18226,35 @@
               "type",
               "cluster_id",
               "node_name"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "node_pool.create",
+                  "node_pool.set_size",
+                  "node_pool.delete"
+                ]
+              },
+              "cluster_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "node_pool_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              }
+            },
+            "required": [
+              "type",
+              "cluster_id",
+              "node_pool_id"
             ],
             "additionalProperties": false
           },
@@ -18391,7 +19298,6 @@
             "required": [
               "type",
               "workspace_id",
-              "cluster_id",
               "instance_type",
               "managed",
               "request_fingerprint"
@@ -18565,6 +19471,53 @@
               "name",
               "kind",
               "region_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "node_pool.create",
+                  "node_pool.set_size",
+                  "node_pool.delete"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              },
+              "cluster_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "node_pool_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              "node_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The size the Operation moves the pool to; null for a deletion."
+              }
+            },
+            "required": [
+              "type",
+              "workspace_id",
+              "cluster_id",
+              "node_pool_id",
+              "node_count"
             ],
             "additionalProperties": false
           },
@@ -20670,193 +21623,6 @@
         ],
         "additionalProperties": false
       },
-      "MachineOperation": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 192
-          },
-          "workspace_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 53
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 54
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "owner_type": {
-            "type": "string",
-            "enum": [
-              "install",
-              "repository_change_request",
-              "repository",
-              "workspace",
-              "machine",
-              "cluster",
-              "package",
-              "sandbox"
-            ],
-            "description": "Domain entity collection the operation acts on."
-          },
-          "owner_id": {
-            "type": "string",
-            "description": "Prefixed ID of the entity this operation acts on. Prefix matches `owner_type` (`ws_`, `mch_`, `clu_`, `pkg_`, `inst_`, `rcr_`, `repo_`, `sbx_`)."
-          },
-          "parent_operation_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 2,
-                "maxLength": 192
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "ID of the chained parent operation, when present."
-          },
-          "state": {
-            "type": "string",
-            "enum": [
-              "RUNNING",
-              "SUCCEEDED",
-              "FAILED",
-              "CANCELLED"
-            ],
-            "description": "Lifecycle state. Past-participle terminal states per AIP-216."
-          },
-          "done": {
-            "type": "boolean",
-            "description": "True iff state is a terminal value."
-          },
-          "html_url": {
-            "type": "string",
-            "description": "Deep link to the dashboard view of this operation's owning resource when available, otherwise the operation detail page.",
-            "format": "uri",
-            "examples": [
-              "https://akua.dev/installs/inst_j572abc123def456?tab=operations"
-            ],
-            "maxLength": 2048
-          },
-          "metadata": {
-            "$ref": "#/components/schemas/OperationMetadata"
-          },
-          "response": {
-            "$ref": "#/components/schemas/OperationResponse"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "code": {
-                    "type": "integer"
-                  },
-                  "message": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "message"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Populated when `state` is `FAILED` or `CANCELLED`."
-          },
-          "last_error": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "message": {
-                    "type": "string"
-                  },
-                  "step_name": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "message"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Latest error from any failed step. Populated even mid-flight; cleared when the step succeeds on retry."
-          },
-          "started_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "completed_at": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Unix timestamp (seconds)"
-          },
-          "steps": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OperationStep"
-            }
-          },
-          "operation_id": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 192
-          }
-        },
-        "required": [
-          "id",
-          "workspace_id",
-          "organization_id",
-          "owner_type",
-          "owner_id",
-          "parent_operation_id",
-          "state",
-          "done",
-          "html_url",
-          "metadata",
-          "response",
-          "error",
-          "last_error",
-          "started_at",
-          "completed_at",
-          "operation_id"
-        ],
-        "additionalProperties": false
-      },
       "MachineList": {
         "type": "object",
         "properties": {
@@ -20894,79 +21660,44 @@
         "properties": {
           "id": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 3,
             "maxLength": 54
           },
           "workspace_id": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 2,
             "maxLength": 53
           },
-          "cluster_id": {
+          "region_id": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 3,
             "maxLength": 54
           },
-          "compute_config_id": {
+          "location": {
             "type": "string",
-            "description": "Compute config the machine runs against. Absent for Akua system-managed machines.",
-            "minLength": 1,
-            "maxLength": 54
+            "maxLength": 32
           },
-          "provider_id": {
-            "type": "string",
-            "description": "The server's Kubernetes provider ID (`hcloud://<server id>`); empty until the provider created the server.",
-            "examples": [
-              "hcloud://1234"
-            ]
+          "machine_type": {
+            "$ref": "#/components/schemas/MachineType"
           },
-          "provider_resource": {
-            "type": "object",
-            "properties": {
-              "identity_kind": {
-                "type": "string",
-                "enum": [
-                  "recyclable",
-                  "persistent"
-                ]
-              },
-              "public_ip": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "floating_ip": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string"
-                  },
-                  "ipv4": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "id",
-                  "ipv4"
-                ],
-                "additionalProperties": false
-              }
-            },
-            "required": [
-              "identity_kind",
-              "public_ip"
-            ],
-            "additionalProperties": false
+          "image": {
+            "$ref": "#/components/schemas/MachineImage"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/MachineLabels"
           },
           "name": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "node_name": {
+          "provider_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -20975,23 +21706,42 @@
                 "type": "null"
               }
             ],
-            "description": "Kubernetes node name selected for this machine."
+            "description": "The server at its provider (`hcloud://<server id>`); null until the provider created it.",
+            "examples": [
+              "hcloud://1234"
+            ]
+          },
+          "ipv4": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ipv6": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "state": {
             "type": "string",
             "enum": [
-              "ACTIVE",
               "PROVISIONING",
+              "RUNNING",
               "SUSPENDING",
               "SUSPENDED",
-              "RESUMING",
               "DELETING",
               "FAILED"
             ],
             "description": "Machine lifecycle state."
-          },
-          "reconciling": {
-            "type": "boolean"
           },
           "conditions": {
             "type": "array",
@@ -20999,17 +21749,66 @@
               "$ref": "#/components/schemas/Condition"
             },
             "maxItems": 32,
-            "description": "What needs attention now; empty when nothing does. Reasons:\n- `trial-ended` (warning): the free trial is over and the Machine is `SUSPENDED`; its disk is kept as a snapshot for a while, then the Machine is deleted. Remedy `upgrade-plan`.\n- When `state` is `FAILED`, one error whose reason says why: `capacity-unavailable`, `provider-refused`, `provider-unavailable`, `join-timeout`, `cluster-unavailable` or `abandoned`. Its server, join token and capacity were already released."
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `trial-ended` (warning): the free trial is over and the Machine is `SUSPENDED`; its disk is kept as a snapshot for a while, then the Machine is deleted. Remedy `upgrade-plan`.\n- When `state` is `FAILED`, one error whose reason says why: `capacity-unavailable`, `provider-refused`, `provider-unavailable` or `abandoned`. Its server and capacity were already released."
+          },
+          "trial": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "pauses_at": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "Unix timestamp (seconds)"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "When the free trial Machine pauses; null until it runs."
+                  }
+                },
+                "required": [
+                  "pauses_at"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^service:[\\s\\S]*?$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service that created it (`service:cluster` for a node pool), which also deletes it; null when a person did."
+          },
+          "operation_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 192
           },
           "created_at": {
             "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
           },
           "updated_at": {
             "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
           },
           "etag": {
             "type": "string"
@@ -21018,18 +21817,58 @@
         "required": [
           "id",
           "workspace_id",
-          "cluster_id",
+          "region_id",
+          "location",
+          "machine_type",
+          "image",
+          "labels",
+          "name",
           "provider_id",
-          "provider_resource",
-          "node_name",
+          "ipv4",
+          "ipv6",
           "state",
-          "reconciling",
           "conditions",
+          "trial",
+          "created_by",
+          "operation_id",
           "created_at",
           "updated_at",
           "etag"
         ],
         "additionalProperties": false
+      },
+      "MachineLabels": {
+        "type": "object",
+        "patternProperties": {
+          "^[a-z][a-z0-9_-]{0,62}$": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]{0,63}$"
+          }
+        },
+        "additionalProperties": false,
+        "maxProperties": 32,
+        "examples": [
+          {
+            "team": "web"
+          }
+        ]
+      },
+      "MachineImage": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "ubuntu-24.04"
+            ]
+          }
+        ]
+      },
+      "MachineType": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]{0,31}$",
+        "examples": [
+          "cx23"
+        ]
       },
       "ApiGatewayTimeout": {
         "type": "object",
@@ -21128,7 +21967,7 @@
         ],
         "additionalProperties": false
       },
-      "ClusterNode": {
+      "Node": {
         "type": "object",
         "properties": {
           "name": {
@@ -21137,19 +21976,47 @@
             "maxLength": 253,
             "pattern": "^[a-z0-9](?:[-a-z0-9.]*[a-z0-9])?$"
           },
+          "cluster_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "source": {
+            "$ref": "#/components/schemas/NodeSource"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "provisioning",
+              "ready",
+              "draining",
+              "deleted"
+            ],
+            "description": "`provisioning`: its Machine is being created or its server is joining.\n`ready`: joined; Kubernetes readiness is `ready` and `conditions`.\n`draining`: cordoned and evicting Pods before it is removed.\n`deleted`: removed from the Cluster."
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "maxItems": 32,
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `not-ready` (warning): Kubernetes reports the node not ready.\n- `join-timeout` (error): the server started but never joined; its Machine was deleted.\n- `drain-timeout` (warning): Pods did not leave within the drain bound; the node was removed anyway.\n- `trial-ended` (warning): the node’s free trial Machine was paused. Remedy `add-billing`.\n- `capacity-unavailable`, `provider-refused`, `provider-unavailable` (error): its Machine could not be created; forwarded from the Machine."
+          },
           "ready": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Kubernetes `Ready`; false until the node joined."
           },
           "provider_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
               }
             ],
-            "description": "The node's `spec.providerID`, null without a cloud controller."
+            "description": "The node's `spec.providerID`; null without a cloud controller."
           },
           "labels": {
             "type": "object",
@@ -21160,7 +22027,21 @@
           "kubelet_version": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Unix timestamp (seconds)"
               },
               {
                 "type": "null"
@@ -21170,36 +22051,338 @@
         },
         "required": [
           "name",
+          "cluster_id",
+          "source",
+          "state",
+          "conditions",
           "ready",
           "provider_id",
           "labels",
-          "kubelet_version"
+          "kubelet_version",
+          "created_at"
         ],
         "additionalProperties": false
       },
-      "ClusterNodeList": {
+      "NodeSource": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "node_pool"
+                ]
+              },
+              "node_pool_id": {
+                "$ref": "#/components/schemas/NodePoolId"
+              },
+              "machine_id": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 54
+              }
+            },
+            "required": [
+              "kind",
+              "node_pool_id",
+              "machine_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "joined"
+                ],
+                "description": "Your own server, joined with a join token. Removing it drains it and removes it from the Cluster; the server itself is untouched."
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "NodePoolId": {
+        "type": "string",
+        "pattern": "^[a-z](?:[-a-z0-9]{0,38}[a-z0-9])?$",
+        "description": "A DNS label of at most 40 characters, unique in the Cluster. Every node of the pool carries it as the label `akua.dev/node-pool`.",
+        "examples": [
+          "default"
+        ]
+      },
+      "NodeList": {
         "type": "object",
         "properties": {
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ClusterNode"
-            }
+              "$ref": "#/components/schemas/Node"
+            },
+            "maxItems": 500
           },
           "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
+            "type": "boolean"
           },
           "next_cursor": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 512
               },
               {
                 "type": "null"
               }
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "SetNodePoolSizeBody": {
+        "type": "object",
+        "properties": {
+          "node_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Number of nodes the pool keeps, 0 to 10 at launch."
+          }
+        },
+        "required": [
+          "node_count"
+        ],
+        "additionalProperties": false
+      },
+      "NodePool": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/NodePoolId"
+          },
+          "cluster_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 53
+          },
+          "html_url": {
+            "type": "string",
+            "allOf": [
+              {
+                "maxLength": 2048,
+                "format": "uri"
+              }
+            ]
+          },
+          "machine_type": {
+            "$ref": "#/components/schemas/MachineType"
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{1,31}$"
+            },
+            "maxItems": 1,
+            "description": "Where the pool places its Machines in the Cluster’s Region; empty lets Akua choose. One location at launch."
+          },
+          "image": {
+            "$ref": "#/components/schemas/NodeImage"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/NodeLabels"
+          },
+          "node_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Number of nodes the pool keeps, 0 to 10 at launch."
+          },
+          "ready_nodes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "provisioning",
+              "ready",
+              "resizing",
+              "degraded",
+              "failed",
+              "deleting",
+              "deleted"
             ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
+            "description": "`provisioning`: its first nodes are being created and joined.\n`ready`: every node is ready.\n`resizing`: nodes are being added or removed after a size change.\n`degraded`: some nodes are not ready or could not be created; see `conditions`.\n`failed`: no node could be created; see `conditions`.\n`deleting`: its nodes are drained and their Machines deleted."
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "maxItems": 32,
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `billing-required` (error or warning): the Workspace has no active billing account, so no Machine was created. Remedy `add-billing`.\n- `quota-exceeded` (error or warning): the Workspace or your trial has no Machine capacity left. Remedy `free-capacity` or `upgrade-plan`.\n- `capacity-unavailable`, `provider-refused`, `provider-unavailable` (error or warning): a Machine of the pool could not be created; the message names the node. Forwarded from the Machine.\n- `join-timeout` (warning): a server started but its node never became ready; its Machine was deleted.\n- `nodes-not-ready` (warning): Kubernetes reports nodes of the pool not ready; the message names them.\n- `trial-ended` (warning): the free trial Machine of a node was paused and its node removed. Remedy `add-billing`, then set the size again.\n- `machine-deleted` (warning): a node’s Machine was deleted outside the pool; the node is gone and the pool is smaller than `node_count`.\n- `drain-timeout` (warning): Pods did not leave a removed node within the drain bound; it was removed anyway.\n- `abandoned` (error): the create request ended before it recorded its Machines; what it created was deleted.\nAn error holds while `state` is `failed`; the same reason is a warning when other nodes run."
+          },
+          "operation_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 192
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
+          },
+          "updated_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
+          },
+          "etag": {
+            "type": "string",
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "id",
+          "cluster_id",
+          "workspace_id",
+          "html_url",
+          "machine_type",
+          "locations",
+          "image",
+          "labels",
+          "node_count",
+          "ready_nodes",
+          "state",
+          "conditions",
+          "operation_id",
+          "created_at",
+          "updated_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "NodeLabels": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string",
+          "maxLength": 317,
+          "pattern": "^(?:[a-z0-9](?:[-a-z0-9.]{0,251}[a-z0-9])?\\/)?[A-Za-z0-9](?:[-A-Za-z0-9_.]{0,61}[A-Za-z0-9])?$"
+        },
+        "additionalProperties": {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z0-9](?:[-A-Za-z0-9_.]{0,61}[A-Za-z0-9])?)?$"
+        },
+        "maxProperties": 32,
+        "examples": [
+          {
+            "workload-class": "web"
+          }
+        ]
+      },
+      "NodeImage": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "ubuntu-24.04"
+            ]
+          }
+        ]
+      },
+      "CreateNodePoolBody": {
+        "type": "object",
+        "properties": {
+          "machine_type": {
+            "$ref": "#/components/schemas/MachineType_1"
+          },
+          "node_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Number of nodes the pool keeps, 0 to 10 at launch."
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{1,31}$"
+            },
+            "maxItems": 1,
+            "description": "Where the pool places its Machines in the Cluster’s Region; empty lets Akua choose. One location at launch."
+          },
+          "image": {
+            "$ref": "#/components/schemas/NodeImage_1"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/NodeLabels"
+          }
+        },
+        "required": [
+          "machine_type",
+          "node_count"
+        ],
+        "additionalProperties": false
+      },
+      "NodeImage_1": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "ubuntu-24.04"
+            ]
+          }
+        ],
+        "default": "ubuntu-24.04"
+      },
+      "MachineType_1": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]{0,31}$",
+        "description": "Server type Akua orders for each node, in the Cluster’s Region. The free trial covers one `cx23`.",
+        "examples": [
+          "cx23"
+        ]
+      },
+      "NodePoolList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodePool"
+            },
+            "maxItems": 100
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -25004,6 +26187,12 @@
     },
     {
       "name": "clusters"
+    },
+    {
+      "name": "Node pools"
+    },
+    {
+      "name": "Nodes"
     },
     {
       "name": "machines"

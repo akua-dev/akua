@@ -20,6 +20,14 @@ export const contract: ApiContract = {
 			"title": "machines"
 		},
 		{
+			"name": "node-pools",
+			"title": "Node pools"
+		},
+		{
+			"name": "nodes",
+			"title": "Nodes"
+		},
+		{
 			"name": "offers",
 			"title": "offers"
 		},
@@ -85,17 +93,6 @@ export const contract: ApiContract = {
 				"minLength": 1,
 				"maxLength": 64,
 				"description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used."
-			}
-		},
-		"header:idempotency-key:2": {
-			"name": "idempotency-key",
-			"in": "header",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Required caller key for idempotent machine lifecycle operations.",
-				"minLength": 1,
-				"maxLength": 64
 			}
 		},
 		"header:if-match": {
@@ -272,6 +269,14 @@ export const contract: ApiContract = {
 				"pattern": "^[a-z0-9](?:[-a-z0-9.]*[a-z0-9])?$"
 			}
 		},
+		"path:node_pool_id": {
+			"name": "node_pool_id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"$ref": "#/$defs/NodePoolId"
+			}
+		},
 		"path:secret": {
 			"name": "secret",
 			"in": "path",
@@ -313,16 +318,6 @@ export const contract: ApiContract = {
 				"type": "string",
 				"minLength": 1,
 				"maxLength": 55
-			}
-		},
-		"query:cluster_id": {
-			"name": "cluster_id",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 54
 			}
 		},
 		"query:create_parents": {
@@ -390,20 +385,24 @@ export const contract: ApiContract = {
 			"required": false,
 			"schema": {
 				"type": "integer",
-				"description": "Items per page (1-500, default 50)",
-				"default": 50,
 				"minimum": 1,
-				"maximum": 500
+				"maximum": 100
 			}
 		},
-		"query:limit:3": {
-			"name": "limit",
+		"query:node_pool_id": {
+			"name": "node_pool_id",
+			"in": "query",
+			"required": true,
+			"schema": {
+				"$ref": "#/$defs/NodePoolId"
+			}
+		},
+		"query:node_pool_id:2": {
+			"name": "node_pool_id",
 			"in": "query",
 			"required": false,
 			"schema": {
-				"type": "integer",
-				"minimum": 1,
-				"maximum": 100
+				"$ref": "#/$defs/NodePoolId"
 			}
 		},
 		"query:offset": {
@@ -478,11 +477,10 @@ export const contract: ApiContract = {
 			"schema": {
 				"type": "string",
 				"enum": [
-					"ACTIVE",
 					"PROVISIONING",
+					"RUNNING",
 					"SUSPENDING",
 					"SUSPENDED",
-					"RESUMING",
 					"DELETING",
 					"FAILED"
 				],
@@ -536,19 +534,6 @@ export const contract: ApiContract = {
 					"full"
 				],
 				"description": "`public` is what anyone with the link sees, also without a session (only for an Offer open to anyone signed in); `basic` (the default when signed in) is what a customer the Offer is for may see; `full` is for members of the seller Workspace. Without a session the answer is `public`."
-			}
-		},
-		"query:view:2": {
-			"name": "view",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"basic",
-					"full"
-				],
-				"default": "basic"
 			}
 		}
 	},
@@ -670,18 +655,6 @@ export const contract: ApiContract = {
 			]
 		},
 		{
-			"id": "clusters.getNode",
-			"method": "GET",
-			"path": "/clusters/{id}/nodes/{name}",
-			"summary": "Get a node",
-			"auth": true,
-			"parameters": [
-				"path:id:3",
-				"path:name",
-				"header:akua-context"
-			]
-		},
-		{
 			"id": "clusters.issueAgentInstall",
 			"method": "POST",
 			"path": "/clusters/{id}/agent_install",
@@ -731,32 +704,6 @@ export const contract: ApiContract = {
 				"header:akua-context",
 				"query:cursor",
 				"query:limit"
-			]
-		},
-		{
-			"id": "clusters.listNodes",
-			"method": "GET",
-			"path": "/clusters/{id}/nodes",
-			"summary": "List nodes",
-			"auth": true,
-			"parameters": [
-				"path:id:3",
-				"header:akua-context",
-				"query:cursor",
-				"query:limit:2"
-			]
-		},
-		{
-			"id": "clusters.removeNode",
-			"method": "DELETE",
-			"path": "/clusters/{id}/nodes/{name}",
-			"summary": "Remove a node",
-			"auth": true,
-			"parameters": [
-				"path:id:3",
-				"path:name",
-				"header:akua-context",
-				"header:idempotency-key"
 			]
 		},
 		{
@@ -827,61 +774,15 @@ export const contract: ApiContract = {
 			]
 		},
 		{
-			"id": "machines.create",
-			"method": "POST",
-			"path": "/machines",
-			"summary": "Create machine",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"header:idempotency-key"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"cluster_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"instance_type": {
-							"type": "string",
-							"minLength": 1,
-							"description": "Server type Akua orders for the Machine in the Cluster's Region. The Free plan covers one 2-core server (`cx23`); plan CPU quotas are checked when the Machine is created."
-						},
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 120
-						},
-						"node_name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 63,
-							"pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
-							"description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must be unique in the cluster. Defaults to `m-` plus the first twelve hex characters of the machine ID."
-						}
-					},
-					"required": [
-						"cluster_id",
-						"instance_type"
-					],
-					"additionalProperties": false
-				}
-			}
-		},
-		{
 			"id": "machines.delete",
 			"method": "DELETE",
 			"path": "/machines/{id}",
 			"summary": "Delete machine",
 			"auth": true,
 			"parameters": [
-				"path:id:8",
+				"path:id:3",
 				"header:akua-context",
-				"header:idempotency-key:2",
+				"header:idempotency-key",
 				"header:if-match"
 			]
 		},
@@ -892,7 +793,7 @@ export const contract: ApiContract = {
 			"summary": "Get machine",
 			"auth": true,
 			"parameters": [
-				"path:id:8",
+				"path:id:3",
 				"header:akua-context"
 			]
 		},
@@ -906,9 +807,124 @@ export const contract: ApiContract = {
 				"header:akua-context",
 				"query:cursor",
 				"query:limit",
-				"query:cluster_id",
-				"query:state",
-				"query:view:2"
+				"query:state"
+			]
+		},
+		{
+			"id": "nodePools.create",
+			"method": "POST",
+			"path": "/clusters/{id}/node_pools",
+			"summary": "Create a node pool",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"header:akua-context",
+				"header:idempotency-key",
+				"query:node_pool_id"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/CreateNodePoolBody"
+				}
+			}
+		},
+		{
+			"id": "nodePools.delete",
+			"method": "DELETE",
+			"path": "/clusters/{id}/node_pools/{node_pool_id}",
+			"summary": "Delete a node pool",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:node_pool_id",
+				"header:akua-context",
+				"header:idempotency-key",
+				"header:if-match"
+			]
+		},
+		{
+			"id": "nodePools.get",
+			"method": "GET",
+			"path": "/clusters/{id}/node_pools/{node_pool_id}",
+			"summary": "Get a node pool",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:node_pool_id",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "nodePools.list",
+			"method": "GET",
+			"path": "/clusters/{id}/node_pools",
+			"summary": "List node pools",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"header:akua-context",
+				"query:cursor:3",
+				"query:limit:2"
+			]
+		},
+		{
+			"id": "nodePools.setSize",
+			"method": "POST",
+			"path": "/clusters/{id}/node_pools/{node_pool_id}:setSize",
+			"summary": "Resize a node pool",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:node_pool_id",
+				"header:akua-context",
+				"header:idempotency-key",
+				"header:if-match"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/SetNodePoolSizeBody"
+				}
+			}
+		},
+		{
+			"id": "nodes.get",
+			"method": "GET",
+			"path": "/clusters/{id}/nodes/{name}",
+			"summary": "Get a node",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:name",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "nodes.list",
+			"method": "GET",
+			"path": "/clusters/{id}/nodes",
+			"summary": "List nodes",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"header:akua-context",
+				"query:cursor:3",
+				"query:limit:2",
+				"query:node_pool_id:2"
+			]
+		},
+		{
+			"id": "nodes.remove",
+			"method": "DELETE",
+			"path": "/clusters/{id}/nodes/{name}",
+			"summary": "Remove a node",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:name",
+				"header:akua-context",
+				"header:idempotency-key"
 			]
 		},
 		{
@@ -1899,7 +1915,7 @@ export const contract: ApiContract = {
 				"path:vault",
 				"header:akua-context",
 				"query:cursor:3",
-				"query:limit:3"
+				"query:limit:2"
 			]
 		},
 		{
@@ -1913,7 +1929,7 @@ export const contract: ApiContract = {
 				"path:secret",
 				"header:akua-context",
 				"query:cursor:3",
-				"query:limit:3"
+				"query:limit:2"
 			]
 		},
 		{
@@ -1998,7 +2014,7 @@ export const contract: ApiContract = {
 			"parameters": [
 				"header:akua-context",
 				"query:cursor:3",
-				"query:limit:3"
+				"query:limit:2"
 			]
 		},
 		{
@@ -2011,7 +2027,7 @@ export const contract: ApiContract = {
 				"path:vault",
 				"header:akua-context",
 				"query:cursor:3",
-				"query:limit:3"
+				"query:limit:2"
 			]
 		},
 		{
@@ -2399,6 +2415,40 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false,
 			"description": "Install a Package version, identified by `package_id` and `package_version_pin`."
+		},
+		"CreateNodePoolBody": {
+			"type": "object",
+			"properties": {
+				"machine_type": {
+					"$ref": "#/$defs/MachineType_1"
+				},
+				"node_count": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 10,
+					"description": "Number of nodes the pool keeps, 0 to 10 at launch."
+				},
+				"locations": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"pattern": "^[a-z][a-z0-9-]{1,31}$"
+					},
+					"maxItems": 1,
+					"description": "Where the pool places its Machines in the Cluster’s Region; empty lets Akua choose. One location at launch."
+				},
+				"image": {
+					"$ref": "#/$defs/NodeImage_1"
+				},
+				"labels": {
+					"$ref": "#/$defs/NodeLabels"
+				}
+			},
+			"required": [
+				"machine_type",
+				"node_count"
+			],
+			"additionalProperties": false
 		},
 		"CreateOfferRequest": {
 			"type": "object",
@@ -2845,6 +2895,11 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
+		"MachineType_1": {
+			"type": "string",
+			"pattern": "^[a-z][a-z0-9-]{0,31}$",
+			"description": "Server type Akua orders for each node, in the Cluster’s Region. The free trial covers one `cx23`."
+		},
 		"MakeSandboxDirectoryBody": {
 			"type": "object",
 			"properties": {
@@ -2898,6 +2953,35 @@ export const contract: ApiContract = {
 				"to"
 			],
 			"additionalProperties": false
+		},
+		"NodeImage_1": {
+			"anyOf": [
+				{
+					"type": "string",
+					"enum": [
+						"ubuntu-24.04"
+					]
+				}
+			],
+			"default": "ubuntu-24.04"
+		},
+		"NodeLabels": {
+			"type": "object",
+			"propertyNames": {
+				"type": "string",
+				"maxLength": 317,
+				"pattern": "^(?:[a-z0-9](?:[-a-z0-9.]{0,251}[a-z0-9])?\\/)?[A-Za-z0-9](?:[-A-Za-z0-9_.]{0,61}[A-Za-z0-9])?$"
+			},
+			"additionalProperties": {
+				"type": "string",
+				"pattern": "^(?:[A-Za-z0-9](?:[-A-Za-z0-9_.]{0,61}[A-Za-z0-9])?)?$"
+			},
+			"maxProperties": 32
+		},
+		"NodePoolId": {
+			"type": "string",
+			"pattern": "^[a-z](?:[-a-z0-9]{0,38}[a-z0-9])?$",
+			"description": "A DNS label of at most 40 characters, unique in the Cluster. Every node of the pool carries it as the label `akua.dev/node-pool`."
 		},
 		"OfferAudience": {
 			"oneOf": [
@@ -3415,6 +3499,21 @@ export const contract: ApiContract = {
 			},
 			"required": [
 				"bindings"
+			],
+			"additionalProperties": false
+		},
+		"SetNodePoolSizeBody": {
+			"type": "object",
+			"properties": {
+				"node_count": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 10,
+					"description": "Number of nodes the pool keeps, 0 to 10 at launch."
+				}
+			},
+			"required": [
+				"node_count"
 			],
 			"additionalProperties": false
 		},
