@@ -150,6 +150,7 @@ go_test(
     size = "small",
     srcs = [_SRC + ":protocol_test_srcs"],
     embed = [":protocol"],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_github_fluxcd_cli_utils//pkg/object",
         "@io_k8s_apimachinery//pkg/runtime/schema",
@@ -161,6 +162,7 @@ go_test(
     size = "small",
     srcs = [_SRC + ":cache_test_srcs"],
     embed = [":cache"],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_github_fluxcd_cli_utils//pkg/kstatus/polling/event",
         "@com_github_fluxcd_cli_utils//pkg/kstatus/status",
@@ -184,6 +186,7 @@ go_test(
     size = "small",
     srcs = [_SRC + ":live_test_srcs"],
     embed = [":live"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cache",
         ":protocol",
@@ -204,6 +207,7 @@ go_test(
     size = "small",
     srcs = [_SRC + ":ops_test_srcs"],
     embed = [":ops"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cache",
         ":protocol",
@@ -230,6 +234,7 @@ go_test(
     size = "small",
     srcs = [_SRC + ":serve_test_srcs"],
     embed = [":serve"],
+    visibility = ["//visibility:public"],
     deps = [":protocol"],
 )
 
@@ -241,6 +246,7 @@ go_test(
     srcs = [_SRC + ":fixture_test_srcs"],
     data = [_SRC + ":fixture_testdata"],
     rundir = "packages/cluster-agent/engine",
+    visibility = ["//visibility:public"],
     deps = [
         ":live",
         ":protocol",
@@ -257,6 +263,7 @@ go_test(
     srcs = [_SRC + ":recorded_test_srcs"],
     data = [_SRC + ":fixture_testdata"],
     rundir = "packages/cluster-agent/engine",
+    visibility = ["//visibility:public"],
     deps = [
         ":live",
         ":protocol",
