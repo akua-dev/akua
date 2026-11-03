@@ -289,12 +289,7 @@
         },
         "description": "Lists installs in the current workspace. With `product_id`, lists installs attributed to that product for product-owner support visibility, newest first.",
         "summary": "List installs",
-        "x-platform-visibility": "PUBLIC",
-        "x-platform-live": {
-          "visibility": "PUBLIC",
-          "transport": "convex",
-          "convexQuery": "install.listInstallsForApi"
-        }
+        "x-platform-visibility": "PUBLIC"
       }
     },
     "/installs/{id}": {
@@ -18852,932 +18847,6 @@
         ],
         "additionalProperties": false
       },
-      "DashboardInstallDetail": {
-        "type": "object",
-        "properties": {
-          "state": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "rendering",
-              "syncing",
-              "unknown",
-              "healthy",
-              "degraded",
-              "failed"
-            ],
-            "description": "Lifecycle state for an extant dashboard install. Deleted installs are excluded before list pagination."
-          },
-          "failure_message": {
-            "type": "string"
-          },
-          "operation_id": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 192
-          },
-          "reconciling": {
-            "type": "boolean"
-          },
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 55
-          },
-          "html_url": {
-            "type": "string",
-            "description": "Absolute dashboard URL for this resource. OUTPUT_ONLY.",
-            "format": "uri",
-            "examples": [
-              "https://akua.dev/installs/inst_j572abc123def456"
-            ],
-            "maxLength": 2048
-          },
-          "workspace_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 53
-          },
-          "cluster_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 54
-          },
-          "deploy_repository_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 55
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Authoritative install display name for this projection. Null when unavailable."
-          },
-          "is_standalone": {
-            "type": "boolean"
-          },
-          "argo_app_namespace": {
-            "type": "string"
-          },
-          "public_urls": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/InstallUrl"
-            }
-          },
-          "argo_status": {
-            "$ref": "#/components/schemas/DashboardInstallArgoStatus"
-          },
-          "cluster": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 54
-              },
-              "name": {
-                "type": "string"
-              },
-              "region": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "icon": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  }
-                },
-                "required": [
-                  "name",
-                  "icon"
-                ],
-                "additionalProperties": false
-              }
-            },
-            "required": [
-              "id",
-              "name",
-              "region"
-            ],
-            "additionalProperties": false
-          },
-          "display_image_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uri",
-                "maxLength": 2048
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "product": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 55
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "is_owner": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "id",
-                  "name",
-                  "is_owner"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "package": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 54
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "source_kind": {
-                    "type": "string",
-                    "enum": [
-                      "hosted",
-                      "oci"
-                    ]
-                  },
-                  "version": {
-                    "$ref": "#/components/schemas/PackageVersionSummary"
-                  }
-                },
-                "required": [
-                  "id",
-                  "name",
-                  "source_kind",
-                  "version"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "target_revision": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "demo_cleanup": {
-            "$ref": "#/components/schemas/InstallDemoCleanup"
-          },
-          "created_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "updated_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "etag": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "html_url",
-          "workspace_id",
-          "cluster_id",
-          "deploy_repository_id",
-          "name",
-          "is_standalone",
-          "argo_app_namespace",
-          "public_urls",
-          "argo_status",
-          "cluster",
-          "display_image_url",
-          "product",
-          "package",
-          "target_revision",
-          "created_at",
-          "updated_at",
-          "etag"
-        ],
-        "additionalProperties": false
-      },
-      "InstallDemoCleanup": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "scheduled"
-                ]
-              },
-              "cleanup_at": {
-                "type": "integer",
-                "description": "Unix timestamp when the non-billable demo install is scheduled for cleanup.",
-                "minimum": 0
-              },
-              "removable_by": {
-                "type": "string",
-                "enum": [
-                  "platform_policy",
-                  "platform_admin"
-                ],
-                "description": "Authority that may remove the scheduled cleanup policy."
-              },
-              "conversion_required": {
-                "type": "string",
-                "enum": [
-                  "paid_order",
-                  "platform_approval"
-                ],
-                "description": "Required approval path before the demo install can continue without cleanup."
-              },
-              "delivery_status": {
-                "type": "string",
-                "enum": [
-                  "pending",
-                  "running",
-                  "succeeded",
-                  "failed"
-                ],
-                "description": "Order delivery status for the install that owns this cleanup policy."
-              }
-            },
-            "required": [
-              "kind",
-              "cleanup_at",
-              "removable_by",
-              "conversion_required",
-              "delivery_status"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "removed"
-                ]
-              },
-              "delivery_status": {
-                "type": "string",
-                "enum": [
-                  "pending",
-                  "running",
-                  "succeeded",
-                  "failed"
-                ],
-                "description": "Order delivery status for the demo install whose cleanup was removed."
-              }
-            },
-            "required": [
-              "kind",
-              "delivery_status"
-            ],
-            "additionalProperties": false
-          }
-        ],
-        "description": "Visible cleanup state for non-billable demo installs. Temporal workflow IDs and internal cleanup evidence are intentionally omitted."
-      },
-      "PackageVersionSummary": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 55
-          },
-          "semver": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 128,
-            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
-          }
-        },
-        "required": [
-          "id",
-          "semver"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardInstallArgoStatus": {
-        "anyOf": [
-          {
-            "type": "object",
-            "properties": {
-              "status": {
-                "type": "object",
-                "properties": {
-                  "health": {
-                    "type": "object",
-                    "properties": {
-                      "status": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "status"
-                    ],
-                    "allOf": [
-                      {
-                        "type": "object",
-                        "additionalProperties": {}
-                      }
-                    ]
-                  },
-                  "sync": {
-                    "type": "object",
-                    "properties": {
-                      "status": {
-                        "type": "string"
-                      },
-                      "revision": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "status"
-                    ],
-                    "allOf": [
-                      {
-                        "type": "object",
-                        "additionalProperties": {}
-                      }
-                    ]
-                  },
-                  "operation_state": {
-                    "type": "object",
-                    "properties": {
-                      "phase": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "phase"
-                    ],
-                    "allOf": [
-                      {
-                        "type": "object",
-                        "additionalProperties": {}
-                      }
-                    ]
-                  },
-                  "resources": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/ResourceStatus"
-                    }
-                  }
-                },
-                "required": [
-                  "health",
-                  "sync",
-                  "resources"
-                ],
-                "allOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": {}
-                  }
-                ]
-              },
-              "updated_at": {
-                "type": "integer",
-                "description": "Unix timestamp (seconds)",
-                "minimum": 0
-              }
-            },
-            "required": [
-              "status",
-              "updated_at"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "null"
-          }
-        ]
-      },
-      "ResourceStatus": {
-        "type": "object",
-        "properties": {
-          "group": {
-            "type": "string"
-          },
-          "kind": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "namespace": {
-            "type": "string"
-          },
-          "version": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "health": {
-            "type": "object",
-            "properties": {
-              "status": {
-                "type": "string"
-              },
-              "message": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "status"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "kind",
-          "name"
-        ],
-        "allOf": [
-          {
-            "type": "object",
-            "additionalProperties": {}
-          }
-        ]
-      },
-      "InstallUrl": {
-        "type": "object",
-        "properties": {
-          "route_key": {
-            "type": "string"
-          },
-          "hostname": {
-            "type": "string"
-          },
-          "url": {
-            "type": "string",
-            "format": "uri"
-          },
-          "protocol": {
-            "type": "string",
-            "enum": [
-              "http",
-              "websocket",
-              "grpc"
-            ],
-            "description": "Transport class for route forwarding."
-          },
-          "routing_mode": {
-            "type": "string",
-            "enum": [
-              "through_dispatcher",
-              "bypass_dispatcher"
-            ],
-            "description": "Whether traffic uses the dispatcher Worker or bypasses it."
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "provisioning",
-              "active",
-              "not_ready",
-              "failed"
-            ],
-            "description": "Customer-facing install URL routing state."
-          },
-          "reachability": {
-            "$ref": "#/components/schemas/InstallUrlReachability"
-          },
-          "error": {
-            "type": "string"
-          },
-          "last_observed_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "updated_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "route_key",
-          "hostname",
-          "url",
-          "protocol",
-          "routing_mode",
-          "status",
-          "updated_at"
-        ],
-        "additionalProperties": false
-      },
-      "InstallUrlReachability": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "unknown",
-              "reachable",
-              "unreachable"
-            ]
-          },
-          "checked_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "consecutive_failures": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "http_status_class": {
-            "type": "number",
-            "enum": [
-              2,
-              3,
-              4,
-              5
-            ]
-          },
-          "failure_kind": {
-            "type": "string",
-            "enum": [
-              "dispatcher_not_ready",
-              "origin_fetch_failed",
-              "timeout",
-              "upstream_5xx"
-            ]
-          }
-        },
-        "required": [
-          "status",
-          "checked_at",
-          "consecutive_failures"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardInstallList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardInstall"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardInstall": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 55
-          },
-          "html_url": {
-            "type": "string",
-            "description": "Absolute dashboard URL for this resource. OUTPUT_ONLY.",
-            "format": "uri",
-            "examples": [
-              "https://akua.dev/installs/inst_j572abc123def456"
-            ],
-            "maxLength": 2048
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Authoritative install display name for this projection. Null when unavailable."
-          },
-          "workspace_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 53
-          },
-          "cluster_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 54
-          },
-          "cluster_name": {
-            "type": "string"
-          },
-          "node_names": {
-            "anyOf": [
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Observed pod node names. Null until placement is available. OUTPUT_ONLY.",
-            "readOnly": true
-          },
-          "region_name": {
-            "type": "string"
-          },
-          "region_icon": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "display_image_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uri",
-                "maxLength": 2048
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "source": {
-            "$ref": "#/components/schemas/DashboardInstallSource"
-          },
-          "application_access": {
-            "$ref": "#/components/schemas/DashboardInstallApplicationAccess"
-          },
-          "state": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "rendering",
-              "syncing",
-              "unknown",
-              "healthy",
-              "degraded",
-              "failed"
-            ],
-            "description": "Lifecycle state for an extant dashboard install. Deleted installs are excluded before list pagination."
-          },
-          "failure_message": {
-            "type": "string"
-          },
-          "operation_id": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 192
-          },
-          "reconciling": {
-            "type": "boolean"
-          },
-          "created_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "updated_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "etag": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "html_url",
-          "name",
-          "workspace_id",
-          "cluster_id",
-          "cluster_name",
-          "region_name",
-          "region_icon",
-          "display_image_url",
-          "source",
-          "application_access",
-          "state",
-          "reconciling",
-          "created_at",
-          "updated_at",
-          "etag"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardInstallApplicationAccess": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "state": {
-                "type": "string",
-                "enum": [
-                  "loading"
-                ]
-              }
-            },
-            "required": [
-              "state"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "state": {
-                "type": "string",
-                "enum": [
-                  "available"
-                ]
-              },
-              "hostname": {
-                "type": "string"
-              },
-              "url": {
-                "type": "string",
-                "format": "uri"
-              }
-            },
-            "required": [
-              "state",
-              "hostname",
-              "url"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "state": {
-                "type": "string",
-                "enum": [
-                  "unavailable"
-                ]
-              }
-            },
-            "required": [
-              "state"
-            ],
-            "additionalProperties": false
-          }
-        ],
-        "description": "Public application access derived from persisted route state. Available URLs are authoritative; loading and unavailable states never fabricate a hostname."
-      },
-      "DashboardInstallSource": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "product"
-                ]
-              },
-              "id": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 55
-              },
-              "name": {
-                "type": "string"
-              },
-              "version": {
-                "$ref": "#/components/schemas/PackageVersionSummary"
-              }
-            },
-            "required": [
-              "kind",
-              "id",
-              "name",
-              "version"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "package"
-                ]
-              },
-              "id": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 54
-              },
-              "name": {
-                "type": "string"
-              },
-              "version": {
-                "$ref": "#/components/schemas/PackageVersionSummary"
-              }
-            },
-            "required": [
-              "kind",
-              "id",
-              "name",
-              "version"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "description": "Null only for legacy or incomplete persisted lineage; source identity and version are never fabricated."
-      },
       "InstallRender": {
         "type": "object",
         "properties": {
@@ -20077,6 +19146,202 @@
           "created_at",
           "updated_at",
           "etag"
+        ],
+        "additionalProperties": false
+      },
+      "InstallDemoCleanup": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "scheduled"
+                ]
+              },
+              "cleanup_at": {
+                "type": "integer",
+                "description": "Unix timestamp when the non-billable demo install is scheduled for cleanup.",
+                "minimum": 0
+              },
+              "removable_by": {
+                "type": "string",
+                "enum": [
+                  "platform_policy",
+                  "platform_admin"
+                ],
+                "description": "Authority that may remove the scheduled cleanup policy."
+              },
+              "conversion_required": {
+                "type": "string",
+                "enum": [
+                  "paid_order",
+                  "platform_approval"
+                ],
+                "description": "Required approval path before the demo install can continue without cleanup."
+              },
+              "delivery_status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "running",
+                  "succeeded",
+                  "failed"
+                ],
+                "description": "Order delivery status for the install that owns this cleanup policy."
+              }
+            },
+            "required": [
+              "kind",
+              "cleanup_at",
+              "removable_by",
+              "conversion_required",
+              "delivery_status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "removed"
+                ]
+              },
+              "delivery_status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "running",
+                  "succeeded",
+                  "failed"
+                ],
+                "description": "Order delivery status for the demo install whose cleanup was removed."
+              }
+            },
+            "required": [
+              "kind",
+              "delivery_status"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Visible cleanup state for non-billable demo installs. Temporal workflow IDs and internal cleanup evidence are intentionally omitted."
+      },
+      "InstallUrl": {
+        "type": "object",
+        "properties": {
+          "route_key": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "http",
+              "websocket",
+              "grpc"
+            ],
+            "description": "Transport class for route forwarding."
+          },
+          "routing_mode": {
+            "type": "string",
+            "enum": [
+              "through_dispatcher",
+              "bypass_dispatcher"
+            ],
+            "description": "Whether traffic uses the dispatcher Worker or bypasses it."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "provisioning",
+              "active",
+              "not_ready",
+              "failed"
+            ],
+            "description": "Customer-facing install URL routing state."
+          },
+          "reachability": {
+            "$ref": "#/components/schemas/InstallUrlReachability"
+          },
+          "error": {
+            "type": "string"
+          },
+          "last_observed_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "route_key",
+          "hostname",
+          "url",
+          "protocol",
+          "routing_mode",
+          "status",
+          "updated_at"
+        ],
+        "additionalProperties": false
+      },
+      "InstallUrlReachability": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "reachable",
+              "unreachable"
+            ]
+          },
+          "checked_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "http_status_class": {
+            "type": "number",
+            "enum": [
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "failure_kind": {
+            "type": "string",
+            "enum": [
+              "dispatcher_not_ready",
+              "origin_fetch_failed",
+              "timeout",
+              "upstream_5xx"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "checked_at",
+          "consecutive_failures"
         ],
         "additionalProperties": false
       },
