@@ -1358,7 +1358,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SetIamPolicyRequest"
+                "$ref": "#/components/schemas/SetOrganizationIamPolicyRequest"
               }
             }
           },
@@ -13024,7 +13024,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SetIamPolicyRequest_1"
+                "$ref": "#/components/schemas/SetIamPolicyRequest"
               }
             }
           },
@@ -15863,7 +15863,7 @@
         ],
         "additionalProperties": false
       },
-      "SetIamPolicyRequest_1": {
+      "SetIamPolicyRequest": {
         "type": "object",
         "properties": {
           "bindings": {
@@ -24364,7 +24364,7 @@
           "service:placement"
         ]
       },
-      "SetIamPolicyRequest": {
+      "SetOrganizationIamPolicyRequest": {
         "type": "object",
         "properties": {
           "bindings": {

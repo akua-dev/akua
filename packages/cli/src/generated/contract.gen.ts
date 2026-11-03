@@ -1245,7 +1245,7 @@ export const contract: ApiContract = {
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/SetIamPolicyRequest"
+					"$ref": "#/$defs/SetOrganizationIamPolicyRequest"
 				}
 			}
 		},
@@ -2029,7 +2029,7 @@ export const contract: ApiContract = {
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/SetIamPolicyRequest_1"
+					"$ref": "#/$defs/SetIamPolicyRequest"
 				}
 			}
 		},
@@ -3380,22 +3380,6 @@ export const contract: ApiContract = {
 				"bindings": {
 					"type": "array",
 					"items": {
-						"$ref": "#/$defs/Binding"
-					},
-					"maxItems": 100
-				}
-			},
-			"required": [
-				"bindings"
-			],
-			"additionalProperties": false
-		},
-		"SetIamPolicyRequest_1": {
-			"type": "object",
-			"properties": {
-				"bindings": {
-					"type": "array",
-					"items": {
 						"type": "object",
 						"properties": {
 							"role": {
@@ -3427,6 +3411,22 @@ export const contract: ApiContract = {
 						"additionalProperties": false
 					},
 					"maxItems": 32
+				}
+			},
+			"required": [
+				"bindings"
+			],
+			"additionalProperties": false
+		},
+		"SetOrganizationIamPolicyRequest": {
+			"type": "object",
+			"properties": {
+				"bindings": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/Binding"
+					},
+					"maxItems": 100
 				}
 			},
 			"required": [
