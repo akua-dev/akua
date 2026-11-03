@@ -15106,25 +15106,13 @@
           "usage": {
             "$ref": "#/components/schemas/SandboxUsage"
           },
-          "failure": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "message": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "message"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Why the sandbox is `FAILED`; `null` otherwise."
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "maxItems": 32,
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `create-failed` (error): the sandbox could not be created; it is `FAILED` and can only be deleted.\n- `suspend-failed` (warning): the last suspend failed; the sandbox stays `ACTIVE`.\n- `resume-failed` (warning): the last resume failed; the sandbox stays `SUSPENDED`."
           },
           "last_active_at": {
             "anyOf": [
@@ -15166,13 +15154,357 @@
           "labels",
           "created_by",
           "usage",
-          "failure",
+          "conditions",
           "last_active_at",
           "created_at",
           "updated_at",
           "etag"
         ],
         "additionalProperties": false
+      },
+      "Condition": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "description": "Kebab-case reason; the resource documents the reasons it reports.",
+            "examples": [
+              "agent-offline"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning",
+              "info"
+            ],
+            "description": "`error`: the resource failed; the condition says why. `warning`: it is limited or held until the person acts or it recovers. `info`: worth knowing, nothing to do."
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 512,
+            "description": "Safe to show the person as is."
+          },
+          "remedy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FailureRemedy"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the person can do; null when nothing they do helps."
+          },
+          "last_transition_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix timestamp (seconds) when this condition last changed."
+          }
+        },
+        "required": [
+          "reason",
+          "severity",
+          "message",
+          "remedy",
+          "last_transition_at"
+        ],
+        "additionalProperties": false
+      },
+      "FailureRemedy": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "free-capacity"
+                ]
+              },
+              "metric": {
+                "type": "string",
+                "enum": [
+                  "kaas/clusters",
+                  "compute/machines",
+                  "compute/cpu",
+                  "compute/memory",
+                  "compute/machines_concurrency",
+                  "compute/managed_vm_trial",
+                  "agents/provider_calls",
+                  "agents/provider_tokens",
+                  "agents/provider_spend",
+                  "agents/turns_concurrency",
+                  "agents/sandboxes",
+                  "agents/sandboxes_running",
+                  "agents/retained_filesystems",
+                  "agents/retained_filesystem_storage",
+                  "agents/retained_filesystem_lifetime",
+                  "agents/api_calls",
+                  "agents/mcp_calls",
+                  "agents/ambient_triggers",
+                  "codemode/executions",
+                  "api/secrets_access",
+                  "api/secrets_write",
+                  "domain_routing/preview_hostnames",
+                  "domain_routing/custom_domains",
+                  "source_control/repositories"
+                ]
+              },
+              "limit": {
+                "type": "integer"
+              },
+              "usage": {
+                "type": "integer"
+              },
+              "hint": {
+                "type": "string",
+                "maxLength": 256
+              }
+            },
+            "required": [
+              "kind",
+              "metric",
+              "limit",
+              "usage",
+              "hint"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "upgrade-plan"
+                ]
+              },
+              "metric": {
+                "type": "string",
+                "enum": [
+                  "kaas/clusters",
+                  "compute/machines",
+                  "compute/cpu",
+                  "compute/memory",
+                  "compute/machines_concurrency",
+                  "compute/managed_vm_trial",
+                  "agents/provider_calls",
+                  "agents/provider_tokens",
+                  "agents/provider_spend",
+                  "agents/turns_concurrency",
+                  "agents/sandboxes",
+                  "agents/sandboxes_running",
+                  "agents/retained_filesystems",
+                  "agents/retained_filesystem_storage",
+                  "agents/retained_filesystem_lifetime",
+                  "agents/api_calls",
+                  "agents/mcp_calls",
+                  "agents/ambient_triggers",
+                  "codemode/executions",
+                  "api/secrets_access",
+                  "api/secrets_write",
+                  "domain_routing/preview_hostnames",
+                  "domain_routing/custom_domains",
+                  "source_control/repositories"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "metric"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "grant-access"
+                ]
+              },
+              "namespace": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 63
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "permissions": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "string",
+                    "maxLength": 256
+                  }
+                ],
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                "maxItems": 64
+              }
+            },
+            "required": [
+              "kind",
+              "namespace",
+              "permissions"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "reconnect"
+                ]
+              },
+              "what": {
+                "type": "string",
+                "enum": [
+                  "cluster-agent",
+                  "connection"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "what"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "add-machine"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "change-input"
+                ]
+              },
+              "path": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                "maxItems": 32
+              }
+            },
+            "required": [
+              "kind",
+              "path"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "retry"
+                ]
+              },
+              "after_seconds": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "after_seconds"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "run-agent-install"
+                ],
+                "description": "Run the command from `POST /v1/clusters/{id}/agent_install` again; it re-applies the cluster agent and its updater at one release."
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "customer-upgrade"
+                ],
+                "description": "The change needs rights the agent was not granted. Run `command` (a `helm upgrade`, no secret) with an identity that holds `permissions`, or grant them to the agent."
+              },
+              "permissions": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "string",
+                    "maxLength": 256
+                  }
+                ],
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                "maxItems": 64
+              },
+              "command": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8192
+              }
+            },
+            "required": [
+              "kind",
+              "permissions",
+              "command"
+            ],
+            "additionalProperties": false
+          }
+        ]
       },
       "SandboxUsage": {
         "type": "object",
@@ -15950,83 +16282,13 @@
           "reconciling": {
             "type": "boolean"
           },
-          "failure": {
-            "type": "object",
-            "properties": {
-              "reason": {
-                "type": "string"
-              },
-              "message": {
-                "type": "string"
-              },
-              "retryable": {
-                "type": "boolean"
-              }
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
             },
-            "required": [
-              "reason",
-              "message",
-              "retryable"
-            ],
-            "additionalProperties": false,
-            "description": "Why the Machine failed, when `state` is `FAILED`. Its server, join token and capacity were already released."
-          },
-          "current_suspension": {
-            "type": "object",
-            "properties": {
-              "event_id": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 54
-              },
-              "snapshot_ref": {
-                "type": "object",
-                "properties": {
-                  "provider": {
-                    "type": "string",
-                    "enum": [
-                      "hcloud"
-                    ]
-                  },
-                  "snapshot_id": {
-                    "type": "integer"
-                  },
-                  "size_gb": {
-                    "type": "number"
-                  }
-                },
-                "required": [
-                  "provider",
-                  "snapshot_id",
-                  "size_gb"
-                ],
-                "additionalProperties": false
-              },
-              "expires_at": {
-                "type": "integer",
-                "description": "Unix timestamp (seconds)",
-                "minimum": 0
-              },
-              "monthly_cost_cents": {
-                "type": "integer"
-              },
-              "reason": {
-                "type": "string",
-                "enum": [
-                  "manual",
-                  "downgrade",
-                  "trial_expired"
-                ]
-              }
-            },
-            "required": [
-              "event_id",
-              "snapshot_ref",
-              "expires_at",
-              "monthly_cost_cents",
-              "reason"
-            ],
-            "additionalProperties": false
+            "maxItems": 32,
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `trial-ended` (warning): the free trial is over and the Machine is `SUSPENDED`; its disk is kept as a snapshot for a while, then the Machine is deleted. Remedy `upgrade-plan`.\n- When `state` is `FAILED`, one error whose reason says why: `capacity-unavailable`, `provider-refused`, `provider-unavailable`, `join-timeout`, `cluster-unavailable` or `abandoned`. Its server, join token and capacity were already released."
           },
           "created_at": {
             "type": "integer",
@@ -16051,6 +16313,7 @@
           "node_name",
           "state",
           "reconciling",
+          "conditions",
           "created_at",
           "updated_at",
           "etag"
@@ -16398,8 +16661,13 @@
             "type": "integer",
             "minimum": 0
           },
-          "failure_message": {
-            "type": "string"
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "maxItems": 32,
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `agent-offline` (warning): the agent is not connected; workloads keep running and nothing new rolls out until it reconnects.\n- `updater-behind` (warning): the updater has run another release than the agent for 30 minutes, so no agent release is offered. Remedy `run-agent-install` on a connected Cluster; none on a hosted one, whose agent and updater Akua re-applies.\n- `needs-customer-upgrade` (warning): the offered agent release changes objects outside the access you granted, so it was not applied. Remedy `customer-upgrade` names the missing permissions and the `helm upgrade` command.\n- `bundle-too-large` (warning): the offered agent release is too large to deliver or to keep as a rollback copy, so it was not applied.\n- When `state` is `failed`, one error whose reason says why: `control-plane-unready`, `enrollment-expired`, `agent-unsupported`, `baseline-failed`, `baseline-rollback-failed`, `cleanup-unconfirmed`, `node-removal-failed` or `agent-bundle-failed`."
           },
           "operation_id": {
             "type": "string",
@@ -16428,6 +16696,7 @@
           "state",
           "capabilities",
           "ready_nodes",
+          "conditions",
           "operation_id",
           "agent",
           "created_at",
@@ -16782,15 +17051,13 @@
               }
             ]
           },
-          "failure_message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "maxItems": 32,
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `install-failed` (error): the Offer was redeemed but the Install could not be created; the draft is `failed`."
           },
           "redeemed_at": {
             "anyOf": [
@@ -16839,7 +17106,7 @@
           "problems",
           "install_id",
           "operation_id",
-          "failure_message",
+          "conditions",
           "redeemed_at",
           "created_at",
           "updated_at",
@@ -17082,7 +17349,7 @@
           "cancelled",
           "failed"
         ],
-        "description": "`draft`: editable. `redeeming`: fields frozen while the Offer is redeemed and the Install created; `:redeem` again resumes it. `installing`: the Install exists (`install_id`, `operation_id`). `failed`: the Offer redeemed but the Install could not be created (`failure_message`). `cancelled`: ended by the customer."
+        "description": "`draft`: editable. `redeeming`: fields frozen while the Offer is redeemed and the Install created; `:redeem` again resumes it. `installing`: the Install exists (`install_id`, `operation_id`). `failed`: the Offer redeemed but the Install could not be created (condition `install-failed`). `cancelled`: ended by the customer."
       },
       "RedeemOrderDraftBody": {
         "type": "object",
@@ -19758,8 +20025,13 @@
             ],
             "description": "Install lifecycle state from the control plane perspective."
           },
-          "failure_message": {
-            "type": "string"
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "maxItems": 32,
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `missing-permissions` (warning): the Cluster agent lacks permissions for what this Install applies, because the grant was narrowed or never covered its namespace. Remedy `grant-access` names them; the Install resumes by itself once they are granted.\n- When `state` is `failed`, one error whose reason says why: `render-failed`, `placement-failed`, `route-failed`, `endpoint-unreachable`, `agent-offline`, `agent-unsupported` or `abandoned`."
           },
           "operation_id": {
             "type": "string",
@@ -19799,6 +20071,7 @@
           "customer_workspace",
           "package_version_id",
           "state",
+          "conditions",
           "reconciling",
           "urls",
           "created_at",
@@ -19878,6 +20151,14 @@
             ],
             "description": "Install lifecycle state from the control plane perspective."
           },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "maxItems": 32,
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `missing-permissions` (warning): the Cluster agent lacks permissions for what this Install applies, because the grant was narrowed or never covered its namespace. Remedy `grant-access` names them; the Install resumes by itself once they are granted.\n- When `state` is `failed`, one error whose reason says why: `render-failed`, `placement-failed`, `route-failed`, `endpoint-unreachable`, `agent-offline`, `agent-unsupported` or `abandoned`."
+          },
           "operation_id": {
             "type": "string",
             "minLength": 2,
@@ -19924,6 +20205,7 @@
           "package_id",
           "package_version",
           "state",
+          "conditions",
           "operation_id",
           "reconciling",
           "url",
