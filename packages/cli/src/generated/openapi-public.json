@@ -541,220 +541,6 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
-    "/installs/{id}/renders": {
-      "get": {
-        "tags": [
-          "installs"
-        ],
-        "operationId": "installs.listRenders",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "description": "Install ID",
-              "examples": [
-                "inst_j572abc123def456"
-              ],
-              "minLength": 1,
-              "maxLength": 55
-            },
-            "required": true
-          },
-          {
-            "name": "akua-context",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 53,
-              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
-              "examples": [
-                "ws_j572abc123def456"
-              ]
-            },
-            "required": false
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "description": "Pagination cursor from a previous response's `next_cursor`."
-            },
-            "required": false
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "description": "Items per page (1-100, default 50)",
-              "default": 50,
-              "examples": [
-                50
-              ],
-              "minimum": 1,
-              "maximum": 100
-            },
-            "required": false
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Install renders",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InstallRenderList"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired credential.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnauthorized"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The credential may not act in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiForbidden"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The resource was not found in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiNotFound"
-                }
-              }
-            }
-          }
-        },
-        "description": "Lists render artifacts for an install.",
-        "summary": "List install renders",
-        "x-platform-visibility": "PUBLIC"
-      }
-    },
-    "/installs/{id}/renders/{render_id}": {
-      "get": {
-        "tags": [
-          "installs"
-        ],
-        "operationId": "installs.getRender",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "description": "Install ID",
-              "examples": [
-                "inst_j572abc123def456"
-              ],
-              "minLength": 1,
-              "maxLength": 55
-            },
-            "required": true
-          },
-          {
-            "name": "render_id",
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "description": "Render ID",
-              "examples": [
-                "rnd_j572abc..."
-              ],
-              "minLength": 1,
-              "maxLength": 54
-            },
-            "required": true
-          },
-          {
-            "name": "akua-context",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 53,
-              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
-              "examples": [
-                "ws_j572abc123def456"
-              ]
-            },
-            "required": false
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Render artifact",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InstallRender"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired credential.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnauthorized"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The credential may not act in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiForbidden"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The resource was not found in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiNotFound"
-                }
-              }
-            }
-          }
-        },
-        "description": "Returns a single render artifact.",
-        "summary": "Get install render",
-        "x-platform-visibility": "PUBLIC"
-      }
-    },
     "/operations/{id}": {
       "get": {
         "tags": [
@@ -1428,6 +1214,229 @@
         },
         "description": "Returns workspaces visible within the authenticated request scope. An unscoped user credential sees all of its workspaces; a workspace-scoped request sees only that workspace.",
         "summary": "List workspaces",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "post": {
+        "tags": [
+          "workspaces"
+        ],
+        "operationId": "workspaces.create",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Workspace created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workspace"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates a workspace in the named Organization; you must be an owner or admin of it and become the workspace owner. An Idempotency-Key is scoped to that user. Reusing it with the same request returns the existing Workspace in its current state; a different request returns 409/7015. Keys do not expire; replay remains available until the Workspace is permanently deleted.",
+        "summary": "Create workspace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "organization": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 54,
+                    "description": "The Organization the Workspace is created in (its parent). Required: the server picks none. You must be an owner or admin of it. Clients may default it, as the dashboard does from its current Organization and the CLI from its configuration."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "slug": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 39
+                  }
+                },
+                "required": [
+                  "organization",
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/workspaces/{id}": {
+      "get": {
+        "tags": [
+          "workspaces"
+        ],
+        "operationId": "workspaces.get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Workspace ID",
+              "minLength": 1,
+              "maxLength": 53
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workspace"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns the details of a workspace.",
+        "summary": "Get workspace",
         "x-platform-visibility": "PUBLIC"
       }
     },
@@ -10406,18 +10415,285 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
-    "/sandboxes/{id}/previews": {
+    "/vaults": {
       "get": {
         "tags": [
-          "Sandboxes"
+          "vaults"
         ],
-        "operationId": "sandboxes.listPreviews",
+        "operationId": "vaults.list",
         "parameters": [
           {
-            "name": "id",
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "VaultList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "The default vault first.",
+        "summary": "List vaults",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "post": {
+        "tags": [
+          "vaults"
+        ],
+        "operationId": "vaults.create",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "vault_id",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Vault",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Vault"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates the vault `vault_id` (AIP-133), for example one per end customer of a reseller. `default` exists already. Unless a policy is set later, Workspace admins administer it and members manage its secrets without reading them.",
+        "summary": "Create a vault",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVaultRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}": {
+      "get": {
+        "tags": [
+          "vaults"
+        ],
+        "operationId": "vaults.get",
+        "parameters": [
+          {
+            "name": "vault",
             "in": "path",
             "schema": {
-              "$ref": "#/components/schemas/SandboxId"
+              "$ref": "#/components/schemas/VaultId"
             },
             "required": true
           },
@@ -10443,11 +10719,11 @@
         ],
         "responses": {
           "200": {
-            "description": "SandboxPreviewList",
+            "description": "Vault",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SandboxPreviewList"
+                  "$ref": "#/components/schemas/Vault"
                 }
               }
             }
@@ -10458,6 +10734,144 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Metadata only.",
+        "summary": "Get a vault",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "patch": {
+        "tags": [
+          "vaults"
+        ],
+        "operationId": "vaults.update",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vault",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Vault"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
                 }
               }
             }
@@ -10483,7 +10897,7 @@
             }
           },
           "409": {
-            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10493,38 +10907,21 @@
                     },
                     {
                       "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
                     }
                   ]
                 }
               }
             }
           },
-          "422": {
-            "description": "The request is well-formed but cannot be processed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnprocessable"
-                }
-              }
-            }
-          },
           "429": {
-            "description": "The Workspace or owner sandbox quota has been reached.",
+            "description": "The caller is over its per-minute budget.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "An upstream provider failed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -10540,37 +10937,31 @@
             }
           }
         },
-        "description": "Lists existing preview records for inspection and cleanup, including while preview creation is disabled. A recorded URL does not establish reachability; check `routed`. Requires `previews`.",
-        "summary": "List previews",
+        "description": "Display name, labels and annotations.",
+        "summary": "Update a vault",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVaultRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "x-platform-visibility": "PUBLIC"
-      }
-    },
-    "/sandboxes/{id}/previews/{port}": {
+      },
       "delete": {
         "tags": [
-          "Sandboxes"
+          "vaults"
         ],
-        "operationId": "sandboxes.unexposePort",
+        "operationId": "vaults.delete",
         "parameters": [
           {
-            "name": "id",
+            "name": "vault",
             "in": "path",
             "schema": {
-              "$ref": "#/components/schemas/SandboxId"
-            },
-            "required": true
-          },
-          {
-            "name": "port",
-            "in": "path",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 65535,
-              "description": "The port a service in the sandbox listens on.",
-              "examples": [
-                3000
-              ]
+              "$ref": "#/components/schemas/VaultId"
             },
             "required": true
           },
@@ -10584,6 +10975,34 @@
               "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
               "examples": [
                 "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
               ]
             },
             "required": false
@@ -10608,6 +11027,16 @@
               }
             }
           },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The credential may not act in this workspace.",
             "content": {
@@ -10629,7 +11058,7 @@
             }
           },
           "409": {
-            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10639,38 +11068,21 @@
                     },
                     {
                       "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
                     }
                   ]
                 }
               }
             }
           },
-          "422": {
-            "description": "The request is well-formed but cannot be processed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnprocessable"
-                }
-              }
-            }
-          },
           "429": {
-            "description": "The Workspace or owner sandbox quota has been reached.",
+            "description": "The caller is over its per-minute budget.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiTooManyRequests"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "An upstream provider failed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiExternalServiceError"
                 }
               }
             }
@@ -10686,21 +11098,2201 @@
             }
           }
         },
-        "description": "Removes an existing preview record, including while preview creation is disabled. Requires `previews`.",
-        "summary": "Unexpose a port",
+        "description": "Erases the vault's key and every value in it at once; connections stop working immediately. A deleted `default` vault comes back empty on next use.",
+        "summary": "Delete a vault",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}:getIamPolicy": {
+      "get": {
+        "tags": [
+          "vaults"
+        ],
+        "operationId": "vaults.getIamPolicy",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "IamPolicy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IamPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Bindings on the vault. Workspace roles apply in addition.",
+        "summary": "Get a vault policy",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}:setIamPolicy": {
+      "post": {
+        "tags": [
+          "vaults"
+        ],
+        "operationId": "vaults.setIamPolicy",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "IamPolicy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IamPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Replaces all bindings.",
+        "summary": "Set a vault policy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetIamPolicyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/audit_events": {
+      "get": {
+        "tags": [
+          "vaults"
+        ],
+        "operationId": "vaults.listAuditEvents",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "VaultAuditEventList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultAuditEventList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Every access and change, allowed or denied, newest first. Never contains a value.",
+        "summary": "List vault audit events",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/secrets": {
+      "get": {
+        "tags": [
+          "vaultSecrets"
+        ],
+        "operationId": "secrets.list",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SecretList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Metadata only.",
+        "summary": "List secrets",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "post": {
+        "tags": [
+          "vaultSecrets"
+        ],
+        "operationId": "secrets.create",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Secret"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Optionally with its first version.",
+        "summary": "Create a secret",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/secrets/{secret}": {
+      "get": {
+        "tags": [
+          "vaultSecrets"
+        ],
+        "operationId": "secrets.get",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "secret",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SecretId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Secret"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Metadata only.",
+        "summary": "Get a secret",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "patch": {
+        "tags": [
+          "vaultSecrets"
+        ],
+        "operationId": "secrets.update",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "secret",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SecretId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Secret"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Labels.",
+        "summary": "Update a secret",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      },
+      "delete": {
+        "tags": [
+          "vaultSecrets"
+        ],
+        "operationId": "secrets.delete",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "secret",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SecretId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "<No Content>"
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Destroys every version at once.",
+        "summary": "Delete a secret",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/secrets/{secret}:addVersion": {
+      "post": {
+        "tags": [
+          "vaultSecrets"
+        ],
+        "operationId": "secrets.addVersion",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "secret",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SecretId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "SecretVersion",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "The value is never echoed.",
+        "summary": "Add a secret version",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddSecretVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/secrets/{secret}/versions": {
+      "get": {
+        "tags": [
+          "vaultSecrets"
+        ],
+        "operationId": "secrets.listVersions",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "secret",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SecretId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SecretVersionList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretVersionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Metadata only.",
+        "summary": "List versions",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/secrets/{secret}/versions/{version}": {
+      "get": {
+        "tags": [
+          "vaultSecrets"
+        ],
+        "operationId": "secrets.getVersion",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "secret",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SecretId"
+            },
+            "required": true
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VersionSelector"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SecretVersion",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Metadata only.",
+        "summary": "Get a version",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/secrets/{secret}/versions/{version}:enable": {
+      "post": {
+        "tags": [
+          "vaultSecrets"
+        ],
+        "operationId": "secrets.enableVersion",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "secret",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SecretId"
+            },
+            "required": true
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VersionSelector"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SecretVersion",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Reversible.",
+        "summary": "Enable a version",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/secrets/{secret}/versions/{version}:disable": {
+      "post": {
+        "tags": [
+          "vaultSecrets"
+        ],
+        "operationId": "secrets.disableVersion",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "secret",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SecretId"
+            },
+            "required": true
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VersionSelector"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SecretVersion",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "`:access` fails while disabled.",
+        "summary": "Disable a version",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/secrets/{secret}/versions/{version}:destroy": {
+      "post": {
+        "tags": [
+          "vaultSecrets"
+        ],
+        "operationId": "secrets.destroyVersion",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "secret",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SecretId"
+            },
+            "required": true
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VersionSelector"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SecretVersion",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Erases the value for good.",
+        "summary": "Destroy a version",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/secrets/{secret}/versions/{version}:access": {
+      "post": {
+        "tags": [
+          "vaultSecrets"
+        ],
+        "operationId": "secrets.accessVersion",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "secret",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/SecretId"
+            },
+            "required": true
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VersionSelector"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def456"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AccessSecretVersionResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessSecretVersionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiConflict"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns the value. Needs `vault.versions.access`: Workspace admins and owners have it on every vault of their Workspace, including the vaults an Install or Offer created for the values they entered; Akua services hold it only where a vault binds them. Every call is audited. POST so that no cache, prefetcher or access log keeps the response.",
+        "summary": "Access a secret version",
         "x-platform-visibility": "PUBLIC"
       }
     }
   },
   "components": {
     "schemas": {
-      "ApiTooManyRequests": {
+      "ApiServiceUnavailable": {
         "type": "object",
         "properties": {
           "_tag": {
             "type": "string",
             "enum": [
-              "TooManyRequests"
+              "ServiceUnavailable"
             ]
           },
           "success": {
@@ -10779,13 +13371,13 @@
         ],
         "additionalProperties": false
       },
-      "ApiServiceUnavailable": {
+      "ApiTooManyRequests": {
         "type": "object",
         "properties": {
           "_tag": {
             "type": "string",
             "enum": [
-              "ServiceUnavailable"
+              "TooManyRequests"
             ]
           },
           "success": {
@@ -10819,13 +13411,13 @@
         ],
         "additionalProperties": false
       },
-      "ApiUnprocessable": {
+      "ApiGone": {
         "type": "object",
         "properties": {
           "_tag": {
             "type": "string",
             "enum": [
-              "Unprocessable"
+              "Gone"
             ]
           },
           "success": {
@@ -10845,80 +13437,6 @@
             "items": {
               "$ref": "#/components/schemas/ApiErrorEntry"
             }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
-        ],
-        "additionalProperties": false
-      },
-      "ApiPreconditionFailed": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "PreconditionFailed"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "type": "object",
-                "properties": {
-                  "code": {
-                    "type": "number",
-                    "enum": [
-                      7006
-                    ]
-                  },
-                  "message": {
-                    "type": "string"
-                  },
-                  "metadata": {
-                    "type": "object",
-                    "properties": {
-                      "current_etag": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "current_etag"
-                    ],
-                    "allOf": [
-                      {
-                        "type": "object",
-                        "additionalProperties": {
-                          "type": "string"
-                        }
-                      }
-                    ]
-                  }
-                },
-                "required": [
-                  "code",
-                  "message",
-                  "metadata"
-                ],
-                "additionalProperties": false
-              }
-            ],
-            "maxItems": 1,
-            "minItems": 1
           },
           "result": {
             "type": "object",
@@ -11053,6 +13571,205 @@
         ],
         "additionalProperties": false
       },
+      "AccessSecretVersionResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The resolved version, also when `latest` was asked for."
+          },
+          "payload": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "payload"
+        ],
+        "additionalProperties": false
+      },
+      "VersionSelector": {
+        "type": "string",
+        "pattern": "^(latest|[1-9][0-9]{0,8})$",
+        "title": "VersionSelector",
+        "description": "A version number or `latest`",
+        "examples": [
+          "latest",
+          "3"
+        ]
+      },
+      "SecretId": {
+        "type": "string",
+        "pattern": "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$",
+        "title": "SecretId",
+        "description": "A secret id, unique in its vault",
+        "examples": [
+          "db-password"
+        ]
+      },
+      "VaultId": {
+        "type": "string",
+        "pattern": "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$",
+        "title": "VaultId",
+        "description": "A vault id chosen by its creator, unique in the Workspace. `default` is the Workspace vault.",
+        "examples": [
+          "default"
+        ]
+      },
+      "ApiIdempotencyConflict": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "IdempotencyConflict"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "ApiPreconditionFailed": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "PreconditionFailed"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "number",
+                    "enum": [
+                      7006
+                    ]
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "properties": {
+                      "current_etag": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "current_etag"
+                    ],
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "code",
+                  "message",
+                  "metadata"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "maxItems": 1,
+            "minItems": 1
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "ApiUnauthorized": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "Unauthorized"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
+        ],
+        "additionalProperties": false
+      },
       "ApiBadRequest": {
         "type": "object",
         "properties": {
@@ -11060,6 +13777,660 @@
             "type": "string",
             "enum": [
               "Validation"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "SecretVersion": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name `vaults/{vault}/secrets/{secret}/versions/{version}`."
+          },
+          "version": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED",
+              "DESTROYED"
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix timestamp (seconds)"
+          },
+          "destroyed_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Unix timestamp (seconds)"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "etag": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Pass as `If-Match` on writes. OUTPUT_ONLY."
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "state",
+          "created_at",
+          "destroyed_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "SecretVersionList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SecretVersion"
+            },
+            "maxItems": 100
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "AddSecretVersionRequest": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "payload"
+        ],
+        "additionalProperties": false
+      },
+      "Secret": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name `vaults/{vault}/secrets/{secret}`.",
+            "examples": [
+              "vaults/default/secrets/db-password"
+            ]
+          },
+          "vault_id": {
+            "$ref": "#/components/schemas/VaultId"
+          },
+          "secret_id": {
+            "$ref": "#/components/schemas/SecretId"
+          },
+          "labels": {
+            "type": "object",
+            "patternProperties": {
+              "^[a-z][a-z0-9_-]{0,62}$": {
+                "type": "string",
+                "maxLength": 63
+              }
+            },
+            "additionalProperties": false,
+            "maxProperties": 64
+          },
+          "latest_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version_count": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix timestamp (seconds)"
+          },
+          "updated_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix timestamp (seconds)"
+          },
+          "etag": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Pass as `If-Match` on writes. OUTPUT_ONLY."
+          }
+        },
+        "required": [
+          "name",
+          "vault_id",
+          "secret_id",
+          "labels",
+          "latest_version",
+          "version_count",
+          "created_at",
+          "updated_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateSecretRequest": {
+        "type": "object",
+        "properties": {
+          "labels": {
+            "type": "object",
+            "patternProperties": {
+              "^[a-z][a-z0-9_-]{0,62}$": {
+                "type": "string",
+                "maxLength": 63
+              }
+            },
+            "additionalProperties": false,
+            "maxProperties": 64
+          }
+        },
+        "required": [
+          "labels"
+        ],
+        "additionalProperties": false
+      },
+      "CreateSecretRequest": {
+        "type": "object",
+        "properties": {
+          "secret_id": {
+            "$ref": "#/components/schemas/SecretId"
+          },
+          "labels": {
+            "type": "object",
+            "patternProperties": {
+              "^[a-z][a-z0-9_-]{0,62}$": {
+                "type": "string",
+                "maxLength": 63
+              }
+            },
+            "additionalProperties": false,
+            "maxProperties": 64
+          },
+          "payload": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "secret_id"
+        ],
+        "additionalProperties": false
+      },
+      "SecretList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Secret"
+            },
+            "maxItems": 100
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "VaultAuditEventList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VaultAuditEvent"
+            },
+            "maxItems": 100
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "VaultAuditEvent": {
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "type": "integer"
+          },
+          "time": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix timestamp (seconds)"
+          },
+          "method": {
+            "type": "string",
+            "maxLength": 64,
+            "examples": [
+              "AccessSecretVersion"
+            ]
+          },
+          "resource": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "principal": {
+            "$ref": "#/components/schemas/IamMember"
+          },
+          "via": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "The service or workload that presented the call."
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "ALLOWED",
+              "DENIED"
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "sequence",
+          "time",
+          "method",
+          "resource",
+          "principal",
+          "via",
+          "decision",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "IamMember": {
+        "type": "string",
+        "pattern": "^(user:[^\\s]{1,64}|workspaceRole:(member|admin|owner)|service:[a-z][a-z0-9-]{0,62}|workload:[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
+        "title": "IamMember",
+        "description": "A person (`user:<id>`), everyone with at least a Workspace role (`workspaceRole:admin`), an Akua service agent (`service:<name>`) or one workload (`workload:<pool>/<id>`)",
+        "examples": [
+          "user:usr_j572abc",
+          "service:placement"
+        ]
+      },
+      "IamPolicy": {
+        "type": "object",
+        "properties": {
+          "bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "vault.viewer",
+                    "vault.secretAdmin",
+                    "vault.secretAccessor",
+                    "vault.admin"
+                  ]
+                },
+                "members": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "$ref": "#/components/schemas/IamMember"
+                    }
+                  ],
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "#/components/schemas/IamMember"
+                  }
+                }
+              },
+              "required": [
+                "role",
+                "members"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 32
+          },
+          "etag": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Pass as `If-Match` on writes. OUTPUT_ONLY."
+          }
+        },
+        "required": [
+          "bindings",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "SetIamPolicyRequest": {
+        "type": "object",
+        "properties": {
+          "bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "vault.viewer",
+                    "vault.secretAdmin",
+                    "vault.secretAccessor",
+                    "vault.admin"
+                  ]
+                },
+                "members": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "$ref": "#/components/schemas/IamMember"
+                    }
+                  ],
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "#/components/schemas/IamMember"
+                  }
+                }
+              },
+              "required": [
+                "role",
+                "members"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 32
+          }
+        },
+        "required": [
+          "bindings"
+        ],
+        "additionalProperties": false
+      },
+      "Vault": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name `vaults/{vault}`.",
+            "examples": [
+              "vaults/default"
+            ]
+          },
+          "vault_id": {
+            "$ref": "#/components/schemas/VaultId"
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 53
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "labels": {
+            "type": "object",
+            "patternProperties": {
+              "^[a-z][a-z0-9_-]{0,62}$": {
+                "type": "string",
+                "maxLength": 63
+              }
+            },
+            "additionalProperties": false,
+            "maxProperties": 64
+          },
+          "annotations": {
+            "type": "object",
+            "patternProperties": {
+              "^([a-z0-9.-]{1,253}\\/)?[A-Za-z0-9_.-]{1,63}$": {
+                "type": "string",
+                "maxLength": 1024
+              }
+            },
+            "additionalProperties": false,
+            "maxProperties": 32,
+            "description": "Opaque key-value data for clients (AIP-148)."
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix timestamp (seconds)"
+          },
+          "updated_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix timestamp (seconds)"
+          },
+          "etag": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Pass as `If-Match` on writes. OUTPUT_ONLY."
+          }
+        },
+        "required": [
+          "name",
+          "vault_id",
+          "workspace_id",
+          "display_name",
+          "labels",
+          "annotations",
+          "created_at",
+          "updated_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateVaultRequest": {
+        "type": "object",
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "labels": {
+            "type": "object",
+            "patternProperties": {
+              "^[a-z][a-z0-9_-]{0,62}$": {
+                "type": "string",
+                "maxLength": 63
+              }
+            },
+            "additionalProperties": false,
+            "maxProperties": 64
+          },
+          "annotations": {
+            "type": "object",
+            "patternProperties": {
+              "^([a-z0-9.-]{1,253}\\/)?[A-Za-z0-9_.-]{1,63}$": {
+                "type": "string",
+                "maxLength": 1024
+              }
+            },
+            "additionalProperties": false,
+            "maxProperties": 32,
+            "description": "Opaque key-value data for clients (AIP-148)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateVaultRequest": {
+        "type": "object",
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "labels": {
+            "type": "object",
+            "patternProperties": {
+              "^[a-z][a-z0-9_-]{0,62}$": {
+                "type": "string",
+                "maxLength": 63
+              }
+            },
+            "additionalProperties": false,
+            "maxProperties": 64
+          },
+          "annotations": {
+            "type": "object",
+            "patternProperties": {
+              "^([a-z0-9.-]{1,253}\\/)?[A-Za-z0-9_.-]{1,63}$": {
+                "type": "string",
+                "maxLength": 1024
+              }
+            },
+            "additionalProperties": false,
+            "maxProperties": 32,
+            "description": "Opaque key-value data for clients (AIP-148)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "VaultList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Vault"
+            },
+            "maxItems": 100
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "ApiUnprocessable": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "Unprocessable"
             ]
           },
           "success": {
@@ -11133,134 +14504,6 @@
         ],
         "additionalProperties": false
       },
-      "SandboxId": {
-        "type": "string",
-        "pattern": "^sbx_[A-Za-z0-9]{1,64}$",
-        "title": "Sandbox id",
-        "description": "Sandbox id (`sbx_...`).",
-        "examples": [
-          "sbx_j572abc123def456"
-        ]
-      },
-      "SandboxPreviewList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SandboxPreview"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "SandboxPreview": {
-        "type": "object",
-        "properties": {
-          "sandbox_id": {
-            "$ref": "#/components/schemas/SandboxId"
-          },
-          "port": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 65535,
-            "description": "The port a service in the sandbox listens on.",
-            "examples": [
-              3000
-            ]
-          },
-          "visibility": {
-            "$ref": "#/components/schemas/SandboxPreviewVisibility"
-          },
-          "hostname": {
-            "type": "string",
-            "description": "A host of its own under `akua.run` (`<port>-<name>-<token>.akua.run`), never shared with the dashboard or another preview.",
-            "examples": [
-              "3000-checkout-k3x9q2m7a1b8c4d6.akua.run"
-            ]
-          },
-          "url": {
-            "type": "string",
-            "examples": [
-              "https://3000-checkout-k3x9q2m7a1b8c4d6.akua.run/"
-            ]
-          },
-          "routed": {
-            "type": "boolean",
-            "description": "True once the hostname answers. Until preview routing is live everywhere, a new preview is recorded but its URL does not answer yet."
-          },
-          "created_by": {
-            "$ref": "#/components/schemas/SandboxActor"
-          },
-          "created_at": {
-            "type": "integer",
-            "minimum": 0,
-            "description": "Exposure time (Unix seconds)."
-          }
-        },
-        "required": [
-          "sandbox_id",
-          "port",
-          "visibility",
-          "hostname",
-          "url",
-          "routed",
-          "created_by",
-          "created_at"
-        ],
-        "additionalProperties": false
-      },
-      "SandboxActor": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "user",
-              "opencode"
-            ],
-            "description": "`user`: a workspace member. `opencode`: an OpenCode Server (`oc_...`)."
-          },
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          }
-        },
-        "required": [
-          "type",
-          "id"
-        ],
-        "additionalProperties": false
-      },
-      "SandboxPreviewVisibility": {
-        "type": "string",
-        "enum": [
-          "link",
-          "private"
-        ],
-        "description": "When preview routing is available, `link` (the default) uses the random hostname token as the only access gate; `private` requires Akua sign-in and the `previews` permission. Preview creation requires `release_sandbox_previews`, which is disabled by default."
-      },
       "SandboxAccessGrantId": {
         "type": "string",
         "pattern": "^sbxg_[A-Za-z0-9]{1,64}$",
@@ -11268,6 +14511,15 @@
         "description": "Sandbox access grant id (`sbxg_...`).",
         "examples": [
           "sbxg_j572abc123def456"
+        ]
+      },
+      "SandboxId": {
+        "type": "string",
+        "pattern": "^sbx_[A-Za-z0-9]{1,64}$",
+        "title": "Sandbox id",
+        "description": "Sandbox id (`sbx_...`).",
+        "examples": [
+          "sbx_j572abc123def456"
         ]
       },
       "SandboxAccessGrantList": {
@@ -11346,6 +14598,29 @@
           "permissions",
           "created_by",
           "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "SandboxActor": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "opencode"
+            ],
+            "description": "`user`: a workspace member. `opencode`: an OpenCode Server (`oc_...`)."
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "type",
+          "id"
         ],
         "additionalProperties": false
       },
@@ -15737,223 +19012,6 @@
         ],
         "additionalProperties": false
       },
-      "ApiGatewayTimeout": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "GatewayTimeout"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
-        ],
-        "additionalProperties": false
-      },
-      "ApiInternalServerError": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "InternalServerError"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "type": "object",
-                "properties": {
-                  "code": {
-                    "type": "number",
-                    "enum": [
-                      7009
-                    ]
-                  },
-                  "message": {
-                    "type": "string",
-                    "enum": [
-                      "Internal server error"
-                    ]
-                  }
-                },
-                "required": [
-                  "code",
-                  "message"
-                ],
-                "additionalProperties": false
-              }
-            ],
-            "maxItems": 1,
-            "minItems": 1
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
-        ],
-        "additionalProperties": false
-      },
-      "ApiGone": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "Gone"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
-        ],
-        "additionalProperties": false
-      },
-      "ApiIdempotencyConflict": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "IdempotencyConflict"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
-        ],
-        "additionalProperties": false
-      },
-      "ApiUnauthorized": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "Unauthorized"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
-        ],
-        "additionalProperties": false
-      },
       "MachineOperation": {
         "type": "object",
         "properties": {
@@ -16312,6 +19370,103 @@
           "created_at",
           "updated_at",
           "etag"
+        ],
+        "additionalProperties": false
+      },
+      "ApiGatewayTimeout": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "GatewayTimeout"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "ApiInternalServerError": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "InternalServerError"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "number",
+                    "enum": [
+                      7009
+                    ]
+                  },
+                  "message": {
+                    "type": "string",
+                    "enum": [
+                      "Internal server error"
+                    ]
+                  }
+                },
+                "required": [
+                  "code",
+                  "message"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "maxItems": 1,
+            "minItems": 1
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
         ],
         "additionalProperties": false
       },
@@ -17418,16 +20573,23 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 100
+              },
+              "organization": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54,
+                "description": "The Organization the new Workspace is created in; the customer must be its owner or admin. There is no default."
               }
             },
             "required": [
               "kind",
-              "name"
+              "name",
+              "organization"
             ],
             "additionalProperties": false
           }
         ],
-        "description": "An existing Workspace of the customer, or a new one, created at once and owned by the customer. Setting the same new name again on this draft answers the same Workspace."
+        "description": "An existing Workspace of the customer, or a new one in a named Organization of the customer, created at once and owned by the customer. Setting the same new name again on this draft answers the same Workspace."
       },
       "CreateOrderDraftBody": {
         "type": "object",
@@ -18632,38 +21794,6 @@
         ],
         "additionalProperties": false
       },
-      "WorkspaceList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Workspace"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
-        ],
-        "additionalProperties": false
-      },
       "Workspace": {
         "type": "object",
         "properties": {
@@ -18814,6 +21944,38 @@
         ],
         "additionalProperties": false
       },
+      "WorkspaceList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Workspace"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
       "WorkspaceFeatureFlags": {
         "type": "object",
         "properties": {
@@ -18837,165 +21999,6 @@
         "required": [
           "workspace_id",
           "flags"
-        ],
-        "additionalProperties": false
-      },
-      "InstallRender": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 54
-          },
-          "workspace_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 53
-          },
-          "install_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 55
-          },
-          "operation_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 2,
-                "maxLength": 192
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "repository_change_request_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 54
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "render_hash": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "commit_sha": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "package_version_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 55
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "restored_from_render_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 54
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "state": {
-            "type": "string",
-            "enum": [
-              "running",
-              "deployed",
-              "skipped",
-              "failed"
-            ]
-          },
-          "message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "created_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "updated_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "id",
-          "workspace_id",
-          "install_id",
-          "render_hash",
-          "state",
-          "created_at",
-          "updated_at"
-        ],
-        "additionalProperties": false
-      },
-      "InstallRenderList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/InstallRender"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
         ],
         "additionalProperties": false
       },
@@ -19551,10 +22554,6 @@
         "description": "Bearer token for the authenticated caller.",
         "type": "http",
         "scheme": "bearer"
-      },
-      "bearer": {
-        "type": "http",
-        "scheme": "Bearer"
       }
     }
   },
@@ -19574,9 +22573,6 @@
     },
     {
       "name": "regions"
-    },
-    {
-      "name": "adminAccess"
     },
     {
       "name": "Dashboard Overview"
@@ -19603,11 +22599,13 @@
       "name": "machines"
     },
     {
-      "name": "routes",
-      "x-platform-visibility": "INTERNAL"
+      "name": "Sandboxes"
     },
     {
-      "name": "Sandboxes"
+      "name": "vaults"
+    },
+    {
+      "name": "vaultSecrets"
     }
   ],
   "servers": [
