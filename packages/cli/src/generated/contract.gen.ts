@@ -32,6 +32,10 @@ export const contract: ApiContract = {
 			"title": "Order Drafts"
 		},
 		{
+			"name": "organizations",
+			"title": "Organizations"
+		},
+		{
 			"name": "packages",
 			"title": "packages"
 		},
@@ -178,12 +182,22 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"type": "string",
+				"minLength": 3,
+				"maxLength": 54
+			}
+		},
+		"path:id:4": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
 				"description": "Workspace ID",
 				"minLength": 1,
 				"maxLength": 53
 			}
 		},
-		"path:id:4": {
+		"path:id:5": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -194,7 +208,7 @@ export const contract: ApiContract = {
 				"maxLength": 55
 			}
 		},
-		"path:id:5": {
+		"path:id:6": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -205,7 +219,7 @@ export const contract: ApiContract = {
 				"maxLength": 56
 			}
 		},
-		"path:id:6": {
+		"path:id:7": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -216,23 +230,12 @@ export const contract: ApiContract = {
 				"maxLength": 55
 			}
 		},
-		"path:id:7": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
 		"path:id:8": {
 			"name": "id",
 			"in": "path",
 			"required": true,
 			"schema": {
 				"type": "string",
-				"description": "Package ID",
 				"minLength": 1,
 				"maxLength": 54
 			}
@@ -243,8 +246,19 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"type": "string",
-				"minLength": 3,
+				"description": "Package ID",
+				"minLength": 1,
 				"maxLength": 54
+			}
+		},
+		"path:invitationId": {
+			"name": "invitationId",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"minLength": 3,
+				"maxLength": 55
 			}
 		},
 		"path:name": {
@@ -560,7 +574,7 @@ export const contract: ApiContract = {
 			"summary": "Get an API token",
 			"auth": true,
 			"parameters": [
-				"path:id:9"
+				"path:id:3"
 			]
 		},
 		{
@@ -581,7 +595,7 @@ export const contract: ApiContract = {
 			"summary": "Revoke an API token",
 			"auth": true,
 			"parameters": [
-				"path:id:9"
+				"path:id:3"
 			]
 		},
 		{
@@ -608,7 +622,7 @@ export const contract: ApiContract = {
 			"summary": "Create a join token",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:3",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
@@ -638,7 +652,7 @@ export const contract: ApiContract = {
 			"summary": "Delete a Cluster",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:3",
 				"header:akua-context",
 				"header:idempotency-key",
 				"header:if-match"
@@ -651,7 +665,7 @@ export const contract: ApiContract = {
 			"summary": "Get a Cluster",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:3",
 				"header:akua-context"
 			]
 		},
@@ -662,7 +676,7 @@ export const contract: ApiContract = {
 			"summary": "Get a node",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:3",
 				"path:name",
 				"header:akua-context"
 			]
@@ -674,7 +688,7 @@ export const contract: ApiContract = {
 			"summary": "Issue the agent install command",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:3",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
@@ -713,7 +727,7 @@ export const contract: ApiContract = {
 			"summary": "List join tokens",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:3",
 				"header:akua-context",
 				"query:cursor",
 				"query:limit"
@@ -726,7 +740,7 @@ export const contract: ApiContract = {
 			"summary": "List nodes",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:3",
 				"header:akua-context",
 				"query:cursor",
 				"query:limit:2"
@@ -739,7 +753,7 @@ export const contract: ApiContract = {
 			"summary": "Remove a node",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:3",
 				"path:name",
 				"header:akua-context",
 				"header:idempotency-key"
@@ -752,7 +766,7 @@ export const contract: ApiContract = {
 			"summary": "Revoke a join token",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:3",
 				"path:token_id",
 				"header:akua-context",
 				"header:idempotency-key"
@@ -865,7 +879,7 @@ export const contract: ApiContract = {
 			"summary": "Delete machine",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:id:8",
 				"header:akua-context",
 				"header:idempotency-key:2",
 				"header:if-match"
@@ -878,7 +892,7 @@ export const contract: ApiContract = {
 			"summary": "Get machine",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:id:8",
 				"header:akua-context"
 			]
 		},
@@ -904,7 +918,7 @@ export const contract: ApiContract = {
 			"summary": "Archive offer",
 			"auth": true,
 			"parameters": [
-				"path:id:5",
+				"path:id:6",
 				"header:akua-context",
 				"header:idempotency-key",
 				"header:if-match"
@@ -934,7 +948,7 @@ export const contract: ApiContract = {
 			"summary": "Get offer details",
 			"auth": false,
 			"parameters": [
-				"path:id:5",
+				"path:id:6",
 				"query:view"
 			]
 		},
@@ -1004,7 +1018,7 @@ export const contract: ApiContract = {
 			"summary": "Cancel order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:6",
+				"path:id:7",
 				"header:if-match",
 				"header:idempotency-key"
 			]
@@ -1032,7 +1046,7 @@ export const contract: ApiContract = {
 			"summary": "Get order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:6"
+				"path:id:7"
 			]
 		},
 		{
@@ -1042,7 +1056,7 @@ export const contract: ApiContract = {
 			"summary": "Redeem order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:6",
+				"path:id:7",
 				"header:if-match",
 				"header:idempotency-key"
 			],
@@ -1060,7 +1074,7 @@ export const contract: ApiContract = {
 			"summary": "Update order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:6",
+				"path:id:7",
 				"header:if-match",
 				"header:idempotency-key"
 			],
@@ -1068,6 +1082,170 @@ export const contract: ApiContract = {
 				"required": true,
 				"schema": {
 					"$ref": "#/$defs/UpdateOrderDraftBody"
+				}
+			}
+		},
+		{
+			"id": "organizations.acceptInvitation",
+			"method": "POST",
+			"path": "/organizations/{id}/invitations/{invitationId}:accept",
+			"summary": "Accept organization invitation",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:invitationId"
+			]
+		},
+		{
+			"id": "organizations.acceptInvitationToken",
+			"method": "POST",
+			"path": "/organization_invitations/accept",
+			"summary": "Accept organization invitation by link",
+			"auth": true,
+			"parameters": [],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/OrganizationInvitationTokenRequest"
+				}
+			}
+		},
+		{
+			"id": "organizations.create",
+			"method": "POST",
+			"path": "/organizations",
+			"summary": "Create organization",
+			"auth": true,
+			"parameters": [
+				"header:idempotency-key"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/OrganizationCreateRequest"
+				}
+			}
+		},
+		{
+			"id": "organizations.createInvitation",
+			"method": "POST",
+			"path": "/organizations/{id}/invitations",
+			"summary": "Invite to organization",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"header:idempotency-key"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/OrganizationInvitationCreateRequest"
+				}
+			}
+		},
+		{
+			"id": "organizations.declineInvitation",
+			"method": "POST",
+			"path": "/organizations/{id}/invitations/{invitationId}:decline",
+			"summary": "Decline organization invitation",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:invitationId"
+			]
+		},
+		{
+			"id": "organizations.delete",
+			"method": "DELETE",
+			"path": "/organizations/{id}",
+			"summary": "Delete organization",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"header:idempotency-key",
+				"header:if-match:3"
+			]
+		},
+		{
+			"id": "organizations.get",
+			"method": "GET",
+			"path": "/organizations/{id}",
+			"summary": "Get organization",
+			"auth": true,
+			"parameters": [
+				"path:id:3"
+			]
+		},
+		{
+			"id": "organizations.getIamPolicy",
+			"method": "GET",
+			"path": "/organizations/{id}:getIamPolicy",
+			"summary": "Get an Organization policy",
+			"auth": true,
+			"parameters": [
+				"path:id:3"
+			]
+		},
+		{
+			"id": "organizations.list",
+			"method": "GET",
+			"path": "/organizations",
+			"summary": "List organizations",
+			"auth": true,
+			"parameters": [
+				"query:cursor:2",
+				"query:limit"
+			]
+		},
+		{
+			"id": "organizations.listInvitations",
+			"method": "GET",
+			"path": "/organizations/{id}/invitations",
+			"summary": "List organization invitations",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"query:cursor:2",
+				"query:limit"
+			]
+		},
+		{
+			"id": "organizations.listMyInvitations",
+			"method": "GET",
+			"path": "/organization_invitations",
+			"summary": "List my invitations",
+			"auth": true,
+			"parameters": [
+				"query:cursor:2",
+				"query:limit"
+			]
+		},
+		{
+			"id": "organizations.revokeInvitation",
+			"method": "POST",
+			"path": "/organizations/{id}/invitations/{invitationId}:revoke",
+			"summary": "Revoke organization invitation",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:invitationId"
+			]
+		},
+		{
+			"id": "organizations.setIamPolicy",
+			"method": "POST",
+			"path": "/organizations/{id}:setIamPolicy",
+			"summary": "Set an Organization policy",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"header:idempotency-key",
+				"header:if-match"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/SetIamPolicyRequest"
 				}
 			}
 		},
@@ -1095,7 +1273,7 @@ export const contract: ApiContract = {
 			"summary": "Create package version",
 			"auth": true,
 			"parameters": [
-				"path:id:8",
+				"path:id:9",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
@@ -1113,7 +1291,7 @@ export const contract: ApiContract = {
 			"summary": "Get package details",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:id:8",
 				"header:akua-context"
 			]
 		},
@@ -1124,7 +1302,7 @@ export const contract: ApiContract = {
 			"summary": "Get package version input schema",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:id:8",
 				"path:version_id",
 				"header:akua-context"
 			]
@@ -1136,7 +1314,7 @@ export const contract: ApiContract = {
 			"summary": "Archive product",
 			"auth": true,
 			"parameters": [
-				"path:id:4",
+				"path:id:5",
 				"header:akua-context",
 				"header:idempotency-key",
 				"header:if-match"
@@ -1166,7 +1344,7 @@ export const contract: ApiContract = {
 			"summary": "Get product details",
 			"auth": true,
 			"parameters": [
-				"path:id:4",
+				"path:id:5",
 				"header:akua-context"
 			]
 		},
@@ -1851,7 +2029,7 @@ export const contract: ApiContract = {
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/SetIamPolicyRequest"
+					"$ref": "#/$defs/SetIamPolicyRequest_1"
 				}
 			}
 		},
@@ -1920,7 +2098,7 @@ export const contract: ApiContract = {
 			"summary": "Get workspace",
 			"auth": true,
 			"parameters": [
-				"path:id:3"
+				"path:id:4"
 			]
 		},
 		{
@@ -1946,6 +2124,76 @@ export const contract: ApiContract = {
 			},
 			"required": [
 				"payload"
+			],
+			"additionalProperties": false
+		},
+		"Binding": {
+			"type": "object",
+			"properties": {
+				"role": {
+					"$ref": "#/$defs/RoleName"
+				},
+				"members": {
+					"type": "array",
+					"prefixItems": [
+						{
+							"$ref": "#/$defs/Member"
+						}
+					],
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/Member"
+					},
+					"maxItems": 64
+				},
+				"condition": {
+					"$ref": "#/$defs/BindingCondition"
+				}
+			},
+			"required": [
+				"role",
+				"members"
+			],
+			"additionalProperties": false
+		},
+		"BindingCondition": {
+			"type": "object",
+			"properties": {
+				"title": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 100
+				},
+				"description": {
+					"type": "string",
+					"maxLength": 512
+				},
+				"expires_at": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 9007199254740991,
+					"description": "Unix timestamp (seconds)"
+				},
+				"operations": {
+					"type": "array",
+					"prefixItems": [
+						{
+							"type": "string",
+							"pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+							"maxLength": 96
+						}
+					],
+					"minItems": 1,
+					"items": {
+						"type": "string",
+						"pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+						"maxLength": 96
+					},
+					"maxItems": 100
+				}
+			},
+			"required": [
+				"title"
 			],
 			"additionalProperties": false
 		},
@@ -2617,6 +2865,12 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
+		"Member": {
+			"type": "string",
+			"pattern": "^(user:[^\\s]{1,64}|service:[a-z][a-z0-9-]{0,62}|workload:[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
+			"title": "Member",
+			"description": "A person (`user:<id>`), an Akua service agent (`service:<name>`) or one workload (`workload:<pool>/<id>`)"
+		},
 		"MoveSandboxFileBody": {
 			"type": "object",
 			"properties": {
@@ -2765,6 +3019,65 @@ export const contract: ApiContract = {
 				}
 			],
 			"description": "An existing Workspace of the customer, or a new one in a named Organization of the customer, created at once and owned by the customer. Setting the same new name again on this draft answers the same Workspace."
+		},
+		"OrganizationCreateRequest": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"minLength": 2,
+					"maxLength": 50,
+					"pattern": "^[\\p{L}\\p{N}](?:[\\p{L}\\p{N}\\s\\-'&.]*[\\p{L}\\p{N}])?$"
+				}
+			},
+			"required": [
+				"name"
+			],
+			"additionalProperties": false
+		},
+		"OrganizationInvitationCreateRequest": {
+			"type": "object",
+			"properties": {
+				"email": {
+					"type": "string",
+					"maxLength": 254,
+					"allOf": [
+						{
+							"pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+							"format": "email"
+						}
+					]
+				},
+				"role": {
+					"type": "string",
+					"enum": [
+						"roles/member",
+						"roles/admin",
+						"roles/owner"
+					],
+					"description": "Only an owner may invite an owner. `roles/viewer` is granted through `:setIamPolicy`."
+				}
+			},
+			"required": [
+				"email",
+				"role"
+			],
+			"additionalProperties": false
+		},
+		"OrganizationInvitationTokenRequest": {
+			"type": "object",
+			"properties": {
+				"token": {
+					"type": "string",
+					"format": "password",
+					"minLength": 32,
+					"maxLength": 512
+				}
+			},
+			"required": [
+				"token"
+			],
+			"additionalProperties": false
 		},
 		"PackageHelmOciSource": {
 			"type": "object",
@@ -3062,6 +3375,22 @@ export const contract: ApiContract = {
 			"description": "A secret id, unique in its vault"
 		},
 		"SetIamPolicyRequest": {
+			"type": "object",
+			"properties": {
+				"bindings": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/Binding"
+					},
+					"maxItems": 100
+				}
+			},
+			"required": [
+				"bindings"
+			],
+			"additionalProperties": false
+		},
+		"SetIamPolicyRequest_1": {
 			"type": "object",
 			"properties": {
 				"bindings": {
