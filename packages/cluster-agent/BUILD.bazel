@@ -14,9 +14,19 @@ load("@aspect_rules_js//npm/private:npm_link_package_store.bzl", "npm_link_packa
 
 exports_files(
     [
+        "install/Chart.yaml",
+        "install/values.schema.json",
+        "install/values.yaml",
         "package.json",
         "tsconfig.json",
     ],
+    visibility = ["//visibility:public"],
+)
+
+# The agent chart's templates, for a `helm package` of install/.
+filegroup(
+    name = "chart_templates",
+    srcs = glob(["install/templates/**"]),
     visibility = ["//visibility:public"],
 )
 
