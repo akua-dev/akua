@@ -2498,6 +2498,1062 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
+    "/billing_accounts": {
+      "post": {
+        "tags": [
+          "Billing accounts"
+        ],
+        "operationId": "billingAccounts.create",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Required caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "BillingAccount",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Starts `PENDING` with a card payment method and binds the caller as `roles/billing.admin` on the new account.",
+        "summary": "Create a billing account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBillingAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      },
+      "get": {
+        "tags": [
+          "Billing accounts"
+        ],
+        "operationId": "billingAccounts.list",
+        "parameters": [
+          {
+            "name": "organization",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            },
+            "required": false
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "ACTIVE",
+                "CLOSED"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BillingAccountList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAccountList"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "The accounts the caller may read, optionally of one Organization. From the catalog projection; a change shows up within seconds.",
+        "summary": "List billing accounts",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/billing_accounts/{billing_account}": {
+      "get": {
+        "tags": [
+          "Billing accounts"
+        ],
+        "operationId": "billingAccounts.get",
+        "parameters": [
+          {
+            "name": "billing_account",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BillingAccount",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAccount"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Always current.",
+        "summary": "Get a billing account",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/billing_accounts/{billing_account}:startPaymentSetup": {
+      "post": {
+        "tags": [
+          "Billing accounts"
+        ],
+        "operationId": "billingAccounts.startPaymentSetup",
+        "parameters": [
+          {
+            "name": "billing_account",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PaymentSetupSession",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentSetupSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns a Stripe embedded Checkout session in setup mode for this account. Cards only: Apple Pay, Google Pay and Link are not offered. The card is verified, not charged. The account becomes `ACTIVE` when Stripe reports the setup complete; on an `ACTIVE` card account the new card replaces the old one. Limited per account; an invoice account answers 409.",
+        "summary": "Start adding a card",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/billing_accounts/{billing_account}:close": {
+      "post": {
+        "tags": [
+          "Billing accounts"
+        ],
+        "operationId": "billingAccounts.close",
+        "parameters": [
+          {
+            "name": "billing_account",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BillingAccount",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Final: a closed account cannot be reopened; create a new one. Linked Workspaces keep their resources but cannot create billed ones; link another account to continue.",
+        "summary": "Close a billing account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseBillingAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/billing_accounts/{billing_account}:getIamPolicy": {
+      "get": {
+        "tags": [
+          "Billing accounts"
+        ],
+        "operationId": "billingAccounts.getIamPolicy",
+        "parameters": [
+          {
+            "name": "billing_account",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Policy"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Bindings on the account. Organization bindings apply in addition.",
+        "summary": "Get a billing account policy",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/billing_accounts/{billing_account}:setIamPolicy": {
+      "post": {
+        "tags": [
+          "Billing accounts"
+        ],
+        "operationId": "billingAccounts.setIamPolicy",
+        "parameters": [
+          {
+            "name": "billing_account",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Policy"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Replaces all bindings; only `roles/billing.*` are grantable here.",
+        "summary": "Set a billing account policy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetIamPolicyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/billing_accounts/{billing_account}:testIamPermissions": {
+      "post": {
+        "tags": [
+          "Billing accounts"
+        ],
+        "operationId": "billingAccounts.testIamPermissions",
+        "parameters": [
+          {
+            "name": "billing_account",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "TestIamPermissionsResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestIamPermissionsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Which of the permissions the caller holds on the account. Needs no permission itself.",
+        "summary": "Test billing account permissions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestIamPermissionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/workspaces/{id}/billing_info": {
+      "get": {
+        "tags": [
+          "Billing accounts"
+        ],
+        "operationId": "workspaces.getBillingInfo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "WorkspaceBillingInfo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceBillingInfo"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "The linked account and whether billing is enabled.",
+        "summary": "Get Workspace billing",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "put": {
+        "tags": [
+          "Billing accounts"
+        ],
+        "operationId": "workspaces.updateBillingInfo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53
+            },
+            "required": true
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "WorkspaceBillingInfo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceBillingInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Needs `billing.associations.create` on the account too. The account must be in the Workspace Organization and not `CLOSED`; a `PENDING` account may be linked and enables billing once it is `ACTIVE`.",
+        "summary": "Link a billing account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkspaceBillingInfoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
     "/workspaces": {
       "get": {
         "tags": [
@@ -13901,7 +14957,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SetIamPolicyRequest"
+                "$ref": "#/components/schemas/SetIamPolicyRequest_1"
               }
             }
           },
@@ -16740,7 +17796,7 @@
         ],
         "additionalProperties": false
       },
-      "SetIamPolicyRequest": {
+      "SetIamPolicyRequest_1": {
         "type": "object",
         "properties": {
           "bindings": {
@@ -25147,6 +26203,591 @@
         ],
         "additionalProperties": false
       },
+      "WorkspaceBillingInfo": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "examples": [
+              "workspaces/ws_j572abc/billingInfo"
+            ]
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 53
+          },
+          "billing_account": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BillingAccountName"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "billing_enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "workspace_id",
+          "billing_account",
+          "billing_enabled"
+        ],
+        "additionalProperties": false
+      },
+      "BillingAccountName": {
+        "type": "string",
+        "pattern": "^billingAccounts\\/bac_[A-Za-z0-9]+$",
+        "title": "BillingAccountName",
+        "examples": [
+          "billingAccounts/bac_4kQ9mXr2Tz7Lw1"
+        ]
+      },
+      "UpdateWorkspaceBillingInfoRequest": {
+        "type": "object",
+        "properties": {
+          "billing_account": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BillingAccountName"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "billing_account"
+        ],
+        "additionalProperties": false
+      },
+      "TestIamPermissionsResponse": {
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionName"
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "permissions"
+        ],
+        "additionalProperties": false
+      },
+      "PermissionName": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]{0,62}\\.[a-z][a-z0-9-]{0,62}\\.[a-z][a-z0-9-]{0,62}$",
+        "title": "PermissionName",
+        "description": "A permission `service.resource.verb`",
+        "examples": [
+          "vault.versions.access"
+        ]
+      },
+      "TestIamPermissionsRequest": {
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/PermissionName"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/PermissionName"
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "permissions"
+        ],
+        "additionalProperties": false
+      },
+      "Policy": {
+        "type": "object",
+        "properties": {
+          "bindings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Binding"
+            },
+            "maxItems": 100
+          },
+          "etag": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Pass as `If-Match` on `setIamPolicy`. OUTPUT_ONLY."
+          }
+        },
+        "required": [
+          "bindings",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "Binding": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/RoleName"
+          },
+          "members": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/Member"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/Member"
+            },
+            "maxItems": 64
+          },
+          "condition": {
+            "$ref": "#/components/schemas/BindingCondition"
+          }
+        },
+        "required": [
+          "role",
+          "members"
+        ],
+        "additionalProperties": false
+      },
+      "BindingCondition": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "expires_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
+          },
+          "operations": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+                "maxLength": 96
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+              "maxLength": 96
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "additionalProperties": false
+      },
+      "Member": {
+        "type": "string",
+        "pattern": "^(user:[^\\s]{1,64}|service:[a-z][a-z0-9-]{0,62}|workload:[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
+        "title": "Member",
+        "description": "A person (`user:<id>`), an Akua service agent (`service:<name>`) or one workload (`workload:<pool>/<id>`)",
+        "examples": [
+          "user:usr_j572abc",
+          "service:placement"
+        ]
+      },
+      "SetIamPolicyRequest": {
+        "type": "object",
+        "properties": {
+          "bindings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Binding"
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "bindings"
+        ],
+        "additionalProperties": false
+      },
+      "OutOfBandPayment": {
+        "type": "object",
+        "properties": {
+          "invoice_id": {
+            "$ref": "#/components/schemas/StripeInvoiceId"
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "amount_paid": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "In the currency minor unit, as Stripe reports it after the payment."
+          },
+          "recorded_by": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "recorded_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
+          }
+        },
+        "required": [
+          "invoice_id",
+          "reference",
+          "amount_paid",
+          "recorded_by",
+          "recorded_at"
+        ],
+        "additionalProperties": false
+      },
+      "StripeInvoiceId": {
+        "type": "string",
+        "pattern": "^in_[A-Za-z0-9]{1,250}$"
+      },
+      "PayOutOfBandRequest": {
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "justification": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
+        "required": [
+          "reference",
+          "justification"
+        ],
+        "additionalProperties": false
+      },
+      "BillingAccount": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "name": {
+            "$ref": "#/components/schemas/BillingAccountName"
+          },
+          "organization_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "CLOSED"
+            ]
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/BillingPaymentMethod"
+          },
+          "currency_code": {
+            "type": "string",
+            "enum": [
+              "EUR"
+            ]
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "maxItems": 32,
+            "description": "Problems and notable facts that hold now, beside `state`; empty when there are none. See each reason in the resource description."
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
+          },
+          "updated_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Unix timestamp (seconds)"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "etag": {
+            "type": "string",
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "organization_id",
+          "display_name",
+          "state",
+          "payment_method",
+          "currency_code",
+          "conditions",
+          "created_at",
+          "updated_at",
+          "closed_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "BillingPaymentMethod": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "card"
+                ]
+              },
+              "card": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PaymentCard"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "card"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "invoice"
+                ]
+              },
+              "invoice_email": {
+                "type": "string",
+                "maxLength": 254
+              }
+            },
+            "required": [
+              "type",
+              "invoice_email"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "PaymentCard": {
+        "type": "object",
+        "properties": {
+          "brand": {
+            "type": "string",
+            "maxLength": 32,
+            "examples": [
+              "visa"
+            ]
+          },
+          "last4": {
+            "type": "string",
+            "pattern": "^[0-9]{4}$"
+          },
+          "exp_month": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "exp_year": {
+            "type": "integer",
+            "minimum": 2000,
+            "maximum": 2199
+          },
+          "verified_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
+          }
+        },
+        "required": [
+          "brand",
+          "last4",
+          "exp_month",
+          "exp_year",
+          "verified_at"
+        ],
+        "additionalProperties": false
+      },
+      "EnableInvoicingRequest": {
+        "type": "object",
+        "properties": {
+          "invoice_email": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "justification": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
+        "required": [
+          "invoice_email",
+          "justification"
+        ],
+        "additionalProperties": false
+      },
+      "CloseBillingAccountRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "additionalProperties": false
+      },
+      "PaymentSetupSession": {
+        "type": "object",
+        "properties": {
+          "client_secret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "ui_mode": {
+            "type": "string",
+            "enum": [
+              "embedded_page"
+            ]
+          },
+          "publishable_key": {
+            "type": "string",
+            "pattern": "^pk_(live|test)_[A-Za-z0-9]+$"
+          },
+          "expires_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
+          }
+        },
+        "required": [
+          "client_secret",
+          "ui_mode",
+          "publishable_key",
+          "expires_at"
+        ],
+        "additionalProperties": false
+      },
+      "BillingAccountList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillingAccount"
+            },
+            "maxItems": 100
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "CreateBillingAccountRequest": {
+        "type": "object",
+        "properties": {
+          "organization": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "organization",
+          "display_name"
+        ],
+        "additionalProperties": false
+      },
       "OrganizationInvitation": {
         "type": "object",
         "properties": {
@@ -25444,108 +27085,6 @@
           "name"
         ],
         "additionalProperties": false
-      },
-      "Policy": {
-        "type": "object",
-        "properties": {
-          "bindings": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Binding"
-            },
-            "maxItems": 100
-          },
-          "etag": {
-            "type": "string",
-            "maxLength": 64,
-            "description": "Pass as `If-Match` on `setIamPolicy`. OUTPUT_ONLY."
-          }
-        },
-        "required": [
-          "bindings",
-          "etag"
-        ],
-        "additionalProperties": false
-      },
-      "Binding": {
-        "type": "object",
-        "properties": {
-          "role": {
-            "$ref": "#/components/schemas/RoleName"
-          },
-          "members": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/Member"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/Member"
-            },
-            "maxItems": 64
-          },
-          "condition": {
-            "$ref": "#/components/schemas/BindingCondition"
-          }
-        },
-        "required": [
-          "role",
-          "members"
-        ],
-        "additionalProperties": false
-      },
-      "BindingCondition": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "description": {
-            "type": "string",
-            "maxLength": 512
-          },
-          "expires_at": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991,
-            "description": "Unix timestamp (seconds)"
-          },
-          "operations": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "type": "string",
-                "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
-                "maxLength": 96
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
-              "maxLength": 96
-            },
-            "maxItems": 100
-          }
-        },
-        "required": [
-          "title"
-        ],
-        "additionalProperties": false
-      },
-      "Member": {
-        "type": "string",
-        "pattern": "^(user:[^\\s]{1,64}|service:[a-z][a-z0-9-]{0,62}|workload:[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
-        "title": "Member",
-        "description": "A person (`user:<id>`), an Akua service agent (`service:<name>`) or one workload (`workload:<pool>/<id>`)",
-        "examples": [
-          "user:usr_j572abc",
-          "service:placement"
-        ]
       },
       "SetOrganizationIamPolicyRequest": {
         "type": "object",
@@ -26157,6 +27696,9 @@
     },
     {
       "name": "Organizations"
+    },
+    {
+      "name": "Billing accounts"
     },
     {
       "name": "workspaces"

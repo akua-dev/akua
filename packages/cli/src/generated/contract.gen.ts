@@ -8,6 +8,10 @@ export const contract: ApiContract = {
 			"title": "API Tokens"
 		},
 		{
+			"name": "billing-accounts",
+			"title": "Billing accounts"
+		},
+		{
 			"name": "clusters",
 			"title": "clusters"
 		},
@@ -69,7 +73,7 @@ export const contract: ApiContract = {
 		},
 		{
 			"name": "workspaces",
-			"title": "workspaces"
+			"title": "Billing accounts"
 		}
 	],
 	"parameters": {
@@ -93,6 +97,17 @@ export const contract: ApiContract = {
 				"minLength": 1,
 				"maxLength": 64,
 				"description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used."
+			}
+		},
+		"header:idempotency-key:2": {
+			"name": "idempotency-key",
+			"in": "header",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 64,
+				"description": "Required caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used."
 			}
 		},
 		"header:if-match": {
@@ -128,6 +143,16 @@ export const contract: ApiContract = {
 				"description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata."
 			}
 		},
+		"path:billing_account": {
+			"name": "billing_account",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"minLength": 3,
+				"maxLength": 54
+			}
+		},
 		"path:command_id": {
 			"name": "command_id",
 			"in": "path",
@@ -156,6 +181,17 @@ export const contract: ApiContract = {
 			}
 		},
 		"path:id:10": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"description": "Package ID",
+				"minLength": 1,
+				"maxLength": 54
+			}
+		},
+		"path:id:11": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -189,7 +225,6 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"type": "string",
-				"description": "Workspace ID",
 				"minLength": 1,
 				"maxLength": 53
 			}
@@ -200,12 +235,23 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"type": "string",
+				"description": "Workspace ID",
+				"minLength": 1,
+				"maxLength": 53
+			}
+		},
+		"path:id:6": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
 				"description": "Product ID",
 				"minLength": 1,
 				"maxLength": 55
 			}
 		},
-		"path:id:6": {
+		"path:id:7": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -216,7 +262,7 @@ export const contract: ApiContract = {
 				"maxLength": 56
 			}
 		},
-		"path:id:7": {
+		"path:id:8": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -227,23 +273,12 @@ export const contract: ApiContract = {
 				"maxLength": 55
 			}
 		},
-		"path:id:8": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
 		"path:id:9": {
 			"name": "id",
 			"in": "path",
 			"required": true,
 			"schema": {
 				"type": "string",
-				"description": "Package ID",
 				"minLength": 1,
 				"maxLength": 54
 			}
@@ -433,6 +468,16 @@ export const contract: ApiContract = {
 			"required": false,
 			"schema": {
 				"type": "string",
+				"minLength": 3,
+				"maxLength": 54
+			}
+		},
+		"query:organization:2": {
+			"name": "organization",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "string",
 				"minLength": 1,
 				"maxLength": 54,
 				"description": "Filter by owning organization. Requires membership."
@@ -477,6 +522,19 @@ export const contract: ApiContract = {
 			"schema": {
 				"type": "string",
 				"enum": [
+					"PENDING",
+					"ACTIVE",
+					"CLOSED"
+				]
+			}
+		},
+		"query:state:2": {
+			"name": "state",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "string",
+				"enum": [
 					"PROVISIONING",
 					"RUNNING",
 					"SUSPENDING",
@@ -487,7 +545,7 @@ export const contract: ApiContract = {
 				"description": "Machine lifecycle state."
 			}
 		},
-		"query:state:2": {
+		"query:state:3": {
 			"name": "state",
 			"in": "query",
 			"required": false,
@@ -495,7 +553,7 @@ export const contract: ApiContract = {
 				"$ref": "#/$defs/SandboxState"
 			}
 		},
-		"query:state:3": {
+		"query:state:4": {
 			"name": "state",
 			"in": "query",
 			"required": false,
@@ -582,6 +640,117 @@ export const contract: ApiContract = {
 			"parameters": [
 				"path:id:3"
 			]
+		},
+		{
+			"id": "billingAccounts.close",
+			"method": "POST",
+			"path": "/billing_accounts/{billing_account}:close",
+			"summary": "Close a billing account",
+			"auth": true,
+			"parameters": [
+				"path:billing_account",
+				"header:idempotency-key",
+				"header:if-match"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/CloseBillingAccountRequest"
+				}
+			}
+		},
+		{
+			"id": "billingAccounts.create",
+			"method": "POST",
+			"path": "/billing_accounts",
+			"summary": "Create a billing account",
+			"auth": true,
+			"parameters": [
+				"header:idempotency-key:2"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/CreateBillingAccountRequest"
+				}
+			}
+		},
+		{
+			"id": "billingAccounts.get",
+			"method": "GET",
+			"path": "/billing_accounts/{billing_account}",
+			"summary": "Get a billing account",
+			"auth": true,
+			"parameters": [
+				"path:billing_account"
+			]
+		},
+		{
+			"id": "billingAccounts.getIamPolicy",
+			"method": "GET",
+			"path": "/billing_accounts/{billing_account}:getIamPolicy",
+			"summary": "Get a billing account policy",
+			"auth": true,
+			"parameters": [
+				"path:billing_account"
+			]
+		},
+		{
+			"id": "billingAccounts.list",
+			"method": "GET",
+			"path": "/billing_accounts",
+			"summary": "List billing accounts",
+			"auth": true,
+			"parameters": [
+				"query:organization",
+				"query:cursor:3",
+				"query:state"
+			]
+		},
+		{
+			"id": "billingAccounts.setIamPolicy",
+			"method": "POST",
+			"path": "/billing_accounts/{billing_account}:setIamPolicy",
+			"summary": "Set a billing account policy",
+			"auth": true,
+			"parameters": [
+				"path:billing_account",
+				"header:idempotency-key",
+				"header:if-match"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/SetIamPolicyRequest"
+				}
+			}
+		},
+		{
+			"id": "billingAccounts.startPaymentSetup",
+			"method": "POST",
+			"path": "/billing_accounts/{billing_account}:startPaymentSetup",
+			"summary": "Start adding a card",
+			"auth": true,
+			"parameters": [
+				"path:billing_account",
+				"header:idempotency-key"
+			]
+		},
+		{
+			"id": "billingAccounts.testIamPermissions",
+			"method": "POST",
+			"path": "/billing_accounts/{billing_account}:testIamPermissions",
+			"summary": "Test billing account permissions",
+			"auth": true,
+			"parameters": [
+				"path:billing_account"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/TestIamPermissionsRequest"
+				}
+			}
 		},
 		{
 			"id": "clusters.create",
@@ -807,7 +976,7 @@ export const contract: ApiContract = {
 				"header:akua-context",
 				"query:cursor",
 				"query:limit",
-				"query:state"
+				"query:state:2"
 			]
 		},
 		{
@@ -934,7 +1103,7 @@ export const contract: ApiContract = {
 			"summary": "Archive offer",
 			"auth": true,
 			"parameters": [
-				"path:id:6",
+				"path:id:7",
 				"header:akua-context",
 				"header:idempotency-key",
 				"header:if-match"
@@ -964,7 +1133,7 @@ export const contract: ApiContract = {
 			"summary": "Get offer details",
 			"auth": false,
 			"parameters": [
-				"path:id:6",
+				"path:id:7",
 				"query:view"
 			]
 		},
@@ -1034,7 +1203,7 @@ export const contract: ApiContract = {
 			"summary": "Cancel order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:id:8",
 				"header:if-match",
 				"header:idempotency-key"
 			]
@@ -1062,7 +1231,7 @@ export const contract: ApiContract = {
 			"summary": "Get order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:7"
+				"path:id:8"
 			]
 		},
 		{
@@ -1072,7 +1241,7 @@ export const contract: ApiContract = {
 			"summary": "Redeem order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:id:8",
 				"header:if-match",
 				"header:idempotency-key"
 			],
@@ -1090,7 +1259,7 @@ export const contract: ApiContract = {
 			"summary": "Update order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:id:8",
 				"header:if-match",
 				"header:idempotency-key"
 			],
@@ -1289,7 +1458,7 @@ export const contract: ApiContract = {
 			"summary": "Create package version",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:id:10",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
@@ -1307,7 +1476,7 @@ export const contract: ApiContract = {
 			"summary": "Get package details",
 			"auth": true,
 			"parameters": [
-				"path:id:8",
+				"path:id:9",
 				"header:akua-context"
 			]
 		},
@@ -1318,7 +1487,7 @@ export const contract: ApiContract = {
 			"summary": "Get package version input schema",
 			"auth": true,
 			"parameters": [
-				"path:id:8",
+				"path:id:9",
 				"path:version_id",
 				"header:akua-context"
 			]
@@ -1330,7 +1499,7 @@ export const contract: ApiContract = {
 			"summary": "Archive product",
 			"auth": true,
 			"parameters": [
-				"path:id:5",
+				"path:id:6",
 				"header:akua-context",
 				"header:idempotency-key",
 				"header:if-match"
@@ -1360,7 +1529,7 @@ export const contract: ApiContract = {
 			"summary": "Get product details",
 			"auth": true,
 			"parameters": [
-				"path:id:5",
+				"path:id:6",
 				"header:akua-context"
 			]
 		},
@@ -1395,7 +1564,7 @@ export const contract: ApiContract = {
 			"summary": "Cancel a command",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"path:command_id",
 				"header:akua-context"
 			]
@@ -1424,7 +1593,7 @@ export const contract: ApiContract = {
 			"summary": "Delete a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key",
 				"header:if-match"
@@ -1437,7 +1606,7 @@ export const contract: ApiContract = {
 			"summary": "Fork a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
@@ -1455,7 +1624,7 @@ export const contract: ApiContract = {
 			"summary": "Get a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context"
 			]
 		},
@@ -1466,7 +1635,7 @@ export const contract: ApiContract = {
 			"summary": "Get a command",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"path:command_id",
 				"header:akua-context"
 			]
@@ -1478,7 +1647,7 @@ export const contract: ApiContract = {
 			"summary": "Grant access to a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -1498,7 +1667,7 @@ export const contract: ApiContract = {
 				"header:akua-context",
 				"query:cursor:2",
 				"query:limit",
-				"query:state:2",
+				"query:state:3",
 				"query:opencode"
 			]
 		},
@@ -1509,7 +1678,7 @@ export const contract: ApiContract = {
 			"summary": "List access grants",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context",
 				"query:cursor:2",
 				"query:limit"
@@ -1522,11 +1691,11 @@ export const contract: ApiContract = {
 			"summary": "List commands",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context",
 				"query:cursor:2",
 				"query:limit",
-				"query:state:3"
+				"query:state:4"
 			]
 		},
 		{
@@ -1536,7 +1705,7 @@ export const contract: ApiContract = {
 			"summary": "List files",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -1553,7 +1722,7 @@ export const contract: ApiContract = {
 			"summary": "Make a directory",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -1570,7 +1739,7 @@ export const contract: ApiContract = {
 			"summary": "Move a file",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -1587,7 +1756,7 @@ export const contract: ApiContract = {
 			"summary": "Read a file",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -1605,7 +1774,7 @@ export const contract: ApiContract = {
 			"summary": "Remove files",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -1622,7 +1791,7 @@ export const contract: ApiContract = {
 			"summary": "Resume a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key",
 				"header:if-match"
@@ -1635,7 +1804,7 @@ export const contract: ApiContract = {
 			"summary": "Revoke access to a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"path:grant_id",
 				"header:akua-context"
 			]
@@ -1647,7 +1816,7 @@ export const contract: ApiContract = {
 			"summary": "Run a command",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -1664,7 +1833,7 @@ export const contract: ApiContract = {
 			"summary": "Get file metadata",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -1681,7 +1850,7 @@ export const contract: ApiContract = {
 			"summary": "Stream command output",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"path:command_id",
 				"header:akua-context",
 				"query:offset",
@@ -1696,7 +1865,7 @@ export const contract: ApiContract = {
 			"summary": "Suspend a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key",
 				"header:if-match"
@@ -1709,7 +1878,7 @@ export const contract: ApiContract = {
 			"summary": "Update a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context",
 				"header:if-match"
 			],
@@ -1727,7 +1896,7 @@ export const contract: ApiContract = {
 			"summary": "Write to a command’s input",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"path:command_id",
 				"header:akua-context"
 			],
@@ -1745,7 +1914,7 @@ export const contract: ApiContract = {
 			"summary": "Write a file",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context",
 				"query:path",
 				"query:create_parents"
@@ -1761,7 +1930,7 @@ export const contract: ApiContract = {
 			"summary": "Write several files",
 			"auth": true,
 			"parameters": [
-				"path:id:10",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -2045,7 +2214,7 @@ export const contract: ApiContract = {
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/SetIamPolicyRequest"
+					"$ref": "#/$defs/SetIamPolicyRequest_1"
 				}
 			}
 		},
@@ -2114,6 +2283,16 @@ export const contract: ApiContract = {
 			"summary": "Get workspace",
 			"auth": true,
 			"parameters": [
+				"path:id:5"
+			]
+		},
+		{
+			"id": "workspaces.getBillingInfo",
+			"method": "GET",
+			"path": "/workspaces/{id}/billing_info",
+			"summary": "Get Workspace billing",
+			"auth": true,
+			"parameters": [
 				"path:id:4"
 			]
 		},
@@ -2124,10 +2303,27 @@ export const contract: ApiContract = {
 			"summary": "List workspaces",
 			"auth": true,
 			"parameters": [
-				"query:organization",
+				"query:organization:2",
 				"query:cursor",
 				"query:limit"
 			]
+		},
+		{
+			"id": "workspaces.updateBillingInfo",
+			"method": "PUT",
+			"path": "/workspaces/{id}/billing_info",
+			"summary": "Link a billing account",
+			"auth": true,
+			"parameters": [
+				"path:id:4",
+				"header:idempotency-key"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/UpdateWorkspaceBillingInfoRequest"
+				}
+			}
 		}
 	],
 	"definitions": {
@@ -2142,6 +2338,11 @@ export const contract: ApiContract = {
 				"payload"
 			],
 			"additionalProperties": false
+		},
+		"BillingAccountName": {
+			"type": "string",
+			"pattern": "^billingAccounts\\/bac_[A-Za-z0-9]+$",
+			"title": "BillingAccountName"
 		},
 		"Binding": {
 			"type": "object",
@@ -2211,6 +2412,17 @@ export const contract: ApiContract = {
 			"required": [
 				"title"
 			],
+			"additionalProperties": false
+		},
+		"CloseBillingAccountRequest": {
+			"type": "object",
+			"properties": {
+				"reason": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 512
+				}
+			},
 			"additionalProperties": false
 		},
 		"ClusterAccess": {
@@ -2385,6 +2597,26 @@ export const contract: ApiContract = {
 			},
 			"required": [
 				"name"
+			],
+			"additionalProperties": false
+		},
+		"CreateBillingAccountRequest": {
+			"type": "object",
+			"properties": {
+				"organization": {
+					"type": "string",
+					"minLength": 3,
+					"maxLength": 54
+				},
+				"display_name": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 100
+				}
+			},
+			"required": [
+				"organization",
+				"display_name"
 			],
 			"additionalProperties": false
 		},
@@ -3192,6 +3424,12 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
+		"PermissionName": {
+			"type": "string",
+			"pattern": "^[a-z][a-z0-9-]{0,62}\\.[a-z][a-z0-9-]{0,62}\\.[a-z][a-z0-9-]{0,62}$",
+			"title": "PermissionName",
+			"description": "A permission `service.resource.verb`"
+		},
 		"RedeemOrderDraftBody": {
 			"type": "object",
 			"properties": {
@@ -3464,6 +3702,22 @@ export const contract: ApiContract = {
 				"bindings": {
 					"type": "array",
 					"items": {
+						"$ref": "#/$defs/Binding"
+					},
+					"maxItems": 100
+				}
+			},
+			"required": [
+				"bindings"
+			],
+			"additionalProperties": false
+		},
+		"SetIamPolicyRequest_1": {
+			"type": "object",
+			"properties": {
+				"bindings": {
+					"type": "array",
+					"items": {
 						"type": "object",
 						"properties": {
 							"role": {
@@ -3530,6 +3784,28 @@ export const contract: ApiContract = {
 			},
 			"required": [
 				"bindings"
+			],
+			"additionalProperties": false
+		},
+		"TestIamPermissionsRequest": {
+			"type": "object",
+			"properties": {
+				"permissions": {
+					"type": "array",
+					"prefixItems": [
+						{
+							"$ref": "#/$defs/PermissionName"
+						}
+					],
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/PermissionName"
+					},
+					"maxItems": 100
+				}
+			},
+			"required": [
+				"permissions"
 			],
 			"additionalProperties": false
 		},
@@ -3639,6 +3915,25 @@ export const contract: ApiContract = {
 					"description": "Opaque key-value data for clients (AIP-148)."
 				}
 			},
+			"additionalProperties": false
+		},
+		"UpdateWorkspaceBillingInfoRequest": {
+			"type": "object",
+			"properties": {
+				"billing_account": {
+					"anyOf": [
+						{
+							"$ref": "#/$defs/BillingAccountName"
+						},
+						{
+							"type": "null"
+						}
+					]
+				}
+			},
+			"required": [
+				"billing_account"
+			],
 			"additionalProperties": false
 		},
 		"VaultId": {
