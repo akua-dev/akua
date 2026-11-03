@@ -1,7 +1,6 @@
 import { type HostAssets, runAkuapkgWith } from '@akua-dev/sdk/cli';
-import { BunServices } from '@effect/platform-bun';
+import { BunCrypto, BunServices } from '@effect/platform-bun';
 import {
-	Crypto,
 	Effect,
 	FileSystem,
 	Layer,
@@ -13,6 +12,7 @@ import {
 	Stdio,
 	Stream
 } from 'effect';
+import { SecureRandom } from 'effect/crypto';
 import { HttpClient, HttpClientRequest } from 'effect/http';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 
@@ -145,7 +145,7 @@ export const SecureConfigLive = Layer.effect(
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
 		const path = yield* Path.Path;
-		const crypto = yield* Crypto.Crypto;
+		const crypto = yield* SecureRandom.SecureRandom;
 
 		/** The config file as a JSON object; a missing file is an empty one. */
 		const readConfig = Effect.fnUntraced(function* (configPath: string) {
@@ -171,7 +171,7 @@ export const SecureConfigLive = Layer.effect(
 			config: Record<string, unknown>
 		) {
 			const directory = path.dirname(configPath);
-			const temporary = path.join(directory, `.config.json.${yield* crypto.randomUUIDv4()}.tmp`);
+			const temporary = path.join(directory, `.config.json.${yield* crypto.uuidV4()}.tmp`);
 			yield* Effect.gen(function* () {
 				yield* fs.makeDirectory(directory, { recursive: true, mode: CONFIG_DIR_MODE });
 				yield* fs.chmod(directory, CONFIG_DIR_MODE);
@@ -293,7 +293,7 @@ export const EmbeddedPackageCli = (assets: HostAssets, version: string) =>
 	Layer.succeed(PackageCli, {
 		execute: (args) =>
 			runAkuapkgWith(args, { name: 'akua pkg', version, assets }).pipe(
-				Effect.provide(BunServices.layer),
+				Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)),
 				Effect.mapError((cause) => new PackageCliFailure({ cause }))
 			)
 	});
@@ -329,7 +329,7 @@ export const PackageCliLive = Layer.effect(
 
 export type CliPlatform =
 	| ChildProcessSpawner.ChildProcessSpawner
-	| Crypto.Crypto
+	| SecureRandom.SecureRandom
 	| FileSystem.FileSystem
 	| Path.Path
 	| Stdio.Stdio;

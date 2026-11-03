@@ -1,4 +1,4 @@
-import { BunServices } from '@effect/platform-bun';
+import { BunCrypto, BunServices } from '@effect/platform-bun';
 import { expect, it } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer, Schema } from 'effect';
 import { buildContract, OpenApiDocument } from '../scripts/generate-contract';
@@ -62,7 +62,7 @@ it.effect('runs an explicitly supplied admin contract without changing the publi
 			}),
 			Effect.provide(
 				Layer.mergeAll(
-					CliLive('test').pipe(Layer.provide(BunServices.layer)),
+					CliLive('test').pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer))),
 					ConfigProvider.layer(ConfigProvider.fromEnvRecord({}))
 				)
 			)

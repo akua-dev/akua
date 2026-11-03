@@ -7,8 +7,9 @@
 // boundary.
 import { lstatSync } from 'node:fs';
 
-import { BunServices } from '@effect/platform-bun';
-import { Crypto, Effect, FileSystem, Layer, Path, Stream } from 'effect';
+import { BunCrypto, BunServices } from '@effect/platform-bun';
+import { Effect, FileSystem, Layer, Path, Stream } from 'effect';
+import { Digest } from 'effect/crypto';
 import type { PlatformError } from 'effect/PlatformError';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 
@@ -759,9 +760,9 @@ const runCommand = Effect.fn('runCommand')(function* (
 });
 
 const sha256 = Effect.fn('sha256')(function* (bytes: Uint8Array) {
-	const crypto = yield* Crypto.Crypto;
+	const crypto = yield* Digest.Digest;
 	const digest = yield* crypto
-		.digest('SHA-256', bytes)
+		.digest(Digest.sha256, bytes)
 		.pipe(Effect.mapError(toReleaseFailure('calculate SHA-256')));
 	return bytesToHex(digest);
 });
@@ -939,24 +940,38 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export const makeReleaseHostLive = (zipperPath?: string) =>
 	Layer.succeed(ReleaseHost, {
-		sha256: (bytes) => sha256(bytes).pipe(Effect.provide(BunServices.layer)),
+		sha256: (bytes) =>
+			sha256(bytes).pipe(Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer))),
 		hostTargetId: attempt('read release host', () => ({
 			platform: process.platform,
 			arch: process.arch
 		})).pipe(Effect.flatMap(({ platform, arch }) => releaseTargetIdForHost(platform, arch))),
 		planUploads: (candidateDir, existingDir, version) =>
 			planReleaseUploads(candidateDir, existingDir, version).pipe(
-				Effect.provide(BunServices.layer)
+				Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer))
 			),
 		assertSafeOutputDirectory: (outputDir) =>
-			assertSafeOutputDirectory(outputDir).pipe(Effect.provide(BunServices.layer)),
+			assertSafeOutputDirectory(outputDir).pipe(
+				Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer))
+			),
 		packageExistingExecutables: (input) =>
-			packageExistingExecutables(input).pipe(Effect.provide(BunServices.layer)),
+			packageExistingExecutables(input).pipe(
+				Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer))
+			),
 		assembleReleasePackages: (input) =>
-			assembleReleasePackages(input).pipe(Effect.provide(BunServices.layer)),
-		packageRelease: (input) => packageRelease(input).pipe(Effect.provide(BunServices.layer)),
+			assembleReleasePackages(input).pipe(
+				Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer))
+			),
+		packageRelease: (input) =>
+			packageRelease(input).pipe(
+				Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer))
+			),
 		smokeReleaseArtifact: (input) =>
-			smokeReleaseArtifact(input).pipe(Effect.provide(BunServices.layer)),
+			smokeReleaseArtifact(input).pipe(
+				Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer))
+			),
 		verifyReleaseDirectory: (outputDir, version) =>
-			verifyReleaseDirectory(outputDir, version, zipperPath).pipe(Effect.provide(BunServices.layer))
+			verifyReleaseDirectory(outputDir, version, zipperPath).pipe(
+				Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer))
+			)
 	});

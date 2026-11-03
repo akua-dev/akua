@@ -9,7 +9,7 @@ import {
 	statMode,
 	writeFileString
 } from './fs-test';
-import { BunServices } from '@effect/platform-bun';
+import { BunCrypto, BunServices } from '@effect/platform-bun';
 import { ConfigProvider, Effect, FileSystem, Layer, Path } from 'effect';
 
 import { main, VERSION } from '../src/bin/akua';
@@ -41,7 +41,9 @@ describe('config directory selection', () => {
 						stdout.push(value);
 					})
 			}),
-			Effect.provide(CliLive(VERSION).pipe(Layer.provide(BunServices.layer)))
+			Effect.provide(
+				CliLive(VERSION).pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
+			)
 		);
 		return { stdout: stdout.join(''), exitCode };
 	});
@@ -143,7 +145,7 @@ describe('config directory selection', () => {
 						JSON.parse(yield* fs.readFileString(path.join(root, directory, 'config.json')))
 					).toMatchObject({ token: `fixture-${directory}` });
 				}
-			}).pipe(Effect.scoped, Effect.provide(BunServices.layer))
+			}).pipe(Effect.scoped, Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
 		);
 	}
 
@@ -178,7 +180,7 @@ describe('config directory selection', () => {
 				data: { authenticated: true, source: 'env' }
 			});
 			expect(overridden.stdout).not.toContain('fixture-env-token');
-		}).pipe(Effect.scoped, Effect.provide(BunServices.layer))
+		}).pipe(Effect.scoped, Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
 	);
 });
 
@@ -203,7 +205,9 @@ describe('akua entrypoint', () => {
 						writeStdoutBytes: () => Effect.void,
 						writeStdout: () => Effect.void
 					}),
-					Effect.provide(CliLive(VERSION).pipe(Layer.provide(BunServices.layer)))
+					Effect.provide(
+						CliLive(VERSION).pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
+					)
 				);
 
 			expect(yield* run(['pkg'])).toBe(0);
@@ -225,7 +229,9 @@ describe('akua entrypoint', () => {
 								return 0;
 							})
 					}),
-					Effect.provide(CliLive(VERSION).pipe(Layer.provide(BunServices.layer)))
+					Effect.provide(
+						CliLive(VERSION).pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
+					)
 				);
 
 			expect(yield* run(['--json', 'pkg', 'version'])).toBe(0);
@@ -255,7 +261,9 @@ describe('akua entrypoint', () => {
 							stdout.push(value);
 						})
 				}),
-				Effect.provide(CliLive(VERSION).pipe(Layer.provide(BunServices.layer)))
+				Effect.provide(
+					CliLive(VERSION).pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
+				)
 			);
 
 			expect(exitCode).toBe(1);

@@ -1,4 +1,5 @@
-import { Bytes, Crypto, Effect, FileSystem, Path } from "effect"
+import { Bytes, Effect, FileSystem, Path } from "effect"
+import { Digest } from "effect/crypto"
 import { Hex } from "effect/encoding"
 import { PathEscape } from "./errors"
 import { comparePaths } from "./walk"
@@ -66,10 +67,10 @@ const encoder = new TextEncoder()
  * previous release's tree digest, so `akua.lock` entries stay valid.
  */
 export const treeDigest = Effect.fnUntraced(function*(files: Snapshot) {
-  const crypto = yield* Crypto.Crypto
+  const crypto = yield* Digest.Digest
   const chunks: Uint8Array[] = []
   for (const name of Array.from(files.keys()).toSorted(comparePaths)) {
     chunks.push(encoder.encode(name), new Uint8Array([0]), files.get(name) ?? new Uint8Array(), new Uint8Array([10]))
   }
-  return `sha256:${Hex.encode(yield* crypto.digest("SHA-256", Bytes.concat(chunks)))}`
+  return `sha256:${Hex.encode(yield* crypto.digest(Digest.sha256, Bytes.concat(chunks)))}`
 })

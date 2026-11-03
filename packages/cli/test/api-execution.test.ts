@@ -1,6 +1,6 @@
-import { BunServices } from '@effect/platform-bun';
+import { BunCrypto, BunServices } from '@effect/platform-bun';
 import { describe, expect, it } from '@effect/vitest';
-import { Effect } from 'effect';
+import { Effect, Layer } from 'effect';
 import { Command } from 'effect/cli';
 
 import type { ApiContract } from '../src/api/contract';
@@ -188,7 +188,7 @@ describe('secret values', () => {
 				'--value',
 				'private-inline-value'
 			]);
-		}).pipe(Effect.provide(BunServices.layer))
+		}).pipe(Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
 	);
 
 	it.effect('reads a secret from stdin with --<flag>-file - and does not warn', () =>

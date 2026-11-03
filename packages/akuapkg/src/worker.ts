@@ -1,4 +1,5 @@
-import { Cause, Context, Crypto, Effect, FileSystem, Layer, Path, Predicate, Schema, type Scope } from "effect"
+import { Cause, Context, Effect, FileSystem, Layer, Path, Predicate, Schema, type Scope } from "effect"
+import { Digest } from "effect/crypto"
 import YAML from "yaml"
 import { type ResolvedDependency, type ResolveOptions, resolvePackage } from "./dependencies"
 import {
@@ -175,7 +176,7 @@ export class RenderWorker extends Context.Service<RenderWorker, {
       const host = yield* WasmHost
       const artifacts = yield* Artifacts
       const plugins = yield* KclPlugins
-      const platform = yield* Effect.context<Crypto.Crypto | FileSystem.FileSystem | Path.Path | OciRegistry | HelmRepository | GitRemote | UrlSource>()
+      const platform = yield* Effect.context<Digest.Digest | FileSystem.FileSystem | Path.Path | OciRegistry | HelmRepository | GitRemote | UrlSource>()
       const worker = yield* host.command("akua-render-worker", yield* fs.readFile(artifacts.worker))
       const stdlibFiles: Snapshot = new Map(
         yield* Effect.forEach(
@@ -195,7 +196,7 @@ export class RenderWorker extends Context.Service<RenderWorker, {
       ): Effect.Effect<
         PackageTree,
         ManifestInvalid | DependencyUnresolved | RenderError,
-        Scope.Scope | Crypto.Crypto | FileSystem.FileSystem | Path.Path | OciRegistry | HelmRepository | GitRemote | UrlSource
+        Scope.Scope | Digest.Digest | FileSystem.FileSystem | Path.Path | OciRegistry | HelmRepository | GitRemote | UrlSource
       > =>
         Effect.gen(function*() {
           const stack = [...ancestors, yield* fs.realPath(pkg.workspace)]

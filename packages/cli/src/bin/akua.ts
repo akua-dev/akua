@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
-import { BunRuntime, BunServices } from '@effect/platform-bun';
-import { Effect, type Layer, Stdio } from 'effect';
+import { BunCrypto, BunRuntime, BunServices } from '@effect/platform-bun';
+import { Effect, Layer, Stdio } from 'effect';
 
 import { runAkua } from '../cli/main';
 import { ExitStatus } from '../runtime/exit-codes';
@@ -22,6 +22,9 @@ export const akuaProgram = (packageCli: Layer.Layer<PackageCli, never, CliPlatfo
 		const stdio = yield* Stdio.Stdio;
 		const code = yield* main(yield* stdio.args);
 		if (code !== 0) return yield* new ExitStatus({ code });
-	}).pipe(Effect.provide(CliLive(VERSION, packageCli)), Effect.provide(BunServices.layer));
+	}).pipe(
+		Effect.provide(CliLive(VERSION, packageCli)),
+		Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer))
+	);
 
 if (import.meta.main) BunRuntime.runMain(akuaProgram(PackageCliLive));
