@@ -1,8 +1,8 @@
 diff --git a/dist/cluster/Entity.d.ts b/dist/cluster/Entity.d.ts
-index 482c629..03d0654 100644
+index 92f173c74a3308382cdd855ad997137174f9ece1..2ed12d3daa5adb0b3c3efaa15f4c8adb6b2b68fa 100644
 --- a/dist/cluster/Entity.d.ts
 +++ b/dist/cluster/Entity.d.ts
-@@ -353,5 +353,22 @@ declare const KeepAliveLatch_base: Context.ServiceClass<KeepAliveLatch, "effect/
+@@ -379,5 +379,22 @@ declare const KeepAliveLatch_base: Context.ServiceClass<KeepAliveLatch, "effect/
   */
  export declare class KeepAliveLatch extends KeepAliveLatch_base {
  }
@@ -27,7 +27,7 @@ index 482c629..03d0654 100644
  //# sourceMappingURL=Entity.d.ts.map
 \ No newline at end of file
 diff --git a/dist/cluster/Entity.js b/dist/cluster/Entity.js
-index 44610e2..81ee380 100644
+index 44610e2727552a42de76e07b44c75bc79f32e26a..81ee3806511f364dc13c64b7ec0f13c7c1eb333b 100644
 --- a/dist/cluster/Entity.js
 +++ b/dist/cluster/Entity.js
 @@ -55,89 +55,85 @@ const TypeId = "~effect/cluster/Entity";
@@ -554,10 +554,10 @@ index 44610e2..81ee380 100644
  //# sourceMappingURL=Entity.js.map
 \ No newline at end of file
 diff --git a/dist/http-api/HttpApiClient.js b/dist/http-api/HttpApiClient.js
-index 0d5b12e..b66f246 100644
+index c1bd2e30f483c62bbd40a82cae5a28f97240c1a8..1372a9b9cbca232f031b1ccb3060f27a51954d19 100644
 --- a/dist/http-api/HttpApiClient.js
 +++ b/dist/http-api/HttpApiClient.js
-@@ -383,22 +383,24 @@ export const urlBuilder = (api, options) => {
+@@ -433,22 +433,24 @@ export const urlBuilder = (api, options) => {
    return builder;
  };
  // ----------------------------------------------------------------------------
@@ -592,7 +592,7 @@ index 0d5b12e..b66f246 100644
  function schemasToResponse(schemas, options, headersOptions) {
    const hasWithHeaders = schemas.some(schema => HttpApiSchema.isWithHeaders(schema) || HttpApiSchema.getWithHeadersAnnotation(schema.ast) !== undefined);
    const codec = hasWithHeaders ? Schema.Union(schemas.map(schema => toCodecArrayBufferWithHeaders(schema, options, headersOptions))) : toCodecArrayBuffer(schemas);
-@@ -739,6 +741,7 @@ function getEncodePayloadSchemaFromBody(schema, method) {
+@@ -790,6 +792,7 @@ function getEncodePayloadSchemaFromBody(schema, method) {
        }, input, options));
      },
      encode(t, options) {
@@ -601,7 +601,7 @@ index 0d5b12e..b66f246 100644
          case "Multipart":
            return Effect.fail(new SchemaIssue.Forbidden({
 diff --git a/dist/http-api/HttpApiEndpoint.d.ts b/dist/http-api/HttpApiEndpoint.d.ts
-index 8497b3c..b80f3ac 100644
+index 8497b3cfea4da807572871cc373b0bcf49f4ab87..b80f3ac5cb9389f58dd2649f4243dd277743cd53 100644
 --- a/dist/http-api/HttpApiEndpoint.d.ts
 +++ b/dist/http-api/HttpApiEndpoint.d.ts
 @@ -335,12 +335,8 @@ export type ClientRequest<Params extends Schema.Constraint, Query extends Schema
@@ -620,7 +620,7 @@ index 8497b3c..b80f3ac 100644
      readonly responseMode?: ResponseMode;
      readonly sseOptions?: Sse.DecodeOptions | undefined;
 diff --git a/dist/http-api/internal/path.js b/dist/http-api/internal/path.js
-index 5a5e644..cb3ae3d 100644
+index 5a5e64412966507df17319d296a2411361a91027..cb3ae3d5dba52439a8d3843f12d66f24f5427d36 100644
 --- a/dist/http-api/internal/path.js
 +++ b/dist/http-api/internal/path.js
 @@ -14,8 +14,8 @@ export function getParamNames(schema) {
@@ -635,10 +635,10 @@ index 5a5e644..cb3ae3d 100644
    let out = "";
    for (let i = 0; i < path.length; i++) {
 diff --git a/dist/http/HttpClient.js b/dist/http/HttpClient.js
-index 07fbd43..cc2454c 100644
+index 41218005c9de6908836546de436c0b14d8c6d16e..106355edf0dac3000da86c8a65b378392b9bd370 100644
 --- a/dist/http/HttpClient.js
 +++ b/dist/http/HttpClient.js
-@@ -1069,7 +1069,8 @@ export const layerMergedContext = effect => Layer.effect(HttpClient)(Effect.cont
+@@ -1164,7 +1164,8 @@ export const layerMergedContext = effect => Layer.effect(HttpClient)(Effect.cont
  // -----------------------------------------------------------------------------
  const responseRegistry = /*#__PURE__*/(() => {
    if ("FinalizationRegistry" in globalThis && globalThis.FinalizationRegistry) {
@@ -648,7 +648,7 @@ index 07fbd43..cc2454c 100644
        try {
          controller.abort();
        } catch {
-@@ -1078,10 +1079,10 @@ const responseRegistry = /*#__PURE__*/(() => {
+@@ -1173,10 +1174,10 @@ const responseRegistry = /*#__PURE__*/(() => {
      });
      return {
        register(response, controller) {
@@ -662,10 +662,10 @@ index 07fbd43..cc2454c 100644
      };
    }
 diff --git a/dist/internal/schema/toCodeDocument.js b/dist/internal/schema/toCodeDocument.js
-index f89c6e2..082ec05 100644
+index fc5a4a807d3b75d5fd21dc6eeac41870f9dbe486..f6b54699d8c42b412b449df4e654f59d7b6bd8f6 100644
 --- a/dist/internal/schema/toCodeDocument.js
 +++ b/dist/internal/schema/toCodeDocument.js
-@@ -330,8 +330,14 @@ export function toCodeDocument(document) {
+@@ -333,8 +333,14 @@ export function toCodeDocument(document) {
          return makeCode("Schema.Any", "any");
        case "String":
          return makeCode("Schema.String", "string");
@@ -683,7 +683,7 @@ index f89c6e2..082ec05 100644
          return makeCode("Schema.Boolean", "boolean");
        case "BigInt":
 diff --git a/dist/workflow/DurableClock.d.ts b/dist/workflow/DurableClock.d.ts
-index eca827b..10f1b51 100644
+index eca827b1c228a1f61ea3e98d0def1e3f5cd87f30..10f1b5198ba6c69f94fe8ae3f55fb2e827cf7000 100644
 --- a/dist/workflow/DurableClock.d.ts
 +++ b/dist/workflow/DurableClock.d.ts
 @@ -1,3 +1,15 @@
@@ -725,7 +725,7 @@ index eca827b..10f1b51 100644
   * Waits inside a workflow, using an in-memory activity for durations at or
   * below the threshold and scheduling a durable clock for longer durations.
 diff --git a/dist/workflow/DurableClock.js b/dist/workflow/DurableClock.js
-index 6ae2ac0..b45f3a6 100644
+index 6ae2ac0a3fd9ed69f99691a34a28919e96ac4ce8..b45f3a6476cb9770162cab0b6ef9c673b8792739 100644
 --- a/dist/workflow/DurableClock.js
 +++ b/dist/workflow/DurableClock.js
 @@ -23,14 +23,29 @@ const TypeId = "~effect/workflow/DurableClock";
@@ -815,10 +815,10 @@ index 6ae2ac0..b45f3a6 100644
  //# sourceMappingURL=DurableClock.js.map
 \ No newline at end of file
 diff --git a/src/cluster/Entity.ts b/src/cluster/Entity.ts
-index 2370430..0c6d68c 100644
+index e57e6bd024cd6cc8ba88daf219c0ab0ae9fbd4e3..e1a51c88e4300f9f31ff7ccff26ff6ce0aa217a1 100644
 --- a/src/cluster/Entity.ts
 +++ b/src/cluster/Entity.ts
-@@ -739,6 +739,11 @@ export const keepAlive: (
+@@ -791,6 +791,11 @@ export const keepAlive: (
    never,
    Sharding | CurrentAddress
  > = Effect.fnUntraced(function*(enabled: boolean) {
@@ -830,7 +830,7 @@ index 2370430..0c6d68c 100644
    const olatch = yield* Effect.serviceOption(KeepAliveLatch)
    if (olatch._tag === "None") return
    if (!enabled) {
-@@ -808,3 +813,22 @@ export const KeepAliveRpc = Rpc.make("Cluster/Entity/keepAlive")
+@@ -860,3 +865,22 @@ export const KeepAliveRpc = Rpc.make("Cluster/Entity/keepAlive")
  export class KeepAliveLatch extends Context.Service<KeepAliveLatch, Latch.Latch>()(
    "effect/cluster/Entity/KeepAliveLatch"
  ) {}
@@ -854,10 +854,10 @@ index 2370430..0c6d68c 100644
 +  (enabled: boolean) => Effect.Effect<void>
 +>()("effect/cluster/Entity/KeepAliveHandler") {}
 diff --git a/src/http-api/HttpApiClient.ts b/src/http-api/HttpApiClient.ts
-index a0b60d5..ec0d90d 100644
+index 809951550fbbdab4b0c9964de1e537eca6ac1899..ee250ea8831f22d481574faa5aa92e03c393bdb7 100644
 --- a/src/http-api/HttpApiClient.ts
 +++ b/src/http-api/HttpApiClient.ts
-@@ -893,22 +893,22 @@ export const urlBuilder = <Api extends HttpApi.Constraint>(api: Api, options?: {
+@@ -959,22 +959,22 @@ export const urlBuilder = <Api extends HttpApi.Constraint>(api: Api, options?: {
  
  // ----------------------------------------------------------------------------
  
@@ -893,7 +893,7 @@ index a0b60d5..ec0d90d 100644
  }
  
  function schemasToResponse(
-@@ -1440,6 +1440,7 @@ function getEncodePayloadSchemaFromBody(
+@@ -1506,6 +1506,7 @@ function getEncodePayloadSchemaFromBody(
          )
        },
        encode(t, options) {
@@ -902,7 +902,7 @@ index a0b60d5..ec0d90d 100644
            case "Multipart":
              return Effect.fail(
 diff --git a/src/http-api/HttpApiEndpoint.ts b/src/http-api/HttpApiEndpoint.ts
-index f5b19b7..95e078c 100644
+index e4bebe7915cfef2ddd43062d453e9f5b94b7dd96..b70d71a38c5c7f40f3d490ced517e60baada8d95 100644
 --- a/src/http-api/HttpApiEndpoint.ts
 +++ b/src/http-api/HttpApiEndpoint.ts
 @@ -658,12 +658,13 @@ export type ClientRequest<
@@ -926,7 +926,7 @@ index f5b19b7..95e078c 100644
        readonly responseMode?: ResponseMode
        readonly sseOptions?: Sse.DecodeOptions | undefined
 diff --git a/src/http-api/internal/path.ts b/src/http-api/internal/path.ts
-index e1fdb18..735f593 100644
+index e1fdb1884937b7327fca6be68ebcf9bef9b04ece..735f593d62f6fa31f3f4bb0d4de98d939f4b0639 100644
 --- a/src/http-api/internal/path.ts
 +++ b/src/http-api/internal/path.ts
 @@ -19,9 +19,14 @@ export function getParamNames(schema: Schema.Constraint | undefined): ReadonlySe
@@ -948,10 +948,10 @@ index e1fdb18..735f593 100644
  
    let out = ""
 diff --git a/src/http/HttpClient.ts b/src/http/HttpClient.ts
-index 10cb9a3..64f9829 100644
+index 76f03af31a1f03b433f4de6364b2fe100141cef5..4c6f0ce1918be69de90e55e2fc84f6de46dd53cd 100644
 --- a/src/http/HttpClient.ts
 +++ b/src/http/HttpClient.ts
-@@ -2824,7 +2824,8 @@ export const layerMergedContext = <E, R>(
+@@ -3057,7 +3057,8 @@ export const layerMergedContext = <E, R>(
  
  const responseRegistry = (() => {
    if ("FinalizationRegistry" in globalThis && globalThis.FinalizationRegistry) {
@@ -961,7 +961,7 @@ index 10cb9a3..64f9829 100644
        try {
          controller.abort()
        } catch {
-@@ -2833,10 +2834,10 @@ const responseRegistry = (() => {
+@@ -3066,10 +3067,10 @@ const responseRegistry = (() => {
      })
      return {
        register(response: HttpClientResponse.HttpClientResponse, controller: AbortController) {
@@ -975,10 +975,10 @@ index 10cb9a3..64f9829 100644
      }
    }
 diff --git a/src/internal/schema/toCodeDocument.ts b/src/internal/schema/toCodeDocument.ts
-index a5c4543..1996cbb 100644
+index 18d4aca1793fdc7d13b4b7a4cba6527c6e41a73e..4311fd6a8ee8bf2b2d0fbd5df74046ed96f74e39 100644
 --- a/src/internal/schema/toCodeDocument.ts
 +++ b/src/internal/schema/toCodeDocument.ts
-@@ -414,8 +414,14 @@ export function toCodeDocument(
+@@ -418,8 +418,14 @@ export function toCodeDocument(
          return makeCode("Schema.Any", "any")
        case "String":
          return makeCode("Schema.String", "string")
@@ -996,7 +996,7 @@ index a5c4543..1996cbb 100644
          return makeCode("Schema.Boolean", "boolean")
        case "BigInt":
 diff --git a/src/workflow/DurableClock.ts b/src/workflow/DurableClock.ts
-index 1594a9f..a0cce2a 100644
+index 1594a9f8e8366f6231b149092b29eca1c38bc9a9..a0cce2aa2b7a210962828ead1a7657858bb4852f 100644
 --- a/src/workflow/DurableClock.ts
 +++ b/src/workflow/DurableClock.ts
 @@ -63,6 +63,25 @@ const InstanceTag = Context.Service<

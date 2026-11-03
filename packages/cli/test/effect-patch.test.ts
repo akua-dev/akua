@@ -2,7 +2,7 @@ import { expect, it } from '@effect/vitest';
 import { Effect } from 'effect';
 import ts from 'typescript';
 
-// patches/effect@4.0.7.patch types an optional multipart payload as FormData or
+// patches/effect@4.1.2.patch types an optional multipart payload as FormData or
 // nothing; an unencoded object must not type-check.
 it.effect(
 	'Effect client accepts optional multipart as FormData or void, not an unencoded object',
