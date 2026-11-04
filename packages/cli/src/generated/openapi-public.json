@@ -6464,6 +6464,1237 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
+    "/workspaces/{id}/services": {
+      "get": {
+        "tags": [
+          "Workspace services"
+        ],
+        "operationId": "workspaces.listServices",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "WorkspaceServiceList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceServiceList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Every product service with its state and what keeps it from creating resources now. Existing resources keep working.",
+        "summary": "List Workspace services",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/connections": {
+      "get": {
+        "tags": [
+          "Vault connections"
+        ],
+        "operationId": "connections.list",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "VaultConnectionList",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultConnectionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "No credentials.",
+        "summary": "List connections",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "post": {
+        "tags": [
+          "Vault connections"
+        ],
+        "operationId": "connections.create",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "VaultConnection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultConnection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "`PENDING_CONSENT` until a key is set with `:setCredential` or OAuth consent completes.",
+        "summary": "Create a connection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVaultConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/connections/{connection}": {
+      "get": {
+        "tags": [
+          "Vault connections"
+        ],
+        "operationId": "connections.get",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "connection",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/ConnectionId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "VaultConnection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultConnection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "No credentials.",
+        "summary": "Get a connection",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/connections/{connection}:setCredential": {
+      "post": {
+        "tags": [
+          "Vault connections"
+        ],
+        "operationId": "connections.setCredential",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "connection",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/ConnectionId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "VaultConnection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultConnection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Stores the key in the vault, verified with the provider first. It is only ever injected into requests, never returned.",
+        "summary": "Set a connection credential",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetConnectionCredentialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/connections/{connection}:revoke": {
+      "post": {
+        "tags": [
+          "Vault connections"
+        ],
+        "operationId": "connections.revoke",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "connection",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/ConnectionId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "VaultConnection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultConnection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Denies use at once.",
+        "summary": "Revoke a connection",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/connections/{connection}:getIamPolicy": {
+      "get": {
+        "tags": [
+          "Vault connections"
+        ],
+        "operationId": "connections.getIamPolicy",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "connection",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/ConnectionId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Policy"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "The bindings attached to this connection.",
+        "summary": "Get a connection policy",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/connections/{connection}:setIamPolicy": {
+      "post": {
+        "tags": [
+          "Vault connections"
+        ],
+        "operationId": "connections.setIamPolicy",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "connection",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/ConnectionId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Policy"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Replaces the bindings attached to this connection.",
+        "summary": "Set a connection policy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetIamPolicyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/vaults/{vault}/connections/{connection}:testIamPermissions": {
+      "post": {
+        "tags": [
+          "Vault connections"
+        ],
+        "operationId": "connections.testIamPermissions",
+        "parameters": [
+          {
+            "name": "vault",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/VaultId"
+            },
+            "required": true
+          },
+          {
+            "name": "connection",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/ConnectionId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "TestIamPermissionsResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestIamPermissionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns the requested permissions the caller holds.",
+        "summary": "Test connection permissions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestIamPermissionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
     "/clusters": {
       "get": {
         "tags": [
@@ -14237,6 +15468,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "429": {
             "description": "The caller is over its per-minute budget.",
             "content": {
@@ -14507,6 +15748,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "429": {
             "description": "The caller is over its per-minute budget.",
             "content": {
@@ -14668,6 +15919,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "429": {
             "description": "The caller is over its per-minute budget.",
             "content": {
@@ -14731,11 +15992,11 @@
         ],
         "responses": {
           "200": {
-            "description": "IamPolicy",
+            "description": "Policy",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IamPolicy"
+                  "$ref": "#/components/schemas/Policy"
                 }
               }
             }
@@ -14861,11 +16122,11 @@
         ],
         "responses": {
           "200": {
-            "description": "IamPolicy",
+            "description": "Policy",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IamPolicy"
+                  "$ref": "#/components/schemas/Policy"
                 }
               }
             }
@@ -14930,6 +16191,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "429": {
             "description": "The caller is over its per-minute budget.",
             "content": {
@@ -14957,7 +16228,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SetIamPolicyRequest_1"
+                "$ref": "#/components/schemas/SetIamPolicyRequest"
               }
             }
           },
@@ -15326,6 +16597,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "429": {
             "description": "The caller is over its per-minute budget.",
             "content": {
@@ -15612,6 +16893,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "429": {
             "description": "The caller is over its per-minute budget.",
             "content": {
@@ -15781,6 +17072,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "429": {
             "description": "The caller is over its per-minute budget.",
             "content": {
@@ -15931,6 +17232,16 @@
                       "$ref": "#/components/schemas/ApiIdempotencyConflict"
                     }
                   ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
                 }
               }
             }
@@ -16368,6 +17679,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "429": {
             "description": "The caller is over its per-minute budget.",
             "content": {
@@ -16544,6 +17865,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "429": {
             "description": "The caller is over its per-minute budget.",
             "content": {
@@ -16716,6 +18047,16 @@
                       "$ref": "#/components/schemas/ApiIdempotencyConflict"
                     }
                   ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
                 }
               }
             }
@@ -17401,6 +18742,46 @@
         ],
         "additionalProperties": false
       },
+      "ApiUnprocessable": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "Unprocessable"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/ApiErrorEntry"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorEntry"
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "_tag",
+          "success",
+          "errors",
+          "result"
+        ],
+        "additionalProperties": false
+      },
       "SecretVersion": {
         "type": "object",
         "properties": {
@@ -17698,7 +19079,20 @@
             "maxLength": 256
           },
           "principal": {
-            "$ref": "#/components/schemas/IamMember"
+            "$ref": "#/components/schemas/Member"
+          },
+          "act": {
+            "type": "object",
+            "properties": {
+              "sub": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "sub"
+            ],
+            "additionalProperties": false
           },
           "via": {
             "type": "string",
@@ -17736,58 +19130,30 @@
         ],
         "additionalProperties": false
       },
-      "IamMember": {
+      "Member": {
         "type": "string",
-        "pattern": "^(user:[^\\s]{1,64}|workspaceRole:(member|admin|owner)|service:[a-z][a-z0-9-]{0,62}|workload:[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
-        "title": "IamMember",
-        "description": "A person (`user:<id>`), everyone with at least a Workspace role (`workspaceRole:admin`), an Akua service agent (`service:<name>`) or one workload (`workload:<pool>/<id>`)",
+        "pattern": "^(user:[^\\s]{1,64}|service:[a-z][a-z0-9-]{0,62}|workload:[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
+        "title": "Member",
+        "description": "A person (`user:<id>`), an Akua service agent (`service:<name>`) or one workload (`workload:<pool>/<id>`)",
         "examples": [
           "user:usr_j572abc",
           "service:placement"
         ]
       },
-      "IamPolicy": {
+      "Policy": {
         "type": "object",
         "properties": {
           "bindings": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "role": {
-                  "type": "string",
-                  "enum": [
-                    "vault.viewer",
-                    "vault.secretAdmin",
-                    "vault.secretAccessor",
-                    "vault.admin"
-                  ]
-                },
-                "members": {
-                  "type": "array",
-                  "prefixItems": [
-                    {
-                      "$ref": "#/components/schemas/IamMember"
-                    }
-                  ],
-                  "minItems": 1,
-                  "items": {
-                    "$ref": "#/components/schemas/IamMember"
-                  }
-                }
-              },
-              "required": [
-                "role",
-                "members"
-              ],
-              "additionalProperties": false
+              "$ref": "#/components/schemas/Binding"
             },
-            "maxItems": 32
+            "maxItems": 100
           },
           "etag": {
             "type": "string",
             "maxLength": 64,
-            "description": "Pass as `If-Match` on writes. OUTPUT_ONLY."
+            "description": "Pass as `If-Match` on `setIamPolicy`. OUTPUT_ONLY."
           }
         },
         "required": [
@@ -17796,43 +19162,95 @@
         ],
         "additionalProperties": false
       },
-      "SetIamPolicyRequest_1": {
+      "Binding": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/RoleName"
+          },
+          "members": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/Member"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/Member"
+            },
+            "maxItems": 64
+          },
+          "condition": {
+            "$ref": "#/components/schemas/BindingCondition"
+          }
+        },
+        "required": [
+          "role",
+          "members"
+        ],
+        "additionalProperties": false
+      },
+      "BindingCondition": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "expires_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
+          },
+          "operations": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+                "maxLength": 96
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+              "maxLength": 96
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "additionalProperties": false
+      },
+      "RoleName": {
+        "type": "string",
+        "pattern": "^roles\\/(owner|admin|member|viewer|[a-z][a-z0-9-]{0,62}\\.[a-z][A-Za-z]{0,62})$",
+        "title": "RoleName",
+        "description": "A basic role `roles/<name>` or a predefined role `roles/<service>.<role>`",
+        "examples": [
+          "roles/admin",
+          "roles/vault.secretAccessor"
+        ]
+      },
+      "SetIamPolicyRequest": {
         "type": "object",
         "properties": {
           "bindings": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "role": {
-                  "type": "string",
-                  "enum": [
-                    "vault.viewer",
-                    "vault.secretAdmin",
-                    "vault.secretAccessor",
-                    "vault.admin"
-                  ]
-                },
-                "members": {
-                  "type": "array",
-                  "prefixItems": [
-                    {
-                      "$ref": "#/components/schemas/IamMember"
-                    }
-                  ],
-                  "minItems": 1,
-                  "items": {
-                    "$ref": "#/components/schemas/IamMember"
-                  }
-                }
-              },
-              "required": [
-                "role",
-                "members"
-              ],
-              "additionalProperties": false
+              "$ref": "#/components/schemas/Binding"
             },
-            "maxItems": 32
+            "maxItems": 100
           }
         },
         "required": [
@@ -18012,46 +19430,6 @@
           "data",
           "has_more",
           "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "ApiUnprocessable": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": [
-              "Unprocessable"
-            ]
-          },
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "errors": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/ApiErrorEntry"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorEntry"
-            }
-          },
-          "result": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "_tag",
-          "success",
-          "errors",
-          "result"
         ],
         "additionalProperties": false
       },
@@ -22343,6 +23721,21 @@
               "kind": {
                 "type": "string",
                 "enum": [
+                  "add-billing"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
                   "change-input"
                 ]
               },
@@ -23879,6 +25272,599 @@
         ],
         "additionalProperties": false
       },
+      "TestIamPermissionsResponse": {
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionName"
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "permissions"
+        ],
+        "additionalProperties": false
+      },
+      "PermissionName": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]{0,62}\\.[a-z][a-z0-9-]{0,62}\\.[a-z][a-z0-9-]{0,62}$",
+        "title": "PermissionName",
+        "description": "A permission `service.resource.verb`",
+        "examples": [
+          "vault.versions.access"
+        ]
+      },
+      "ConnectionId": {
+        "type": "string",
+        "pattern": "^conn_[^\\s/]{1,64}$",
+        "title": "ConnectionId",
+        "description": "A connection id",
+        "examples": [
+          "conn_j572abc123def456"
+        ]
+      },
+      "TestIamPermissionsRequest": {
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/PermissionName"
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/PermissionName"
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "permissions"
+        ],
+        "additionalProperties": false
+      },
+      "VaultConnection": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name `vaults/{vault}/connections/{connection}`."
+          },
+          "id": {
+            "$ref": "#/components/schemas/ConnectionId"
+          },
+          "connector": {
+            "$ref": "#/components/schemas/ConnectorSlug"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "owner": {
+            "$ref": "#/components/schemas/ConnectionOwner"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ConnectionState"
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix timestamp (seconds)"
+          },
+          "etag": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Pass as `If-Match` on writes. OUTPUT_ONLY."
+          }
+        },
+        "required": [
+          "name",
+          "id",
+          "connector",
+          "display_name",
+          "owner",
+          "state",
+          "created_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "ConnectionState": {
+        "type": "string",
+        "enum": [
+          "PENDING_CONSENT",
+          "CONNECTED",
+          "REAUTH_REQUIRED",
+          "REVOKING",
+          "REVOKED",
+          "ERROR"
+        ]
+      },
+      "ConnectionOwner": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "workspace"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "user"
+                ]
+              },
+              "user_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "user_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "external_user"
+                ]
+              },
+              "external_user_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "external_user_id"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Who owns the connection: the Workspace (a shared account), one user (their own account) or an end customer user in a reseller vault."
+      },
+      "ConnectorSlug": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+        "title": "ConnectorSlug",
+        "description": "A connector's stable slug.",
+        "examples": [
+          "akua"
+        ]
+      },
+      "SetConnectionCredentialRequest": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "object",
+            "patternProperties": {
+              "^[A-Z][A-Z0-9_]{0,62}$": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8192
+              }
+            },
+            "additionalProperties": false,
+            "minProperties": 1,
+            "maxProperties": 8
+          }
+        },
+        "required": [
+          "fields"
+        ],
+        "additionalProperties": false
+      },
+      "CreateVaultConnectionRequest": {
+        "type": "object",
+        "properties": {
+          "connector": {
+            "$ref": "#/components/schemas/ConnectorSlug"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "workspace"
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "user"
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "external_user"
+                    ]
+                  },
+                  "external_user_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "type",
+                  "external_user_id"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "Defaults to the calling user. A user owner is always the authenticated caller, never a client-supplied id."
+          }
+        },
+        "required": [
+          "connector"
+        ],
+        "additionalProperties": false
+      },
+      "VaultConnectionList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VaultConnection"
+            },
+            "maxItems": 100
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "WorkspaceServiceList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceService"
+            },
+            "maxItems": 64
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "WorkspaceService": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "examples": [
+              "workspaces/ws_j572abc/services/machine"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "enum": [
+              "platform-api",
+              "domain-dispatcher",
+              "organization",
+              "workspace",
+              "region",
+              "admission",
+              "billing",
+              "package",
+              "product",
+              "offer",
+              "order-draft",
+              "install",
+              "placement",
+              "cluster",
+              "machine",
+              "routing",
+              "repository",
+              "vault",
+              "connection",
+              "agents",
+              "sandbox",
+              "opencode-server",
+              "identity",
+              "convex",
+              "access-proxy",
+              "development-publisher"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "maxItems": 32,
+            "description": "Problems and notable facts that hold now, beside `state`; empty when there are none. See each reason in the resource description."
+          }
+        },
+        "required": [
+          "name",
+          "service",
+          "state",
+          "conditions"
+        ],
+        "additionalProperties": false
+      },
+      "QuotaAdjustment": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name `{container}/quotaAdjustments/{id}`; the id is unique in its container.",
+            "examples": [
+              "workspaces/ws_j572abc/quotaAdjustments/more-clusters"
+            ]
+          },
+          "container": {
+            "$ref": "#/components/schemas/QuotaContainerName"
+          },
+          "metric": {
+            "type": "string",
+            "examples": [
+              "kaas/clusters"
+            ]
+          },
+          "preferred_limit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "granted_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPLIED",
+              "REJECTED",
+              "EXPIRED"
+            ]
+          },
+          "justification": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Unix timestamp (seconds)"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requested_by": {
+            "type": "string"
+          },
+          "decided_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
+          },
+          "updated_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
+          },
+          "etag": {
+            "type": "string",
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "name",
+          "container",
+          "metric",
+          "preferred_limit",
+          "granted_limit",
+          "state",
+          "justification",
+          "expires_at",
+          "requested_by",
+          "decided_by",
+          "created_at",
+          "updated_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "QuotaContainerName": {
+        "type": "string",
+        "pattern": "^(users\\/[^\\s/]{1,64}|paymentInstruments\\/[A-Za-z0-9]{1,64}|workspaces\\/ws_[A-Za-z0-9]+|regions\\/reg_[A-Za-z0-9]+)$",
+        "title": "QuotaContainerName",
+        "examples": [
+          "workspaces/ws_j572abc"
+        ]
+      },
+      "QuotaAdjustmentId": {
+        "type": "string",
+        "pattern": "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$",
+        "title": "QuotaAdjustmentId",
+        "examples": [
+          "ws-j572-clusters"
+        ]
+      },
+      "DecideQuotaAdjustmentRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CreateQuotaAdjustmentRequest": {
+        "type": "object",
+        "properties": {
+          "container": {
+            "$ref": "#/components/schemas/QuotaContainerName"
+          },
+          "metric": {
+            "type": "string",
+            "examples": [
+              "kaas/clusters"
+            ]
+          },
+          "preferred_limit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "justification": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "expires_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unix timestamp (seconds)"
+          }
+        },
+        "required": [
+          "container",
+          "metric",
+          "preferred_limit",
+          "justification"
+        ],
+        "additionalProperties": false
+      },
+      "QuotaAdjustmentList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuotaAdjustment"
+            },
+            "maxItems": 100
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
       "ApiToken": {
         "type": "object",
         "properties": {
@@ -23982,16 +25968,6 @@
           "expires_at"
         ],
         "additionalProperties": false
-      },
-      "RoleName": {
-        "type": "string",
-        "pattern": "^roles\\/(owner|admin|member|viewer|[a-z][a-z0-9-]{0,62}\\.[a-z][A-Za-z]{0,62})$",
-        "title": "RoleName",
-        "description": "A basic role `roles/<name>` or a predefined role `roles/<service>.<role>`",
-        "examples": [
-          "roles/admin",
-          "roles/vault.secretAccessor"
-        ]
       },
       "CreatedApiToken": {
         "type": "object",
@@ -26266,171 +28242,6 @@
         ],
         "additionalProperties": false
       },
-      "TestIamPermissionsResponse": {
-        "type": "object",
-        "properties": {
-          "permissions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PermissionName"
-            },
-            "maxItems": 100
-          }
-        },
-        "required": [
-          "permissions"
-        ],
-        "additionalProperties": false
-      },
-      "PermissionName": {
-        "type": "string",
-        "pattern": "^[a-z][a-z0-9-]{0,62}\\.[a-z][a-z0-9-]{0,62}\\.[a-z][a-z0-9-]{0,62}$",
-        "title": "PermissionName",
-        "description": "A permission `service.resource.verb`",
-        "examples": [
-          "vault.versions.access"
-        ]
-      },
-      "TestIamPermissionsRequest": {
-        "type": "object",
-        "properties": {
-          "permissions": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/PermissionName"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/PermissionName"
-            },
-            "maxItems": 100
-          }
-        },
-        "required": [
-          "permissions"
-        ],
-        "additionalProperties": false
-      },
-      "Policy": {
-        "type": "object",
-        "properties": {
-          "bindings": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Binding"
-            },
-            "maxItems": 100
-          },
-          "etag": {
-            "type": "string",
-            "maxLength": 64,
-            "description": "Pass as `If-Match` on `setIamPolicy`. OUTPUT_ONLY."
-          }
-        },
-        "required": [
-          "bindings",
-          "etag"
-        ],
-        "additionalProperties": false
-      },
-      "Binding": {
-        "type": "object",
-        "properties": {
-          "role": {
-            "$ref": "#/components/schemas/RoleName"
-          },
-          "members": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/components/schemas/Member"
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/Member"
-            },
-            "maxItems": 64
-          },
-          "condition": {
-            "$ref": "#/components/schemas/BindingCondition"
-          }
-        },
-        "required": [
-          "role",
-          "members"
-        ],
-        "additionalProperties": false
-      },
-      "BindingCondition": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "description": {
-            "type": "string",
-            "maxLength": 512
-          },
-          "expires_at": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991,
-            "description": "Unix timestamp (seconds)"
-          },
-          "operations": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "type": "string",
-                "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
-                "maxLength": 96
-              }
-            ],
-            "minItems": 1,
-            "items": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
-              "maxLength": 96
-            },
-            "maxItems": 100
-          }
-        },
-        "required": [
-          "title"
-        ],
-        "additionalProperties": false
-      },
-      "Member": {
-        "type": "string",
-        "pattern": "^(user:[^\\s]{1,64}|service:[a-z][a-z0-9-]{0,62}|workload:[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
-        "title": "Member",
-        "description": "A person (`user:<id>`), an Akua service agent (`service:<name>`) or one workload (`workload:<pool>/<id>`)",
-        "examples": [
-          "user:usr_j572abc",
-          "service:placement"
-        ]
-      },
-      "SetIamPolicyRequest": {
-        "type": "object",
-        "properties": {
-          "bindings": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Binding"
-            },
-            "maxItems": 100
-          }
-        },
-        "required": [
-          "bindings"
-        ],
-        "additionalProperties": false
-      },
       "OutOfBandPayment": {
         "type": "object",
         "properties": {
@@ -27726,6 +29537,15 @@
     },
     {
       "name": "API Tokens"
+    },
+    {
+      "name": "Quota adjustments"
+    },
+    {
+      "name": "Workspace services"
+    },
+    {
+      "name": "Vault connections"
     },
     {
       "name": "clusters"

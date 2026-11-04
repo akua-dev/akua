@@ -16,6 +16,10 @@ export const contract: ApiContract = {
 			"title": "clusters"
 		},
 		{
+			"name": "connections",
+			"title": "Vault connections"
+		},
+		{
 			"name": "installs",
 			"title": "installs"
 		},
@@ -159,6 +163,14 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"$ref": "#/$defs/SandboxCommandId"
+			}
+		},
+		"path:connection": {
+			"name": "connection",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"$ref": "#/$defs/ConnectionId"
 			}
 		},
 		"path:grant_id": {
@@ -887,6 +899,131 @@ export const contract: ApiContract = {
 				"header:akua-context",
 				"header:idempotency-key"
 			]
+		},
+		{
+			"id": "connections.create",
+			"method": "POST",
+			"path": "/vaults/{vault}/connections",
+			"summary": "Create a connection",
+			"auth": true,
+			"parameters": [
+				"path:vault",
+				"header:akua-context",
+				"header:idempotency-key"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/CreateVaultConnectionRequest"
+				}
+			}
+		},
+		{
+			"id": "connections.get",
+			"method": "GET",
+			"path": "/vaults/{vault}/connections/{connection}",
+			"summary": "Get a connection",
+			"auth": true,
+			"parameters": [
+				"path:vault",
+				"path:connection",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "connections.getIamPolicy",
+			"method": "GET",
+			"path": "/vaults/{vault}/connections/{connection}:getIamPolicy",
+			"summary": "Get a connection policy",
+			"auth": true,
+			"parameters": [
+				"path:vault",
+				"path:connection",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "connections.list",
+			"method": "GET",
+			"path": "/vaults/{vault}/connections",
+			"summary": "List connections",
+			"auth": true,
+			"parameters": [
+				"path:vault",
+				"header:akua-context",
+				"query:cursor:3",
+				"query:limit:2"
+			]
+		},
+		{
+			"id": "connections.revoke",
+			"method": "POST",
+			"path": "/vaults/{vault}/connections/{connection}:revoke",
+			"summary": "Revoke a connection",
+			"auth": true,
+			"parameters": [
+				"path:vault",
+				"path:connection",
+				"header:akua-context",
+				"header:idempotency-key"
+			]
+		},
+		{
+			"id": "connections.setCredential",
+			"method": "POST",
+			"path": "/vaults/{vault}/connections/{connection}:setCredential",
+			"summary": "Set a connection credential",
+			"auth": true,
+			"parameters": [
+				"path:vault",
+				"path:connection",
+				"header:akua-context",
+				"header:idempotency-key"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/SetConnectionCredentialRequest"
+				}
+			}
+		},
+		{
+			"id": "connections.setIamPolicy",
+			"method": "POST",
+			"path": "/vaults/{vault}/connections/{connection}:setIamPolicy",
+			"summary": "Set a connection policy",
+			"auth": true,
+			"parameters": [
+				"path:vault",
+				"path:connection",
+				"header:akua-context",
+				"header:idempotency-key",
+				"header:if-match"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/SetIamPolicyRequest"
+				}
+			}
+		},
+		{
+			"id": "connections.testIamPermissions",
+			"method": "POST",
+			"path": "/vaults/{vault}/connections/{connection}:testIamPermissions",
+			"summary": "Test connection permissions",
+			"auth": true,
+			"parameters": [
+				"path:vault",
+				"path:connection",
+				"header:akua-context"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/TestIamPermissionsRequest"
+				}
+			}
 		},
 		{
 			"id": "installs.create",
@@ -2214,7 +2351,7 @@ export const contract: ApiContract = {
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/SetIamPolicyRequest_1"
+					"$ref": "#/$defs/SetIamPolicyRequest"
 				}
 			}
 		},
@@ -2306,6 +2443,16 @@ export const contract: ApiContract = {
 				"query:organization:2",
 				"query:cursor",
 				"query:limit"
+			]
+		},
+		{
+			"id": "workspaces.listServices",
+			"method": "GET",
+			"path": "/workspaces/{id}/services",
+			"summary": "List Workspace services",
+			"auth": true,
+			"parameters": [
+				"path:id:4"
 			]
 		},
 		{
@@ -2538,6 +2685,18 @@ export const contract: ApiContract = {
 					"additionalProperties": false
 				}
 			]
+		},
+		"ConnectionId": {
+			"type": "string",
+			"pattern": "^conn_[^\\s/]{1,64}$",
+			"title": "ConnectionId",
+			"description": "A connection id"
+		},
+		"ConnectorSlug": {
+			"type": "string",
+			"pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+			"title": "ConnectorSlug",
+			"description": "A connector's stable slug."
 		},
 		"CreateApiTokenRequest": {
 			"type": "object",
@@ -2998,6 +3157,79 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
+		"CreateVaultConnectionRequest": {
+			"type": "object",
+			"properties": {
+				"connector": {
+					"$ref": "#/$defs/ConnectorSlug"
+				},
+				"name": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 100
+				},
+				"owner": {
+					"anyOf": [
+						{
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": [
+										"workspace"
+									]
+								}
+							},
+							"required": [
+								"type"
+							],
+							"additionalProperties": false
+						},
+						{
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": [
+										"user"
+									]
+								}
+							},
+							"required": [
+								"type"
+							],
+							"additionalProperties": false
+						},
+						{
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": [
+										"external_user"
+									]
+								},
+								"external_user_id": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 200
+								}
+							},
+							"required": [
+								"type",
+								"external_user_id"
+							],
+							"additionalProperties": false
+						}
+					],
+					"description": "Defaults to the calling user. A user owner is always the authenticated caller, never a client-supplied id."
+				}
+			},
+			"required": [
+				"connector"
+			],
+			"additionalProperties": false
+		},
 		"CreateVaultRequest": {
 			"type": "object",
 			"properties": {
@@ -3049,12 +3281,6 @@ export const contract: ApiContract = {
 				"name"
 			],
 			"additionalProperties": false
-		},
-		"IamMember": {
-			"type": "string",
-			"pattern": "^(user:[^\\s]{1,64}|workspaceRole:(member|admin|owner)|service:[a-z][a-z0-9-]{0,62}|workload:[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
-			"title": "IamMember",
-			"description": "A person (`user:<id>`), everyone with at least a Workspace role (`workspaceRole:admin`), an Akua service agent (`service:<name>`) or one workload (`workload:<pool>/<id>`)"
 		},
 		"InstallPackageVersionPin": {
 			"oneOf": [
@@ -3696,6 +3922,28 @@ export const contract: ApiContract = {
 			"title": "SecretId",
 			"description": "A secret id, unique in its vault"
 		},
+		"SetConnectionCredentialRequest": {
+			"type": "object",
+			"properties": {
+				"fields": {
+					"type": "object",
+					"patternProperties": {
+						"^[A-Z][A-Z0-9_]{0,62}$": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 8192
+						}
+					},
+					"additionalProperties": false,
+					"minProperties": 1,
+					"maxProperties": 8
+				}
+			},
+			"required": [
+				"fields"
+			],
+			"additionalProperties": false
+		},
 		"SetIamPolicyRequest": {
 			"type": "object",
 			"properties": {
@@ -3705,50 +3953,6 @@ export const contract: ApiContract = {
 						"$ref": "#/$defs/Binding"
 					},
 					"maxItems": 100
-				}
-			},
-			"required": [
-				"bindings"
-			],
-			"additionalProperties": false
-		},
-		"SetIamPolicyRequest_1": {
-			"type": "object",
-			"properties": {
-				"bindings": {
-					"type": "array",
-					"items": {
-						"type": "object",
-						"properties": {
-							"role": {
-								"type": "string",
-								"enum": [
-									"vault.viewer",
-									"vault.secretAdmin",
-									"vault.secretAccessor",
-									"vault.admin"
-								]
-							},
-							"members": {
-								"type": "array",
-								"prefixItems": [
-									{
-										"$ref": "#/$defs/IamMember"
-									}
-								],
-								"minItems": 1,
-								"items": {
-									"$ref": "#/$defs/IamMember"
-								}
-							}
-						},
-						"required": [
-							"role",
-							"members"
-						],
-						"additionalProperties": false
-					},
-					"maxItems": 32
 				}
 			},
 			"required": [
