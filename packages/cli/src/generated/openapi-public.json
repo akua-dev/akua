@@ -20285,13 +20285,14 @@
               "cluster",
               "node_pool",
               "package",
-              "sandbox"
+              "sandbox",
+              "opencode"
             ],
             "description": "Domain entity collection the operation acts on."
           },
           "owner_id": {
             "type": "string",
-            "description": "Prefixed ID of the entity this operation acts on. Prefix matches `owner_type` (`ws_`, `mch_`, `clu_`, `pkg_`, `inst_`, `rcr_`, `repo_`, `sbx_`); a node pool is `clu_<id>/node_pools/<node pool id>`."
+            "description": "Prefixed ID of the entity this operation acts on. Prefix matches `owner_type` (`ws_`, `mch_`, `clu_`, `pkg_`, `inst_`, `rcr_`, `repo_`, `sbx_`, `oc_`); a node pool is `clu_<id>/node_pools/<node pool id>`."
           },
           "parent_operation_id": {
             "anyOf": [
