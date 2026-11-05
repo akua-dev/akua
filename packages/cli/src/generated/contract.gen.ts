@@ -117,23 +117,23 @@ export const contract: ApiContract = {
 		"header:if-match": {
 			"name": "if-match",
 			"in": "header",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 256,
-				"description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata."
-			}
-		},
-		"header:if-match:2": {
-			"name": "if-match",
-			"in": "header",
 			"required": false,
 			"schema": {
 				"type": "string",
 				"description": "Optional optimistic concurrency token for clients that track the latest operation revision.",
 				"minLength": 1,
 				"maxLength": 64
+			}
+		},
+		"header:if-match:2": {
+			"name": "if-match",
+			"in": "header",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 256,
+				"description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata."
 			}
 		},
 		"header:if-match:3": {
@@ -187,9 +187,8 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"type": "string",
-				"description": "Install ID",
-				"minLength": 1,
-				"maxLength": 55
+				"minLength": 2,
+				"maxLength": 192
 			}
 		},
 		"path:id:10": {
@@ -217,8 +216,9 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"type": "string",
-				"minLength": 2,
-				"maxLength": 192
+				"description": "Install ID",
+				"minLength": 1,
+				"maxLength": 55
 			}
 		},
 		"path:id:3": {
@@ -662,7 +662,7 @@ export const contract: ApiContract = {
 			"parameters": [
 				"path:billing_account",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
@@ -728,7 +728,7 @@ export const contract: ApiContract = {
 			"parameters": [
 				"path:billing_account",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
@@ -821,7 +821,7 @@ export const contract: ApiContract = {
 				"path:id:3",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -998,7 +998,7 @@ export const contract: ApiContract = {
 				"path:connection",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
@@ -1049,10 +1049,10 @@ export const contract: ApiContract = {
 			"summary": "Delete install",
 			"auth": true,
 			"parameters": [
-				"path:id",
+				"path:id:2",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -1062,7 +1062,7 @@ export const contract: ApiContract = {
 			"summary": "Get install details",
 			"auth": true,
 			"parameters": [
-				"path:id",
+				"path:id:2",
 				"header:akua-context"
 			]
 		},
@@ -1089,7 +1089,7 @@ export const contract: ApiContract = {
 				"path:id:3",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -1146,7 +1146,7 @@ export const contract: ApiContract = {
 				"path:node_pool_id",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -1185,7 +1185,7 @@ export const contract: ApiContract = {
 				"path:node_pool_id",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
@@ -1243,7 +1243,7 @@ export const contract: ApiContract = {
 				"path:id:7",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -1304,10 +1304,10 @@ export const contract: ApiContract = {
 			"summary": "Request operation cancellation",
 			"auth": true,
 			"parameters": [
-				"path:id:2",
+				"path:id",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match:2"
+				"header:if-match"
 			]
 		},
 		{
@@ -1317,7 +1317,7 @@ export const contract: ApiContract = {
 			"summary": "Get operation details + steps",
 			"auth": true,
 			"parameters": [
-				"path:id:2",
+				"path:id",
 				"header:akua-context"
 			]
 		},
@@ -1328,7 +1328,7 @@ export const contract: ApiContract = {
 			"summary": "Wait for an operation to reach a terminal state",
 			"auth": true,
 			"parameters": [
-				"path:id:2",
+				"path:id",
 				"header:akua-context",
 				"query:timeout"
 			]
@@ -1341,7 +1341,7 @@ export const contract: ApiContract = {
 			"auth": true,
 			"parameters": [
 				"path:id:8",
-				"header:if-match",
+				"header:if-match:2",
 				"header:idempotency-key"
 			]
 		},
@@ -1379,7 +1379,7 @@ export const contract: ApiContract = {
 			"auth": true,
 			"parameters": [
 				"path:id:8",
-				"header:if-match",
+				"header:if-match:2",
 				"header:idempotency-key"
 			],
 			"body": {
@@ -1397,7 +1397,7 @@ export const contract: ApiContract = {
 			"auth": true,
 			"parameters": [
 				"path:id:8",
-				"header:if-match",
+				"header:if-match:2",
 				"header:idempotency-key"
 			],
 			"body": {
@@ -1562,7 +1562,7 @@ export const contract: ApiContract = {
 			"parameters": [
 				"path:id:3",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
@@ -1639,7 +1639,7 @@ export const contract: ApiContract = {
 				"path:id:6",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -1733,7 +1733,7 @@ export const contract: ApiContract = {
 				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -1931,7 +1931,7 @@ export const contract: ApiContract = {
 				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -2005,7 +2005,7 @@ export const contract: ApiContract = {
 				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -2017,7 +2017,7 @@ export const contract: ApiContract = {
 			"parameters": [
 				"path:id:11",
 				"header:akua-context",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
@@ -2153,7 +2153,7 @@ export const contract: ApiContract = {
 				"path:version",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -2168,7 +2168,7 @@ export const contract: ApiContract = {
 				"path:version",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -2183,7 +2183,7 @@ export const contract: ApiContract = {
 				"path:version",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -2249,7 +2249,7 @@ export const contract: ApiContract = {
 				"path:secret",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
@@ -2346,7 +2346,7 @@ export const contract: ApiContract = {
 				"path:vault",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
@@ -2365,7 +2365,7 @@ export const contract: ApiContract = {
 				"path:vault",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
@@ -3380,9 +3380,9 @@ export const contract: ApiContract = {
 		},
 		"Member": {
 			"type": "string",
-			"pattern": "^(user:[^\\s]{1,64}|service:[a-z][a-z0-9-]{0,62}|workload:[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
+			"pattern": "^(user:[^\\s]{1,64}|service:[a-z][a-z0-9-]{0,62}|(?:workload|workforce):[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
 			"title": "Member",
-			"description": "A person (`user:<id>`), an Akua service agent (`service:<name>`) or one workload (`workload:<pool>/<id>`)"
+			"description": "A person (`user:<id>`), service agent (`service:<name>`), workload (`workload:<pool>/<id>`) or workforce identity (`workforce:<pool>/<subject>`)"
 		},
 		"MoveSandboxFileBody": {
 			"type": "object",
