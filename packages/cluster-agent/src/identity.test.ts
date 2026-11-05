@@ -2,12 +2,7 @@ import { assert, describe, it } from '@effect/vitest';
 import { Effect, FileSystem, Layer, Redacted, Ref } from 'effect';
 import { Base64, Base64Url } from 'effect/encoding';
 import { AgentConfig, type AgentSettings, PlatformOrigin } from './config';
-import {
-	agentCredentialsLive,
-	agentIdentityLive,
-	AgentIdentity,
-	identityAudience
-} from './identity';
+import { agentCredentialsLive, agentIdentityLive, AgentIdentity } from './identity';
 import { AgentApi, AgentCredentials } from './platform';
 import { FakeKubernetes, fakeKubernetesLayer } from './testing/fake-kubernetes';
 import {
@@ -62,7 +57,7 @@ describe('AgentIdentity', () => {
 				const proof = decodeJwt(Redacted.value(request.proof));
 				assert.strictEqual(proof.header.alg, 'EdDSA');
 				assert.strictEqual(proof.header.kid, request.public_key.kid);
-				assert.strictEqual(proof.claims.aud, identityAudience(new URL('https://api.akua.test')));
+				assert.strictEqual(proof.claims.aud, 'https://api.akua.test/v1/cluster_connectors/token');
 				assert.isAtMost(proof.claims.exp - proof.claims.iat, 60);
 
 				const kubernetes = yield* FakeKubernetes;

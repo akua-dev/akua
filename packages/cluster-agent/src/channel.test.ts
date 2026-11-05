@@ -88,7 +88,7 @@ describe('channel', () => {
 	it('dials the role on the platform origin over wss', () => {
 		assert.strictEqual(
 			channelUrl(new URL('https://api.akua.dev'), 'updater').href,
-			'wss://api.akua.dev/v1/agent/connect?role=updater'
+			'wss://api.akua.dev/v1/cluster_connectors/connect?role=updater'
 		);
 		assert.strictEqual(channelUrl(new URL('http://localhost:8787'), 'agent').protocol, 'ws:');
 	});
