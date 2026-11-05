@@ -1447,7 +1447,7 @@ index 18a1b0ab2f..06275bdcf5 100644
            Effect.fail(
              new PersistedQueueError({
 diff --git a/dist/persistence/PersistedQueue.js b/dist/persistence/PersistedQueue.js
-index 109cff7f4c..24e9297af9 100644
+index 109cff7f4c..105dbfa8be 100644
 --- a/dist/persistence/PersistedQueue.js
 +++ b/dist/persistence/PersistedQueue.js
 @@ -136,7 +136,8 @@ export const makeFactory = /*#__PURE__*/Effect.gen(function* () {
@@ -1749,14 +1749,6 @@ index 109cff7f4c..24e9297af9 100644
        message: "Failed to offer element to persisted queue",
        cause
      }))).pipe(
-@@ -1581,4 +1690,5 @@ const sqlMigrations = tableName => Migrator.fromRecord({
-  * @since 4.0.0
-  */
- export const layerStoreSql = /*#__PURE__*/flow(makeStoreSql, /*#__PURE__*/Layer.effect(PersistedQueueStore));
--//# sourceMappingURL=PersistedQueue.js.map
-\ No newline at end of file
-+//# sourceMappingURL=PersistedQueue.js.map
-+//# sourceMappingURL=PersistedQueue.js.map
 diff --git a/dist/persistence/PersistedQueue.d.ts b/dist/persistence/PersistedQueue.d.ts
 index 8846da6265..6d7ebdfd17 100644
 --- a/dist/persistence/PersistedQueue.d.ts
