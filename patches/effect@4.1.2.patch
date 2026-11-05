@@ -1040,3 +1040,868 @@ index 1594a9f8e8366f6231b149092b29eca1c38bc9a9..a0cce2aa2b7a210962828ead1a765785
  })
 -
 -const defaultInMemoryThreshold = Duration.seconds(60)
+diff --git a/src/persistence/PersistedQueue.ts b/src/persistence/PersistedQueue.ts
+index 18a1b0ab2f..06275bdcf5 100644
+--- a/src/persistence/PersistedQueue.ts
++++ b/src/persistence/PersistedQueue.ts
+@@ -83,8 +83,28 @@ export interface PersistedQueue<in out A, out R = never> {
+    *
+    * If an element with the same id already exists in the queue, it will not be
+    * added again, and the `delay` of the duplicate offer is ignored.
+-   * De-duplication survives completion until the id is removed by
+-   * `layerCleanup`.
++   * `deduplicate` sets how long a custom `id` stays reserved:
++   *
++   * - `"untilRemoved"` (default): until `layerCleanup` removes the completed
++   *   or failed element. The id works as an idempotency key.
++   * - `"untilExecuted"`: until the element completes or fails its final
++   *   attempt. Offers while it is pending, processing or waiting to retry are
++   *   ignored. A later offer enqueues a new element behind queued work, with its
++   *   own `delay`, so a producer that retries after completion runs the work
++   *   again.
++   *
++   * The mode is chosen per offer and is not stored with the id. An
++   * `"untilExecuted"` offer can re-open a completed or failed id even when
++   * other producers offer it with `"untilRemoved"`, so don't share an
++   * idempotency key with `"untilExecuted"` producers.
++   *
++   * With `"untilExecuted"`, handlers should read current state rather than the
++   * offered value. An offer that arrives after the handler read state but before
++   * the element completes is ignored, so check a version or dirty flag when a
++   * missed change matters.
++   *
++   * A re-offered failed id may lose its earlier failure record. See
++   * `makeStoreSql` and `makeStoreRedis` for what each store keeps.
+    *
+    * `delay` postpones the first delivery. Measured by the store's clock, the
+    * element is never delivered before the delay elapses, and is typically
+@@ -103,6 +123,7 @@ export interface PersistedQueue<in out A, out R = never> {
+   readonly offer: (value: A, options?: {
+     readonly id?: string | undefined
+     readonly delay?: Duration.Input | undefined
++    readonly deduplicate?: "untilExecuted" | "untilRemoved" | undefined
+   }) => Effect.Effect<string, PersistedQueueError | Schema.SchemaError, R>
+ 
+   /**
+@@ -265,7 +286,8 @@ export const makeFactory = Effect.gen(function*() {
+                     id,
+                     element,
+                     isCustomId: opts?.id !== undefined,
+-                    delay
++                    delay,
++                    deduplicate: opts?.deduplicate
+                   }),
+                   id
+                 )
+@@ -442,7 +464,8 @@ const makeAckRetrySchedule = (lockExpiration: Duration.Input) =>
+ 
+ // Internal signal used by the factory to tell a store that a taken element
+ // cannot ever be processed (its stored payload fails to decode) and must be
+-// dead-lettered instead of retried.
++// dead-lettered instead of retried. Stores outside this module detect it with
++// the exported `isDeadLetterCause`.
+ class DeadLetter {
+   readonly _tag = "~effect/persistence/PersistedQueue/DeadLetter"
+   readonly cause: Cause.Cause<unknown>
+@@ -486,11 +509,18 @@ const deadLetterFromCause = (cause: Cause.Cause<unknown>): DeadLetter | undefine
+  * An offered `delay` is always finite and positive, and the element must not
+  * be taken before it elapses. It is `undefined` for immediate elements.
+  *
++ * An offer whose id is already stored is ignored, unless `deduplicate` is
++ * `"untilExecuted"` and that element has completed or failed its final
++ * attempt. The offer is then stored as a new element after earlier offers,
++ * atomically with respect to concurrent offers of the id. `undefined` means
++ * `"untilRemoved"`.
++ *
+  * Claiming an element counts an attempt, so the `attempts` returned by `take`
+  * is 1-based. When the take scope closes with a success the element is marked
+  * completed; a failure retries it according to `retryDelay` or marks it failed
+  * once `maxAttempts` is exhausted; an interruption releases it without
+- * counting the attempt.
++ * counting the attempt. A failure for which {@link isDeadLetterCause} holds
++ * marks the element failed immediately, without a retry.
+  *
+  * @stability unstable
+  * @category services
+@@ -506,6 +536,7 @@ export class PersistedQueueStore extends Context.Service<
+         readonly element: unknown
+         readonly isCustomId: boolean
+         readonly delay?: Duration.Duration | undefined
++        readonly deduplicate?: "untilExecuted" | "untilRemoved" | undefined
+       }
+     ) => Effect.Effect<void, PersistedQueueError>
+ 
+@@ -535,6 +566,30 @@ export class PersistedQueueStore extends Context.Service<
+   }
+ >()("effect/persistence/PersistedQueue/PersistedQueueStore") {}
+ 
++/**
++ * Returns `true` when a take scope failed because the queue could not decode
++ * the element's stored payload.
++ *
++ * **When to use**
++ *
++ * Use when a custom `PersistedQueueStore` take finalizer decides whether a
++ * failed element is marked failed at once or retried.
++ *
++ * **Details**
++ *
++ * A payload that fails to decode with the queue's schema can never be
++ * processed, so `PersistedQueue` fails the take scope with an internal
++ * dead-letter signal and takes the next element. The store should mark the
++ * element failed whatever attempts remain, which also releases its id for a
++ * `deduplicate: "untilExecuted"` offer.
++ *
++ * @see {@link PersistedQueueStore} for the store contract that calls for this check
++ * @stability unstable
++ * @category predicates
++ * @since 4.1.3
++ */
++export const isDeadLetterCause = (cause: Cause.Cause<unknown>): boolean => deadLetterFromCause(cause) !== undefined
++
+ /**
+  * Provides an in-memory `PersistedQueueStore`.
+  *
+@@ -590,7 +645,15 @@ export const layerStoreMemory: Layer.Layer<
+         Effect.sync(() => {
+           const now = clock.currentTimeMillisUnsafe()
+           const queue = getOrCreateQueue(options.name)
+-          if (queue.entries.has(options.id)) return
++          const existing = queue.entries.get(options.id)
++          if (existing !== undefined) {
++            if (
++              options.deduplicate !== "untilExecuted" ||
++              (existing.state !== "completed" && existing.state !== "failed")
++            ) return
++            // delete first so the new entry is ordered after existing ones
++            queue.entries.delete(options.id)
++          }
+           const entry: Entry = {
+             id: options.id,
+             element: options.element,
+@@ -638,8 +701,7 @@ export const layerStoreMemory: Layer.Layer<
+                 entry.stateChangedAt = now
+                 return
+               }
+-              const deadLetter = deadLetterFromCause(exit.cause)
+-              if (deadLetter !== undefined) {
++              if (isDeadLetterCause(exit.cause)) {
+                 entry.state = "failed"
+                 entry.stateChangedAt = now
+                 return
+@@ -706,6 +768,11 @@ export const layerStoreMemory: Layer.Layer<
+  * worker and let its locks expire before starting upgraded workers. Keep the
+  * existing Redis data rather than flushing it.
+  *
++ * Every failure of an id re-offered with `deduplicate: "untilExecuted"` stays
++ * in the failed list until `layerCleanup` removes it, which requires
++ * `failedTimeToLive`. Ids that failed on an earlier `effect` version stay
++ * reserved until then, even for `"untilExecuted"` offers.
++ *
+  * @stability unstable
+  * @category constructors
+  * @since 4.0.0
+@@ -907,21 +974,22 @@ export const makeStoreRedis = Effect.fnUntraced(function*(
+   })
+ 
+   return PersistedQueueStore.of({
+-    offer: ({ delay, element, id, isCustomId, name }) => {
++    offer: ({ deduplicate, delay, element, id, isCustomId, name }) => {
+       const keys = keysFor(name)
+       // replace lone surrogates like Redis' UTF-8 encoding does, so the id in
+       // the payload matches the id keys
+       id = id.replace(/[\uD800-\uDFFF]/gu, "\uFFFD")
+       const payload = JSON.stringify({ id, element })
++      const untilExecuted = deduplicate === "untilExecuted" ? 1 : 0
+       const send = Effect.suspend(() => {
+         if (delay === undefined) {
+           return isCustomId
+-            ? offer(keys.queue, keys.ids, id, payload)
++            ? offer(keys.queue, keys.ids, id, payload, untilExecuted)
+             : redis.send("RPUSH", keys.queue, payload)
+         }
+         const visibleAt = clock.currentTimeMillisUnsafe() + Duration.toMillis(delay)
+         return isCustomId
+-          ? offerDelayed(keys.delayed, keys.ids, id, payload, visibleAt)
++          ? offerDelayed(keys.delayed, keys.ids, id, payload, visibleAt, untilExecuted)
+           : redis.send("ZADD", keys.delayed, visibleAt.toString(), payload)
+       })
+       return send.pipe(
+@@ -994,7 +1062,8 @@ export const makeStoreRedis = Effect.fnUntraced(function*(
+                       attempts: element.attempts,
+                       lastFailure: Cause.pretty(cause),
+                       failedAt: now
+-                    })
++                    }),
++                    now
+                   ))
+                 if (dead !== undefined) {
+                   return failElement(dead.cause)
+@@ -1056,8 +1125,43 @@ export const makeStoreRedis = Effect.fnUntraced(function*(
+   });
+ })
+ 
++// ids sorted set scores. The sentinels sit above any completion time, so the
++// timeToLive trim skips them:
++// - inFlightIdScore: pending or processing
++// - failedIdScore + failedAt: failed at failedAt. trimFailed removes it only
++//   with the failed record carrying that failedAt
++// - +inf: legacy in-flight or failed entry. Offers treat it as in flight
++// - otherwise: the completion time
++const inFlightIdScore = 1e15
++const failedIdScore = 2e15
++
++// formatted as an integer, since Lua's default number formatting keeps only 14
++// significant digits
++const failedScoreLua = `local function failed_score(failed_at)
++  return string.format("%.0f", ${failedIdScore} + tonumber(failed_at))
++end
++`
++
++// Reserves the id and returns whether to store the offer. With until_executed,
++// a completed or failed id is reclaimed.
++const claimIdLua = `local function claim_id(key_ids, id, until_executed)
++  if redis.call("ZADD", key_ids, "NX", ${inFlightIdScore}, id) == 1 then
++    return true
++  end
++  if until_executed ~= "1" then
++    return false
++  end
++  local score = redis.call("ZSCORE", key_ids, id)
++  if score == "inf" or tonumber(score) == ${inFlightIdScore} then
++    return false
++  end
++  redis.call("ZADD", key_ids, "XX", ${inFlightIdScore}, id)
++  return true
++end
++`
++
+ const offerRedis = Redis.script(
+-  (...args: [keyQueue: string, keyIds: string, id: string, payload: string]) => args,
++  (...args: [keyQueue: string, keyIds: string, id: string, payload: string, untilExecuted: number]) => args,
+   {
+     lua: `
+ local key_queue = KEYS[1]
+@@ -1065,10 +1169,8 @@ local key_ids = KEYS[2]
+ local id = ARGV[1]
+ local payload = ARGV[2]
+ 
+--- park the dedupe entry outside the timeToLive trim range until the element
+--- completes, so unprocessed elements never lose dedupe protection
+-local result = redis.call("ZADD", key_ids, "NX", "+inf", id)
+-if result == 1 then
++${claimIdLua}
++if claim_id(key_ids, id, ARGV[3]) then
+   redis.call("RPUSH", key_queue, payload)
+ end
+ `,
+@@ -1077,7 +1179,16 @@ end
+ )
+ 
+ const offerDelayedRedis = Redis.script(
+-  (...args: [keyDelayed: string, keyIds: string, id: string, payload: string, visibleAt: number]) => args,
++  (
++    ...args: [
++      keyDelayed: string,
++      keyIds: string,
++      id: string,
++      payload: string,
++      visibleAt: number,
++      untilExecuted: number
++    ]
++  ) => args,
+   {
+     lua: `
+ local key_delayed = KEYS[1]
+@@ -1086,8 +1197,8 @@ local id = ARGV[1]
+ local payload = ARGV[2]
+ local visible_at = ARGV[3]
+ 
+-local result = redis.call("ZADD", key_ids, "NX", "+inf", id)
+-if result == 1 then
++${claimIdLua}
++if claim_id(key_ids, id, ARGV[4]) then
+   redis.call("ZADD", key_delayed, visible_at, payload)
+ end
+ `,
+@@ -1119,6 +1230,7 @@ local key_owners = KEYS[6]
+ local max_attempts = tonumber(ARGV[1])
+ local now = ARGV[2]
+ 
++${failedScoreLua}
+ local entries = redis.call("HGETALL", key_pending)
+ -- recovery revokes ownership, so late settlements from the old claim are no-ops
+ for i = 1, #entries, 2 do
+@@ -1136,7 +1248,7 @@ for i = 1, #entries, 2 do
+       redis.call("HDEL", key_attempts, id)
+       -- failed ids keep their dedupe entry until failedTimeToLive removes the
+       -- dead-letter record, so park them outside the timeToLive trim range
+-      redis.call("ZADD", key_ids, "XX", "+inf", id)
++      redis.call("ZADD", key_ids, "XX", failed_score(now), id)
+     else
+       redis.call("RPUSH", key_queue, payload)
+     end
+@@ -1262,7 +1374,8 @@ const failedRedis = Redis.script(
+       keyIds: string,
+       keyOwners: string,
+       id: string,
+-      payload: string
++      payload: string,
++      failedAt: number
+     ]
+   ) => args,
+   {
+@@ -1275,13 +1388,15 @@ local key_ids = KEYS[5]
+ local key_owners = KEYS[6]
+ local id = ARGV[1]
+ local payload = ARGV[2]
++local failed_at = ARGV[3]
+ 
++${failedScoreLua}
+ ${releaseClaimLua}
+ redis.call("HDEL", key_attempts, id)
+ redis.call("RPUSH", key_failed, payload)
+ -- failed ids keep their dedupe entry until failedTimeToLive removes the
+ -- dead-letter record, so park them outside the timeToLive trim range
+-redis.call("ZADD", key_ids, "XX", "+inf", id)
++redis.call("ZADD", key_ids, "XX", failed_score(failed_at), id)
+ `,
+     numberOfKeys: 6
+   }
+@@ -1422,7 +1537,11 @@ while removed < ${trimFailedBatchSize} do
+     -- failedAt is always the last field of a failed record
+     local failed_at = tonumber(string.match(head, ',"failedAt":([^,}]+)%}$'))
+     if failed_at ~= nil and failed_at >= cutoff then break end
+-    redis.call("ZREM", key_ids, id)
++    -- release the id only if it still belongs to this failure
++    local score = redis.call("ZSCORE", key_ids, id)
++    if score == "inf" or (failed_at ~= nil and tonumber(score) == ${failedIdScore} + failed_at) then
++      redis.call("ZREM", key_ids, id)
++    end
+   end
+   -- a corrupt head would otherwise block trimming of the whole list
+   redis.call("LPOP", key_failed)
+@@ -1471,6 +1590,17 @@ export const layerStoreRedis: (
+  * Offer and retry delays are measured with the database clock and rounded up
+  * to whole seconds.
+  *
++ * An id re-offered with `deduplicate: "untilExecuted"` keeps only its latest
++ * failure.
++ *
++ * **Gotchas**
++ *
++ * An `"untilExecuted"` offer inside a transaction checks the id against that
++ * transaction's snapshot. Under an isolation level with one snapshot per
++ * transaction, such as MySQL's default repeatable read, an element that
++ * completed or failed after the first read still looks in flight, so the offer
++ * is ignored.
++ *
+  * @stability unstable
+  * @category constructors
+  * @since 4.0.0
+@@ -1920,17 +2050,42 @@ export const makeStoreSql: (
+       })
+     )
+ 
++  // Stores the re-offer as a new row with a fresh sequence. The plain read keeps
++  // new ids lock-free, since under MySQL's repeatable read deleting an absent
++  // key takes gap locks that deadlock concurrent inserts. The delete re-checks
++  // the state and shares a transaction with the insert, so concurrent offers of
++  // the id wait on the deleted row and then see the re-offer.
++  const replaceExecuted = <A, E, R>(id: string, name: string, insert: Effect.Effect<A, E, R>) =>
++    Effect.flatMap(
++      sql<{ readonly sequence: number | string }>`
++        SELECT sequence FROM ${tableNameSql}
++        WHERE id = ${id} AND queue_name = ${name} AND state IN ('completed', 'failed')
++      `,
++      (rows) =>
++        rows.length === 0 ? insert : sql.withTransaction(Effect.andThen(
++          sql`
++            DELETE FROM ${tableNameSql}
++            WHERE sequence = ${rows[0].sequence} AND state IN ('completed', 'failed')
++          `,
++          insert
++        ))
++    )
++
+   return PersistedQueueStore.of({
+-    offer: ({ delay, element, id, name }) =>
++    offer: ({ deduplicate, delay, element, id, isCustomId, name }) =>
+       Effect.catchCause(
+-        Effect.suspend(() =>
+-          offer(
++        Effect.suspend(() => {
++          const insert = offer(
+             id,
+             name,
+             JSON.stringify(element),
+             delay === undefined ? sqlNow : delayedVisibleAt(delay)
+           )
+-        ),
++          // generated ids are never offered twice
++          return deduplicate === "untilExecuted" && isCustomId
++            ? replaceExecuted(id, name, insert)
++            : insert
++        }),
+         (cause) =>
+           Effect.fail(
+             new PersistedQueueError({
+diff --git a/dist/persistence/PersistedQueue.js b/dist/persistence/PersistedQueue.js
+index 109cff7f4c..24e9297af9 100644
+--- a/dist/persistence/PersistedQueue.js
++++ b/dist/persistence/PersistedQueue.js
+@@ -136,7 +136,8 @@ export const makeFactory = /*#__PURE__*/Effect.gen(function* () {
+             id,
+             element,
+             isCustomId: opts?.id !== undefined,
+-            delay
++            delay,
++            deduplicate: opts?.deduplicate
+           }), id));
+         }),
+         take: f => {
+@@ -239,7 +240,8 @@ const makeAckRetrySchedule = lockExpiration => Schedule.min([Schedule.exponentia
+ }));
+ // Internal signal used by the factory to tell a store that a taken element
+ // cannot ever be processed (its stored payload fails to decode) and must be
+-// dead-lettered instead of retried.
++// dead-lettered instead of retried. Stores outside this module detect it with
++// the exported `isDeadLetterCause`.
+ class DeadLetter {
+   _tag = "~effect/persistence/PersistedQueue/DeadLetter";
+   cause;
+@@ -278,17 +280,47 @@ const deadLetterFromCause = cause => {
+  * An offered `delay` is always finite and positive, and the element must not
+  * be taken before it elapses. It is `undefined` for immediate elements.
+  *
++ * An offer whose id is already stored is ignored, unless `deduplicate` is
++ * `"untilExecuted"` and that element has completed or failed its final
++ * attempt. The offer is then stored as a new element after earlier offers,
++ * atomically with respect to concurrent offers of the id. `undefined` means
++ * `"untilRemoved"`.
++ *
+  * Claiming an element counts an attempt, so the `attempts` returned by `take`
+  * is 1-based. When the take scope closes with a success the element is marked
+  * completed; a failure retries it according to `retryDelay` or marks it failed
+  * once `maxAttempts` is exhausted; an interruption releases it without
+- * counting the attempt.
++ * counting the attempt. A failure for which {@link isDeadLetterCause} holds
++ * marks the element failed immediately, without a retry.
+  *
+  * @stability unstable
+  * @category services
+  * @since 4.0.0
+  */
+ export class PersistedQueueStore extends /*#__PURE__*/Context.Service()("effect/persistence/PersistedQueue/PersistedQueueStore") {}
++/**
++ * Returns `true` when a take scope failed because the queue could not decode
++ * the element's stored payload.
++ *
++ * **When to use**
++ *
++ * Use when a custom `PersistedQueueStore` take finalizer decides whether a
++ * failed element is marked failed at once or retried.
++ *
++ * **Details**
++ *
++ * A payload that fails to decode with the queue's schema can never be
++ * processed, so `PersistedQueue` fails the take scope with an internal
++ * dead-letter signal and takes the next element. The store should mark the
++ * element failed whatever attempts remain, which also releases its id for a
++ * `deduplicate: "untilExecuted"` offer.
++ *
++ * @see {@link PersistedQueueStore} for the store contract that calls for this check
++ * @stability unstable
++ * @category predicates
++ * @since 4.1.3
++ */
++export const isDeadLetterCause = cause => deadLetterFromCause(cause) !== undefined;
+ /**
+  * Provides an in-memory `PersistedQueueStore`.
+  *
+@@ -324,7 +356,12 @@ export const layerStoreMemory = /*#__PURE__*/Layer.effect(PersistedQueueStore, /
+     offer: options => Effect.sync(() => {
+       const now = clock.currentTimeMillisUnsafe();
+       const queue = getOrCreateQueue(options.name);
+-      if (queue.entries.has(options.id)) return;
++      const existing = queue.entries.get(options.id);
++      if (existing !== undefined) {
++        if (options.deduplicate !== "untilExecuted" || existing.state !== "completed" && existing.state !== "failed") return;
++        // delete first so the new entry is ordered after existing ones
++        queue.entries.delete(options.id);
++      }
+       const entry = {
+         id: options.id,
+         element: options.element,
+@@ -369,8 +406,7 @@ export const layerStoreMemory = /*#__PURE__*/Layer.effect(PersistedQueueStore, /
+             entry.stateChangedAt = now;
+             return;
+           }
+-          const deadLetter = deadLetterFromCause(exit.cause);
+-          if (deadLetter !== undefined) {
++          if (isDeadLetterCause(exit.cause)) {
+             entry.state = "failed";
+             entry.stateChangedAt = now;
+             return;
+@@ -431,6 +467,11 @@ export const layerStoreMemory = /*#__PURE__*/Layer.effect(PersistedQueueStore, /
+  * worker and let its locks expire before starting upgraded workers. Keep the
+  * existing Redis data rather than flushing it.
+  *
++ * Every failure of an id re-offered with `deduplicate: "untilExecuted"` stays
++ * in the failed list until `layerCleanup` removes it, which requires
++ * `failedTimeToLive`. Ids that failed on an earlier `effect` version stay
++ * reserved until then, even for `"untilExecuted"` offers.
++ *
+  * @stability unstable
+  * @category constructors
+  * @since 4.0.0
+@@ -536,6 +577,7 @@ export const makeStoreRedis = /*#__PURE__*/Effect.fnUntraced(function* (options)
+   });
+   return PersistedQueueStore.of({
+     offer: ({
++      deduplicate,
+       delay,
+       element,
+       id,
+@@ -550,12 +592,13 @@ export const makeStoreRedis = /*#__PURE__*/Effect.fnUntraced(function* (options)
+         id,
+         element
+       });
++      const untilExecuted = deduplicate === "untilExecuted" ? 1 : 0;
+       const send = Effect.suspend(() => {
+         if (delay === undefined) {
+-          return isCustomId ? offer(keys.queue, keys.ids, id, payload) : redis.send("RPUSH", keys.queue, payload);
++          return isCustomId ? offer(keys.queue, keys.ids, id, payload, untilExecuted) : redis.send("RPUSH", keys.queue, payload);
+         }
+         const visibleAt = clock.currentTimeMillisUnsafe() + Duration.toMillis(delay);
+-        return isCustomId ? offerDelayed(keys.delayed, keys.ids, id, payload, visibleAt) : redis.send("ZADD", keys.delayed, visibleAt.toString(), payload);
++        return isCustomId ? offerDelayed(keys.delayed, keys.ids, id, payload, visibleAt, untilExecuted) : redis.send("ZADD", keys.delayed, visibleAt.toString(), payload);
+       });
+       return send.pipe(Effect.mapError(({
+         cause
+@@ -610,7 +653,7 @@ export const makeStoreRedis = /*#__PURE__*/Effect.fnUntraced(function* (options)
+             attempts: element.attempts,
+             lastFailure: Cause.pretty(cause),
+             failedAt: now
+-          })));
++          }), now));
+           if (dead !== undefined) {
+             return failElement(dead.cause);
+           }
+@@ -655,6 +698,38 @@ export const makeStoreRedis = /*#__PURE__*/Effect.fnUntraced(function* (options)
+     })))
+   });
+ });
++// ids sorted set scores. The sentinels sit above any completion time, so the
++// timeToLive trim skips them:
++// - inFlightIdScore: pending or processing
++// - failedIdScore + failedAt: failed at failedAt. trimFailed removes it only
++//   with the failed record carrying that failedAt
++// - +inf: legacy in-flight or failed entry. Offers treat it as in flight
++// - otherwise: the completion time
++const inFlightIdScore = 1e15;
++const failedIdScore = 2e15;
++// formatted as an integer, since Lua's default number formatting keeps only 14
++// significant digits
++const failedScoreLua = `local function failed_score(failed_at)
++  return string.format("%.0f", ${failedIdScore} + tonumber(failed_at))
++end
++`;
++// Reserves the id and returns whether to store the offer. With until_executed,
++// a completed or failed id is reclaimed.
++const claimIdLua = `local function claim_id(key_ids, id, until_executed)
++  if redis.call("ZADD", key_ids, "NX", ${inFlightIdScore}, id) == 1 then
++    return true
++  end
++  if until_executed ~= "1" then
++    return false
++  end
++  local score = redis.call("ZSCORE", key_ids, id)
++  if score == "inf" or tonumber(score) == ${inFlightIdScore} then
++    return false
++  end
++  redis.call("ZADD", key_ids, "XX", ${inFlightIdScore}, id)
++  return true
++end
++`;
+ const offerRedis = /*#__PURE__*/Redis.script((...args) => args, {
+   lua: `
+ local key_queue = KEYS[1]
+@@ -662,10 +737,8 @@ local key_ids = KEYS[2]
+ local id = ARGV[1]
+ local payload = ARGV[2]
+ 
+--- park the dedupe entry outside the timeToLive trim range until the element
+--- completes, so unprocessed elements never lose dedupe protection
+-local result = redis.call("ZADD", key_ids, "NX", "+inf", id)
+-if result == 1 then
++${claimIdLua}
++if claim_id(key_ids, id, ARGV[3]) then
+   redis.call("RPUSH", key_queue, payload)
+ end
+ `,
+@@ -679,8 +752,8 @@ local id = ARGV[1]
+ local payload = ARGV[2]
+ local visible_at = ARGV[3]
+ 
+-local result = redis.call("ZADD", key_ids, "NX", "+inf", id)
+-if result == 1 then
++${claimIdLua}
++if claim_id(key_ids, id, ARGV[4]) then
+   redis.call("ZADD", key_delayed, visible_at, payload)
+ end
+ `,
+@@ -697,6 +770,7 @@ local key_owners = KEYS[6]
+ local max_attempts = tonumber(ARGV[1])
+ local now = ARGV[2]
+ 
++${failedScoreLua}
+ local entries = redis.call("HGETALL", key_pending)
+ -- recovery revokes ownership, so late settlements from the old claim are no-ops
+ for i = 1, #entries, 2 do
+@@ -714,7 +788,7 @@ for i = 1, #entries, 2 do
+       redis.call("HDEL", key_attempts, id)
+       -- failed ids keep their dedupe entry until failedTimeToLive removes the
+       -- dead-letter record, so park them outside the timeToLive trim range
+-      redis.call("ZADD", key_ids, "XX", "+inf", id)
++      redis.call("ZADD", key_ids, "XX", failed_score(now), id)
+     else
+       redis.call("RPUSH", key_queue, payload)
+     end
+@@ -795,13 +869,15 @@ local key_ids = KEYS[5]
+ local key_owners = KEYS[6]
+ local id = ARGV[1]
+ local payload = ARGV[2]
++local failed_at = ARGV[3]
+ 
++${failedScoreLua}
+ ${releaseClaimLua}
+ redis.call("HDEL", key_attempts, id)
+ redis.call("RPUSH", key_failed, payload)
+ -- failed ids keep their dedupe entry until failedTimeToLive removes the
+ -- dead-letter record, so park them outside the timeToLive trim range
+-redis.call("ZADD", key_ids, "XX", "+inf", id)
++redis.call("ZADD", key_ids, "XX", failed_score(failed_at), id)
+ `,
+   numberOfKeys: 6
+ });
+@@ -919,7 +995,11 @@ while removed < ${trimFailedBatchSize} do
+     -- failedAt is always the last field of a failed record
+     local failed_at = tonumber(string.match(head, ',"failedAt":([^,}]+)%}$'))
+     if failed_at ~= nil and failed_at >= cutoff then break end
+-    redis.call("ZREM", key_ids, id)
++    -- release the id only if it still belongs to this failure
++    local score = redis.call("ZSCORE", key_ids, id)
++    if score == "inf" or (failed_at ~= nil and tonumber(score) == ${failedIdScore} + failed_at) then
++      redis.call("ZREM", key_ids, id)
++    end
+   end
+   -- a corrupt head would otherwise block trimming of the whole list
+   redis.call("LPOP", key_failed)
+@@ -954,6 +1034,17 @@ export const layerStoreRedis = /*#__PURE__*/flow(makeStoreRedis, /*#__PURE__*/La
+  * Offer and retry delays are measured with the database clock and rounded up
+  * to whole seconds.
+  *
++ * An id re-offered with `deduplicate: "untilExecuted"` keeps only its latest
++ * failure.
++ *
++ * **Gotchas**
++ *
++ * An `"untilExecuted"` offer inside a transaction checks the id against that
++ * transaction's snapshot. Under an isolation level with one snapshot per
++ * transaction, such as MySQL's default repeatable read, an element that
++ * completed or failed after the first read still looks in flight, so the offer
++ * is ignored.
++ *
+  * @stability unstable
+  * @category constructors
+  * @since 4.0.0
+@@ -1296,13 +1387,31 @@ export const makeStoreSql = /*#__PURE__*/Effect.fnUntraced(function* (options) {
+     while: deletedCount => deletedCount === sqlCleanupBatchSize,
+     schedule: Schedule.spaced(Duration.millis(10))
+   }));
++  // Stores the re-offer as a new row with a fresh sequence. The plain read keeps
++  // new ids lock-free, since under MySQL's repeatable read deleting an absent
++  // key takes gap locks that deadlock concurrent inserts. The delete re-checks
++  // the state and shares a transaction with the insert, so concurrent offers of
++  // the id wait on the deleted row and then see the re-offer.
++  const replaceExecuted = (id, name, insert) => Effect.flatMap(sql`
++        SELECT sequence FROM ${tableNameSql}
++        WHERE id = ${id} AND queue_name = ${name} AND state IN ('completed', 'failed')
++      `, rows => rows.length === 0 ? insert : sql.withTransaction(Effect.andThen(sql`
++            DELETE FROM ${tableNameSql}
++            WHERE sequence = ${rows[0].sequence} AND state IN ('completed', 'failed')
++          `, insert)));
+   return PersistedQueueStore.of({
+     offer: ({
++      deduplicate,
+       delay,
+       element,
+       id,
++      isCustomId,
+       name
+-    }) => Effect.catchCause(Effect.suspend(() => offer(id, name, JSON.stringify(element), delay === undefined ? sqlNow : delayedVisibleAt(delay))), cause => Effect.fail(new PersistedQueueError({
++    }) => Effect.catchCause(Effect.suspend(() => {
++      const insert = offer(id, name, JSON.stringify(element), delay === undefined ? sqlNow : delayedVisibleAt(delay));
++      // generated ids are never offered twice
++      return deduplicate === "untilExecuted" && isCustomId ? replaceExecuted(id, name, insert) : insert;
++    }), cause => Effect.fail(new PersistedQueueError({
+       message: "Failed to offer element to persisted queue",
+       cause
+     }))).pipe(
+@@ -1581,4 +1690,5 @@ const sqlMigrations = tableName => Migrator.fromRecord({
+  * @since 4.0.0
+  */
+ export const layerStoreSql = /*#__PURE__*/flow(makeStoreSql, /*#__PURE__*/Layer.effect(PersistedQueueStore));
+-//# sourceMappingURL=PersistedQueue.js.map
+\ No newline at end of file
++//# sourceMappingURL=PersistedQueue.js.map
++//# sourceMappingURL=PersistedQueue.js.map
+diff --git a/dist/persistence/PersistedQueue.d.ts b/dist/persistence/PersistedQueue.d.ts
+index 8846da6265..6d7ebdfd17 100644
+--- a/dist/persistence/PersistedQueue.d.ts
++++ b/dist/persistence/PersistedQueue.d.ts
+@@ -67,8 +67,28 @@ export interface PersistedQueue<in out A, out R = never> {
+      *
+      * If an element with the same id already exists in the queue, it will not be
+      * added again, and the `delay` of the duplicate offer is ignored.
+-     * De-duplication survives completion until the id is removed by
+-     * `layerCleanup`.
++     * `deduplicate` sets how long a custom `id` stays reserved:
++     *
++     * - `"untilRemoved"` (default): until `layerCleanup` removes the completed
++     *   or failed element. The id works as an idempotency key.
++     * - `"untilExecuted"`: until the element completes or fails its final
++     *   attempt. Offers while it is pending, processing or waiting to retry are
++     *   ignored. A later offer enqueues a new element behind queued work, with its
++     *   own `delay`, so a producer that retries after completion runs the work
++     *   again.
++     *
++     * The mode is chosen per offer and is not stored with the id. An
++     * `"untilExecuted"` offer can re-open a completed or failed id even when
++     * other producers offer it with `"untilRemoved"`, so don't share an
++     * idempotency key with `"untilExecuted"` producers.
++     *
++     * With `"untilExecuted"`, handlers should read current state rather than the
++     * offered value. An offer that arrives after the handler read state but before
++     * the element completes is ignored, so check a version or dirty flag when a
++     * missed change matters.
++     *
++     * A re-offered failed id may lose its earlier failure record. See
++     * `makeStoreSql` and `makeStoreRedis` for what each store keeps.
+      *
+      * `delay` postpones the first delivery. Measured by the store's clock, the
+      * element is never delivered before the delay elapses, and is typically
+@@ -87,6 +107,7 @@ export interface PersistedQueue<in out A, out R = never> {
+     readonly offer: (value: A, options?: {
+         readonly id?: string | undefined;
+         readonly delay?: Duration.Input | undefined;
++        readonly deduplicate?: "untilExecuted" | "untilRemoved" | undefined;
+     }) => Effect.Effect<string, PersistedQueueError | Schema.SchemaError, R>;
+     /**
+      * Takes an element from the queue, waiting until one is available when the
+@@ -255,6 +276,7 @@ declare const PersistedQueueStore_base: Context.ServiceClass<PersistedQueueStore
+         readonly element: unknown;
+         readonly isCustomId: boolean;
+         readonly delay?: Duration.Duration | undefined;
++        readonly deduplicate?: "untilExecuted" | "untilRemoved" | undefined;
+     }) => Effect.Effect<void, PersistedQueueError>;
+     readonly take: (options: {
+         readonly name: string;
+@@ -291,11 +313,18 @@ declare const PersistedQueueStore_base: Context.ServiceClass<PersistedQueueStore
+  * An offered `delay` is always finite and positive, and the element must not
+  * be taken before it elapses. It is `undefined` for immediate elements.
+  *
++ * An offer whose id is already stored is ignored, unless `deduplicate` is
++ * `"untilExecuted"` and that element has completed or failed its final
++ * attempt. The offer is then stored as a new element after earlier offers,
++ * atomically with respect to concurrent offers of the id. `undefined` means
++ * `"untilRemoved"`.
++ *
+  * Claiming an element counts an attempt, so the `attempts` returned by `take`
+  * is 1-based. When the take scope closes with a success the element is marked
+  * completed; a failure retries it according to `retryDelay` or marks it failed
+  * once `maxAttempts` is exhausted; an interruption releases it without
+- * counting the attempt.
++ * counting the attempt. A failure for which {@link isDeadLetterCause} holds
++ * marks the element failed immediately, without a retry.
+  *
+  * @stability unstable
+  * @category services
+@@ -303,6 +332,29 @@ declare const PersistedQueueStore_base: Context.ServiceClass<PersistedQueueStore
+  */
+ export declare class PersistedQueueStore extends PersistedQueueStore_base {
+ }
++/**
++ * Returns `true` when a take scope failed because the queue could not decode
++ * the element's stored payload.
++ *
++ * **When to use**
++ *
++ * Use when a custom `PersistedQueueStore` take finalizer decides whether a
++ * failed element is marked failed at once or retried.
++ *
++ * **Details**
++ *
++ * A payload that fails to decode with the queue's schema can never be
++ * processed, so `PersistedQueue` fails the take scope with an internal
++ * dead-letter signal and takes the next element. The store should mark the
++ * element failed whatever attempts remain, which also releases its id for a
++ * `deduplicate: "untilExecuted"` offer.
++ *
++ * @see {@link PersistedQueueStore} for the store contract that calls for this check
++ * @stability unstable
++ * @category predicates
++ * @since 4.1.3
++ */
++export declare const isDeadLetterCause: (cause: Cause.Cause<unknown>) => boolean;
+ /**
+  * Provides an in-memory `PersistedQueueStore`.
+  *
+@@ -341,6 +393,11 @@ export declare const layerStoreMemory: Layer.Layer<PersistedQueueStore>;
+  * worker and let its locks expire before starting upgraded workers. Keep the
+  * existing Redis data rather than flushing it.
+  *
++ * Every failure of an id re-offered with `deduplicate: "untilExecuted"` stays
++ * in the failed list until `layerCleanup` removes it, which requires
++ * `failedTimeToLive`. Ids that failed on an earlier `effect` version stay
++ * reserved until then, even for `"untilExecuted"` offers.
++ *
+  * @stability unstable
+  * @category constructors
+  * @since 4.0.0
+@@ -357,6 +414,7 @@ export declare const makeStoreRedis: (options?: {
+         readonly element: unknown;
+         readonly isCustomId: boolean;
+         readonly delay?: Duration.Duration | undefined;
++        readonly deduplicate?: "untilExecuted" | "untilRemoved" | undefined;
+     }) => Effect.Effect<void, PersistedQueueError>;
+     readonly take: (options: {
+         readonly name: string;
+@@ -376,7 +434,7 @@ export declare const makeStoreRedis: (options?: {
+         readonly timeToLive: Duration.Duration;
+         readonly failedTimeToLive: Duration.Duration | undefined;
+     }) => Effect.Effect<void, PersistedQueueError>;
+-}, never, Redis.Redis | Scope.Scope>;
++}, never, Scope.Scope | Redis.Redis>;
+ /**
+  * Provides a Redis-backed `PersistedQueueStore` using `makeStoreRedis`.
+  *
+@@ -406,6 +464,17 @@ export declare const layerStoreRedis: (options?: {
+  * Offer and retry delays are measured with the database clock and rounded up
+  * to whole seconds.
+  *
++ * An id re-offered with `deduplicate: "untilExecuted"` keeps only its latest
++ * failure.
++ *
++ * **Gotchas**
++ *
++ * An `"untilExecuted"` offer inside a transaction checks the id against that
++ * transaction's snapshot. Under an isolation level with one snapshot per
++ * transaction, such as MySQL's default repeatable read, an element that
++ * completed or failed after the first read still looks in flight, so the offer
++ * is ignored.
++ *
+  * @stability unstable
+  * @category constructors
+  * @since 4.0.0
