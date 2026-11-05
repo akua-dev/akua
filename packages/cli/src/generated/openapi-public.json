@@ -8479,12 +8479,12 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
-    "/clusters/{id}/agent_install": {
+    "/clusters/{id}/connector_install": {
       "post": {
         "tags": [
           "clusters"
         ],
-        "operationId": "clusters.issueAgentInstall",
+        "operationId": "clusters.issueConnectorInstall",
         "parameters": [
           {
             "name": "id",
@@ -8532,11 +8532,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Agent install command",
+            "description": "ClusterConnector install command",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ClusterAgentInstall"
+                  "$ref": "#/components/schemas/ClusterConnectorInstall"
                 }
               }
             }
@@ -8672,8 +8672,8 @@
             }
           }
         },
-        "description": "Connected Clusters: a Helm command that installs or repairs the Akua cluster agent with the access you grant. Each call invalidates the previous command.",
-        "summary": "Issue the agent install command",
+        "description": "Connected Clusters: a Helm command that installs or repairs the ClusterConnector with the access you grant. Each call invalidates the previous command.",
+        "summary": "Issue the ClusterConnector install command",
         "requestBody": {
           "content": {
             "application/json": {
@@ -19085,8 +19085,79 @@
             "type": "object",
             "properties": {
               "sub": {
-                "type": "string",
-                "minLength": 1
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Principal"
+                  },
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  }
+                ]
+              },
+              "act": {
+                "type": "object",
+                "properties": {
+                  "sub": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/Principal"
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      }
+                    ]
+                  },
+                  "act": {
+                    "type": "object",
+                    "properties": {
+                      "sub": {
+                        "anyOf": [
+                          {
+                            "$ref": "#/components/schemas/Principal"
+                          },
+                          {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256
+                          }
+                        ]
+                      },
+                      "act": {
+                        "type": "object",
+                        "properties": {
+                          "sub": {
+                            "anyOf": [
+                              {
+                                "$ref": "#/components/schemas/Principal"
+                              },
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 256
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "sub"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "sub"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "sub"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -19129,6 +19200,18 @@
           "reason"
         ],
         "additionalProperties": false
+      },
+      "Principal": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^service:[\\s\\S]*?$"
+          },
+          {
+            "type": "string",
+            "pattern": "^workload:[\\s\\S]*?\\/[\\s\\S]*?$"
+          }
+        ]
       },
       "Member": {
         "type": "string",
@@ -23789,7 +23872,7 @@
                 "enum": [
                   "run-agent-install"
                 ],
-                "description": "Run the command from `POST /v1/clusters/{id}/agent_install` again; it re-applies the cluster agent and its updater at one release."
+                "description": "Run the command from `POST /v1/clusters/{id}/connector_install` again; it re-applies the ClusterConnector and its updater at one release."
               }
             },
             "required": [
@@ -24931,7 +25014,7 @@
         ],
         "additionalProperties": false
       },
-      "ClusterAgentInstall": {
+      "ClusterConnectorInstall": {
         "type": "object",
         "properties": {
           "command": {
@@ -25115,8 +25198,8 @@
             "minLength": 2,
             "maxLength": 192
           },
-          "agent": {
-            "$ref": "#/components/schemas/ClusterAgent"
+          "connector": {
+            "$ref": "#/components/schemas/ClusterConnector"
           },
           "created_at": {
             "type": "integer",
@@ -25139,13 +25222,13 @@
           "ready_nodes",
           "conditions",
           "operation_id",
-          "agent",
+          "connector",
           "created_at",
           "etag"
         ],
         "additionalProperties": false
       },
-      "ClusterAgent": {
+      "ClusterConnector": {
         "type": "object",
         "properties": {
           "status": {

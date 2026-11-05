@@ -836,10 +836,10 @@ export const contract: ApiContract = {
 			]
 		},
 		{
-			"id": "clusters.issueAgentInstall",
+			"id": "clusters.issueConnectorInstall",
 			"method": "POST",
-			"path": "/clusters/{id}/agent_install",
-			"summary": "Issue the agent install command",
+			"path": "/clusters/{id}/connector_install",
+			"summary": "Issue the ClusterConnector install command",
 			"auth": true,
 			"parameters": [
 				"path:id:3",
