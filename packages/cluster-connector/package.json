@@ -1,0 +1,24 @@
+{
+	"name": "@akua-dev/cluster-connector",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"license": "Apache-2.0",
+	"exports": {
+		"./ClusterConnector": "./src/ClusterConnector.ts"
+	},
+	"dependencies": {
+		"@effect/platform-bun": "catalog:",
+		"@platform/api-contract": "workspace:*",
+		"@platform/ids": "workspace:*",
+		"@platform/kubernetes-schemas": "workspace:*",
+		"effect": "catalog:",
+		"yaml": "catalog:"
+	},
+	"devDependencies": {
+		"@effect/vitest": "catalog:",
+		"@types/bun": "catalog:",
+		"@types/node": "catalog:",
+		"vitest": "catalog:"
+	}
+}
