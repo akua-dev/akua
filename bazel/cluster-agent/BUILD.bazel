@@ -7,7 +7,7 @@ Built only from fluxcd/pkg/ssa and fluxcd/cli-utils (patched by
 load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 load("//bazel:version.bzl", "PACKAGE_SOURCE_VERSION")
 
-_SRC = "//packages/cluster-agent/engine"
+_SRC = "//packages/cluster-connector/engine"
 
 _IMPORT = "github.com/akua-dev/akua/packages/cluster-agent/engine"
 
@@ -245,7 +245,7 @@ go_test(
     size = "small",
     srcs = [_SRC + ":fixture_test_srcs"],
     data = [_SRC + ":fixture_testdata"],
-    rundir = "packages/cluster-agent/engine",
+    rundir = "packages/cluster-connector/engine",
     visibility = ["//visibility:public"],
     deps = [
         ":live",
@@ -262,7 +262,7 @@ go_test(
     size = "small",
     srcs = [_SRC + ":recorded_test_srcs"],
     data = [_SRC + ":fixture_testdata"],
-    rundir = "packages/cluster-agent/engine",
+    rundir = "packages/cluster-connector/engine",
     visibility = ["//visibility:public"],
     deps = [
         ":live",
