@@ -1,5 +1,8 @@
 import { Clock, Effect, Option, Result, Schema } from 'effect';
-import { AgentRelease, type DesiredPlacement } from '@platform/api-contract/services/cluster-agent';
+import {
+	ClusterConnectorRelease,
+	type DesiredPlacement
+} from '@platform/api-contract/services/ClusterConnector';
 import type { Deployment } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/apps/v1/Deployment';
 import type { SelfSubjectAccessReview } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/authorization.k8s.io/v1/SelfSubjectAccessReview';
 import {
@@ -34,7 +37,7 @@ import { exclusionSelector, forceSelector, requiredAccess } from './reconciler';
  * and the live copy of what a first update replaces.
  */
 
-type Release = typeof AgentRelease.Type;
+type Release = typeof ClusterConnectorRelease.Type;
 type Json = typeof Manifest.Type;
 type Entry = typeof InventoryEntry.Type;
 type Review = typeof SelfSubjectAccessReview.Type;
@@ -50,7 +53,9 @@ export const releaseAnnotation = 'akua.dev/release';
 /** Objects the chart labels as the updater's own; the agent applies those, never the updater. */
 export const updaterComponentLabel = ['app.kubernetes.io/component', 'updater'] as const;
 
-export const decodeReleaseJson = Schema.decodeUnknownOption(Schema.fromJsonString(AgentRelease));
+export const decodeReleaseJson = Schema.decodeUnknownOption(
+	Schema.fromJsonString(ClusterConnectorRelease)
+);
 
 const BundleDeployment = Schema.Struct({
 	kind: Schema.Literal('Deployment'),

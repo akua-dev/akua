@@ -23,7 +23,7 @@ import type {
 	DesiredState,
 	ObjectStatus,
 	PlacementReport
-} from '@platform/api-contract/services/cluster-agent';
+} from '@platform/api-contract/services/ClusterConnector';
 import type { SelfSubjectAccessReview } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/authorization.k8s.io/v1/SelfSubjectAccessReview';
 import {
 	applySetIdOf,

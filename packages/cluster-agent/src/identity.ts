@@ -14,7 +14,7 @@ import {
 } from 'effect';
 import { Base64 } from 'effect/encoding';
 import ids from '@platform/ids';
-import type { EnrollRequest } from '@platform/api-contract/services/cluster-agent';
+import type { EnrollRequest } from '@platform/api-contract/services/ClusterConnector';
 import { importAgentKey, generateAgentKey, signAssertion, type AgentKey } from './agent-key';
 import { AgentConfig, PlatformOrigin } from './config';
 import { KubernetesApi } from './contract';

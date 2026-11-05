@@ -2,7 +2,10 @@ import { assert, describe, it } from '@effect/vitest';
 import { Effect, Option, Ref, Result, Schema } from 'effect';
 import { Base64 } from 'effect/encoding';
 import { TestClock } from 'effect/testing';
-import { AgentImage, type UpdaterInstruction } from '@platform/api-contract/services/cluster-agent';
+import {
+	ClusterConnectorImage,
+	type UpdaterInstruction
+} from '@platform/api-contract/services/ClusterConnector';
 import { applySetParentName, inventoryOf } from './applyset';
 import { AgentUpdater } from './contract';
 import {
@@ -138,7 +141,9 @@ describe('AgentUpdater', () => {
 	it.effect('takes no release from a registry other than its own image came from', () => {
 		const elsewhere = {
 			...v2,
-			image: AgentImage.make(`registry.example/akua/cluster-agent@sha256:${'2'.repeat(64)}`)
+			image: ClusterConnectorImage.make(
+				`registry.example/akua/cluster-agent@sha256:${'2'.repeat(64)}`
+			)
 		};
 		return Effect.gen(function* () {
 			yield* rollingEngine;

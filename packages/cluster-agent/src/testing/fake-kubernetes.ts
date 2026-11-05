@@ -1,6 +1,6 @@
 import { Context, Effect, Layer, Ref, Stream } from 'effect';
 import type { Schema } from 'effect';
-import { ClusterUid } from '@platform/api-contract/services/cluster-agent';
+import { ClusterUid } from '@platform/api-contract/services/ClusterConnector';
 import type { Secret } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Secret';
 import type { Node } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Node';
 import type { EventList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/EventList';

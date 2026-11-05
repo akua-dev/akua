@@ -1,7 +1,10 @@
 import { Clock, Effect, Schema } from 'effect';
 import { ClusterNamespace } from '@platform/api-contract/ClusterNamespace';
-import type { AgentNode, GrantedAccess } from '@platform/api-contract/services/cluster-agent';
-import type { NodePage } from '@platform/api-contract/services/cluster-agent-channel';
+import type {
+	ClusterConnectorNode,
+	GrantedAccess
+} from '@platform/api-contract/services/ClusterConnector';
+import type { NodePage } from '@platform/api-contract/services/ClusterConnectorChannel';
 import type { Node } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Node';
 import { type Distribution, KubernetesApi } from './contract';
 
@@ -36,7 +39,7 @@ export const detectDistribution = (
 };
 
 /** Trimmed to metadata.name, metadata.labels, status.conditions and status.nodeInfo. */
-export const trimNode = (node: typeof Node.Type): typeof AgentNode.Type => ({
+export const trimNode = (node: typeof Node.Type): typeof ClusterConnectorNode.Type => ({
 	apiVersion: 'v1',
 	kind: 'Node',
 	metadata: {

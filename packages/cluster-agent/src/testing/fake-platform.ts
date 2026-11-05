@@ -4,8 +4,8 @@ import { HttpApiBuilder, HttpApiMiddleware, HttpApiTest } from 'effect/http-api'
 import ids from '@platform/ids';
 import { forbidden, gone, notFound, unauthorized } from '@platform/api-contract/errors';
 import {
-	AgentAuthorization,
-	ClusterAgentApi,
+	ClusterConnectorAuthorization,
+	ClusterConnectorApi,
 	type DesiredState,
 	type EnrollRequest,
 	type PlacementReport,
@@ -13,17 +13,17 @@ import {
 	type StatusBatch,
 	type UpdaterPhaseReport,
 	type UpdaterInstruction,
-	AuthenticatedAgent,
-	clusterAgentPrincipal,
+	AuthenticatedClusterConnector,
+	clusterConnectorPrincipal,
 	ClusterUid
-} from '@platform/api-contract/services/cluster-agent';
+} from '@platform/api-contract/services/ClusterConnector';
 import { WorkloadAssertion } from '@platform/api-contract/caller';
 import { agentAuthorizationClient, AgentApi, IdentityApi } from '../platform';
 
 type PlacementId = typeof ids.placement.prefixedEffect.Type;
 
 /**
- * An in-memory platform behind the real ClusterAgentApi contract, served
+ * An in-memory platform behind the real ClusterConnectorApi contract, served
  * through HttpApiTest: the agent's typed clients encode, route and decode
  * exactly as against the real service.
  */
@@ -87,10 +87,10 @@ export const fakePlatformState = (
 const tokenPrefix = 'fake-workload-assertion-';
 
 const AuthorizationServer = Layer.effect(
-	AgentAuthorization,
+	ClusterConnectorAuthorization,
 	Effect.gen(function* () {
 		const platform = yield* FakePlatform;
-		return AgentAuthorization.of({
+		return ClusterConnectorAuthorization.of({
 			bearer: Effect.fn(function* (httpEffect, { credential }) {
 				const state = yield* Ref.get(platform.state);
 				const token = Redacted.value(credential);
@@ -98,10 +98,10 @@ const AuthorizationServer = Layer.effect(
 				if (!token.startsWith(tokenPrefix) || !(number >= 1 && number <= state.tokensIssued)) {
 					return yield* unauthorized('invalid workload assertion');
 				}
-				return yield* Effect.provideService(httpEffect, AuthenticatedAgent, {
+				return yield* Effect.provideService(httpEffect, AuthenticatedClusterConnector, {
 					agentId: state.enrolledAgentId,
 					clusterUid: ClusterUid.make('00000000-0000-4000-8000-000000000001'),
-					caller: { principal: clusterAgentPrincipal(state.enrolledAgentId) }
+					caller: { principal: clusterConnectorPrincipal(state.enrolledAgentId) }
 				});
 			})
 		});
@@ -119,8 +119,8 @@ const takeFailure = (platform: FakePlatform['Service'], endpoint: 'status' | 're
 	);
 
 const IdentityHandlers = HttpApiBuilder.group(
-	ClusterAgentApi,
-	'agentIdentity',
+	ClusterConnectorApi,
+	'clusterConnectorIdentity',
 	Effect.fn(function* (handlers) {
 		const platform = yield* FakePlatform;
 		return handlers
@@ -164,8 +164,8 @@ const IdentityHandlers = HttpApiBuilder.group(
 );
 
 const AgentHandlers = HttpApiBuilder.group(
-	ClusterAgentApi,
-	'agent',
+	ClusterConnectorApi,
+	'clusterConnector',
 	Effect.fn(function* (handlers) {
 		const platform = yield* FakePlatform;
 		return handlers
@@ -240,8 +240,9 @@ export const emptyDesiredState = (
 });
 
 /** No client middleware for the identity group, which carries no bearer. */
-const anonymousClient = HttpApiMiddleware.layerClient(AgentAuthorization, ({ next, request }) =>
-	next(request)
+const anonymousClient = HttpApiMiddleware.layerClient(
+	ClusterConnectorAuthorization,
+	({ next, request }) => next(request)
 );
 
 /**
@@ -265,8 +266,8 @@ export const fakePlatformCore = (initial: FakePlatformState = fakePlatformState(
 	);
 	const identity = Layer.effect(
 		IdentityApi,
-		HttpApiTest.groups(ClusterAgentApi, ['agentIdentity']).pipe(
-			Effect.map((client) => client.agentIdentity),
+		HttpApiTest.groups(ClusterConnectorApi, ['clusterConnectorIdentity']).pipe(
+			Effect.map((client) => client.clusterConnectorIdentity),
 			Effect.provide(anonymousClient)
 		)
 	);
@@ -275,7 +276,9 @@ export const fakePlatformCore = (initial: FakePlatformState = fakePlatformState(
 
 export const fakeAgentApi = Layer.effect(
 	AgentApi,
-	HttpApiTest.groups(ClusterAgentApi, ['agent']).pipe(Effect.map((client) => client.agent))
+	HttpApiTest.groups(ClusterConnectorApi, ['clusterConnector']).pipe(
+		Effect.map((client) => client.clusterConnector)
+	)
 ).pipe(Layer.provide(agentAuthorizationClient));
 
 export const placementId = (suffix: string): PlacementId =>

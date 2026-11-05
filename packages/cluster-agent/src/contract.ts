@@ -3,7 +3,7 @@ import type { Layer } from 'effect';
 import type { HttpClient, HttpClientError } from 'effect/http';
 import ids from '@platform/ids';
 import {
-	AgentRelease,
+	ClusterConnectorRelease,
 	ClusterUid,
 	DesiredPlacement,
 	ObjectKey,
@@ -13,7 +13,7 @@ import {
 	PlacementReport,
 	UpdaterInstruction,
 	UpdaterPhase
-} from '@platform/api-contract/services/cluster-agent';
+} from '@platform/api-contract/services/ClusterConnector';
 import { Secret } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Secret';
 import { Node } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Node';
 import { SelfSubjectAccessReview } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/authorization.k8s.io/v1/SelfSubjectAccessReview';
@@ -204,7 +204,7 @@ export const engineImpersonation =
 	`system:serviceaccount:${agentNamespace}:${applyServiceAccount}` as const;
 
 /**
- * Inside the agent image (`AgentImage`), next to the agent binary; there is
+ * Inside the agent image (`ClusterConnectorImage`), next to the agent binary; there is
  * no separate engine image or download, so the engine updates and rolls
  * back with the agent's release.
  */
@@ -625,7 +625,7 @@ export class AgentUpdater extends Context.Service<
 	{
 		step(args: {
 			readonly instruction: typeof UpdaterInstruction.Type;
-			readonly running: typeof AgentRelease.Type;
+			readonly running: typeof ClusterConnectorRelease.Type;
 			/** This updater's own version. */
 			readonly version: string;
 			/**
@@ -749,7 +749,7 @@ export type AgentDeployment = Deployment;
  * Identity material the agent keeps in `akua-system/akua-agent-identity`;
  * the key never leaves it. On start an intact Secret wins over any
  * mounted enrollment code; only a missing or undecodable Secret makes the
- * agent enroll again (repair, see Cluster `AgentInstallCommand`).
+ * agent enroll again (repair, see Cluster `ClusterConnectorInstallCommand`).
  */
 export const AgentIdentitySecret = Schema.Struct({
 	agentId: ids.clusterAgent.prefixedEffect,

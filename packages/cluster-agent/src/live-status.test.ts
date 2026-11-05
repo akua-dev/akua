@@ -1,7 +1,7 @@
 import { assert, describe, it } from '@effect/vitest';
 import { Effect, Option, Ref, Stream, SubscriptionRef } from 'effect';
 import { TestClock } from 'effect/testing';
-import type { ResourceNode, StatusBatch } from '@platform/api-contract/services/cluster-agent';
+import type { ResourceNode, StatusBatch } from '@platform/api-contract/services/ClusterConnector';
 import { EngineStatus } from './engine';
 import { aggregateStatus, healthOf, LiveStatus } from './live-status';
 import { FakeEngine } from './testing/fake-engine';

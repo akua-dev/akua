@@ -4,10 +4,10 @@ import * as BunSocket from '@effect/platform-bun/BunSocket';
 import { Config, Effect, Layer, Option, Schedule, SubscriptionRef } from 'effect';
 import { Command } from 'effect/cli';
 import {
-	AgentChannelRpcs,
+	ClusterConnectorChannelRpcs,
 	channelProtocol,
 	UpdaterChannelRpcs
-} from '@platform/api-contract/services/cluster-agent-channel';
+} from '@platform/api-contract/services/ClusterConnectorChannel';
 import { agentRpcHandlers } from './agent-rpcs';
 import { ChannelDialer, type ChannelState, runChannel } from './channel';
 import { detectDistribution } from './cluster-reads';
@@ -137,7 +137,7 @@ const agentLayer = Layer.unwrap(
 						protocol: channelProtocol,
 						release: config.release,
 						cluster_uid: clusterUid,
-						serves: [...AgentChannelRpcs.requests.keys()],
+						serves: [...ClusterConnectorChannelRpcs.requests.keys()],
 						desired_revision: yield* revision.get
 					};
 				});
@@ -146,7 +146,7 @@ const agentLayer = Layer.unwrap(
 				yield* Effect.forkScoped(
 					runChannel({
 						role: 'agent',
-						group: AgentChannelRpcs,
+						group: ClusterConnectorChannelRpcs,
 						handlers: rpcs,
 						hello,
 						state: channelState,

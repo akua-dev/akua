@@ -1,6 +1,9 @@
 import { Effect, Redacted, Schema } from 'effect';
 import { Base64Url } from 'effect/encoding';
-import { AgentPublicKey, ClientAssertion } from '@platform/api-contract/services/cluster-agent';
+import {
+	ClusterConnectorPublicKey,
+	ClientAssertion
+} from '@platform/api-contract/services/ClusterConnector';
 
 /**
  * The agent's own Ed25519 key: generated in the cluster, stored only in
@@ -22,7 +25,7 @@ const PrivateJwkJson = Schema.fromJsonString(PrivateJwk);
 
 export interface AgentKey {
 	readonly privateKey: CryptoKey;
-	readonly publicKey: typeof AgentPublicKey.Type;
+	readonly publicKey: typeof ClusterConnectorPublicKey.Type;
 	/** The private JWK as stored in the identity Secret. */
 	readonly serialized: Redacted.Redacted<string>;
 }
@@ -45,7 +48,12 @@ const fromJwk = Effect.fnUntraced(function* (jwk: typeof PrivateJwk.Type) {
 		catch: (cause) => new AgentKeyError({ operation: 'import', cause })
 	});
 	const kid = yield* thumbprint(jwk.x);
-	const publicKey: typeof AgentPublicKey.Type = { kty: 'OKP', crv: 'Ed25519', x: jwk.x, kid };
+	const publicKey: typeof ClusterConnectorPublicKey.Type = {
+		kty: 'OKP',
+		crv: 'Ed25519',
+		x: jwk.x,
+		kid
+	};
 	return {
 		privateKey,
 		publicKey,

@@ -2,13 +2,13 @@ import { assert, describe, it } from '@effect/vitest';
 import { Deferred, Effect, Fiber, Layer, Queue, Ref, SubscriptionRef } from 'effect';
 import { TestClock } from 'effect/testing';
 import {
-	AgentChannelFailure,
-	AgentChannelRpcs,
+	ClusterConnectorChannelFailure,
+	ClusterConnectorChannelRpcs,
 	channelProtocol,
 	ChannelCloseCode,
 	type Hello
-} from '@platform/api-contract/services/cluster-agent-channel';
-import { ClusterUid } from '@platform/api-contract/services/cluster-agent';
+} from '@platform/api-contract/services/ClusterConnectorChannel';
+import { ClusterUid } from '@platform/api-contract/services/ClusterConnector';
 import { type ChannelState, channelUrl, redialDelayMillis, runChannel } from './channel';
 import {
 	countingCredentials,
@@ -24,20 +24,20 @@ const hello: Effect.Effect<Hello> = Effect.succeed({
 	protocol: channelProtocol,
 	release: testSettings().release,
 	cluster_uid: ClusterUid.make('6f1c1b0e-2f4b-4b7a-9d0e-0c6b1f2a3d4e'),
-	serves: [...AgentChannelRpcs.requests.keys()],
+	serves: [...ClusterConnectorChannelRpcs.requests.keys()],
 	desired_revision: 3
 });
 
 /** Handlers that record what the platform asked. */
 const recording = (calls: Queue.Queue<string>) =>
-	AgentChannelRpcs.toLayer({
+	ClusterConnectorChannelRpcs.toLayer({
 		'DesiredChanged.v1': ({ revision }) =>
 			Queue.offer(calls, `desired:${revision}`).pipe(Effect.asVoid),
 		'Subscribe.v1': ({ status }) =>
 			Queue.offer(calls, `subscribe:${status.length}`).pipe(Effect.asVoid),
 		'ListNodes.v1': () => Effect.succeed({ nodes: [], continue: null }),
 		'GetNode.v1': ({ name }) =>
-			Effect.fail(new AgentChannelFailure({ reason: 'not-found', message: name })),
+			Effect.fail(new ClusterConnectorChannelFailure({ reason: 'not-found', message: name })),
 		'DrainNode.v1': () => Effect.succeed({ outcome: 'drained' as const, evicted: 0, remaining: 0 }),
 		'DeleteNode.v1': () => Effect.void,
 		'GetAccess.v1': () =>
@@ -48,9 +48,9 @@ const recording = (calls: Queue.Queue<string>) =>
 				observedAt: 0
 			}),
 		'TailLogs.v1': () =>
-			Effect.fail(new AgentChannelFailure({ reason: 'not-managed', message: '' })),
+			Effect.fail(new ClusterConnectorChannelFailure({ reason: 'not-managed', message: '' })),
 		'Describe.v1': () =>
-			Effect.fail(new AgentChannelFailure({ reason: 'not-managed', message: '' }))
+			Effect.fail(new ClusterConnectorChannelFailure({ reason: 'not-managed', message: '' }))
 	});
 
 const start = Effect.gen(function* () {
@@ -63,7 +63,7 @@ const start = Effect.gen(function* () {
 	});
 	const fiber = yield* runChannel({
 		role: 'agent',
-		group: AgentChannelRpcs,
+		group: ClusterConnectorChannelRpcs,
 		handlers: recording(calls),
 		hello,
 		state,

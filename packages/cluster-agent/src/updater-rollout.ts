@@ -1,8 +1,8 @@
 import { Clock, Context, Duration, Effect, Layer, Option, Result, Schema } from 'effect';
 import type {
-	AgentRelease,
+	ClusterConnectorRelease,
 	UpdateRollbackReason
-} from '@platform/api-contract/services/cluster-agent';
+} from '@platform/api-contract/services/ClusterConnector';
 import { Deployment } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/apps/v1/Deployment';
 import {
 	type Bundle,
@@ -25,7 +25,7 @@ import { GitSource } from './git-source';
 import { KubernetesExtras } from './kubernetes';
 import { AgentApi } from './platform';
 
-type Release = typeof AgentRelease.Type;
+type Release = typeof ClusterConnectorRelease.Type;
 type Reason = typeof UpdateRollbackReason.Type;
 type DeploymentObject = typeof Deployment.Type;
 

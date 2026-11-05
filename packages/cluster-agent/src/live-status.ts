@@ -18,7 +18,7 @@ import {
 	type LiveHealth,
 	type ResourceNode,
 	type WarningEvent
-} from '@platform/api-contract/services/cluster-agent';
+} from '@platform/api-contract/services/ClusterConnector';
 import { Engine, EngineEvent, engineSupervision } from './contract';
 import { EngineStatus } from './engine';
 import { AgentApi } from './platform';

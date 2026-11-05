@@ -1,5 +1,5 @@
 import { Effect, Layer, Option, Ref, Schema, SubscriptionRef } from 'effect';
-import type { AgentRelease } from '@platform/api-contract/services/cluster-agent';
+import type { ClusterConnectorRelease } from '@platform/api-contract/services/ClusterConnector';
 import { Deployment } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/apps/v1/Deployment';
 import { releaseAnnotation } from '../bundle-apply';
 import { agentBundleSecret as bundleSecret, updaterBundleSecret } from '../bundle-state';
@@ -22,7 +22,7 @@ import {
 } from './fake-platform';
 import { testEnrollmentCode, testImage } from './settings';
 
-type Release = typeof AgentRelease.Type;
+type Release = typeof ClusterConnectorRelease.Type;
 
 export const v1: Release = { version: '1.0.0', image: testImage('1'), protocol: 1 };
 export const v2: Release = { version: '1.1.0', image: testImage('2'), protocol: 1 };

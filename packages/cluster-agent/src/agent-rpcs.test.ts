@@ -2,11 +2,11 @@ import { assert, describe, it } from '@effect/vitest';
 import { Effect, Fiber, Ref, Stream, SubscriptionRef } from 'effect';
 import { TestClock } from 'effect/testing';
 import { RpcTest } from 'effect/rpc';
-import type { ResourceNode } from '@platform/api-contract/services/cluster-agent';
+import type { ResourceNode } from '@platform/api-contract/services/ClusterConnector';
 import {
-	AgentChannelRpcs,
+	ClusterConnectorChannelRpcs,
 	logTailLimits
-} from '@platform/api-contract/services/cluster-agent-channel';
+} from '@platform/api-contract/services/ClusterConnectorChannel';
 import type { PodList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/PodList';
 import { agentRpcHandlers, chunkLogText, stripObject } from './agent-rpcs';
 import { EngineStatus } from './engine';
@@ -43,7 +43,7 @@ const treeNode = (key: string, uid: string): typeof ResourceNode.Type => ({
 });
 
 /** The agent's handlers behind an in-memory RPC client, over the whole agent harness. */
-const client = RpcTest.makeClient(AgentChannelRpcs);
+const client = RpcTest.makeClient(ClusterConnectorChannelRpcs);
 const withHandlers = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
 	effect.pipe(Effect.provide(agentRpcHandlers), Effect.scoped);
 

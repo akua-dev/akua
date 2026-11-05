@@ -1,5 +1,5 @@
 import { Context, Effect, FileSystem, Layer, Redacted, Ref } from 'effect';
-import type { DesiredPlacement } from '@platform/api-contract/services/cluster-agent';
+import type { DesiredPlacement } from '@platform/api-contract/services/ClusterConnector';
 import { AgentConfig, type AgentSettings, PlatformOrigin } from '../config';
 import { engineLayer } from '../engine';
 import { GitSource, type SourceFile } from '../git-source';

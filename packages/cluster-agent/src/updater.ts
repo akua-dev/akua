@@ -15,17 +15,17 @@ import {
 import { HttpClient, HttpClientRequest, type HttpClientError } from 'effect/http';
 import type ids from '@platform/ids';
 import {
-	agentImageRegistry,
-	AgentRelease,
+	clusterConnectorImageRegistry,
+	ClusterConnectorRelease,
 	type PlacementReport,
 	type UpdateRollbackReason,
 	type UpdaterInstruction,
 	type UpdaterPhase
-} from '@platform/api-contract/services/cluster-agent';
+} from '@platform/api-contract/services/ClusterConnector';
 import { Deployment } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/apps/v1/Deployment';
 import { PodList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/PodList';
 import type { SelfSubjectAccessReview } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/authorization.k8s.io/v1/SelfSubjectAccessReview';
-import { UpdaterChannelRpcs } from '@platform/api-contract/services/cluster-agent-channel';
+import { UpdaterChannelRpcs } from '@platform/api-contract/services/ClusterConnectorChannel';
 import { applySetParentName, unionInventory } from './applyset';
 import {
 	agentContainer,
@@ -56,7 +56,7 @@ import { GitSource } from './git-source';
 import { decodeAs, failureFor, KubernetesConnection, KubernetesExtras } from './kubernetes';
 import { AgentApi } from './platform';
 
-type Release = typeof AgentRelease.Type;
+type Release = typeof ClusterConnectorRelease.Type;
 type Phase = typeof UpdaterPhase.Type;
 type Instruction = typeof UpdaterInstruction.Type;
 type Reason = typeof UpdateRollbackReason.Type;
@@ -157,7 +157,7 @@ export const runningRelease = (
 	const annotated = raw === undefined ? Option.none<Release>() : decodeReleaseJson(raw);
 	const image = imageOf(deployment);
 	if (Option.isSome(annotated) && annotated.value.image === image) return annotated;
-	return Schema.decodeUnknownOption(AgentRelease)({
+	return Schema.decodeUnknownOption(ClusterConnectorRelease)({
 		version: Option.isSome(annotated) ? annotated.value.version : fallbackVersion,
 		image,
 		protocol: Option.isSome(annotated) ? annotated.value.protocol : 1
@@ -493,7 +493,8 @@ export const agentUpdaterLayer = Layer.effect(
 			const offered =
 				desired !== null &&
 				desired.image !== args.running.image &&
-				agentImageRegistry(desired.image) === agentImageRegistry(args.running.image) &&
+				clusterConnectorImageRegistry(desired.image) ===
+					clusterConnectorImageRegistry(args.running.image) &&
 				rejection?.rejected.image !== desired.image
 					? desired
 					: null;

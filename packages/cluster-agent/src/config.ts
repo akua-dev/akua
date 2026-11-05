@@ -1,10 +1,10 @@
 import { Config, Context, Effect, Layer, Option, Schema } from 'effect';
 import ids from '@platform/ids';
 import {
-	AgentImage,
-	AgentRelease,
+	ClusterConnectorImage,
+	ClusterConnectorRelease,
 	EnrollmentCode
-} from '@platform/api-contract/services/cluster-agent';
+} from '@platform/api-contract/services/ClusterConnector';
 import { agentNamespace, Distribution, enginePath } from './contract';
 
 /**
@@ -22,7 +22,7 @@ export const EnrollmentSettings = Schema.Union([
 
 export interface AgentSettings {
 	readonly platformOrigin: URL;
-	readonly release: typeof AgentRelease.Type;
+	readonly release: typeof ClusterConnectorRelease.Type;
 	readonly enrollment: typeof EnrollmentSettings.Type;
 	readonly distribution: Option.Option<typeof Distribution.Type>;
 	readonly healthPort: number;
@@ -37,7 +37,7 @@ export class AgentConfig extends Context.Service<AgentConfig, AgentSettings>()(
 		const platformOrigin = yield* Config.URL('AKUA_PLATFORM_ORIGIN');
 		const version = yield* Config.NonEmptyString('AKUA_AGENT_VERSION');
 		const protocol = yield* Config.Int('AKUA_AGENT_PROTOCOL').pipe(Config.withDefault(1));
-		const image = yield* Config.schema(AgentImage, 'AKUA_AGENT_IMAGE');
+		const image = yield* Config.schema(ClusterConnectorImage, 'AKUA_AGENT_IMAGE');
 		const method = yield* Config.Literals(['code', 'federated'], 'AKUA_ENROLLMENT_METHOD').pipe(
 			Config.withDefault('code' as const)
 		);

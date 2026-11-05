@@ -2,7 +2,7 @@ import { Result, Schema } from 'effect';
 import { Base64, Base64Url } from 'effect/encoding';
 import { parseAllDocuments } from 'yaml';
 import type { GeneratedSecretPlan } from '@platform/api-contract/internal/generated-secrets';
-import type { DesiredState } from '@platform/api-contract/services/cluster-agent';
+import type { DesiredState } from '@platform/api-contract/services/ClusterConnector';
 import {
 	agentNamespace,
 	applySetLabels,
@@ -304,14 +304,12 @@ export const withMountedSecrets = (
 	});
 	const standalone = [...byName]
 		.filter(([name]) => !manifests.some((manifest) => isTarget(manifest, name)))
-		.map(
-			([name, data]): Json => ({
-				apiVersion: 'v1',
-				kind: 'Secret',
-				type: 'Opaque',
-				metadata: { name, namespace },
-				data
-			})
-		);
+		.map(([name, data]): Json => ({
+			apiVersion: 'v1',
+			kind: 'Secret',
+			type: 'Opaque',
+			metadata: { name, namespace },
+			data
+		}));
 	return [...merged, ...standalone];
 };

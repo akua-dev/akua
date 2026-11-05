@@ -1,14 +1,14 @@
 import { Clock, DateTime, Duration, Effect, Option, Ref, Schema, Stream } from 'effect';
 import type { HttpClientError } from 'effect/http';
 import {
-	AgentChannelFailure,
-	AgentChannelRpcs,
+	ClusterConnectorChannelFailure,
+	ClusterConnectorChannelRpcs,
 	describeLimits,
 	logTailLimits,
 	type DescribedObject,
 	type DrainResult,
 	type LogChunk
-} from '@platform/api-contract/services/cluster-agent-channel';
+} from '@platform/api-contract/services/ClusterConnectorChannel';
 import type { PodList } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/PodList';
 import { parseObjectKey } from './applyset';
 import { listNodePage, reviewGrantedAccess, trimNode } from './cluster-reads';
@@ -18,14 +18,14 @@ import { LiveStatus } from './live-status';
 import { DesiredSignal } from './reconciler';
 
 /**
- * The agent's side of `AgentChannelRpcs`: what the platform asks of the
+ * The agent's side of `ClusterConnectorChannelRpcs`: what the platform asks of the
  * cluster over the channel. Reads and node actions run while impersonating
  * `akua-apply`, except node reads, which the agent's own read-only grant
  * covers. Workload reads only reach objects of a Placement's tree.
  */
 
-const failure = (reason: AgentChannelFailure['reason'], message: string) =>
-	new AgentChannelFailure({ reason, message: message.slice(0, 1024) });
+const failure = (reason: ClusterConnectorChannelFailure['reason'], message: string) =>
+	new ClusterConnectorChannelFailure({ reason, message: message.slice(0, 1024) });
 
 /** Kubernetes answers as the platform sees them; never the response body beyond its message. */
 const fromKubernetes = (error: KubernetesFailure | HttpClientError.HttpClientError) =>
@@ -109,7 +109,7 @@ const evictable = (pod: (typeof PodList.Type)['items'][number]) =>
 
 const drainRoundMillis = 2_000;
 
-export const agentRpcHandlers = AgentChannelRpcs.toLayer(
+export const agentRpcHandlers = ClusterConnectorChannelRpcs.toLayer(
 	Effect.gen(function* () {
 		const extras = yield* KubernetesExtras;
 		const live = yield* LiveStatus;
@@ -125,7 +125,7 @@ export const agentRpcHandlers = AgentChannelRpcs.toLayer(
 			return { node, ...parseObjectKey(key) };
 		});
 
-		return AgentChannelRpcs.of({
+		return ClusterConnectorChannelRpcs.of({
 			'DesiredChanged.v1': ({ revision }) => signal.announce(revision),
 			'Subscribe.v1': ({ status }) => live.subscribe(status),
 			'ListNodes.v1': (request) =>

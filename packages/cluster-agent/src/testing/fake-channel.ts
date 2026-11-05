@@ -3,19 +3,19 @@ import { RpcClient, RpcServer } from 'effect/rpc';
 import type { RpcClientError, RpcGroup } from 'effect/rpc';
 import { Socket } from 'effect/socket';
 import {
-	AgentChannelRpcs,
+	ClusterConnectorChannelRpcs,
 	type ChannelRole,
 	ConnectionId,
 	type Hello,
 	makeChannelProtocols,
 	PlatformChannelRpcs,
 	type Welcome
-} from '@platform/api-contract/services/cluster-agent-channel';
+} from '@platform/api-contract/services/ClusterConnectorChannel';
 import { ChannelDialer } from '../channel';
 import { AgentCredentials } from '../platform';
 
 type AgentClient = RpcClient.RpcClient<
-	RpcGroup.Rpcs<typeof AgentChannelRpcs>,
+	RpcGroup.Rpcs<typeof ClusterConnectorChannelRpcs>,
 	RpcClientError.RpcClientError
 >;
 
@@ -36,7 +36,7 @@ export interface FakeConnection {
 /**
  * The platform end of the control channel in memory: every dial gets a
  * socket whose other side runs `makeChannelProtocols`, answers `Hello.v1`
- * with `welcome` and exposes an AgentChannelRpcs client, as the channel
+ * with `welcome` and exposes an ClusterConnectorChannelRpcs client, as the channel
  * object does.
  */
 export class FakeChannel extends Context.Service<
@@ -115,7 +115,7 @@ export const fakeChannelLayer = Layer.effectContext(
 						),
 						Effect.forkScoped
 					);
-					const agent = yield* RpcClient.make(AgentChannelRpcs).pipe(
+					const agent = yield* RpcClient.make(ClusterConnectorChannelRpcs).pipe(
 						Effect.provideService(RpcClient.Protocol, protocols.client)
 					);
 					yield* Ref.update(connections, (all) => [

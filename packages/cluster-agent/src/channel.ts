@@ -25,7 +25,7 @@ import {
 	makeChannelProtocols,
 	PlatformChannelRpcs,
 	type Welcome
-} from '@platform/api-contract/services/cluster-agent-channel';
+} from '@platform/api-contract/services/ClusterConnectorChannel';
 import { PlatformOrigin } from './config';
 import { AgentCredentials } from './platform';
 

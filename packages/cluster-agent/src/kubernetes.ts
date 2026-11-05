@@ -1,6 +1,6 @@
 import { Config, Context, Effect, FileSystem, Layer, Predicate, Schema, Stream } from 'effect';
 import { HttpClient, HttpClientRequest, type HttpClientError } from 'effect/http';
-import { ClusterUid } from '@platform/api-contract/services/cluster-agent';
+import { ClusterUid } from '@platform/api-contract/services/ClusterConnector';
 import { Secret } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Secret';
 import { Namespace } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Namespace';
 import { Node } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Node';

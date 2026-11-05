@@ -1,7 +1,10 @@
 import { Bytes, Effect, Option, Result, Schema, Stream } from 'effect';
 import { Base64 } from 'effect/encoding';
 import ids from '@platform/ids';
-import { AgentRelease, UpdateRollbackReason } from '@platform/api-contract/services/cluster-agent';
+import {
+	ClusterConnectorRelease,
+	UpdateRollbackReason
+} from '@platform/api-contract/services/ClusterConnector';
 import { GitCommit } from '@platform/api-contract/services/repositories';
 import { Inventory, Manifest } from './contract';
 import type { KubernetesExtras } from './kubernetes';
@@ -30,11 +33,14 @@ export const updaterBundleSecret = 'akua-updater-bundle';
 
 const BundleObjects = Schema.Array(Manifest).check(Schema.isMaxLength(200));
 
-export const CurrentBundle = Schema.Struct({ release: AgentRelease, objects: BundleObjects });
+export const CurrentBundle = Schema.Struct({
+	release: ClusterConnectorRelease,
+	objects: BundleObjects
+});
 
 export const BundleUpdate = Schema.Struct({
-	from: AgentRelease,
-	to: AgentRelease,
+	from: ClusterConnectorRelease,
+	to: ClusterConnectorRelease,
 	startedAt: Schema.Finite,
 	deadline: Schema.Finite,
 	placementId: ids.placement.prefixedEffect,
@@ -56,7 +62,7 @@ export const BundleUpdate = Schema.Struct({
 });
 
 export const BundleRejection = Schema.Struct({
-	rejected: AgentRelease,
+	rejected: ClusterConnectorRelease,
 	reason: UpdateRollbackReason,
 	at: Schema.Finite
 });
