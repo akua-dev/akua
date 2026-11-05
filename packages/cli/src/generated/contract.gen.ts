@@ -40,6 +40,10 @@ export const contract: ApiContract = {
 			"title": "offers"
 		},
 		{
+			"name": "opencodes",
+			"title": "OpenCode Servers"
+		},
+		{
 			"name": "operations",
 			"title": "operations"
 		},
@@ -209,6 +213,14 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"$ref": "#/$defs/SandboxId"
+			}
+		},
+		"path:id:12": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"$ref": "#/$defs/OpenCodeServerId"
 			}
 		},
 		"path:id:2": {
@@ -1296,6 +1308,111 @@ export const contract: ApiContract = {
 			"parameters": [
 				"query:short_hash"
 			]
+		},
+		{
+			"id": "opencodes.create",
+			"method": "POST",
+			"path": "/opencodes",
+			"summary": "Create an OpenCode Server",
+			"auth": true,
+			"parameters": [
+				"header:akua-context",
+				"header:idempotency-key"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/CreateOpenCodeServer"
+				}
+			}
+		},
+		{
+			"id": "opencodes.createClientToken",
+			"method": "POST",
+			"path": "/opencodes/{id}:createClientToken",
+			"summary": "Sign in to an OpenCode Server's web UI",
+			"auth": true,
+			"parameters": [
+				"path:id:12",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "opencodes.delete",
+			"method": "DELETE",
+			"path": "/opencodes/{id}",
+			"summary": "Delete an OpenCode Server",
+			"auth": true,
+			"parameters": [
+				"path:id:12",
+				"header:akua-context",
+				"header:idempotency-key"
+			]
+		},
+		{
+			"id": "opencodes.get",
+			"method": "GET",
+			"path": "/opencodes/{id}",
+			"summary": "Get an OpenCode Server",
+			"auth": true,
+			"parameters": [
+				"path:id:12",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "opencodes.list",
+			"method": "GET",
+			"path": "/opencodes",
+			"summary": "List OpenCode Servers",
+			"auth": true,
+			"parameters": [
+				"header:akua-context",
+				"query:cursor",
+				"query:limit"
+			]
+		},
+		{
+			"id": "opencodes.resume",
+			"method": "POST",
+			"path": "/opencodes/{id}:resume",
+			"summary": "Resume an OpenCode Server",
+			"auth": true,
+			"parameters": [
+				"path:id:12",
+				"header:akua-context",
+				"header:idempotency-key"
+			]
+		},
+		{
+			"id": "opencodes.suspend",
+			"method": "POST",
+			"path": "/opencodes/{id}:suspend",
+			"summary": "Suspend an OpenCode Server",
+			"auth": true,
+			"parameters": [
+				"path:id:12",
+				"header:akua-context",
+				"header:idempotency-key"
+			]
+		},
+		{
+			"id": "opencodes.update",
+			"method": "PATCH",
+			"path": "/opencodes/{id}",
+			"summary": "Update an OpenCode Server",
+			"auth": true,
+			"parameters": [
+				"path:id:12",
+				"header:akua-context",
+				"header:if-match"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/UpdateOpenCodeServer"
+				}
+			}
 		},
 		{
 			"id": "operations.cancel",
@@ -2901,6 +3018,46 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
+		"CreateOpenCodeServer": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 100,
+					"description": "Display name."
+				},
+				"hostname": {
+					"type": "string",
+					"pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+					"description": "DNS label chosen for the server's browser UI; unique across the platform. Created from the name plus a short random suffix when not given. The UI is served at `web_url` until chosen hostnames are routed."
+				},
+				"labels": {
+					"type": "object",
+					"propertyNames": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 63
+					},
+					"additionalProperties": {
+						"type": "string",
+						"maxLength": 63
+					},
+					"maxProperties": 32,
+					"description": "Free-form string labels: up to 32 keys of up to 63 characters."
+				},
+				"budget": {
+					"$ref": "#/$defs/OpenCodeBudget"
+				},
+				"features": {
+					"$ref": "#/$defs/OpenCodeFeatures"
+				}
+			},
+			"required": [
+				"name"
+			],
+			"additionalProperties": false
+		},
 		"CreateOrderDraftBody": {
 			"type": "object",
 			"properties": {
@@ -3223,6 +3380,18 @@ export const contract: ApiContract = {
 						}
 					],
 					"description": "Defaults to the calling user. A user owner is always the authenticated caller, never a client-supplied id."
+				},
+				"auth_method": {
+					"anyOf": [
+						{
+							"type": "string",
+							"minLength": 1,
+							"description": "Declared connector authentication method. Defaults to api_token. Akua delegated uses the verified signed-in person without a stored credential."
+						},
+						{
+							"type": "null"
+						}
+					]
 				}
 			},
 			"required": [
@@ -3507,6 +3676,52 @@ export const contract: ApiContract = {
 				}
 			],
 			"description": "What the customer pays: nothing, for now."
+		},
+		"OpenCodeBudget": {
+			"type": "object",
+			"properties": {
+				"monthly_limit": {
+					"anyOf": [
+						{
+							"type": "integer",
+							"minimum": 0,
+							"description": "Monthly limit in metered usage units. The unit and its pricing are not defined yet; the value is stored and returned, not enforced. `null`: no limit."
+						},
+						{
+							"type": "null"
+						}
+					]
+				}
+			},
+			"required": [
+				"monthly_limit"
+			],
+			"additionalProperties": false
+		},
+		"OpenCodeFeatures": {
+			"type": "object",
+			"properties": {
+				"worktrees": {
+					"type": "boolean",
+					"description": "OpenCode worktree creation in the web UI."
+				},
+				"terminal": {
+					"type": "boolean",
+					"description": "OpenCode terminals in the web UI."
+				}
+			},
+			"required": [
+				"worktrees",
+				"terminal"
+			],
+			"additionalProperties": false,
+			"description": "Web UI feature toggles. Everything else in OpenCode's UI stays on."
+		},
+		"OpenCodeServerId": {
+			"type": "string",
+			"pattern": "^oc_[a-z0-9]{1,64}$",
+			"title": "OpenCode Server id",
+			"description": "OpenCode Server id (`oc_...`)."
 		},
 		"OrderDraftWorkspace": {
 			"oneOf": [
@@ -4012,6 +4227,55 @@ export const contract: ApiContract = {
 				"permissions"
 			],
 			"additionalProperties": false
+		},
+		"UpdateOpenCodeServer": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 100,
+					"description": "Display name."
+				},
+				"hostname": {
+					"type": "string",
+					"pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+					"description": "DNS label chosen for the server's browser UI; unique across the platform. Created from the name plus a short random suffix when not given. The UI is served at `web_url` until chosen hostnames are routed."
+				},
+				"labels": {
+					"type": "object",
+					"propertyNames": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 63
+					},
+					"additionalProperties": {
+						"type": "string",
+						"maxLength": 63
+					},
+					"maxProperties": 32,
+					"description": "Free-form string labels: up to 32 keys of up to 63 characters."
+				},
+				"budget": {
+					"$ref": "#/$defs/OpenCodeBudget"
+				},
+				"features": {
+					"type": "object",
+					"properties": {
+						"worktrees": {
+							"type": "boolean",
+							"description": "OpenCode worktree creation in the web UI."
+						},
+						"terminal": {
+							"type": "boolean",
+							"description": "OpenCode terminals in the web UI."
+						}
+					},
+					"additionalProperties": false
+				}
+			},
+			"additionalProperties": false,
+			"description": "Fields left out stay as they are. `labels` replaces the whole map; `features` changes only the toggles named."
 		},
 		"UpdateOrderDraftBody": {
 			"type": "object",
