@@ -23845,6 +23845,9 @@
           "features": {
             "$ref": "#/components/schemas/OpenCodeFeatures"
           },
+          "vault_id": {
+            "$ref": "#/components/schemas/VaultId_2"
+          },
           "web_url": {
             "anyOf": [
               {
@@ -23903,6 +23906,7 @@
           "default",
           "budget",
           "features",
+          "vault_id",
           "web_url",
           "server_url",
           "short_url",
@@ -23911,6 +23915,10 @@
           "etag"
         ],
         "additionalProperties": false
+      },
+      "VaultId_2": {
+        "type": "string",
+        "description": "The Vault of the server's third-party credentials: the one named at creation, or the Vault created for this server."
       },
       "OpenCodeFeatures": {
         "type": "object",
@@ -24084,12 +24092,19 @@
           },
           "features": {
             "$ref": "#/components/schemas/OpenCodeFeatures"
+          },
+          "vault_id": {
+            "$ref": "#/components/schemas/VaultId_1"
           }
         },
         "required": [
           "name"
         ],
         "additionalProperties": false
+      },
+      "VaultId_1": {
+        "type": "string",
+        "description": "An existing Vault of this Workspace that you may use. The server does not own it. Left out, a new Vault is created for this server."
       },
       "ApiExternalServiceError": {
         "type": "object",

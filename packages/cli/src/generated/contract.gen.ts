@@ -3051,6 +3051,9 @@ export const contract: ApiContract = {
 				},
 				"features": {
 					"$ref": "#/$defs/OpenCodeFeatures"
+				},
+				"vault_id": {
+					"$ref": "#/$defs/VaultId_1"
 				}
 			},
 			"required": [
@@ -4409,6 +4412,10 @@ export const contract: ApiContract = {
 			"pattern": "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$",
 			"title": "VaultId",
 			"description": "A vault id chosen by its creator, unique in the Workspace. `default` is the Workspace vault."
+		},
+		"VaultId_1": {
+			"type": "string",
+			"description": "An existing Vault of this Workspace that you may use. The server does not own it. Left out, a new Vault is created for this server."
 		},
 		"VersionSelector": {
 			"type": "string",
