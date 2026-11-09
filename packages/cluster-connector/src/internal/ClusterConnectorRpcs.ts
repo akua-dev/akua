@@ -126,7 +126,9 @@ export const clusterConnectorRpcHandlers = ClusterConnectorChannelRpcs.toLayer(
 		});
 
 		return ClusterConnectorChannelRpcs.of({
-			'DesiredChanged.v1': ({ revision }) => signal.announce(revision),
+			// The answer is the acknowledgement: it comes once that revision is fetched and applied to the workers.
+			'DesiredChanged.v1': ({ revision }) =>
+				signal.announce(revision).pipe(Effect.andThen(signal.reached(revision))),
 			'Subscribe.v1': ({ status }) => live.subscribe(status),
 			'ListNodes.v1': (request) =>
 				listNodePage(request).pipe(

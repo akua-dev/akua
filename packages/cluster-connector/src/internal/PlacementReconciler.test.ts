@@ -343,6 +343,8 @@ describe('desiredStateLoop', () => {
 				const state = yield* Ref.get(platform.state);
 				assert.strictEqual(state.reports.length, 1);
 				assert.strictEqual(state.reports[0]?.report.outcome._tag, 'ready');
+				// The platform's DesiredChanged is answered once the loop fetched the revision.
+				yield* (yield* DesiredSignal).reached(7);
 				yield* Fiber.interrupt(loop);
 			}).pipe(Effect.provide(clusterConnectorHarness({ revisions })))
 	);

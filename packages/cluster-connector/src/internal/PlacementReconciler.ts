@@ -89,7 +89,9 @@ export class DesiredRevision extends Context.Service<
  * The newest desired-state revision the platform announced: Welcome
  * `desired_revision` at each connect and `DesiredChanged.v1` while
  * connected. The desired-state loop fetches whenever it passes the
- * revision it fetched last.
+ * revision it fetched last and records what it fetched; the answer to
+ * `DesiredChanged.v1` waits for that, so the platform can tell a dropped
+ * notification from a delivered one.
  */
 export class DesiredSignal extends Context.Service<
 	DesiredSignal,
@@ -97,13 +99,27 @@ export class DesiredSignal extends Context.Service<
 		readonly announce: (revision: number) => Effect.Effect<void>;
 		/** Waits until an announced revision is above `fetched`. */
 		readonly above: (fetched: number) => Effect.Effect<number>;
+		/** The loop fetched this revision (or a newer one). */
+		readonly fetched: (revision: number) => Effect.Effect<void>;
+		/** Waits until a fetched revision is at least `revision`. */
+		readonly reached: (revision: number) => Effect.Effect<void>;
 	}
 >()('akua/cluster-connector/DesiredSignal') {
 	static readonly layer = Layer.effect(
 		DesiredSignal,
 		Effect.gen(function* () {
 			const announced = yield* SubscriptionRef.make(-1);
+			const fetchedRevision = yield* SubscriptionRef.make(-1);
 			return DesiredSignal.of({
+				fetched: (revision) =>
+					SubscriptionRef.update(fetchedRevision, (current) => Math.max(current, revision)),
+				reached: (revision) =>
+					SubscriptionRef.changes(fetchedRevision).pipe(
+						Stream.filter((fetched) => fetched >= revision),
+						Stream.runHead,
+						Effect.asVoid,
+						Effect.orDie
+					),
 				announce: (revision) =>
 					SubscriptionRef.update(announced, (current) => Math.max(current, revision)),
 				above: (fetched) =>
@@ -733,5 +749,6 @@ export const desiredStateLoop = Effect.gen(function* () {
 		}
 		fetched = state.revision;
 		yield* apply(state);
+		yield* signal.fetched(state.revision);
 	}
 });

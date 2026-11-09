@@ -98,12 +98,17 @@ describe('agent RPCs', () => {
 		});
 	});
 
-	it.effect('announces a desired revision and replaces the status subscriptions', () =>
+	it.effect('answers DesiredChanged only after that revision was fetched', () =>
 		withHandlers(
 			Effect.gen(function* () {
 				const agent = yield* client;
-				yield* agent['DesiredChanged.v1']({ revision: 12 });
-				assert.strictEqual(yield* (yield* DesiredSignal).above(11), 12);
+				const signal = yield* DesiredSignal;
+				const answered = yield* Effect.forkChild(agent['DesiredChanged.v1']({ revision: 12 }));
+				assert.strictEqual(yield* signal.above(11), 12);
+				yield* Effect.yieldNow;
+				assert.isUndefined(answered.pollUnsafe());
+				yield* signal.fetched(12);
+				yield* Fiber.join(answered);
 				yield* agent['Subscribe.v1']({ status: [placement], nodes: false });
 			})
 		).pipe(Effect.provide(clusterConnectorHarness()))
