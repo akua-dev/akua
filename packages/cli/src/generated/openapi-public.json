@@ -26738,7 +26738,7 @@
                 "type": "null"
               }
             ],
-            "description": "What the ring wants it to run; null until its first install picked a release."
+            "description": "What the ring wants it to run, recorded when the install is accepted and when an update starts; null only for a deleted add-on that never installed."
           },
           "applied": {
             "anyOf": [
