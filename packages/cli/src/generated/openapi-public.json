@@ -26802,6 +26802,7 @@
               "NotApplied",
               "Installing",
               "Updating",
+              "WaitingForNodes",
               "Deleting",
               "Deleted",
               "Settled",
@@ -26809,7 +26810,7 @@
               "ApplyFailed",
               "Healthy"
             ],
-            "description": "Fixed reasons per type.\n- `Available`: `Applied`, or `NotApplied`, `Deleting`, `Deleted`.\n- `Progressing`: `Installing`, `Updating` or `Deleting` while a change runs, else `Settled`.\n- `Degraded`: `UpdateRolledBack` (the last update failed its health gate and was rolled back) or `ApplyFailed` (the install or the rollback did not become healthy), else `Healthy`."
+            "description": "Fixed reasons per type.\n- `Available`: `Applied`, or `NotApplied`, `Deleting`, `Deleted`.\n- `Progressing`: `Installing`, `Updating` or `Deleting` while a change runs, `WaitingForNodes` while an accepted release waits for the first Ready node to be health-checked, else `Settled`.\n- `Degraded`: `UpdateRolledBack` (the last update failed its health gate and was rolled back) or `ApplyFailed` (the install or the rollback did not become healthy), else `Healthy`."
           },
           "message": {
             "type": "string",
@@ -26848,7 +26849,7 @@
           "package_digest": {
             "type": "string",
             "pattern": "^[a-f0-9]{64}$",
-            "description": "SHA-256 over the component, version and every pinned image digest of the release."
+            "description": "SHA-256 over the component, version and every pinned image digest of the release, or its Package digest."
           },
           "config_hash": {
             "type": "string",
@@ -26869,8 +26870,11 @@
           "tunnel-connector",
           "private-ingress-gateway",
           "local-path-storage",
-          "metrics-server"
-        ]
+          "metrics-server",
+          "cni",
+          "cluster-connector"
+        ],
+        "description": "`cni` and `cluster-connector` run on hosted Clusters only, applied from beside the control plane."
       },
       "ClusterJoinCommand": {
         "type": "object",
