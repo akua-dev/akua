@@ -5,7 +5,13 @@ import {
 	ClusterConnectorRelease,
 	EnrollmentCode
 } from '@platform/api-contract/services/ClusterConnector';
-import { clusterConnectorNamespace, Distribution, enginePath } from '../ClusterConnector';
+import {
+	clusterConnectorNamespace,
+	Distribution,
+	engineImpersonation,
+	EngineIdentity,
+	enginePath
+} from '../ClusterConnector';
 
 /**
  * Everything the agent reads from its environment. The chart sets the
@@ -20,7 +26,16 @@ export const EnrollmentSettings = Schema.Union([
 	})
 ]);
 
+/** Where the connector reaches the kube-apiserver it applies into. */
+export const KubernetesConnectionSettings = Schema.Union([
+	Schema.TaggedStruct('inCluster', {}),
+	/** Base URL, CA and client certificate from a kubeconfig file. */
+	Schema.TaggedStruct('kubeconfig', { path: Schema.NonEmptyString })
+]);
+
 export interface ClusterConnectorSettings {
+	readonly connection: typeof KubernetesConnectionSettings.Type;
+	readonly impersonate: EngineIdentity;
 	readonly platformOrigin: URL;
 	readonly release: typeof ClusterConnectorRelease.Type;
 	readonly enrollment: typeof EnrollmentSettings.Type;
@@ -58,6 +73,19 @@ export class ClusterConnectorConfig extends Context.Service<
 							Config.withDefault('/var/run/secrets/akua.dev/serviceaccount/token')
 						)
 					};
+		const connectionMode = yield* Config.Literals(
+			['inCluster', 'kubeconfig'],
+			'AKUA_KUBERNETES_CONNECTION'
+		);
+		const connection: typeof KubernetesConnectionSettings.Type =
+			connectionMode === 'inCluster'
+				? { _tag: 'inCluster' }
+				: { _tag: 'kubeconfig', path: yield* Config.NonEmptyString('AKUA_KUBECONFIG_PATH') };
+		const impersonateMode = yield* Config.Literals(['serviceAccount', 'none'], 'AKUA_IMPERSONATE');
+		const impersonate: EngineIdentity =
+			impersonateMode === 'serviceAccount'
+				? { _tag: 'serviceAccount', name: engineImpersonation }
+				: { _tag: 'none' };
 		const distribution = yield* Config.schema(Distribution, 'AKUA_DISTRIBUTION').pipe(
 			Config.option
 		);
@@ -65,6 +93,8 @@ export class ClusterConnectorConfig extends Context.Service<
 			platformOrigin,
 			release: { version, image, protocol },
 			enrollment,
+			connection,
+			impersonate,
 			distribution,
 			healthPort: yield* Config.Port('AKUA_HEALTH_PORT').pipe(Config.withDefault(8080)),
 			enginePath: yield* Config.NonEmptyString('AKUA_ENGINE_PATH').pipe(

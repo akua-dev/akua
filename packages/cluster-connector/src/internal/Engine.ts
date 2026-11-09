@@ -23,7 +23,8 @@ import {
 	EngineRejected,
 	EngineRequest,
 	EngineResponse,
-	engineImpersonation,
+	type EngineIdentity,
+	engineImpersonateOf,
 	engineSupervision,
 	fieldManager,
 	RequestId
@@ -50,6 +51,9 @@ export class EngineStatus extends Context.Service<
 export interface EngineSettings {
 	readonly path: string;
 	readonly userAgent: string;
+	readonly impersonate: EngineIdentity;
+	/** The kubeconfig the engine applies through; in-cluster when absent. */
+	readonly kubeconfigPath: Option.Option<string>;
 }
 
 type Request = typeof EngineRequest.Type;
@@ -98,6 +102,19 @@ export const nextRestart = (args: {
 	};
 };
 
+/** The `akua-apply serve` arguments: the identity is always stated, the kubeconfig only when used. */
+const engineArgs = (settings: EngineSettings) => [
+	'serve',
+	'--impersonate',
+	engineImpersonateOf(settings.impersonate),
+	'--user-agent',
+	settings.userAgent,
+	...Option.match(settings.kubeconfigPath, {
+		onNone: () => [],
+		onSome: (path) => ['--kubeconfig', path]
+	})
+];
+
 /**
  * Supervises one `akua-apply serve` process: requests go out as NDJSON on
  * stdin, responses come back on stdout matched by `id`, and every exit fails
@@ -107,6 +124,7 @@ export const nextRestart = (args: {
 export const engineLayer = (settings: EngineSettings) =>
 	Layer.effectContext(
 		Effect.gen(function* () {
+			const impersonate = engineImpersonateOf(settings.impersonate);
 			const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
 			// A queue, not a PubSub: the one consumer (live status) may start after
 			// the engine's first `ready` and `synced`, and must still see them.
@@ -233,7 +251,7 @@ export const engineLayer = (settings: EngineSettings) =>
 			/** One process from spawn to exit. Resolves to its exit code, null when it never spawned. */
 			const runOnce = Effect.gen(function* () {
 				const handle = yield* spawner.spawn(
-					ChildProcess.make(settings.path, ['serve', '--user-agent', settings.userAgent], {
+					ChildProcess.make(settings.path, engineArgs(settings), {
 						killSignal: 'SIGTERM',
 						forceKillAfter: '10 seconds'
 					})
@@ -377,14 +395,14 @@ export const engineLayer = (settings: EngineSettings) =>
 							_tag: 'apply',
 							id,
 							fieldManager,
-							impersonate: engineImpersonation
+							impersonate
 						}),
 						request.timeoutSeconds * 1000 + hungGraceMillis
 					).pipe(expect('applied'));
 				}),
 				prune: Effect.fn('Engine.prune')(function* (request) {
 					return yield* send(
-						(id) => ({ ...request, _tag: 'prune', id, impersonate: engineImpersonation }),
+						(id) => ({ ...request, _tag: 'prune', id, impersonate }),
 						request.timeoutSeconds * 1000 + hungGraceMillis
 					).pipe(expect('pruned'));
 				}),
@@ -395,7 +413,7 @@ export const engineLayer = (settings: EngineSettings) =>
 					).pipe(expect('waited'));
 				}),
 				subscribe: Effect.fn('Engine.subscribe')(function* (request) {
-					const body = { ...request, _tag: 'subscribe' as const, impersonate: engineImpersonation };
+					const body = { ...request, _tag: 'subscribe' as const, impersonate };
 					yield* Ref.set(lastSubscribe, Option.some(body));
 					return yield* send((id) => ({ ...body, id }), subscribeTimeoutMillis).pipe(
 						expect('subscribed')

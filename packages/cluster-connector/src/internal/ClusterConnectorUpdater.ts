@@ -91,12 +91,12 @@ export class UpdaterKubernetes extends Context.Service<
 			const client = yield* HttpClient.HttpClient;
 			const deploymentPath = `/apis/apps/v1/namespaces/${clusterConnectorNamespace}/deployments/${clusterConnectorDeployment}`;
 			const send = Effect.fnUntraced(function* (request: HttpClientRequest.HttpClientRequest) {
-				const token = yield* connection.token;
 				const response = yield* client.execute(
-					request.pipe(
-						HttpClientRequest.prependUrl(connection.baseUrl),
-						HttpClientRequest.bearerToken(token),
-						HttpClientRequest.acceptJson
+					yield* connection.authenticate(
+						request.pipe(
+							HttpClientRequest.prependUrl(connection.baseUrl),
+							HttpClientRequest.acceptJson
+						)
 					)
 				);
 				const body = yield* response.json.pipe(Effect.orElseSucceed(() => null));

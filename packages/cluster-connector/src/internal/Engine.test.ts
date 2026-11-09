@@ -1,7 +1,7 @@
 import { assert, describe, it } from '@effect/vitest';
 import { Effect, Fiber, Layer, Option, Stream, SubscriptionRef } from 'effect';
 import { TestClock } from 'effect/testing';
-import { ApplySetId, Engine, engineSupervision } from '../ClusterConnector';
+import { ApplySetId, Engine, engineImpersonation, engineSupervision } from '../ClusterConnector';
 import { engineLayer, EngineStatus, nextRestart } from './Engine';
 import { answerEverything, FakeEngine, fakeEngineLayer } from '../testing/FakeEngine';
 
@@ -9,7 +9,9 @@ const applySetId = ApplySetId.make('applyset-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 const layer = engineLayer({
 	path: '/usr/local/bin/akua-apply',
-	userAgent: 'akua-cluster-agent/1.0.0'
+	userAgent: 'akua-cluster-agent/1.0.0',
+	impersonate: { _tag: 'serviceAccount', name: engineImpersonation },
+	kubeconfigPath: Option.none()
 }).pipe(Layer.provideMerge(fakeEngineLayer({ version: '1.0.0' })));
 
 const waitUntil = <A>(ref: SubscriptionRef.SubscriptionRef<A>, predicate: (value: A) => boolean) =>
@@ -39,6 +41,39 @@ const apply = Effect.gen(function* () {
 		exclusionSelector: {},
 		timeoutSeconds: 30
 	});
+});
+
+describe('engine process', () => {
+	it.effect('states no impersonation and the kubeconfig it applies through', () =>
+		Effect.gen(function* () {
+			const fake = yield* FakeEngine;
+			yield* apply;
+			const process = yield* fake.current;
+			assert.deepStrictEqual(
+				process?.command._tag === 'StandardCommand' ? process.command.args : [],
+				[
+					'serve',
+					'--impersonate',
+					'none',
+					'--user-agent',
+					'akua-cluster-agent/1.0.0',
+					'--kubeconfig',
+					'/etc/akua/kubeconfig'
+				]
+			);
+			const requests = yield* fake.requests;
+			assert.strictEqual(requests[0]?._tag === 'apply' ? requests[0].impersonate : '', 'none');
+		}).pipe(
+			Effect.provide(
+				engineLayer({
+					path: '/usr/local/bin/akua-apply',
+					userAgent: 'akua-cluster-agent/1.0.0',
+					impersonate: { _tag: 'none' },
+					kubeconfigPath: Option.some('/etc/akua/kubeconfig')
+				}).pipe(Layer.provideMerge(fakeEngineLayer({ version: '1.0.0' })))
+			)
+		)
+	);
 });
 
 describe('nextRestart', () => {
@@ -85,7 +120,13 @@ describe('Engine', () => {
 			const process = yield* fake.current;
 			assert.deepStrictEqual(
 				process?.command._tag === 'StandardCommand' ? process.command.args : [],
-				['serve', '--user-agent', 'akua-cluster-agent/1.0.0']
+				[
+					'serve',
+					'--impersonate',
+					'system:serviceaccount:akua-system:akua-apply',
+					'--user-agent',
+					'akua-cluster-agent/1.0.0'
+				]
 			);
 			const requests = yield* fake.requests;
 			assert.strictEqual(requests[0]?._tag, 'apply');

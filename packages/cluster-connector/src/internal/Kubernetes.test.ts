@@ -1,8 +1,8 @@
 import { assert, describe, it } from '@effect/vitest';
 import { Effect, Layer, Ref } from 'effect';
 import { HttpClient, HttpClientResponse, UrlParams } from 'effect/http';
-import type { HttpClientRequest } from 'effect/http';
-import { KubernetesApi } from '../ClusterConnector';
+import { HttpClientRequest } from 'effect/http';
+import { engineImpersonation, KubernetesApi } from '../ClusterConnector';
 import { KubernetesConnection, KubernetesExtras, kubernetesLayer } from './Kubernetes';
 
 interface Seen {
@@ -46,7 +46,9 @@ const harness = (respond: (request: Seen) => { readonly status: number; readonly
 						KubernetesConnection,
 						KubernetesConnection.of({
 							baseUrl: 'https://10.0.0.1:443',
-							token: Effect.succeed('sa-token')
+							authenticate: (request) =>
+								Effect.succeed(HttpClientRequest.bearerToken(request, 'sa-token')),
+							impersonate: { _tag: 'serviceAccount', name: engineImpersonation }
 						})
 					)
 				)

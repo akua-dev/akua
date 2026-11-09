@@ -3,6 +3,7 @@ import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunSocket from '@effect/platform-bun/BunSocket';
 import { Config, Effect, Layer, Option, Schedule, SubscriptionRef } from 'effect';
 import { Command } from 'effect/cli';
+import type { HttpClient } from 'effect/http';
 import {
 	ClusterConnectorChannelRpcs,
 	channelProtocol,
@@ -12,7 +13,14 @@ import { clusterConnectorRpcHandlers } from './internal/ClusterConnectorRpcs';
 import { ChannelDialer, type ChannelState, runChannel } from './internal/ClusterConnectorChannel';
 import { detectDistribution } from './internal/ClusterReads';
 import { ClusterConnectorConfig, PlatformOrigin } from './internal/ClusterConnectorConfig';
-import { clusterConnectorUserAgent, enginePath, updaterUserAgent } from './ClusterConnector';
+import { kubeconfigLayer, kubernetesHttpClient } from './internal/KubernetesKubeconfig';
+import {
+	clusterConnectorUserAgent,
+	type EngineIdentity,
+	engineImpersonation,
+	enginePath,
+	updaterUserAgent
+} from './ClusterConnector';
 import { engineLayer, EngineStatus } from './internal/Engine';
 import { GitSource } from './internal/GitSource';
 import { healthServer } from './internal/HealthServer';
@@ -53,6 +61,21 @@ const arch = process.arch === 'x64' ? 'amd64' : process.arch;
  * The User-Agent needs the server version and distribution, so one
  * bootstrap read runs on a provisional client before the real layers.
  */
+/** The kube-apiserver client: the shared one in cluster, a dedicated client-certificate one from a kubeconfig. */
+const kubeApiLayer = <R>(userAgent: string, shared: Layer.Layer<HttpClient.HttpClient, never, R>) =>
+	kubernetesLayer.pipe(Layer.provide(kubernetesHttpClient(userAgent, shared)));
+
+/** The connection to the kube-apiserver the settings name, with the identity it acts as. */
+const kubernetesConnectionFromConfig = Layer.unwrap(
+	ClusterConnectorConfig.use((config) =>
+		Effect.succeed(
+			config.connection._tag === 'kubeconfig'
+				? Layer.orDie(kubeconfigLayer(config.connection.path, config.impersonate))
+				: KubernetesConnection.inCluster(config.impersonate)
+		)
+	)
+);
+
 const clusterConnectorUserAgentLayer = Layer.unwrap(
 	Effect.gen(function* () {
 		const config = yield* ClusterConnectorConfig;
@@ -69,9 +92,7 @@ const clusterConnectorUserAgentLayer = Layer.unwrap(
 				)
 			};
 		}).pipe(
-			Effect.provide(
-				kubernetesLayer.pipe(Layer.provide(ClusterConnectorHttpClientLive(provisional)))
-			),
+			Effect.provide(kubeApiLayer(provisional, ClusterConnectorHttpClientLive(provisional))),
 			Effect.retry(retryForever),
 			Effect.orDie
 		);
@@ -92,8 +113,16 @@ const clusterConnectorLayer = Layer.unwrap(
 		const config = yield* ClusterConnectorConfig;
 		const userAgent = `akua-cluster-agent/${config.release.version} (${Option.getOrElse(config.distribution, () => 'other')}; ${arch})`;
 		const http = clusterConnectorUserAgentLayer;
-		const kubernetes = kubernetesLayer.pipe(Layer.provide(http));
-		const engine = engineLayer({ path: config.enginePath, userAgent });
+		const kubernetes = kubeApiLayer(userAgent, http);
+		const engine = engineLayer({
+			path: config.enginePath,
+			userAgent,
+			impersonate: config.impersonate,
+			kubeconfigPath:
+				config.connection._tag === 'kubeconfig'
+					? Option.some(config.connection.path)
+					: Option.none()
+		});
 		const health = Layer.unwrap(
 			Effect.gen(function* () {
 				const status = yield* EngineStatus;
@@ -182,9 +211,12 @@ const clusterConnectorLayer = Layer.unwrap(
 		return Layer.mergeAll(health, loops);
 	})
 ).pipe(
-	Layer.provide(Layer.mergeAll(KubernetesConnection.inCluster, PlatformOrigin.fromConfig)),
+	Layer.provide(Layer.mergeAll(kubernetesConnectionFromConfig, PlatformOrigin.fromConfig)),
 	Layer.provideMerge(ClusterConnectorConfig.layer)
 );
+
+/** The updater is always in cluster and acts as the apply ServiceAccount. */
+const updaterIdentity: EngineIdentity = { _tag: 'serviceAccount', name: engineImpersonation };
 
 const updaterLayer = Layer.unwrap(
 	Effect.gen(function* () {
@@ -202,7 +234,12 @@ const updaterLayer = Layer.unwrap(
 		);
 		const deployment = UpdaterKubernetes.layer.pipe(Layer.provide(http));
 		// Its own engine process: the agent may be the broken part.
-		const engine = engineLayer({ path: enginePath, userAgent: updaterUserAgent(version) });
+		const engine = engineLayer({
+			path: enginePath,
+			userAgent: updaterUserAgent(version),
+			impersonate: updaterIdentity,
+			kubeconfigPath: Option.none()
+		});
 		const git = GitSource.layer.pipe(Layer.provide(http));
 		const updater = clusterConnectorUpdaterLayer.pipe(
 			Layer.provide(Layer.mergeAll(deployment, kubernetes, engine, git, agentApi))
@@ -251,7 +288,11 @@ const updaterLayer = Layer.unwrap(
 		).pipe(Layer.provide(instructions));
 		return Layer.mergeAll(health, loop);
 	})
-).pipe(Layer.provide(Layer.mergeAll(KubernetesConnection.inCluster, PlatformOrigin.fromEnv)));
+).pipe(
+	Layer.provide(
+		Layer.mergeAll(KubernetesConnection.inCluster(updaterIdentity), PlatformOrigin.fromEnv)
+	)
+);
 
 const clusterConnectorCommand = Command.make('agent', {}, () =>
 	Layer.launch(clusterConnectorLayer)

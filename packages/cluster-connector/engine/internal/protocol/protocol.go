@@ -20,8 +20,12 @@ const (
 	Version = 1
 	// FieldManager is the only server-side apply field manager.
 	FieldManager = "akua-agent"
-	// Impersonation is the only identity the engine acts as.
+	// Impersonation is the service account an in-cluster engine acts as.
 	Impersonation = "system:serviceaccount:akua-system:akua-apply"
+	// NoImpersonation is the mode of an engine whose credential is its own
+	// (the control-plane-side connector's client certificate): it acts as
+	// that credential and sends no Impersonate-User.
+	NoImpersonation = "none"
 	// PartOfLabel marks an ApplySet member (kubectl applyset.go spelling).
 	PartOfLabel = "applyset.kubernetes.io/part-of"
 	// SSAVersion and CLIUtilsVersion are the pinned upstream modules the
@@ -164,11 +168,18 @@ func reject(id int64, reason, message string) *Rejected {
 	return &Rejected{ID: id, Failure: Failure{Stage: "decode", Reason: reason, Message: message}}
 }
 
+func checkIdentity(impersonate string) error {
+	if impersonate != Impersonation && impersonate != NoImpersonation {
+		return fmt.Errorf("impersonate must be %s or %s", Impersonation, NoImpersonation)
+	}
+	return nil
+}
+
 func validate(req Request) (string, error) {
 	switch r := req.(type) {
 	case *Apply:
-		if r.Impersonate != Impersonation {
-			return "forbidden", fmt.Errorf("impersonate must be %s", Impersonation)
+		if err := checkIdentity(r.Impersonate); err != nil {
+			return "forbidden", err
 		}
 		if r.FieldManager != FieldManager {
 			return "invalid", fmt.Errorf("fieldManager must be %s", FieldManager)
@@ -181,8 +192,8 @@ func validate(req Request) (string, error) {
 			checkPresent("exclusionSelector", r.ExclusionSelector),
 		)
 	case *Prune:
-		if r.Impersonate != Impersonation {
-			return "forbidden", fmt.Errorf("impersonate must be %s", Impersonation)
+		if err := checkIdentity(r.Impersonate); err != nil {
+			return "forbidden", err
 		}
 		return "invalid", firstError(
 			checkApplySet(r.ApplySetID),
@@ -203,8 +214,8 @@ func validate(req Request) (string, error) {
 			checkInventory("members", r.Members),
 		)
 	case *Subscribe:
-		if r.Impersonate != Impersonation {
-			return "forbidden", fmt.Errorf("impersonate must be %s", Impersonation)
+		if err := checkIdentity(r.Impersonate); err != nil {
+			return "forbidden", err
 		}
 		if err := checkMax("placements", len(r.Placements), 500); err != nil {
 			return "invalid", err

@@ -205,6 +205,26 @@ export const WatchedPlacement = Schema.Struct({
 export const engineImpersonation =
 	`system:serviceaccount:${clusterConnectorNamespace}:${applyServiceAccount}` as const;
 
+/** The wire value of an engine that acts as its own credential, without impersonation. */
+export const engineNoImpersonation = 'none' as const;
+
+/**
+ * As whom the engine acts, stated by every deployment (no default). An
+ * in-cluster connector acts as the apply ServiceAccount; the control-plane-side
+ * connector's credential is its own CA-signed client certificate.
+ */
+export const EngineIdentity = Schema.Union([
+	Schema.TaggedStruct('serviceAccount', { name: Schema.Literal(engineImpersonation) }),
+	Schema.TaggedStruct('none', {})
+]);
+export type EngineIdentity = typeof EngineIdentity.Type;
+
+/** The `impersonate` of an engine request, and of the engine's `--impersonate` flag. */
+export const EngineImpersonate = Schema.Literals([engineImpersonation, engineNoImpersonation]);
+
+export const engineImpersonateOf = (identity: EngineIdentity): typeof EngineImpersonate.Type =>
+	identity._tag === 'serviceAccount' ? identity.name : engineNoImpersonation;
+
 /**
  * Inside the agent image (`ClusterConnectorImage`), next to the agent binary; there is
  * no separate engine image or download, so the engine updates and rolls
@@ -260,7 +280,7 @@ export const EngineRequest = Schema.Union([
 		id: RequestId,
 		applySetId: ApplySetId,
 		fieldManager: Schema.Literal(fieldManager),
-		impersonate: Schema.Literal(engineImpersonation),
+		impersonate: EngineImpersonate,
 		manifests: Schema.Array(Manifest).check(Schema.isMaxLength(5000)),
 		/** false: the same commit as the last successful pass, so every `configured` is a drift correction. */
 		revisionChanged: Schema.Boolean,
@@ -285,7 +305,7 @@ export const EngineRequest = Schema.Union([
 	Schema.TaggedStruct('prune', {
 		id: RequestId,
 		applySetId: ApplySetId,
-		impersonate: Schema.Literal(engineImpersonation),
+		impersonate: EngineImpersonate,
 		stale: Inventory,
 		exclusionSelector: Schema.Record(Schema.String, Schema.String),
 		timeoutSeconds: Schema.Int.check(
@@ -316,7 +336,7 @@ export const EngineRequest = Schema.Union([
 	/** Replaces the whole live-status set; sent after every inventory change and after each engine start. */
 	Schema.TaggedStruct('subscribe', {
 		id: RequestId,
-		impersonate: Schema.Literal(engineImpersonation),
+		impersonate: EngineImpersonate,
 		placements: Schema.Array(WatchedPlacement).check(Schema.isMaxLength(500))
 	}),
 	/** Finish in-flight requests up to their timeouts, answer `stopping`, exit 0. */

@@ -42,16 +42,21 @@ const (
 
 func main() {
 	if len(os.Args) < 2 || os.Args[1] != "serve" {
-		fmt.Fprintln(os.Stderr, "usage: akua-apply serve --user-agent <agent user agent> [--kubeconfig <path>]")
+		fmt.Fprintln(os.Stderr, "usage: akua-apply serve --impersonate <service account|none> --user-agent <agent user agent> [--kubeconfig <path>]")
 		os.Exit(2)
 	}
 	flags := flag.NewFlagSet("serve", flag.ExitOnError)
 	userAgent := flags.String("user-agent", "", "User-Agent of every kube-apiserver request; the agent passes its own")
-	kubeconfig := flags.String("kubeconfig", "", "kubeconfig to use instead of the in-cluster ServiceAccount (development only)")
+	kubeconfig := flags.String("kubeconfig", "", "kubeconfig to use instead of the in-cluster ServiceAccount")
+	impersonate := flags.String("impersonate", "", "identity every request acts as: "+protocol.Impersonation+", or none to act as the credential itself; required")
 	klog.InitFlags(flags)
 	_ = flags.Parse(os.Args[2:])
 
-	if err := run(*userAgent, *kubeconfig); err != nil {
+	if *impersonate != protocol.Impersonation && *impersonate != protocol.NoImpersonation {
+		fmt.Fprintf(os.Stderr, "--impersonate must be %s or %s\n", protocol.Impersonation, protocol.NoImpersonation)
+		os.Exit(2)
+	}
+	if err := run(*userAgent, *kubeconfig, *impersonate); err != nil {
 		klog.ErrorS(err, "akua-apply serve failed")
 		klog.Flush()
 		os.Exit(1)
@@ -59,7 +64,7 @@ func main() {
 	klog.Flush()
 }
 
-func run(userAgent, kubeconfig string) error {
+func run(userAgent, kubeconfig, impersonate string) error {
 	if os.Getenv("GOMEMLIMIT") == "" {
 		debug.SetMemoryLimit(goMemLimit)
 	}
@@ -73,9 +78,12 @@ func run(userAgent, kubeconfig string) error {
 		userAgent = "akua-apply/" + version
 	}
 	config.UserAgent = userAgent
-	// Every request acts as the apply ServiceAccount: the customer's
-	// RoleBindings to it, not the agent's own account, are the authority.
-	config.Impersonate = rest.ImpersonationConfig{UserName: protocol.Impersonation}
+	// An in-cluster engine acts as the apply ServiceAccount: the customer's
+	// RoleBindings to it, not the agent's own account, are the authority. The
+	// control-plane-side engine acts as its own client certificate.
+	if impersonate == protocol.Impersonation {
+		config.Impersonate = rest.ImpersonationConfig{UserName: protocol.Impersonation}
+	}
 	config.QPS, config.Burst = 50, 100
 
 	httpClient, err := rest.HTTPClientFor(config)

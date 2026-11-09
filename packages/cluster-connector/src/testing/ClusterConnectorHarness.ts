@@ -1,4 +1,4 @@
-import { Context, Effect, FileSystem, Layer, Redacted, Ref } from 'effect';
+import { Context, Effect, FileSystem, Layer, Option, Redacted, Ref } from 'effect';
 import type { DesiredPlacement } from '@platform/api-contract/services/ClusterConnector';
 import {
 	ClusterConnectorConfig,
@@ -86,7 +86,9 @@ export const clusterConnectorHarness = (
 	);
 	const engine = engineLayer({
 		path: settings.enginePath,
-		userAgent: 'akua-cluster-agent/test'
+		userAgent: 'akua-cluster-agent/test',
+		impersonate: settings.impersonate,
+		kubeconfigPath: Option.none()
 	}).pipe(Layer.provideMerge(fakeEngineLayer({ version: settings.release.version })));
 	return placementReconcilerLayer.pipe(
 		Layer.provideMerge(WatchSet.layer),

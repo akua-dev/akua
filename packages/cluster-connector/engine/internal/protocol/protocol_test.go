@@ -62,6 +62,16 @@ func TestDecodeApply(t *testing.T) {
 	}
 }
 
+func TestDecodeApplyWithoutImpersonation(t *testing.T) {
+	req, rej := decode(t, `{"_tag":"prune","id":6,"applySetId":"`+applySet+`","impersonate":"none","stale":[],"exclusionSelector":{},"timeoutSeconds":60}`)
+	if rej != nil {
+		t.Fatalf("rejected: %+v", rej)
+	}
+	if prune, ok := req.(*Prune); !ok || prune.Impersonate != NoImpersonation {
+		t.Errorf("unexpected decode: %+v", req)
+	}
+}
+
 func TestDecodeRejections(t *testing.T) {
 	cases := []struct {
 		name   string

@@ -1,4 +1,14 @@
-import { Config, Context, Effect, FileSystem, Layer, Predicate, Schema, Stream } from 'effect';
+import {
+	Config,
+	Context,
+	Effect,
+	FileSystem,
+	Layer,
+	Option,
+	Predicate,
+	Schema,
+	Stream
+} from 'effect';
 import { HttpClient, HttpClientRequest, type HttpClientError } from 'effect/http';
 import { ClusterUid } from '@platform/api-contract/services/ClusterConnector';
 import { Secret } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/core/v1/Secret';
@@ -12,7 +22,7 @@ import { SelfSubjectAccessReview } from '@platform/kubernetes-schemas/generated/
 import { SelfSubjectRulesReview } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/authorization.k8s.io/v1/SelfSubjectRulesReview';
 import {
 	clusterConnectorNamespace,
-	engineImpersonation,
+	type EngineIdentity,
 	fieldManager,
 	KubernetesApi,
 	KubernetesFailure
@@ -22,37 +32,70 @@ import {
  * Where and as whom the agent reaches its own kube-apiserver. In cluster:
  * the service host from the environment and the projected ServiceAccount
  * token, re-read on every request because the kubelet rotates it. The CA is
- * trusted through NODE_EXTRA_CA_CERTS, set by the chart.
+ * trusted through NODE_EXTRA_CA_CERTS, set by the chart. From a kubeconfig:
+ * its server, with the client certificate presented by the kube HttpClient
+ * (`KubernetesTls`). `authenticate` adds the credential a request carries
+ * (a bearer token, or nothing for a client certificate); `impersonate` says
+ * whether requests act as the apply ServiceAccount.
  */
+/** What the kube HttpClient presents and trusts: PEM text, as the runtime's fetch `tls` option takes it. */
+export interface TlsMaterial {
+	readonly ca: string;
+	readonly cert: string;
+	readonly key: string;
+}
+
+/** The client certificate of a kubeconfig connection; none in cluster. Always provided with the connection. */
+export class KubernetesTls extends Context.Service<KubernetesTls, Option.Option<TlsMaterial>>()(
+	'akua/cluster-connector/KubernetesTls'
+) {}
+
 export class KubernetesConnection extends Context.Service<
 	KubernetesConnection,
 	{
 		readonly baseUrl: string;
-		readonly token: Effect.Effect<string, KubernetesFailure>;
+		readonly authenticate: (
+			request: HttpClientRequest.HttpClientRequest
+		) => Effect.Effect<HttpClientRequest.HttpClientRequest, KubernetesFailure>;
+		readonly impersonate: EngineIdentity;
 	}
 >()('akua/cluster-connector/KubernetesConnection') {
-	static readonly inCluster = Layer.effect(
-		KubernetesConnection,
-		Effect.gen(function* () {
-			const host = yield* Config.NonEmptyString('KUBERNETES_SERVICE_HOST');
-			const port = yield* Config.Port('KUBERNETES_SERVICE_PORT').pipe(Config.withDefault(443));
-			const fs = yield* FileSystem.FileSystem;
-			const token = fs.readFileString('/var/run/secrets/kubernetes.io/serviceaccount/token').pipe(
-				Effect.map((value) => value.trim()),
-				Effect.mapError(
-					(cause) =>
-						new KubernetesFailure({
-							reason: 'unavailable',
-							status: 0,
-							message: `service account token unreadable: ${cause.message}`.slice(0, 2048)
-						})
-				)
-			);
-			const hostPart = host.includes(':') ? `[${host}]` : host;
-			return KubernetesConnection.of({ baseUrl: `https://${hostPart}:${port}`, token });
-		})
-	);
+	static readonly inCluster = (impersonate: EngineIdentity) =>
+		Layer.effectContext(
+			Effect.gen(function* () {
+				const host = yield* Config.NonEmptyString('KUBERNETES_SERVICE_HOST');
+				const port = yield* Config.Port('KUBERNETES_SERVICE_PORT').pipe(Config.withDefault(443));
+				const fs = yield* FileSystem.FileSystem;
+				const token = fs.readFileString('/var/run/secrets/kubernetes.io/serviceaccount/token').pipe(
+					Effect.map((value) => value.trim()),
+					Effect.mapError(
+						(cause) =>
+							new KubernetesFailure({
+								reason: 'unavailable',
+								status: 0,
+								message: `service account token unreadable: ${cause.message}`.slice(0, 2048)
+							})
+					)
+				);
+				const hostPart = host.includes(':') ? `[${host}]` : host;
+				return Context.make(
+					KubernetesConnection,
+					KubernetesConnection.of({
+						baseUrl: `https://${hostPart}:${port}`,
+						authenticate: (request) =>
+							Effect.map(token, (value) => HttpClientRequest.bearerToken(request, value)),
+						impersonate
+					})
+				).pipe(Context.add(KubernetesTls, Option.none()));
+			})
+		);
 }
+
+/** Impersonation headers of one request, as the connection's identity says. */
+export const impersonation = (connection: typeof KubernetesConnection.Service) =>
+	connection.impersonate._tag === 'serviceAccount'
+		? HttpClientRequest.setHeader('Impersonate-User', connection.impersonate.name)
+		: (request: HttpClientRequest.HttpClientRequest) => request;
 
 export const failureFor = (status: number, body: unknown): KubernetesFailure => {
 	const message =
@@ -213,15 +256,12 @@ export const kubernetesLayer = Layer.effectContext(
 			request: HttpClientRequest.HttpClientRequest,
 			options: { readonly impersonate: boolean; readonly allowNotFound: boolean }
 		) {
-			const token = yield* connection.token;
-			const prepared = request.pipe(
-				HttpClientRequest.prependUrl(connection.baseUrl),
-				HttpClientRequest.bearerToken(token),
-				HttpClientRequest.acceptJson,
-				options.impersonate
-					? HttpClientRequest.setHeader('Impersonate-User', engineImpersonation)
-					: (self) => self
+			const authenticated = yield* connection.authenticate(
+				request.pipe(HttpClientRequest.prependUrl(connection.baseUrl), HttpClientRequest.acceptJson)
 			);
+			const prepared = options.impersonate
+				? impersonation(connection)(authenticated)
+				: authenticated;
 			const response = yield* client.execute(prepared);
 			if (options.allowNotFound && response.status === 404) return null;
 			const body = yield* response.json.pipe(Effect.orElseSucceed(() => null));
@@ -413,24 +453,22 @@ export const kubernetesLayer = Layer.effectContext(
 			podLogsAsApply: (args) =>
 				Stream.unwrap(
 					Effect.gen(function* () {
-						const token = yield* connection.token;
+						const request = HttpClientRequest.get(
+							`/api/v1/namespaces/${encodeURIComponent(args.namespace)}/pods/${encodeURIComponent(args.pod)}/log`
+						).pipe(
+							HttpClientRequest.setUrlParams({
+								container: args.container,
+								previous: String(args.previous),
+								tailLines: String(args.tailLines),
+								follow: String(args.follow),
+								timestamps: String(args.timestamps),
+								limitBytes: String(args.limitBytes),
+								...(args.sinceSeconds === null ? {} : { sinceSeconds: String(args.sinceSeconds) })
+							}),
+							HttpClientRequest.prependUrl(connection.baseUrl)
+						);
 						const response = yield* client.execute(
-							HttpClientRequest.get(
-								`/api/v1/namespaces/${encodeURIComponent(args.namespace)}/pods/${encodeURIComponent(args.pod)}/log`
-							).pipe(
-								HttpClientRequest.setUrlParams({
-									container: args.container,
-									previous: String(args.previous),
-									tailLines: String(args.tailLines),
-									follow: String(args.follow),
-									timestamps: String(args.timestamps),
-									limitBytes: String(args.limitBytes),
-									...(args.sinceSeconds === null ? {} : { sinceSeconds: String(args.sinceSeconds) })
-								}),
-								HttpClientRequest.prependUrl(connection.baseUrl),
-								HttpClientRequest.bearerToken(token),
-								HttpClientRequest.setHeader('Impersonate-User', engineImpersonation)
-							)
+							impersonation(connection)(yield* connection.authenticate(request))
 						);
 						if (response.status < 200 || response.status >= 300) {
 							const body = yield* response.json.pipe(Effect.orElseSucceed(() => null));

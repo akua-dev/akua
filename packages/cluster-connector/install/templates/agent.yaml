@@ -47,6 +47,10 @@ spec:
               value: {{ .Values.platformOrigin | quote }}
             - name: AKUA_AGENT_IMAGE
               value: {{ $image | quote }}
+            - name: AKUA_KUBERNETES_CONNECTION
+              value: inCluster
+            - name: AKUA_IMPERSONATE
+              value: serviceAccount
             - name: AKUA_ENROLLMENT_METHOD
               value: {{ .Values.enrollment.method | quote }}
             {{- if not $federated }}
