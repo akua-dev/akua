@@ -1,20 +1,21 @@
 # Private ingress gateway
 
-The private ingress gateway is the in-cluster HTTP boundary for hostname routes whose upstream services aren't reachable from the public internet. The domain dispatcher authenticates each routed request with a short-lived ES256 token. The gateway validates that token, resolves the projected backend, removes untrusted forwarding metadata, and streams the request and response without buffering their bodies.
+The private ingress gateway is the in-cluster HTTP boundary for hostname
+routes whose upstream services are not reachable from the public internet.
+Akua authenticates each routed request with a short-lived ES256 token. The
+gateway validates that token, resolves the backend from its mounted route
+table, removes untrusted forwarding metadata, and streams the request and
+response without buffering their bodies.
 
-The backend URL selects the network destination. The app-facing `Host` and `X-Forwarded-Host` are rebuilt from the verified public host, and `X-Forwarded-Proto` is rebuilt as `https`, matching the managed route's canonical HTTPS/WSS public URL. The backend can still use HTTP. The token does not sign a protocol field, so an incoming forwarded protocol is discarded rather than trusted. Other forwarding, Cloudflare and platform trust headers remain scrubbed. This lets applications recognize their public origin without exposing the internal Service hostname or trusting caller-supplied proxy metadata.
+The backend URL selects the network destination. `Host` and `X-Forwarded-Host`
+are rebuilt from the verified public host and `X-Forwarded-Proto` is rebuilt as
+`https`; the token does not sign a protocol field, so an incoming forwarded
+protocol is discarded. Other forwarding, Cloudflare and platform trust headers
+stay scrubbed, so applications see their public origin without trusting
+caller-supplied proxy metadata.
 
-## Runtime architecture
-
-The gateway uses TypeScript, Bun, and Effect. Effect owns the HTTP server lifecycle, configuration, file access, route-table reloads, WebCrypto service, upstream HTTP transport, cancellation, and graceful shutdown. The compiled OCI image contains one Bun executable; public keys and route state are mounted at runtime.
-
-Keep the request path streaming and bounded. Parse and index route state only when its mounted content changes. Don't add a Promise compatibility API, a second runtime, or a separate copy of the dispatcher-to-gateway trust-header policy.
-
-## Rust optimization boundary
-
-A Rust implementation is a later optimization option, not a current migration requirement. Consider that rewrite only after production profiles show that this gateway consumes meaningful CPU or memory at expected traffic, or that tail latency is dominated by the Bun runtime rather than network and upstream latency.
-
-A replacement must preserve the existing HTTP and security contract: token validation, `403`/`404`/`502`/`503` responses, manual redirect passthrough, header scrubbing, bidirectional streaming, route-table reloads, cancellation, and graceful shutdown. Benchmark the same workload and ship the Rust version only when the measured gain justifies the additional implementation and operational surface.
+The gateway is TypeScript on Bun, built with Effect, and ships as one
+executable in an OCI image. Public keys and route state are mounted at runtime.
 
 ## Trust and configuration
 
@@ -25,7 +26,7 @@ JWKS endpoint. The default issuer is `https://id.akua.dev`, with public keys at
 `PRIVATE_INGRESS_GATEWAY_IDENTITY_AUDIENCE` for a different installation.
 For a Cluster, the audience is `private-ingress-gateway:<cluster-id>`; deployments
 that provide `PRIVATE_INGRESS_GATEWAY_CLUSTER_ID` derive that audience by default.
-Only subject `service:domain-dispatcher` with scope `gateway:route` is accepted.
+Only the Akua routing service's subject with scope `gateway:route` is accepted.
 Tokens must have a key ID and expire within 60 seconds of issuance. Public keys
 are cached for ten minutes, so retiring keys must remain published across that
 window and the token lifetime.
