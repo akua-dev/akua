@@ -1,11 +1,12 @@
 # Roadmap
 
 What akuapkg does today, what is open, and what it will not do. Release
-notes for each version are in the [changelog](../CHANGELOG.md).
+notes for each version are on the
+[GitHub Releases](https://github.com/akua-dev/akua/releases) page.
 
 ## Shipped
 
-As of v0.13.0:
+As of v0.13.3:
 
 - **Typed packages.** KCL Packages with a typed `Input` schema, exported as
   JSON Schema or OpenAPI with `@ui` hints.

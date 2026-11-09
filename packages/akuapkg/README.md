@@ -180,7 +180,7 @@ error[E2L23]: CompileError
 | **Authoring** | [Package format](../../docs/package-format.md) · [`akua.toml` and `akua.lock`](../../docs/lockfile-format.md) · [Agent usage and skills](../../docs/agent-usage.md) |
 | **Reference** | [Commands](https://docs.akua.dev/akua/cli) · [Error codes](https://docs.akua.dev/akua/errors) · [CLI contract](../../docs/cli-contract.md) · [SDK](../../docs/sdk.md) |
 | **Internals** | [Security model](../../docs/security-model.md) · [Architecture](../../docs/architecture.md) · [Embedded engines](../../docs/embedded-engines.md) · [Debugging](../../docs/debugging.md) |
-| **Project** | [Roadmap](../../docs/roadmap.md) · [Building](../../docs/building.md) · [Releasing](../../docs/releasing.md) · [Changelog](../../CHANGELOG.md) |
+| **Project** | [Roadmap](../../docs/roadmap.md) · [Building](../../docs/building.md) · [Releasing](../../docs/releasing.md) · [Release notes](https://github.com/akua-dev/akua/releases) |
 
 ## Status
 
