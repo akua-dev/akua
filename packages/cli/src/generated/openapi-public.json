@@ -31220,7 +31220,7 @@
               "$ref": "#/components/schemas/Condition"
             },
             "maxItems": 32,
-            "description": "What needs attention now; empty when nothing does. Reasons:\n- `missing-permissions` (warning): the Cluster agent lacks permissions for what this Install applies, because the grant was narrowed or never covered its namespace. Remedy `grant-access` names them; the Install resumes by itself once they are granted.\n- When `state` is `failed`, one error whose reason says why: `render-failed`, `placement-failed`, `route-failed`, `endpoint-unreachable`, `agent-offline`, `agent-unsupported`, `abandoned` or `storage-class-unavailable`.\n- `storage-class-unavailable` (error): the Package claims volumes and the Cluster offers no StorageClass Akua could add. Remedy `change-input` names `storage_class`: install again naming a class the Cluster has."
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `missing-permissions` (warning): the Cluster agent lacks permissions for what this Install applies, because the grant was narrowed or never covered its namespace. Remedy `grant-access` names them; the Install resumes by itself once they are granted.\n- When `state` is `failed`, one error whose reason says why: `render-failed`, `placement-failed`, `route-failed`, `endpoint-unreachable`, `agent-offline`, `agent-unsupported`, `abandoned` or `storage-class-unavailable`.\n- `storage-class-unavailable` (error): the Package claims volumes, the Cluster offers no StorageClass and the person who installed may not add one. A Workspace admin (`cluster.addons.create`) installs again and Akua adds local-path, or remedy `change-input` names `storage_class`: install again naming a class the Cluster has."
           },
           "operation_id": {
             "type": "string",
@@ -31320,7 +31320,7 @@
             "minLength": 1,
             "maxLength": 253,
             "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9](?:[-a-z0-9]*[a-z0-9])?)*$",
-            "description": "The StorageClass every volume the Package renders names. Omit it and Akua picks one the Cluster offers (`storage_classes`): its only one, else a network-attached one before a node-local one, then by name; a Cluster with none gets its storage capability added first.",
+            "description": "The StorageClass every volume the Package renders names. Omit it and Akua picks one the Cluster offers (`storage_classes`): its only one, else a network-attached one before a node-local one, then by name. On a Cluster with none, Akua adds local-path when you hold `cluster.addons.create`; otherwise an Install with volumes fails `storage-class-unavailable`.",
             "examples": [
               "local-path"
             ]
