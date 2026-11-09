@@ -12135,7 +12135,7 @@
             }
           }
         },
-        "description": "Deletes the sandbox, its files, running processes and command history, and returns an Operation. Requires `manage`. OpenCode sessions that used the sandbox keep their history; their next tool call that needs it gets an error saying the sandbox no longer exists.",
+        "description": "Deletes the sandbox, its files, running processes and command history, and returns an Operation. Requires `manage`. OpenCode sessions that used the sandbox keep their history; their next tool call that needs it gets an error saying the sandbox no longer exists. A new delete is not supported yet because the sandbox's quota cannot be released safely and answers 422; idle and orphan cleanup continue.",
         "summary": "Delete a sandbox",
         "x-platform-visibility": "PUBLIC"
       }
@@ -15895,6 +15895,16 @@
               }
             }
           },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The service is temporarily unavailable.",
             "content": {
@@ -15916,7 +15926,7 @@
             }
           }
         },
-        "description": "Starts an operation that stops the server for good: protocol traffic is refused, its stored data is erased, and the platform's grants for it are revoked. The workspace's default server cannot be deleted.",
+        "description": "Starts an operation that stops the server for good: protocol traffic is refused, its stored data is erased, and the platform's grants for it are revoked. The workspace's default server cannot be deleted. Deletion is not supported yet because the server's own Vault cannot be cleaned up safely: a new delete answers 422.",
         "summary": "Delete an OpenCode Server",
         "x-platform-visibility": "PUBLIC"
       }
