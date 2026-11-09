@@ -28231,7 +28231,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 3,
             "maxLength": 54
           },
           "html_url": {
@@ -28242,7 +28242,7 @@
           },
           "workspace_id": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 2,
             "maxLength": 53
           },
           "name": {
@@ -29484,7 +29484,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 4,
             "maxLength": 56
           },
           "short_hash": {
@@ -29508,12 +29508,12 @@
           },
           "workspace_id": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 2,
             "maxLength": 53
           },
           "product_id": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 3,
             "maxLength": 55
           },
           "product_name": {
