@@ -4105,7 +4105,7 @@ export const contract: ApiContract = {
 				"previews",
 				"manage"
 			],
-			"description": "`run_commands`: commands. `files`: files. `terminal`: terminals. `previews`: previews. `manage`: all permissions, lifecycle, settings and access grants."
+			"description": "`run_commands`: commands. `files`: files. `terminal`: terminals. `previews`: reserved; sandboxes have no previews. `manage`: all permissions, lifecycle, settings and access grants."
 		},
 		"SandboxSize": {
 			"type": "string",

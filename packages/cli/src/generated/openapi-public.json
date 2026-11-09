@@ -12507,7 +12507,7 @@
             }
           }
         },
-        "description": "Snapshots the whole sandbox, including its files and the memory of running processes, and stops it, returning an Operation. A suspended sandbox costs only storage. Requires `manage`. While suspended, commands, file operations, terminals and previews are unavailable; ports and preview URLs stop answering until it is resumed. Sandboxes also suspend themselves after `idle_timeout_seconds` without activity.",
+        "description": "Snapshots the whole sandbox, including its files and the memory of running processes, and stops it, returning an Operation. A suspended sandbox costs only storage. Requires `manage`. While suspended, commands, file operations and terminals are unavailable until it is resumed. Sandboxes also suspend themselves after `idle_timeout_seconds` without activity.",
         "summary": "Suspend a sandbox",
         "x-platform-visibility": "PUBLIC"
       }
@@ -24494,7 +24494,7 @@
           "previews",
           "manage"
         ],
-        "description": "`run_commands`: commands. `files`: files. `terminal`: terminals. `previews`: previews. `manage`: all permissions, lifecycle, settings and access grants."
+        "description": "`run_commands`: commands. `files`: files. `terminal`: terminals. `previews`: reserved; sandboxes have no previews. `manage`: all permissions, lifecycle, settings and access grants."
       },
       "CreateSandboxAccessGrantBody": {
         "anyOf": [
@@ -30892,32 +30892,6 @@
         ],
         "additionalProperties": false
       },
-      "WorkspaceFeatureFlags": {
-        "type": "object",
-        "properties": {
-          "workspace_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "flags": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "boolean"
-            }
-          }
-        },
-        "required": [
-          "workspace_id",
-          "flags"
-        ],
-        "additionalProperties": false
-      },
       "InstallList": {
         "type": "object",
         "properties": {
@@ -31153,9 +31127,6 @@
     },
     {
       "name": "installs"
-    },
-    {
-      "name": "featureFlags"
     },
     {
       "name": "Organizations"
