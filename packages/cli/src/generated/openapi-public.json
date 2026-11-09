@@ -26721,60 +26721,145 @@
             ],
             "description": "`capability`: platform-owned; you never install or remove it. `addon`: installed by you (not offered yet)."
           },
-          "state": {
+          "location": {
             "type": "string",
             "enum": [
-              "installing",
-              "current",
-              "updating",
-              "rolled-back",
-              "failed",
-              "deleting",
-              "deleted"
+              "in-cluster",
+              "control-plane"
             ],
-            "description": "`rolled-back`: the newer release failed its health gate and the previous one runs again. `failed`: the install or the rollback did not become healthy; the Cluster is `degraded`."
+            "description": "Where its Placement is applied from: by the connector inside the Cluster, or by the connector beside the hosted control plane. Changing it is a delete and a create, never a silent move."
           },
-          "version": {
+          "desired": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 64
+                "$ref": "#/components/schemas/ClusterAddonRevision"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "The release it runs; null before the first install finished."
+            "description": "What the ring wants it to run; null until its first install picked a release."
           },
-          "target_version": {
+          "applied": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 64
+                "$ref": "#/components/schemas/ClusterAddonRevision"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "The release it is moving to (`updating`) or that was rolled back."
+            "description": "What runs now."
+          },
+          "last_known_good": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClusterAddonRevision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The last release that reached Current; what a rollback restores."
           },
           "conditions": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Condition"
-            },
-            "maxItems": 32,
-            "description": "`update-rolled-back` (warning): a release failed its health gate here and was rolled back. `baseline-degraded` (warning): the component is not healthy and Akua repairs it."
+              "$ref": "#/components/schemas/ClusterAddonCondition"
+            }
           }
         },
         "required": [
           "name",
           "cluster_id",
           "kind",
-          "state",
-          "version",
-          "target_version",
+          "location",
+          "desired",
+          "applied",
+          "last_known_good",
           "conditions"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterAddonCondition": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "Available",
+              "Progressing",
+              "Degraded"
+            ]
+          },
+          "status": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "Applied",
+              "NotApplied",
+              "Installing",
+              "Updating",
+              "Deleting",
+              "Deleted",
+              "Settled",
+              "UpdateRolledBack",
+              "ApplyFailed",
+              "Healthy"
+            ],
+            "description": "Fixed reasons per type.\n- `Available`: `Applied`, or `NotApplied`, `Deleting`, `Deleted`.\n- `Progressing`: `Installing`, `Updating` or `Deleting` while a change runs, else `Settled`.\n- `Degraded`: `UpdateRolledBack` (the last update failed its health gate and was rolled back) or `ApplyFailed` (the install or the rollback did not become healthy), else `Healthy`."
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "last_transition_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Unix timestamp (seconds)",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the failure or rollback was recorded; null otherwise."
+          }
+        },
+        "required": [
+          "type",
+          "status",
+          "reason",
+          "message",
+          "last_transition_at"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterAddonRevision": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "package_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "SHA-256 over the component, version and every pinned image digest of the release."
+          },
+          "config_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "SHA-256 over the render inputs other than the package: Cluster, Origin, ring and location."
+          }
+        },
+        "required": [
+          "version",
+          "package_digest",
+          "config_hash"
         ],
         "additionalProperties": false
       },
