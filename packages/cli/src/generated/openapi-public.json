@@ -9118,6 +9118,211 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
+    "/clusters/{id}/capabilities": {
+      "get": {
+        "tags": [
+          "clusters"
+        ],
+        "operationId": "clusters.listCapabilities",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Pagination cursor from a previous response's `next_cursor`."
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (1-100, default 50)",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The Cluster’s capabilities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClusterAddonList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "The platform-owned components of the Cluster (tunnel connector, private ingress gateway, storage, metrics) with the release each runs.",
+        "summary": "List capabilities",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
     "/clusters/{id}/join_tokens/{token_id}": {
       "delete": {
         "tags": [
@@ -26465,6 +26670,123 @@
         ],
         "additionalProperties": false
       },
+      "ClusterAddonList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClusterAddon"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more items exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterAddon": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/ClusterAddonName"
+          },
+          "cluster_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "capability",
+              "addon"
+            ],
+            "description": "`capability`: platform-owned; you never install or remove it. `addon`: installed by you (not offered yet)."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "installing",
+              "current",
+              "updating",
+              "rolled-back",
+              "failed",
+              "deleting",
+              "deleted"
+            ],
+            "description": "`rolled-back`: the newer release failed its health gate and the previous one runs again. `failed`: the install or the rollback did not become healthy; the Cluster is `degraded`."
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The release it runs; null before the first install finished."
+          },
+          "target_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The release it is moving to (`updating`) or that was rolled back."
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "maxItems": 32,
+            "description": "`update-rolled-back` (warning): a release failed its health gate here and was rolled back. `baseline-degraded` (warning): the component is not healthy and Akua repairs it."
+          }
+        },
+        "required": [
+          "name",
+          "cluster_id",
+          "kind",
+          "state",
+          "version",
+          "target_version",
+          "conditions"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterAddonName": {
+        "type": "string",
+        "enum": [
+          "tunnel-connector",
+          "private-ingress-gateway",
+          "local-path-storage",
+          "metrics-server"
+        ]
+      },
       "ClusterJoinCommand": {
         "type": "object",
         "properties": {
@@ -26665,7 +26987,7 @@
               "$ref": "#/components/schemas/Condition"
             },
             "maxItems": 32,
-            "description": "What needs attention now; empty when nothing does. Reasons:\n- `agent-offline` (warning): the agent is not connected; workloads keep running and nothing new rolls out until it reconnects.\n- `updater-behind` (warning): the updater has run another release than the agent for 30 minutes, so no agent release is offered. Remedy `run-agent-install` on a connected Cluster; none on a hosted one, whose agent and updater Akua re-applies.\n- `needs-customer-upgrade` (warning): the offered agent release changes objects outside the access you granted, so it was not applied. Remedy `customer-upgrade` names the missing permissions and the `helm upgrade` command.\n- `bundle-too-large` (warning): the offered agent release is too large to deliver or to keep as a rollback copy, so it was not applied.\n- When `state` is `failed`, one error whose reason says why: `control-plane-unready`, `enrollment-expired`, `agent-unsupported`, `baseline-failed`, `baseline-rollback-failed`, `cleanup-unconfirmed`, `node-removal-failed` or `agent-bundle-failed`."
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `agent-offline` (warning): the agent is not connected; workloads keep running and nothing new rolls out until it reconnects.\n- `updater-behind` (warning): the updater has run another release than the agent for 30 minutes, so no agent release is offered. Remedy `run-agent-install` on a connected Cluster; none on a hosted one, whose agent and updater Akua re-applies.\n- `needs-customer-upgrade` (warning): the offered agent release changes objects outside the access you granted, so it was not applied. Remedy `customer-upgrade` names the missing permissions and the `helm upgrade` command.\n- `bundle-too-large` (warning): the offered agent release is too large to deliver or to keep as a rollback copy, so it was not applied.\n- `update-rolled-back`, `baseline-degraded` (warning): a capability release failed its health gate and was rolled back, or a capability is not healthy; see the Cluster’s capabilities.\n- When `state` is `failed`, one error whose reason says why: `control-plane-unready`, `enrollment-expired`, `agent-unsupported`, `baseline-failed`, `baseline-rollback-failed`, `cleanup-unconfirmed`, `node-removal-failed` or `agent-bundle-failed`."
           },
           "operation_id": {
             "type": "string",

@@ -887,6 +887,19 @@ export const contract: ApiContract = {
 			]
 		},
 		{
+			"id": "clusters.listCapabilities",
+			"method": "GET",
+			"path": "/clusters/{id}/capabilities",
+			"summary": "List capabilities",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"header:akua-context",
+				"query:cursor",
+				"query:limit"
+			]
+		},
+		{
 			"id": "clusters.listJoinTokens",
 			"method": "GET",
 			"path": "/clusters/{id}/join_tokens",
