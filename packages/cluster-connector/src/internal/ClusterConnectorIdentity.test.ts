@@ -65,7 +65,10 @@ describe('ClusterConnectorIdentity', () => {
 				const proof = decodeJwt(Redacted.value(request.proof));
 				assert.strictEqual(proof.header.alg, 'EdDSA');
 				assert.strictEqual(proof.header.kid, request.public_key.kid);
-				assert.strictEqual(proof.claims.aud, 'https://api.akua.test/v1/cluster_connectors/token');
+				assert.strictEqual(
+					proof.claims.aud,
+					'https://api.akua.test/v1/cluster_connectors/me:generateToken'
+				);
 				assert.isAtMost(proof.claims.exp - proof.claims.iat, 60);
 
 				const kubernetes = yield* FakeKubernetes;

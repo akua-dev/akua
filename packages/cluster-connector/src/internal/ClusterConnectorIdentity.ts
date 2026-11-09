@@ -52,7 +52,7 @@ export class IdentityUnavailable extends Schema.TaggedError<IdentityUnavailable>
  * section 3 recommends. Identity must accept exactly this value.
  */
 export const identityAudience = (platformOrigin: URL): string =>
-	new URL('/v1/cluster_connectors/token', platformOrigin).href;
+	new URL('/v1/cluster_connectors/me:generateToken', platformOrigin).href;
 
 const decodeText = (value: string | undefined): string | null => {
 	if (value === undefined) return null;

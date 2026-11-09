@@ -31,7 +31,7 @@ import { ClusterConnectorCredentials } from './ClusterConnectorClient';
 
 /**
  * The in-cluster side of the control channel (CEP-0051). The agent and the
- * updater each keep one WebSocket to `wss://<platform>/v1/cluster_connectors/connect`
+ * updater each keep one WebSocket to `wss://<platform>/v1/cluster_connectors/me:connect` (the updater: `me/updater:connect`)
  * open with their own role:
  *
  * 1. Take a fresh assertion from ClusterConnectorCredentials and dial with it as the
@@ -54,9 +54,13 @@ import { ClusterConnectorCredentials } from './ClusterConnectorClient';
 
 /** The channel URL on the platform origin the agent enrolled with. */
 export const channelUrl = (platformOrigin: URL, role: ChannelRole): URL => {
-	const url = new URL('/v1/cluster_connectors/connect', platformOrigin);
+	const url = new URL(
+		role === 'agent'
+			? '/v1/cluster_connectors/me:connect'
+			: '/v1/cluster_connectors/me/updater:connect',
+		platformOrigin
+	);
 	url.protocol = url.protocol === 'http:' ? 'ws:' : 'wss:';
-	url.searchParams.set('role', role);
 	return url;
 };
 
