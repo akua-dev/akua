@@ -27589,6 +27589,7 @@
               "domain-dispatcher",
               "organization",
               "workspace",
+              "platform",
               "region",
               "admission",
               "billing",
