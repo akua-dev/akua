@@ -450,8 +450,17 @@ export const bundleApplier = Effect.gen(function* () {
 	const settle = Effect.fnUntraced(function* (name: string, update: typeof BundleUpdate.Type) {
 		const { applySetId, inventory } = yield* applySet(name);
 		// A member the grant no longer lets Akua write is the customer's now, never pruned.
-		const survivors = yield* prune(applySetId, staleEntries(inventory, update.planned));
-		yield* writeParent(name, applySetId, update.to, unionInventory(update.applied, survivors));
+		// Only a verified update prunes (the gate was the grace), and never against an empty bundle.
+		const survivors = yield* prune(
+			applySetId,
+			update.planned.length === 0 ? [] : staleEntries(inventory, update.planned)
+		);
+		yield* writeParent(
+			name,
+			applySetId,
+			update.to,
+			unionInventory(update.applied, update.planned.length === 0 ? inventory : survivors)
+		);
 	});
 
 	/**

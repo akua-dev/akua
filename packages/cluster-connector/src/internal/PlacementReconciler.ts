@@ -277,6 +277,15 @@ const healthyOutcome = (
 	corrected: corrected.slice(0, 500)
 });
 
+/**
+ * How long an object must have stayed stale before the connector deletes it.
+ * Pruning removes customer workloads on the strength of one rendered
+ * revision, so a truncated or wrong render must be seen again, a pass later
+ * and after this grace, before anything is deleted (Open Cluster Management
+ * and Config Sync likewise delete only what a settled desired state drops).
+ */
+export const pruneGraceMillis = 30_000;
+
 export const placementReconcilerLayer = Layer.effect(
 	PlacementReconciler,
 	Effect.gen(function* () {
@@ -290,6 +299,8 @@ export const placementReconcilerLayer = Layer.effect(
 		const watchSet = yield* WatchSet;
 		const live = yield* LiveStatus;
 		const lastRevision = new Map<PlacementId, string>();
+		/** Per Placement, when each currently stale member was first seen stale by this process. */
+		const staleSince = new Map<PlacementId, Map<string, number>>();
 
 		const readParent = Effect.fnUntraced(function* (desired: Desired) {
 			const name = applySetParentName(desired.placement_id);
@@ -499,7 +510,22 @@ export const placementReconcilerLayer = Layer.effect(
 			});
 			if (waited.failure !== null) return outcomeForEngineFailure(waited.failure);
 
-			const stale = staleEntries(parent.previous, members);
+			// Prune only a settled desired state: never an empty render, never in the pass
+			// that first applied the Placement in this process, and only what stayed stale for the grace.
+			const now = yield* Clock.currentTimeMillis;
+			const seen = staleSince.get(desired.placement_id) ?? new Map<string, number>();
+			const stale =
+				desiredEntries.length === 0 || !lastRevision.has(desired.placement_id)
+					? []
+					: staleEntries(parent.previous, members).filter((entry) => {
+							const since = seen.get(entry.key) ?? now;
+							seen.set(entry.key, since);
+							return now - since >= pruneGraceMillis;
+						});
+			const allStale = staleEntries(parent.previous, members);
+			const stillStale = new Set(allStale.map((entry) => entry.key));
+			for (const key of seen.keys()) if (!stillStale.has(key)) seen.delete(key);
+			staleSince.set(desired.placement_id, seen);
 			let survivors: ReadonlyArray<Entry> = [];
 			if (stale.length > 0) {
 				const pruned = yield* engine.prune({
@@ -510,7 +536,10 @@ export const placementReconcilerLayer = Layer.effect(
 				});
 				survivors = pruned.survivors.map((survivor) => survivor.entry);
 			}
-			const final = unionInventory(members, survivors);
+			// Stale members not yet pruned stay in the inventory so a later pass still deletes them.
+			const pruning = new Set(stale.map((entry) => entry.key));
+			const deferred = allStale.filter((entry) => !pruning.has(entry.key));
+			const final = unionInventory(unionInventory(members, deferred), survivors);
 			yield* writeParent(desired, parent.applySetId, final);
 			yield* watch(desired, parent.applySetId, final, exclusive);
 			lastRevision.set(desired.placement_id, revision);
@@ -563,6 +592,7 @@ export const placementReconcilerLayer = Layer.effect(
 			yield* kubernetes.deleteApplySetParent({ name: parent.name, namespace: desired.namespace });
 			yield* watchSet.remove(desired.placement_id);
 			lastRevision.delete(desired.placement_id);
+			staleSince.delete(desired.placement_id);
 			return { _tag: 'removed' } satisfies Outcome;
 		});
 

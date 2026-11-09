@@ -7,6 +7,7 @@ import {
 	DesiredRevision,
 	DesiredSignal,
 	desiredStateLoop,
+	pruneGraceMillis,
 	ReservedNames
 } from './PlacementReconciler';
 import { answerEverything, FakeEngine } from '../testing/FakeEngine';
@@ -80,6 +81,20 @@ describe('PlacementReconciler', () => {
 				})
 			});
 			assert.strictEqual(report.outcome._tag, 'ready');
+			// A dropped member is deleted only once it stayed stale for the grace.
+			assert.isUndefined((yield* (yield* FakeEngine).requests).find((r) => r._tag === 'prune'));
+			assert.deepStrictEqual(yield* parentInventory, [
+				'app_a__ConfigMap',
+				'app_b__ConfigMap',
+				'app_shared__ConfigMap'
+			]);
+			yield* TestClock.adjust(pruneGraceMillis);
+			yield* reconciler.reconcile({
+				desired: desiredPlacement({
+					generation: 2,
+					source: { ...desiredPlacement().source, revision: revisionB }
+				})
+			});
 			const prune = (yield* (yield* FakeEngine).requests).find(
 				(request) => request._tag === 'prune'
 			);
@@ -123,6 +138,13 @@ describe('PlacementReconciler', () => {
 						source: { ...desiredPlacement().source, revision: revisionB }
 					})
 				});
+				yield* TestClock.adjust(pruneGraceMillis);
+				yield* reconciler.reconcile({
+					desired: desiredPlacement({
+						generation: 2,
+						source: { ...desiredPlacement().source, revision: revisionB }
+					})
+				});
 				const prune = (yield* engine.requests).find((request) => request._tag === 'prune');
 				assert.deepStrictEqual(
 					prune?._tag === 'prune' ? prune.stale.map((entry) => entry.key) : [],
@@ -133,6 +155,32 @@ describe('PlacementReconciler', () => {
 					'app_shared__ConfigMap'
 				]);
 			}).pipe(Effect.provide(clusterConnectorHarness({ revisions })))
+	);
+
+	it.effect('never prunes when the revision renders nothing', () =>
+		Effect.gen(function* () {
+			const reconciler = yield* PlacementReconciler;
+			yield* reconciler.reconcile({ desired: desiredPlacement() });
+			yield* TestClock.adjust(pruneGraceMillis);
+			const emptied = desiredPlacement({
+				generation: 2,
+				source: { ...desiredPlacement().source, revision: revisionB }
+			});
+			yield* reconciler.reconcile({ desired: emptied });
+			yield* TestClock.adjust(pruneGraceMillis);
+			yield* reconciler.reconcile({ desired: emptied });
+			assert.isUndefined((yield* (yield* FakeEngine).requests).find((r) => r._tag === 'prune'));
+			assert.deepStrictEqual(yield* parentInventory, ['app_a__ConfigMap', 'app_shared__ConfigMap']);
+		}).pipe(
+			Effect.provide(
+				clusterConnectorHarness({
+					revisions: new Map([
+						[revisionA, [file('app.yaml', `${configMap('a')}---\n${configMap('shared')}`)]],
+						[revisionB, [file('README.md', 'nothing to apply')]]
+					])
+				})
+			)
+		)
 	);
 
 	it.effect('keeps the parent while removed members are still terminating', () =>
