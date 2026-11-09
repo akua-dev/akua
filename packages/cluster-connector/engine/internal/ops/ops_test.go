@@ -126,6 +126,12 @@ func TestApplyFailureNamesStageReasonAndObject(t *testing.T) {
 			protocol.Failure{Stage: "resources", Reason: "immutable", Object: ptr("shop_web_apps_Deployment")},
 		},
 		{
+			"another manager owns a field",
+			appliedClasses,
+			ssaerrors.NewDryRunErr(apierrors.NewConflict(gr, "web", errors.New(`Apply failed with 1 conflict: conflict with "helm": .spec.replicas`)), deploy),
+			protocol.Failure{Stage: "resources", Reason: "conflict", Object: ptr("shop_web_apps_Deployment")},
+		},
+		{
 			"forbidden apply",
 			appliedClasses,
 			fmt.Errorf("%s apply failed: %w", "Deployment/shop/web", apierrors.NewForbidden(gr, "web", errors.New("denied"))),

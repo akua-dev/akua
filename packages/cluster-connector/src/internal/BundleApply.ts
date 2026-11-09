@@ -337,6 +337,8 @@ export const bundleApplier = Effect.gen(function* () {
 				manifests: objects.map((object) => object.manifest),
 				revisionChanged: true,
 				forceSelector,
+				// The bundle replaces what Helm installed, so the updater is the explicit case that takes over.
+				takeOwnership: true,
 				exclusionSelector,
 				timeoutSeconds: engineTimeoutSeconds
 			})

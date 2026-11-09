@@ -81,7 +81,8 @@ func DecodeManifests(applySetID string, manifests []json.RawMessage) ([]*unstruc
 	return objects, nil
 }
 
-// Apply is `ResourceManager.ApplyAllStaged` with field manager akua-agent.
+// Apply is `ResourceManager.ApplyAllStaged` with field manager akua-agent,
+// after the ownership check of ownership.go.
 func (o *Ops) Apply(ctx context.Context, r *protocol.Apply) protocol.Applied {
 	out := protocol.Applied{ID: r.ID}
 	objects, failure := DecodeManifests(r.ApplySetID, r.Manifests)
@@ -93,6 +94,11 @@ func (o *Ops) Apply(ctx context.Context, r *protocol.Apply) protocol.Applied {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	force, failure := o.checkOwnership(ctx, r, objects)
+	if failure != nil {
+		out.Failure = failure
+		return out
+	}
 	lease := o.Cache.Lease(object.UnstructuredSetToObjMetadataSet(objects), o.MemberSelector(r.ApplySetID))
 	defer lease.Release()
 	opts := ssa.DefaultApplyOptions()
@@ -100,7 +106,7 @@ func (o *Ops) Apply(ctx context.Context, r *protocol.Apply) protocol.Applied {
 	opts.ExclusionSelector = r.ExclusionSelector
 	opts.WaitTimeout = timeout
 
-	changeSet, err := o.manager(o.Client, lease).ApplyAllStaged(ctx, objects, opts)
+	changeSet, err := o.manager(ownershipClient{Client: o.Client, force: force}, lease).ApplyAllStaged(ctx, objects, opts)
 	if changeSet != nil {
 		out.Changes, out.DriftCorrected = Changes(changeSet, r.RevisionChanged)
 	}

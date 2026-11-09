@@ -38,6 +38,7 @@ const apply = Effect.gen(function* () {
 		],
 		revisionChanged: true,
 		forceSelector: {},
+		takeOwnership: false,
 		exclusionSelector: {},
 		timeoutSeconds: 30
 	});

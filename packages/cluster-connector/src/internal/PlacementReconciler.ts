@@ -476,6 +476,7 @@ export const placementReconcilerLayer = Layer.effect(
 				manifests: objects.map((object) => object.manifest),
 				revisionChanged: lastRevision.get(desired.placement_id) !== revision,
 				forceSelector,
+				takeOwnership: false,
 				exclusionSelector,
 				timeoutSeconds
 			});

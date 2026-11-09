@@ -64,7 +64,11 @@ type Apply struct {
 	RevisionChanged   bool              `json:"revisionChanged"`
 	ForceSelector     map[string]string `json:"forceSelector"`
 	ExclusionSelector map[string]string `json:"exclusionSelector"`
-	TimeoutSeconds    int64             `json:"timeoutSeconds"`
+	// TakeOwnership allows the apply to take fields and objects over from
+	// other field managers and ApplySets; without it only unowned objects
+	// and this ApplySet's members are adopted.
+	TakeOwnership  bool  `json:"takeOwnership"`
+	TimeoutSeconds int64 `json:"timeoutSeconds"`
 }
 
 type Prune struct {
@@ -166,6 +170,20 @@ func decodeStrict(line []byte, into Request) error {
 
 func reject(id int64, reason, message string) *Rejected {
 	return &Rejected{ID: id, Failure: Failure{Stage: "decode", Reason: reason, Message: message}}
+}
+
+// ImpersonateOf is the identity mode a request asks for; "" for a request
+// that carries none (shutdown).
+func ImpersonateOf(req Request) string {
+	switch r := req.(type) {
+	case *Apply:
+		return r.Impersonate
+	case *Prune:
+		return r.Impersonate
+	case *Subscribe:
+		return r.Impersonate
+	}
+	return ""
 }
 
 func checkIdentity(impersonate string) error {

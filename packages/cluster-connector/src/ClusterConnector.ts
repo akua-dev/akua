@@ -271,10 +271,15 @@ export const EngineRequest = Schema.Union([
 	 * `ResourceManager.ApplyAllStaged` with `Owner.Field = fieldManager`.
 	 * Every manifest already carries the ApplySet `part-of` label; the engine
 	 * refuses any object without it. Before any write it reads every object
-	 * (shared cache, else GET); one that exists with another ApplySet's
-	 * `part-of` label fails the whole request with `applyset-conflict` and
-	 * that object, and is never adopted or overwritten. Server-side apply
-	 * would not report it, since all Placements share `fieldManager`.
+	 * with a GET. One that exists with another ApplySet's `part-of` label
+	 * fails the whole request with `applyset-conflict` and that object, and
+	 * is never adopted or overwritten (server-side apply would not report
+	 * it, since all Placements share `fieldManager`). An object without the
+	 * label is adopted without force, so a field another manager owns with a
+	 * different value fails as `conflict`; this ApplySet's own members are
+	 * applied with force to correct drift. `takeOwnership` (the updater's
+	 * Helm-installed bundle) or the `forceSelector` on one object allows
+	 * taking over both cases.
 	 */
 	Schema.TaggedStruct('apply', {
 		id: RequestId,
@@ -286,6 +291,8 @@ export const EngineRequest = Schema.Union([
 		revisionChanged: Schema.Boolean,
 		/** ssa `ApplyOptions.ForceSelector`: recreate on immutable-field errors only for opted-in objects. */
 		forceSelector: Schema.Record(Schema.String, Schema.String),
+		/** Take objects and fields over from other ApplySets and field managers; see above. */
+		takeOwnership: Schema.Boolean,
 		/** ssa `ApplyOptions.ExclusionSelector`: customer opt-out. */
 		exclusionSelector: Schema.Record(Schema.String, Schema.String),
 		timeoutSeconds: Schema.Int.check(

@@ -30,6 +30,10 @@ type Backend interface {
 type Server struct {
 	backend Backend
 	version string
+	// Mode is the identity mode the process runs in (protocol.Impersonation
+	// or protocol.NoImpersonation); a request asking for another is
+	// rejected. Empty accepts either, for tests.
+	Mode string
 
 	writeMu sync.Mutex
 	out     io.Writer
@@ -125,6 +129,13 @@ func (s *Server) handle(ctx context.Context, line []byte) *protocol.Shutdown {
 		} else {
 			s.Emit(*rejected)
 		}
+		return nil
+	}
+	if mode := protocol.ImpersonateOf(req); s.Mode != "" && mode != "" && mode != s.Mode {
+		s.Emit(protocol.Rejected{ID: req.RequestID(), Failure: protocol.Failure{
+			Stage: "decode", Reason: "forbidden",
+			Message: fmt.Sprintf("impersonate %q does not match this engine's mode %q", mode, s.Mode),
+		}})
 		return nil
 	}
 	s.mu.Lock()

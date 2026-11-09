@@ -110,6 +110,7 @@ func run(userAgent, kubeconfig, impersonate string) error {
 	defer informers.Stop()
 	b := &backend{}
 	server := serve.New(b, os.Stdout, version)
+	server.Mode = impersonate
 	b.tracker = live.NewTracker(informers, kube, server.Emit, live.Options{MaxWatchedObjects: maxWatchedObjects})
 	defer b.tracker.Stop()
 	go b.tracker.WatchLoad(ctx, 2*time.Second)

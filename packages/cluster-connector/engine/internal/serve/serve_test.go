@@ -198,6 +198,30 @@ func TestRejectionsAndUnaddressableLines(t *testing.T) {
 	}
 }
 
+func TestRequestsMustMatchTheProcessMode(t *testing.T) {
+	inR, inW := io.Pipe()
+	outR, outW := io.Pipe()
+	server := New(newBackend(), outW, "1.2.3")
+	server.Mode = protocol.Impersonation
+	go func() {
+		server.Run(context.Background(), inR)
+		outW.Close()
+	}()
+	lines := bufio.NewScanner(outR)
+	lines.Scan() // ready
+	go inW.Write([]byte(`{"_tag":"subscribe","id":6,"impersonate":"` + protocol.NoImpersonation + `","placements":[]}` + "\n"))
+	lines.Scan()
+	var got map[string]any
+	if err := json.Unmarshal(lines.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	failure, _ := got["failure"].(map[string]any)
+	if got["_tag"] != "rejected" || got["id"] != float64(6) || failure["reason"] != "forbidden" {
+		t.Errorf("got %v", got)
+	}
+	inW.Close()
+}
+
 func TestShutdownFinishesInFlightThenStops(t *testing.T) {
 	b := newBackend()
 	s := start(t, b)
