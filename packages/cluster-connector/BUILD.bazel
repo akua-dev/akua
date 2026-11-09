@@ -15,6 +15,8 @@ load("@aspect_rules_js//npm/private:npm_link_package_store.bzl", "npm_link_packa
 exports_files(
     [
         "install/Chart.yaml",
+        "install/akua.toml",
+        "install/package.k",
         "install/values.schema.json",
         "install/values.yaml",
         "package.json",
@@ -27,6 +29,14 @@ exports_files(
 filegroup(
     name = "chart_templates",
     srcs = glob(["install/templates/**"]),
+    visibility = ["//visibility:public"],
+)
+
+# The Akua package: akua.toml and package.k beside the chart, plus the chart
+# itself (the package's one dependency, path ".").
+filegroup(
+    name = "package_srcs",
+    srcs = glob(["install/**"]),
     visibility = ["//visibility:public"],
 )
 
