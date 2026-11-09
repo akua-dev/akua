@@ -36,9 +36,8 @@ one `v<version>` release (see [docs/releasing.md](docs/releasing.md)):
   `brew install akua-dev/tap/akua`. `akua pkg` embeds the same package
   toolchain host.
 
-The cluster agent (`packages/cluster-connector/`) and two companion packages
-(`packages/cloudflare-tunnel-connector/`, `packages/private-ingress-gateway/`)
-are built from the same tree.
+Two companion packages (`packages/cloudflare-tunnel-connector/`,
+`packages/private-ingress-gateway/`) are built from the same tree.
 
 ## Development setup
 

@@ -1,9 +1,0 @@
-apiVersion: promoter.argoproj.io/v1alpha1
-kind: GitCommitStatus
-metadata:
-  name: test
-spec:
-  promotionStrategyRef:
-    name: demo-strategy
-  key: my-check
-  expression: 'Commit.Subject startsWith "chore:"'

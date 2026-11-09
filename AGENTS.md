@@ -11,7 +11,7 @@ package-authoring agent skills.
 | `packages/cli/` | [CLI guide](packages/cli/AGENTS.md) and its local Effect skill |
 | `packages/akuapkg/` | [Package and host invariants](packages/akuapkg/AGENTS.md) |
 | `crates/` | [Engine and sandbox map](crates/README.md); the package guide owns their sandbox invariants |
-| `packages/cluster-connector/` | [Cluster agent chart and contract](packages/cluster-connector/README.md) |
+| `packages/cluster-agent/` | [Install package of Akua's cluster agent](packages/cluster-agent/README.md) |
 | `packages/cloudflare-tunnel-connector/`, `packages/private-ingress-gateway/` | Their package READMEs |
 | `plugins/akuapkg/` | [Package-authoring skills](plugins/akuapkg/README.md) |
 | Format specs and examples | [docs/](docs/) and [examples/](examples/) |

@@ -77,7 +77,7 @@ Docs: [docs.akua.dev/akua](https://docs.akua.dev/akua).
 | [`packages/cli`](packages/cli/)         | The `akua` CLI                                                                                                               |
 | [`packages/akuapkg`](packages/akuapkg/) | akuapkg: the Bun + Effect host, its CLI and TypeScript SDK                                                                   |
 | [`crates/`](crates/)                    | The sandboxed render worker (Rust to WebAssembly), the Helm and Kustomize engines (Go to WebAssembly) and the Wasmtime addon |
-| [`packages/cluster-connector`](packages/cluster-connector/) | The agent that runs in a customer's cluster and keeps its installs up to date; also an Akua package |
+| [`packages/cluster-agent`](packages/cluster-agent/) | The Helm chart and Akua package that install Akua's agent, which runs in a customer's cluster and keeps its installs up to date |
 | [`packages/cloudflare-tunnel-connector`](packages/cloudflare-tunnel-connector/) | An akuapkg Package that runs `cloudflared` in a cluster |
 | [`packages/private-ingress-gateway`](packages/private-ingress-gateway/) | The in-cluster HTTP boundary for routes whose services are not public |
 | [`plugins/`](plugins/)                  | Agent plugins and skills                                                                                                     |

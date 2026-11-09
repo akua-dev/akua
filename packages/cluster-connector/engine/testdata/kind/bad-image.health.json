@@ -1,9 +1,0 @@
-{
-  "status": "InProgress",
-  "reasons": [
-    "ImagePullBackOff"
-  ],
-  "restarts": 0,
-  "readyPods": 0,
-  "pods": 1
-}

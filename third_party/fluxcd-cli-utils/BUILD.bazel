@@ -1,8 +1,0 @@
-"""Patches to fluxcd/cli-utils for the cluster agent engine (akua-apply)."""
-
-# Applied with go_deps.module_override in MODULE.bazel (dev-only, for a
-# standalone checkout) and in the monorepo root, which owns go_deps
-# overrides when this module is a dependency. cli-utils is a Go module
-# dependency of fluxcd/pkg/ssa resolved from go.sum, so a module override
-# patches the copy the build already links.
-exports_files(["LICENSE"] + glob(["patches/*.patch"]))

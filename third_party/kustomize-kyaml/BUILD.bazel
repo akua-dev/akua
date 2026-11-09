@@ -1,4 +1,0 @@
-"""Patches to the gazelle-generated BUILD files of sigs.k8s.io/kustomize/kyaml (akua-apply)."""
-
-# Applied with go_deps.module_override, like //third_party/fluxcd-cli-utils.
-exports_files(glob(["patches/*.patch"]))
