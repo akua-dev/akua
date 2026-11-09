@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: webapp-install-meta
   labels:
-    install.cnap.tech/tenant: acme
+    install.akua.dev/tenant: acme
 data:
   tenant: acme
   upstreamApp: webapp

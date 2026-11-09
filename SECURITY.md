@@ -21,7 +21,7 @@ one version; upgrade to the newest
 
 Report vulnerabilities privately through
 [GitHub Security Advisories](https://github.com/akua-dev/akua/security/advisories/new),
-not in a public issue. Include the akuapkg version (`akuapkg --version`), a
+not in a public issue, or by email to security@akua.dev. Include the akuapkg version (`akuapkg --version`), a
 minimal Package or command that reproduces the issue, and what an attacker
 gains.
 

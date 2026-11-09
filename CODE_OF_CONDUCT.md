@@ -25,6 +25,6 @@ Unacceptable behavior:
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainers at **conduct@cnap.tech**. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainers at **legal@akua.dev**. All complaints will be reviewed and investigated promptly and fairly.
 
 For the full text, see: https://www.contributor-covenant.org/version/2/1/code_of_conduct/
