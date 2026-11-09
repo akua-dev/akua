@@ -165,7 +165,7 @@ export const Manifest = Schema.JsonObject;
  *   reads none of them;
  * - `memberSelector` narrows list and watch to ApplySet members when the
  *   Placement does not own its namespace (`WatchedPlacement.namespaceExclusive`
- *   false, connected clusters).
+ *   false, attached clusters).
  * `safetyNet` is not the bound, only the backstop: past `maxWatchedObjects`
  * the engine reports `overloaded`, stops live status until it restarts
  * and the agent falls back to snapshots after each reconcile. There is no

@@ -30,7 +30,7 @@ keeps its identity and ignores the code.
 | `image.repository`, `image.digest` | Agent image; digest is required (`sha256:` + 64 hex). |
 | `updater.image.repository`, `updater.image.digest` | Updater image; each falls back to the agent image when empty. |
 | `access` | Required. Exactly one of `{"cluster": {}}` or `{"namespaces": [...]}`. |
-| `enrollment.method` | `code` (connected cluster) or `federated` (hosted cluster). |
+| `enrollment.method` | `code` (attached cluster) or `federated` (hosted cluster). |
 | `enrollment.code` | Single-use code, `akua_enr_` + 43 characters. `code` method only. |
 | `enrollment.agentId`, `enrollment.federatedAudience` | Required for `federated`: agent ID (`cag_...`) and the audience of the projected ServiceAccount token. |
 | `release.version`, `release.protocol` | Written to the `akua.dev/release` annotation on the agent Deployment (version defaults to the chart appVersion, protocol to 1). The updater rewrites it on each update; re-running the install resets it. |
@@ -40,7 +40,7 @@ keeps its identity and ignores the code.
 Hosted clusters install this chart as a k0s Helm extension with
 `enrollment.method=federated` and `access: {cluster: {}}`: Akua fully manages
 a hosted cluster, so its `akua-apply` is cluster-admin and the chart refuses
-any other grant there. Connected clusters use `code` and keep the minimal
+any other grant there. Attached clusters use `code` and keep the minimal
 grant their owner chose.
 
 This directory is also an Akua package (`akua.toml`, `package.k`) that

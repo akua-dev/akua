@@ -2792,7 +2792,7 @@ export const contract: ApiContract = {
 						"kind": {
 							"type": "string",
 							"enum": [
-								"connected"
+								"attached"
 							],
 							"description": "An existing Kubernetes cluster that runs the Akua cluster agent."
 						},

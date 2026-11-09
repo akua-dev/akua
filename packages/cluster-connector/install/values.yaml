@@ -25,7 +25,7 @@ updater:
 access: {}
 
 enrollment:
-  # code: connected cluster, single-use enrollment code.
+  # code: attached cluster, single-use enrollment code.
   # federated: hosted cluster, projected ServiceAccount token.
   method: code
   code: ""
