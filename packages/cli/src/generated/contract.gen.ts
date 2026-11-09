@@ -2927,6 +2927,13 @@ export const contract: ApiContract = {
 				},
 				"initial_values": {
 					"type": "object"
+				},
+				"storage_class": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 253,
+					"pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9](?:[-a-z0-9]*[a-z0-9])?)*$",
+					"description": "The StorageClass every volume the Package renders names. Omit it and Akua picks one the Cluster offers (`storage_classes`): its only one, else a network-attached one before a node-local one, then by name; a Cluster with none gets its storage capability added first."
 				}
 			},
 			"required": [

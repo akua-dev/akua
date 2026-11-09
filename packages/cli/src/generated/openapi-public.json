@@ -31016,7 +31016,7 @@
               "$ref": "#/components/schemas/Condition"
             },
             "maxItems": 32,
-            "description": "What needs attention now; empty when nothing does. Reasons:\n- `missing-permissions` (warning): the Cluster agent lacks permissions for what this Install applies, because the grant was narrowed or never covered its namespace. Remedy `grant-access` names them; the Install resumes by itself once they are granted.\n- When `state` is `failed`, one error whose reason says why: `render-failed`, `placement-failed`, `route-failed`, `endpoint-unreachable`, `agent-offline`, `agent-unsupported` or `abandoned`."
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `missing-permissions` (warning): the Cluster agent lacks permissions for what this Install applies, because the grant was narrowed or never covered its namespace. Remedy `grant-access` names them; the Install resumes by itself once they are granted.\n- When `state` is `failed`, one error whose reason says why: `render-failed`, `placement-failed`, `route-failed`, `endpoint-unreachable`, `agent-offline`, `agent-unsupported`, `abandoned` or `storage-class-unavailable`.\n- `storage-class-unavailable` (error): the Package claims volumes and the Cluster offers no StorageClass Akua could add. Remedy `change-input` names `storage_class`: install again naming a class the Cluster has."
           },
           "operation_id": {
             "type": "string",
@@ -31041,6 +31041,24 @@
                 "type": "null"
               }
             ]
+          },
+          "storage_class": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 253,
+                "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9](?:[-a-z0-9]*[a-z0-9])?)*$",
+                "description": "A Kubernetes StorageClass name.",
+                "examples": [
+                  "local-path"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The StorageClass every volume of the Install names: once ready, the one asked for or the one Akua picked from the Cluster (`storage_classes`); null when the Package claims no volume. OUTPUT_ONLY."
           },
           "created_at": {
             "type": "integer",
@@ -31092,6 +31110,16 @@
           },
           "initial_values": {
             "type": "object"
+          },
+          "storage_class": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 253,
+            "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9](?:[-a-z0-9]*[a-z0-9])?)*$",
+            "description": "The StorageClass every volume the Package renders names. Omit it and Akua picks one the Cluster offers (`storage_classes`): its only one, else a network-attached one before a node-local one, then by name; a Cluster with none gets its storage capability added first.",
+            "examples": [
+              "local-path"
+            ]
           }
         },
         "required": [
