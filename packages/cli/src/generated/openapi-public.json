@@ -26808,9 +26808,10 @@
               "Settled",
               "UpdateRolledBack",
               "ApplyFailed",
+              "Unauthorized",
               "Healthy"
             ],
-            "description": "Fixed reasons per type.\n- `Available`: `Applied`, or `NotApplied`, `Deleting`, `Deleted`.\n- `Progressing`: `Installing`, `Updating` or `Deleting` while a change runs, `WaitingForNodes` while an accepted release waits for the first Ready node to be health-checked, else `Settled`.\n- `Degraded`: `UpdateRolledBack` (the last update failed its health gate and was rolled back) or `ApplyFailed` (the install or the rollback did not become healthy), else `Healthy`."
+            "description": "Fixed reasons per type.\n- `Available`: `Applied`, or `NotApplied`, `Deleting`, `Deleted`.\n- `Progressing`: `Installing`, `Updating` or `Deleting` while a change runs, `WaitingForNodes` while an accepted release waits for the first Ready node to be health-checked, else `Settled`.\n- `Degraded`: `UpdateRolledBack` (the last update failed its health gate and was rolled back), `ApplyFailed` (the install or the rollback did not become healthy) or `Unauthorized` (the cluster API refuses the credential or the rights of the connector that applies it; nothing it applies changes until they are restored), else `Healthy`."
           },
           "message": {
             "type": "string",
