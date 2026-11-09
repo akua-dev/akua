@@ -11,536 +11,6 @@
     }
   },
   "paths": {
-    "/installs": {
-      "post": {
-        "tags": [
-          "installs"
-        ],
-        "operationId": "installs.create",
-        "parameters": [
-          {
-            "name": "akua-context",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 53,
-              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
-              "examples": [
-                "ws_j572abc123def4"
-              ]
-            },
-            "required": false
-          },
-          {
-            "name": "idempotency-key",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
-              "examples": [
-                "create-prod-2026-05-07"
-              ]
-            },
-            "required": false
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "Install intent accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Operation"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The request is malformed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiBadRequest"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired credential.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnauthorized"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The credential may not act in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiForbidden"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The resource was not found in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiNotFound"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The request conflicts with existing resource state or immutable intent. | The idempotency key was already used for a different request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ApiConflict"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is well-formed but cannot be processed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnprocessable"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server failed to handle the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiInternalServerError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The service is temporarily unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiServiceUnavailable"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "An upstream provider did not answer in time.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiGatewayTimeout"
-                }
-              }
-            }
-          }
-        },
-        "description": "Creates an installation of a Package version. Akua processes the installation in the background and returns an Operation envelope to poll for progress. Native Install references are available after durable acceptance without waiting for a catalog projection. Retry the same intent with the same Idempotency-Key to retrieve its original Operation.",
-        "summary": "Create install",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateInstallBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "x-platform-visibility": "PUBLIC"
-      },
-      "get": {
-        "tags": [
-          "installs"
-        ],
-        "operationId": "installs.list",
-        "parameters": [
-          {
-            "name": "akua-context",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 53,
-              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
-              "examples": [
-                "ws_j572abc123def4"
-              ]
-            },
-            "required": false
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "description": "Pagination cursor from a previous response's `next_cursor`."
-            },
-            "required": false
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "description": "Items per page (1-100, default 50)",
-              "default": 50,
-              "examples": [
-                50
-              ],
-              "minimum": 1,
-              "maximum": 100
-            },
-            "required": false
-          },
-          {
-            "name": "product_id",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 55
-            },
-            "required": false
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Installs list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InstallList"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The request is malformed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiBadRequest"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired credential.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnauthorized"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The credential may not act in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiForbidden"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The service is temporarily unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiServiceUnavailable"
-                }
-              }
-            }
-          }
-        },
-        "description": "Lists installs in the current workspace. With `product_id`, lists installs attributed to that product for product-owner support visibility, newest first.",
-        "summary": "List installs",
-        "x-platform-visibility": "PUBLIC"
-      }
-    },
-    "/installs/{id}": {
-      "delete": {
-        "tags": [
-          "installs"
-        ],
-        "operationId": "installs.delete",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "description": "Install ID",
-              "examples": [
-                "inst_j572abc123def456"
-              ],
-              "minLength": 1,
-              "maxLength": 55
-            },
-            "required": true
-          },
-          {
-            "name": "akua-context",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 53,
-              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
-              "examples": [
-                "ws_j572abc123def4"
-              ]
-            },
-            "required": false
-          },
-          {
-            "name": "idempotency-key",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
-              "examples": [
-                "create-prod-2026-05-07"
-              ]
-            },
-            "required": false
-          },
-          {
-            "name": "if-match",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 256,
-              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
-              "examples": [
-                "42"
-              ]
-            },
-            "required": true
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "Delete workflow started",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Operation"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired credential.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnauthorized"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The credential may not act in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiForbidden"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The resource was not found in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiNotFound"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ApiConflict"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ApiPreconditionFailed"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The service is temporarily unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiServiceUnavailable"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "An upstream provider did not answer in time.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiGatewayTimeout"
-                }
-              }
-            }
-          }
-        },
-        "description": "Deletes an install and cascades resource cleanup asynchronously. Returns an Operation envelope to poll for progress. If the workflow starts before its Operation is visible, retry with the same Idempotency-Key.",
-        "summary": "Delete install",
-        "x-platform-visibility": "PUBLIC"
-      },
-      "get": {
-        "tags": [
-          "installs"
-        ],
-        "operationId": "installs.get",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "description": "Install ID",
-              "examples": [
-                "inst_j572abc123def456"
-              ],
-              "minLength": 1,
-              "maxLength": 55
-            },
-            "required": true
-          },
-          {
-            "name": "akua-context",
-            "in": "header",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 53,
-              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
-              "examples": [
-                "ws_j572abc123def4"
-              ]
-            },
-            "required": false
-          }
-        ],
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Install details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Install"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired credential.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiUnauthorized"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The credential may not act in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiForbidden"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The resource was not found in this workspace.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiNotFound"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The service is temporarily unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiServiceUnavailable"
-                }
-              }
-            }
-          }
-        },
-        "description": "Returns current install metadata.",
-        "summary": "Get install details",
-        "x-platform-visibility": "PUBLIC"
-      }
-    },
     "/operations/{id}": {
       "get": {
         "tags": [
@@ -1129,6 +599,536 @@
         },
         "description": "Requests cancellation of an in-flight operation. Cancellation is asynchronous: successful requests return the current operation envelope while the worker drains the current step before settling into a terminal result. Replaying the request with the same Idempotency-Key is supported. If the operation has already reached a terminal state, cancellation is rejected with Unprocessable Entity.\n\nWhen accepted, the operation is not cancelled instantly; it transitions through the normal cancellation flow and may still report progress for a short time.",
         "summary": "Request operation cancellation",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/installs": {
+      "post": {
+        "tags": [
+          "installs"
+        ],
+        "operationId": "installs.create",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Install intent accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates an installation of a Package version. Akua processes the installation in the background and returns an Operation envelope to poll for progress. Native Install references are available after durable acceptance without waiting for a catalog projection. Retry the same intent with the same Idempotency-Key to retrieve its original Operation.",
+        "summary": "Create install",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInstallBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      },
+      "get": {
+        "tags": [
+          "installs"
+        ],
+        "operationId": "installs.list",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Pagination cursor from a previous response's `next_cursor`."
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (1-100, default 50)",
+              "default": 50,
+              "examples": [
+                50
+              ],
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Installs list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Lists installs in the current workspace. With `product_id`, lists installs attributed to that product for product-owner support visibility, newest first.",
+        "summary": "List installs",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/installs/{id}": {
+      "delete": {
+        "tags": [
+          "installs"
+        ],
+        "operationId": "installs.delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Install ID",
+              "examples": [
+                "inst_j572abc123def456"
+              ],
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Delete workflow started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "Deletes an install and cascades resource cleanup asynchronously. Returns an Operation envelope to poll for progress. If the workflow starts before its Operation is visible, retry with the same Idempotency-Key.",
+        "summary": "Delete install",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "get": {
+        "tags": [
+          "installs"
+        ],
+        "operationId": "installs.get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Install ID",
+              "examples": [
+                "inst_j572abc123def456"
+              ],
+              "minLength": 1,
+              "maxLength": 55
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Install details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Install"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns current install metadata.",
+        "summary": "Get install details",
         "x-platform-visibility": "PUBLIC"
       }
     },
@@ -20340,14 +20340,18 @@
           {
             "type": "string",
             "pattern": "^workload:[\\s\\S]*?\\/[\\s\\S]*?$"
+          },
+          {
+            "type": "string",
+            "pattern": "^workforce:[\\s\\S]*?\\/[\\s\\S]*?$"
           }
         ]
       },
       "Member": {
         "type": "string",
-        "pattern": "^(user:[^\\s]{1,64}|service:[a-z][a-z0-9-]{0,62}|workload:[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
+        "pattern": "^(user:[^\\s]{1,64}|service:[a-z][a-z0-9-]{0,62}|(?:workload|workforce):[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
         "title": "Member",
-        "description": "A person (`user:<id>`), an Akua service agent (`service:<name>`) or one workload (`workload:<pool>/<id>`)",
+        "description": "A person (`user:<id>`), service agent (`service:<name>`), workload (`workload:<pool>/<id>`) or workforce identity (`workforce:<pool>/<subject>`)",
         "examples": [
           "user:usr_j572abc",
           "service:placement"
@@ -27199,6 +27203,7 @@
               "identity",
               "convex",
               "access-proxy",
+              "instance",
               "development-publisher"
             ]
           },
@@ -31063,10 +31068,10 @@
   "security": [],
   "tags": [
     {
-      "name": "installs"
+      "name": "operations"
     },
     {
-      "name": "operations"
+      "name": "installs"
     },
     {
       "name": "featureFlags"
