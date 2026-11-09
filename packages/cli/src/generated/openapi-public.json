@@ -27062,6 +27062,13 @@
               ]
             }
           },
+          "storage_classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClusterStorageClass"
+            },
+            "description": "The StorageClasses Akua runs here and an Install can use, from its healthy storage capabilities. OUTPUT_ONLY. No class is the cluster default: an Install names one on every volume, the one asked for or the one Akua picks."
+          },
           "ready_nodes": {
             "type": "integer",
             "minimum": 0
@@ -27134,6 +27141,34 @@
         },
         "required": [
           "status"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterStorageClass": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 253,
+            "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9](?:[-a-z0-9]*[a-z0-9])?)*$",
+            "description": "A Kubernetes StorageClass name.",
+            "examples": [
+              "local-path"
+            ]
+          },
+          "attachment": {
+            "type": "string",
+            "enum": [
+              "node_local",
+              "network"
+            ],
+            "description": "`node_local`: the volume lives on the disk of the node its first Pod ran on, fastest and fixed to that node. `network`: the volume attaches over the network and follows its Pod to another node."
+          }
+        },
+        "required": [
+          "name",
+          "attachment"
         ],
         "additionalProperties": false
       },
