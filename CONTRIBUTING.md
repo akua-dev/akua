@@ -1,7 +1,7 @@
 # Contributing to Akua
 
-Thanks for your interest. Akua is **pre-alpha**: APIs, schemas, and CLI
-surfaces are all in flux.
+Thanks for your interest. Akua is **alpha**: interfaces can still change
+before 1.0.
 
 ## What we accept today
 
@@ -35,6 +35,10 @@ one `v<version>` release (see [docs/releasing.md](docs/releasing.md)):
 - `akua`, the Akua CLI (`packages/cli/`), installed with
   `brew install akua-dev/tap/akua`. `akua pkg` embeds the same package
   toolchain host.
+
+The cluster agent (`packages/cluster-connector/`) and two companion packages
+(`packages/cloudflare-tunnel-connector/`, `packages/private-ingress-gateway/`)
+are built from the same tree.
 
 ## Development setup
 

@@ -1,7 +1,8 @@
 # Akua open-source tools
 
 This repository contains the `akua` CLI, the akuapkg package toolchain,
-its sandbox and engines, and package-authoring agent skills.
+its sandbox and engines, the cluster agent and its companion packages, and
+package-authoring agent skills.
 
 ## Route changes to their owner
 
@@ -10,6 +11,8 @@ its sandbox and engines, and package-authoring agent skills.
 | `packages/cli/` | [CLI guide](packages/cli/AGENTS.md) and its local Effect skill |
 | `packages/akuapkg/` | [Package and host invariants](packages/akuapkg/AGENTS.md) |
 | `crates/` | [Engine and sandbox map](crates/README.md); the package guide owns their sandbox invariants |
+| `packages/cluster-connector/` | [Cluster agent chart and contract](packages/cluster-connector/README.md) |
+| `packages/cloudflare-tunnel-connector/`, `packages/private-ingress-gateway/` | Their package READMEs |
 | `plugins/akuapkg/` | [Package-authoring skills](plugins/akuapkg/README.md) |
 | Format specs and examples | [docs/](docs/) and [examples/](examples/) |
 | Build and release | [Building](docs/building.md), [releasing](docs/releasing.md) |

@@ -23,8 +23,7 @@ import type { Role } from '@platform/kubernetes-schemas/generated/kubernetes/1.3
 import type { Deployment } from '@platform/kubernetes-schemas/generated/kubernetes/1.34.1/apps/v1/Deployment';
 
 /**
- * Proposal: the in-cluster agent's own contract, to live in
- * oss/akua/packages/cluster-connector. Orchestration is TypeScript and Effect
+ * The in-cluster agent's own contract. Orchestration is TypeScript and Effect
  * (one Bun binary, like the private ingress gateway). Applying is done by
  * an embedded Go engine, `akua-apply`, built only from fluxcd/pkg/ssa and
  * fluxcd/cli-utils (kstatus, object) and shipped in the same image: no Flux
