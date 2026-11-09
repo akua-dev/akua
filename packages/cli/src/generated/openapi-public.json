@@ -26738,7 +26738,7 @@
                 "type": "null"
               }
             ],
-            "description": "What the ring wants it to run, recorded when the install is accepted and when an update starts; null only for a deleted add-on that never installed."
+            "description": "What the ring wants it to run, recorded when the install is accepted and when an update starts; null once the add-on is being deleted."
           },
           "applied": {
             "anyOf": [
@@ -27049,7 +27049,7 @@
               "deleting",
               "deleted"
             ],
-            "description": "`provisioning`: the hosted control plane starts. `awaiting_node`: join a server with a join token. `awaiting_agent`: install the agent (connected) or wait for it. `configuring`: the baseline is placed. `disconnected`: the agent stopped calling; workloads keep running."
+            "description": "`provisioning`: the hosted control plane starts. `awaiting_node`: join a server with a join token. `awaiting_agent`: install the agent (attached) or wait for it. `configuring`: the baseline is placed. `disconnected`: the agent stopped calling; workloads keep running."
           },
           "capabilities": {
             "type": "array",
@@ -27072,7 +27072,7 @@
               "$ref": "#/components/schemas/Condition"
             },
             "maxItems": 32,
-            "description": "What needs attention now; empty when nothing does. Reasons:\n- `agent-offline` (warning): the agent is not connected; workloads keep running and nothing new rolls out until it reconnects.\n- `updater-behind` (warning): the updater has run another release than the agent for 30 minutes, so no agent release is offered. Remedy `run-agent-install` on an attached Cluster; none on a hosted one, whose agent and updater Akua re-applies.\n- `needs-customer-upgrade` (warning): the offered agent release changes objects outside the access you granted, so it was not applied. Remedy `customer-upgrade` names the missing permissions and the `helm upgrade` command.\n- `bundle-too-large` (warning): the offered agent release is too large to deliver or to keep as a rollback copy, so it was not applied.\n- `update-rolled-back`, `baseline-degraded` (warning): a capability release failed its health gate and was rolled back, or a capability is not healthy; see the Cluster’s capabilities.\n- When `state` is `failed`, one error whose reason says why: `control-plane-unready`, `enrollment-expired`, `agent-unsupported`, `baseline-failed`, `baseline-rollback-failed`, `cleanup-unconfirmed`, `node-removal-failed` or `agent-bundle-failed`."
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `agent-offline` (warning): the agent is not connected; workloads keep running and nothing new rolls out until it reconnects.\n- `updater-behind` (warning): the updater has run another release than the agent for 30 minutes, so no agent release is offered. Remedy `run-agent-install` on an attached Cluster; none on a hosted one, whose agent and updater Akua re-applies.\n- `needs-customer-upgrade` (warning): the offered agent release changes objects outside the access you granted, so it was not applied. Remedy `customer-upgrade` names the missing permissions and the `helm upgrade` command.\n- `bundle-too-large` (warning): the offered agent release is too large to deliver or to keep as a rollback copy, so it was not applied.\n- `update-rolled-back`, `baseline-degraded` (warning): a capability release failed its health gate and was rolled back, or a capability is not healthy; see the Cluster’s capabilities. A list shows `baseline-degraded` from the Cluster state only; `update-rolled-back` appears when the Cluster is read on its own.\n- When `state` is `failed`, one error whose reason says why: `control-plane-unready`, `enrollment-expired`, `agent-unsupported`, `baseline-failed`, `baseline-rollback-failed`, `cleanup-unconfirmed`, `node-removal-failed` or `agent-bundle-failed`."
           },
           "operation_id": {
             "type": "string",
