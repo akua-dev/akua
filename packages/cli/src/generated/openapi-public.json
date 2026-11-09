@@ -27177,6 +27177,205 @@
         ],
         "additionalProperties": false
       },
+      "ClusterImportBody": {
+        "type": "object",
+        "properties": {
+          "cluster_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 63,
+            "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
+            "description": "A DNS label, unique in the Workspace.",
+            "examples": [
+              "shop"
+            ]
+          },
+          "region_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "service_account_issuer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "The `iss` of the tokens the control plane already issued, such as `https://kubernetes.default.svc`."
+          },
+          "control_plane": {
+            "type": "object",
+            "properties": {
+              "k0s": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512,
+                    "description": "The k0s image it runs, pinned by digest; its tag is `version`."
+                  },
+                  "version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "image",
+                  "version"
+                ],
+                "additionalProperties": false
+              },
+              "network": {
+                "type": "object",
+                "properties": {
+                  "pod_cidr": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "service_cidr": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "dual_stack": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "ipv6_pod_cidr": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          },
+                          "ipv6_service_cidr": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          }
+                        },
+                        "required": [
+                          "ipv6_pod_cidr",
+                          "ipv6_service_cidr"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "pod_cidr",
+                  "service_cidr",
+                  "dual_stack"
+                ],
+                "additionalProperties": false
+              },
+              "worker_profiles": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 63
+                    },
+                    "values": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "values"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 16
+              },
+              "retained": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "tunnel-connector",
+                    "private-ingress-gateway",
+                    "local-path-storage",
+                    "metrics-server",
+                    "cni"
+                  ]
+                },
+                "maxItems": 8,
+                "description": "Components the cluster keeps running itself; Akua places none of them."
+              }
+            },
+            "required": [
+              "k0s",
+              "network",
+              "worker_profiles",
+              "retained"
+            ],
+            "additionalProperties": false
+          },
+          "keys": {
+            "type": "object",
+            "properties": {
+              "ca": {
+                "$ref": "#/components/schemas/ClusterImportKeyPair"
+              },
+              "front_proxy_ca": {
+                "$ref": "#/components/schemas/ClusterImportKeyPair"
+              },
+              "service_account": {
+                "$ref": "#/components/schemas/ClusterImportKeyPair"
+              }
+            },
+            "required": [
+              "ca",
+              "front_proxy_ca",
+              "service_account"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "cluster_id",
+          "name",
+          "region_id",
+          "service_account_issuer",
+          "control_plane",
+          "keys"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterImportKeyPair": {
+        "type": "object",
+        "properties": {
+          "public_half": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16384,
+            "description": "PEM `CERTIFICATE` for a CA, PEM `PUBLIC KEY` for the ServiceAccount key."
+          },
+          "private_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16384
+          }
+        },
+        "required": [
+          "public_half",
+          "private_key"
+        ],
+        "additionalProperties": false
+      },
       "ClusterCreateBody": {
         "anyOf": [
           {
