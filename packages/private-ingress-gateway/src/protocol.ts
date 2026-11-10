@@ -1,11 +1,24 @@
 import { Schema } from 'effect';
 
-export const ORIGIN_ROUTE_WIRE_ID_PATTERN = /^oro_[a-z0-9]+$/;
-export const ORIGIN_ROUTE_WIRE_ID_MESSAGE = 'Origin route IDs must use the oro_<id> wire format';
-
 export const OriginRouteWireIdSchema = Schema.NonEmptyString.check(
-	Schema.isPattern(ORIGIN_ROUTE_WIRE_ID_PATTERN, { message: ORIGIN_ROUTE_WIRE_ID_MESSAGE })
+	Schema.isPattern(/^oro_[a-z0-9]+$/, {
+		message: 'Origin route IDs must use the oro_<id> wire format'
+	})
 );
+
+/**
+ * The routes one gateway serves, read from its mounted file: each public host
+ * and the backend Service URL its requests go to. Only this table selects a
+ * backend; a request never names one.
+ */
+export const RouteTable = Schema.Struct({
+	routes: Schema.Array(
+		Schema.Struct({
+			public_host: Schema.NonEmptyString,
+			backend_url: Schema.URLFromString
+		})
+	)
+});
 
 export const ROUTE_TOKEN_HEADER_NAME = 'x-platform-route';
 export const FORWARDED_HOST_HEADER_NAME = 'x-forwarded-host';
@@ -20,10 +33,6 @@ export type DispatcherProbeClassification =
 	| 'not_found'
 	| 'timeout'
 	| 'origin_fetch_failed';
-
-export function requestPathForRouteToken(url: URL): string {
-	return `${url.pathname}${url.search}`;
-}
 
 export function resolveRouteTargetUrl(baseUrl: string | URL, incomingUrl: URL): URL {
 	const target = new URL(baseUrl);

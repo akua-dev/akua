@@ -1,17 +1,11 @@
 import {
-	DEFAULT_ROUTE_TOKEN_AUDIENCE,
-	verifyRouteToken,
-	type RouteTokenClaims
-} from './route-token/index';
-import {
 	FORWARDED_HOST_HEADER_NAME,
 	ROUTE_TOKEN_HEADER_NAME,
 	isTrustedForwardHeaderName,
-	requestPathForRouteToken,
 	resolveRouteTargetUrl,
 	toDispatcherKvKey
 } from './protocol';
-import { Clock, Context, Effect, Option, Redacted, Result, Schema } from 'effect';
+import { Context, Effect, Option, Redacted, Result, Schema } from 'effect';
 import { GatewayIdentityVerifier } from './identity';
 import { Socket } from 'effect/socket';
 import {
@@ -26,8 +20,6 @@ import {
 export type PrivateIngressRouteBackend = {
 	readonly url: string;
 };
-export type PrivateIngressRouteReference = Pick<RouteTokenClaims, 'public_host'> &
-	Partial<Pick<RouteTokenClaims, 'origin_route_id' | 'workspace_id' | 'install_id'>>;
 
 export class PrivateIngressRouteTableError extends Schema.TaggedError<
 	PrivateIngressRouteTableError,
@@ -37,19 +29,12 @@ export class PrivateIngressRouteTableError extends Schema.TaggedError<
 export class PrivateIngressRouteResolver extends Context.Service<
 	PrivateIngressRouteResolver,
 	{
+		/** The backend of a public host, null when the table lists none for it. */
 		readonly resolve: (
-			claims: PrivateIngressRouteReference
+			publicHost: string
 		) => Effect.Effect<PrivateIngressRouteBackend | null, PrivateIngressRouteTableError>;
 	}
 >()('platform/private-ingress-gateway/PrivateIngressRouteResolver') {}
-
-export class PrivateIngressGatewayConfig extends Context.Service<
-	PrivateIngressGatewayConfig,
-	{
-		readonly publicKeyPem?: string;
-		readonly identityAudience?: string;
-	}
->()('platform/private-ingress-gateway/PrivateIngressGatewayConfig') {}
 
 function sanitizedForwardedHost(headers: Readonly<Record<string, string>>): string | null {
 	const header = headers[FORWARDED_HOST_HEADER_NAME];
@@ -164,36 +149,15 @@ export const privateIngressGatewayApp = Effect.gen(function* () {
 	const forwardedHost = sanitizedForwardedHost(request.headers);
 	if (routeToken === undefined || forwardedHost === null) return forbidden;
 
-	const config = yield* PrivateIngressGatewayConfig;
-	const now = yield* Clock.currentTimeMillis;
-	const claims =
-		config.publicKeyPem === undefined
-			? Option.none<RouteTokenClaims>()
-			: yield* verifyRouteToken(routeToken, {
-					publicKeyPem: config.publicKeyPem,
-					now,
-					expectedAudience: DEFAULT_ROUTE_TOKEN_AUDIENCE,
-					expectedHost: forwardedHost,
-					expectedMethod: request.method,
-					expectedPath: requestPathForRouteToken(incomingUrl)
-				}).pipe(Effect.option);
-	let reference: PrivateIngressRouteReference;
-	if (Option.isSome(claims)) {
-		// Migration only: A still verifies the complete old request-bound contract.
-		reference = claims.value;
-	} else {
-		if (config.identityAudience === undefined) return forbidden;
-		const verifier = yield* Effect.serviceOption(GatewayIdentityVerifier);
-		if (Option.isNone(verifier)) return forbidden;
-		const verified = yield* verifier.value.verify(Redacted.make(routeToken)).pipe(Effect.result);
-		if (Result.isFailure(verified)) return forbidden;
-		// Identity authenticates the dispatcher for this Cluster. Only the local
-		// authoritative route table selects a backend; headers never name a URL.
-		reference = { public_host: forwardedHost };
-	}
+	// Identity authenticates the dispatcher for this Cluster. Only the local
+	// authoritative route table selects a backend; headers never name a URL.
+	const verified = yield* (yield* GatewayIdentityVerifier)
+		.verify(Redacted.make(routeToken))
+		.pipe(Effect.result);
+	if (Result.isFailure(verified)) return forbidden;
 
 	const resolver = yield* PrivateIngressRouteResolver;
-	const backendResult = yield* resolver.resolve(reference).pipe(Effect.result);
+	const backendResult = yield* resolver.resolve(forwardedHost).pipe(Effect.result);
 	if (Result.isFailure(backendResult)) return routeTableUnavailable;
 	const backend = backendResult.success;
 	if (backend === null) return routeNotFound;

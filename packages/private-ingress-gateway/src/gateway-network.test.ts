@@ -1,91 +1,108 @@
 import { BunFileSystem, BunHttpServer, BunSocket } from '@effect/platform-bun';
 import { expect, it } from '@effect/vitest';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
-import { RouteTokenCrypto, signRouteToken } from './route-token/index';
 import { Clock, ConfigProvider, Context, Effect, Layer, Ref, Schedule } from 'effect';
 import { Socket } from 'effect/socket';
 import { HttpRouter, HttpServer, HttpServerRequest, HttpServerResponse } from 'effect/http';
 import { privateIngressGatewayApp } from './gateway';
 import { privateIngressGatewayServices, privateIngressUpstreamClient } from './index';
 
-const pem = (label: string, bytes: ArrayBuffer) =>
-	`-----BEGIN ${label}-----\n${btoa(String.fromCharCode(...new Uint8Array(bytes)))}\n-----END ${label}-----`;
+const issuer = 'https://id.akua.dev';
+const clusterAudience = 'private-ingress-gateway:clu_gateway123';
 
-it.live('accepts cluster tokens, overlapping kids and legacy A while surviving a JWKS outage', () =>
-	Effect.gen(function* () {
-		const current = yield* Effect.promise(() => generateKeyPair('ES256', { extractable: true }));
-		const retiring = yield* Effect.promise(() => generateKeyPair('ES256', { extractable: true }));
-		const legacy = yield* Effect.promise(() => generateKeyPair('ES256', { extractable: true }));
-		const legacyPublic = pem(
-			'PUBLIC KEY',
-			yield* Effect.promise(() => crypto.subtle.exportKey('spki', legacy.publicKey))
-		);
-		const legacyPrivate = pem(
-			'PRIVATE KEY',
-			yield* Effect.promise(() => crypto.subtle.exportKey('pkcs8', legacy.privateKey))
-		);
-		const published = {
-			keys: [
-				{
-					...(yield* Effect.promise(() => exportJWK(current.publicKey))),
-					kid: 'current',
-					alg: 'ES256',
-					use: 'sig'
-				},
-				{
-					...(yield* Effect.promise(() => exportJWK(retiring.publicKey))),
-					kid: 'retiring',
-					alg: 'ES256',
-					use: 'sig'
+/**
+ * Identity in front of the gateway: a JWKS endpoint publishing a current and a
+ * retiring key, and the dispatcher's tokens signed with either.
+ */
+const identityAuthority = Effect.gen(function* () {
+	const current = yield* Effect.promise(() => generateKeyPair('ES256', { extractable: true }));
+	const retiring = yield* Effect.promise(() => generateKeyPair('ES256', { extractable: true }));
+	const published = {
+		keys: [
+			{
+				...(yield* Effect.promise(() => exportJWK(current.publicKey))),
+				kid: 'current',
+				alg: 'ES256',
+				use: 'sig'
+			},
+			{
+				...(yield* Effect.promise(() => exportJWK(retiring.publicKey))),
+				kid: 'retiring',
+				alg: 'ES256',
+				use: 'sig'
+			}
+		]
+	};
+	const state = { available: true, reads: 0 };
+	const server = yield* Effect.acquireRelease(
+		Effect.sync(() =>
+			Bun.serve({
+				hostname: '127.0.0.1',
+				port: 0,
+				fetch: () => {
+					state.reads++;
+					return state.available ? Response.json(published) : new Response(null, { status: 503 });
 				}
-			]
-		};
-		let available = true;
-		let reads = 0;
-		const authority = yield* Effect.acquireRelease(
-			Effect.sync(() =>
-				Bun.serve({
-					hostname: '127.0.0.1',
-					port: 0,
-					fetch: () => {
-						reads++;
-						return available ? Response.json(published) : new Response(null, { status: 503 });
-					}
-				})
-			),
-			(server) => Effect.promise(() => server.stop(true))
+			})
+		),
+		(server) => Effect.promise(() => server.stop(true))
+	);
+	const origin = `http://127.0.0.1:${server.port}`;
+	const sign = Effect.fnUntraced(function* (
+		kid = 'current',
+		audience = clusterAudience,
+		expired = false,
+		overrides: {
+			readonly issuer?: string;
+			readonly subject?: string;
+			readonly scope?: string;
+			readonly issuedOffset?: number;
+			readonly lifetime?: number;
+			readonly omitKid?: boolean;
+		} = {}
+	) {
+		const now = Math.floor((yield* Clock.currentTimeMillis) / 1000);
+		return yield* Effect.promise(() =>
+			new SignJWT({ scope: overrides.scope ?? 'gateway:route' })
+				.setProtectedHeader({ alg: 'ES256', ...(overrides.omitKid ? {} : { kid }) })
+				.setIssuer(overrides.issuer ?? issuer)
+				.setSubject(overrides.subject ?? 'service:domain-dispatcher')
+				.setAudience(audience)
+				.setIssuedAt(expired ? now - 61 : now + (overrides.issuedOffset ?? 0))
+				.setExpirationTime(expired ? now - 1 : now + (overrides.lifetime ?? 60))
+				.sign(kid === 'retiring' ? retiring.privateKey : current.privateKey)
 		);
-		const jwksOrigin = `http://127.0.0.1:${authority.port}`;
-		const issuer = 'https://id.akua.dev';
+	});
+	return { server, origin, state, sign };
+});
+
+/** The gateway's own configuration: Identity for this Cluster and a table of one route. */
+const gatewayEnvironment = (jwksOrigin: string, backendUrl: string) =>
+	privateIngressGatewayServices.pipe(
+		Layer.provide(
+			ConfigProvider.layer(
+				ConfigProvider.fromUnknown({
+					PRIVATE_INGRESS_GATEWAY_CLUSTER_ID: 'clu_gateway123',
+					PRIVATE_INGRESS_GATEWAY_IDENTITY_ISSUER: issuer,
+					PRIVATE_INGRESS_GATEWAY_IDENTITY_JWKS_URL: `${jwksOrigin}/.well-known/jwks.json`,
+					PRIVATE_INGRESS_GATEWAY_ROUTE_TABLE: JSON.stringify({
+						routes: [{ public_host: 'app.acme.example', backend_url: backendUrl }]
+					})
+				})
+			)
+		),
+		Layer.provide(BunFileSystem.layer)
+	);
+
+it.live('accepts cluster tokens and overlapping kids while surviving a JWKS outage', () =>
+	Effect.gen(function* () {
+		const identity = yield* identityAuthority;
+		const jwksOrigin = identity.origin;
 		const handler = HttpRouter.toWebHandler(
 			HttpRouter.add('*', '/*', privateIngressGatewayApp).pipe(
 				Layer.provideMerge(
 					Layer.mergeAll(
-						privateIngressGatewayServices.pipe(
-							Layer.provide(
-								ConfigProvider.layer(
-									ConfigProvider.fromUnknown({
-										PRIVATE_INGRESS_GATEWAY_PUBLIC_KEY: legacyPublic,
-										PRIVATE_INGRESS_GATEWAY_CLUSTER_ID: 'clu_gateway123',
-										PRIVATE_INGRESS_GATEWAY_IDENTITY_ISSUER: issuer,
-										PRIVATE_INGRESS_GATEWAY_IDENTITY_JWKS_URL: `${jwksOrigin}/.well-known/jwks.json`,
-										PRIVATE_INGRESS_GATEWAY_ROUTE_TABLE: JSON.stringify({
-											routes: [
-												{
-													origin_route_id: 'oro_123',
-													public_host: 'app.acme.example',
-													workspace_id: 'ws_gateway',
-													install_id: 'inst_gateway',
-													backend_url: jwksOrigin
-												}
-											]
-										})
-									})
-								)
-							),
-							Layer.provide(BunFileSystem.layer)
-						),
-						RouteTokenCrypto.layer,
+						gatewayEnvironment(jwksOrigin, jwksOrigin),
 						BunSocket.layerWebSocketConstructor,
 						privateIngressUpstreamClient
 					)
@@ -94,31 +111,7 @@ it.live('accepts cluster tokens, overlapping kids and legacy A while surviving a
 			{ disableLogger: true }
 		);
 		yield* Effect.addFinalizer(() => Effect.promise(() => handler.dispose()));
-		const sign = Effect.fnUntraced(function* (
-			kid = 'current',
-			audience = 'private-ingress-gateway:clu_gateway123',
-			expired = false,
-			overrides: {
-				readonly issuer?: string;
-				readonly subject?: string;
-				readonly scope?: string;
-				readonly issuedOffset?: number;
-				readonly lifetime?: number;
-				readonly omitKid?: boolean;
-			} = {}
-		) {
-			const now = Math.floor((yield* Clock.currentTimeMillis) / 1000);
-			return yield* Effect.promise(() =>
-				new SignJWT({ scope: overrides.scope ?? 'gateway:route' })
-					.setProtectedHeader({ alg: 'ES256', ...(overrides.omitKid ? {} : { kid }) })
-					.setIssuer(overrides.issuer ?? issuer)
-					.setSubject(overrides.subject ?? 'service:domain-dispatcher')
-					.setAudience(audience)
-					.setIssuedAt(expired ? now - 61 : now + (overrides.issuedOffset ?? 0))
-					.setExpirationTime(expired ? now - 1 : now + (overrides.lifetime ?? 60))
-					.sign(kid === 'retiring' ? retiring.privateKey : current.privateKey)
-			);
-		});
+		const sign = identity.sign;
 		const request = (token: string, path = '/one') =>
 			Effect.promise(() =>
 				handler.handler(
@@ -150,45 +143,21 @@ it.live('accepts cluster tokens, overlapping kids and legacy A while surviving a
 				403
 			);
 		}
-		const oldToken = yield* signRouteToken({
-			privateKeyPem: legacyPrivate,
-			now: yield* Clock.currentTimeMillis,
-			claims: {
-				workspace_id: 'ws_gateway',
-				install_id: 'inst_gateway',
-				origin_route_id: 'oro_123',
-				public_host: 'app.acme.example',
-				method: 'GET',
-				path: '/one'
-			}
-		});
-		expect((yield* request(oldToken)).status).toBe(200);
-		expect((yield* request(oldToken, '/another')).status).toBe(403);
-		available = false;
-		const warmedReads = reads;
+		identity.state.available = false;
+		const warmedReads = identity.state.reads;
 		expect((yield* request(token)).status).toBe(503); // backend is the same HTTP origin; auth still succeeds
-		expect(reads).toBe(warmedReads + 1);
-		yield* Effect.promise(() => authority.stop(true));
+		expect(identity.state.reads).toBe(warmedReads + 1);
+		yield* Effect.promise(() => identity.server.stop(true));
 		// The endpoint is now actually unreachable. The cached JWKS still verifies.
 		// Authentication still succeeds; only the separate backend hop returns 502.
 		expect((yield* request(yield* sign())).status).toBe(502);
-	}).pipe(Effect.scoped, Effect.provide(RouteTokenCrypto.layer))
+	}).pipe(Effect.scoped)
 );
 
-it.live('forwards a signed request to the configured backend without duplicating its query', () =>
+it.live('forwards a routed request to its table backend without duplicating its query', () =>
 	Effect.gen(function* () {
+		const identity = yield* identityAuthority;
 		const compressed = Bun.gzipSync('upstream-response');
-		const keys = yield* Effect.promise(() =>
-			crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])
-		);
-		const privateKey = pem(
-			'PRIVATE KEY',
-			yield* Effect.promise(() => crypto.subtle.exportKey('pkcs8', keys.privateKey))
-		);
-		const publicKey = pem(
-			'PUBLIC KEY',
-			yield* Effect.promise(() => crypto.subtle.exportKey('spki', keys.publicKey))
-		);
 		const upstreamContext = yield* Layer.build(BunHttpServer.layerTest);
 		const upstream = Context.get(upstreamContext, HttpServer.HttpServer);
 		if (upstream.address._tag === 'UnixPathAddress')
@@ -212,28 +181,7 @@ it.live('forwards a signed request to the configured backend without duplicating
 			HttpRouter.add('*', '/*', privateIngressGatewayApp).pipe(
 				Layer.provideMerge(
 					Layer.mergeAll(
-						privateIngressGatewayServices.pipe(
-							Layer.provide(
-								ConfigProvider.layer(
-									ConfigProvider.fromUnknown({
-										PRIVATE_INGRESS_GATEWAY_PUBLIC_KEY: publicKey,
-										PRIVATE_INGRESS_GATEWAY_ROUTE_TABLE: JSON.stringify({
-											routes: [
-												{
-													origin_route_id: 'oro_123',
-													public_host: 'app.acme.example',
-													workspace_id: 'ws_gateway',
-													install_id: 'inst_gateway',
-													backend_url: `http://127.0.0.1:${upstream.address.port}`
-												}
-											]
-										})
-									})
-								)
-							),
-							Layer.provide(BunFileSystem.layer)
-						),
-						RouteTokenCrypto.layer,
+						gatewayEnvironment(identity.origin, `http://127.0.0.1:${upstream.address.port}`),
 						BunSocket.layerWebSocketConstructor,
 						privateIngressUpstreamClient
 					)
@@ -242,19 +190,7 @@ it.live('forwards a signed request to the configured backend without duplicating
 			{ disableLogger: true }
 		);
 		yield* Effect.addFinalizer(() => Effect.promise(() => gateway.dispose()));
-		const token = yield* signRouteToken({
-			privateKeyPem: privateKey,
-			now: yield* Clock.currentTimeMillis,
-			jti: 'gateway-network-test',
-			claims: {
-				workspace_id: 'ws_gateway',
-				install_id: 'inst_gateway',
-				origin_route_id: 'oro_123',
-				public_host: 'app.acme.example',
-				method: 'GET',
-				path: '/orders?include=items'
-			}
-		});
+		const token = yield* identity.sign();
 		const request = new Request('http://gateway/orders?include=items', {
 			headers: {
 				'X-Forwarded-Host': 'App.Acme.Example.',
@@ -275,24 +211,14 @@ it.live('forwards a signed request to the configured backend without duplicating
 		expect(forwarded?.headers['x-platform-route']).toBeUndefined();
 		expect(forwarded?.headers['x-forwarded-for']).toBeUndefined();
 		expect(forwarded?.headers['cf-connecting-ip']).toBeUndefined();
-	}).pipe(Effect.scoped, Effect.provide(RouteTokenCrypto.layer))
+	}).pipe(Effect.scoped)
 );
 
 it.live(
-	'relays signed WebSocket text and binary frames with exact public request metadata and peer close',
+	'relays routed WebSocket text and binary frames with exact public request metadata and peer close',
 	() =>
 		Effect.gen(function* () {
-			const keys = yield* Effect.promise(() =>
-				crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])
-			);
-			const privateKey = pem(
-				'PRIVATE KEY',
-				yield* Effect.promise(() => crypto.subtle.exportKey('pkcs8', keys.privateKey))
-			);
-			const publicKey = pem(
-				'PUBLIC KEY',
-				yield* Effect.promise(() => crypto.subtle.exportKey('spki', keys.publicKey))
-			);
+			const identity = yield* identityAuthority;
 			const upstreamContext = yield* Layer.build(BunHttpServer.layerTest);
 			const upstream = Context.get(upstreamContext, HttpServer.HttpServer);
 			const gatewayContext = yield* Layer.build(BunHttpServer.layerTest);
@@ -332,55 +258,18 @@ it.live(
 				})
 			);
 			const services = Layer.mergeAll(
-				privateIngressGatewayServices.pipe(
-					Layer.provide(
-						ConfigProvider.layer(
-							ConfigProvider.fromUnknown({
-								PRIVATE_INGRESS_GATEWAY_PUBLIC_KEY: publicKey,
-								PRIVATE_INGRESS_GATEWAY_ROUTE_TABLE: JSON.stringify({
-									routes: [
-										{
-											origin_route_id: 'oro_123',
-											public_host: 'app.acme.example',
-											workspace_id: 'ws_gateway',
-											install_id: 'inst_gateway',
-											backend_url: `http://127.0.0.1:${upstream.address.port}`
-										}
-									]
-								})
-							})
-						)
-					),
-					Layer.provide(BunFileSystem.layer)
-				),
-				RouteTokenCrypto.layer,
+				gatewayEnvironment(identity.origin, `http://127.0.0.1:${upstream.address.port}`),
 				privateIngressUpstreamClient,
 				BunSocket.layerWebSocketConstructor
 			);
 			yield* gateway.serve(privateIngressGatewayApp).pipe(Effect.provide(services));
-			const token = yield* signRouteToken({
-				privateKeyPem: privateKey,
-				now: yield* Clock.currentTimeMillis,
-				jti: 'websocket-network',
-				claims: {
-					workspace_id: 'ws_gateway',
-					install_id: 'inst_gateway',
-					origin_route_id: 'oro_123',
-					public_host: 'app.acme.example',
-					method: 'GET',
-					path: '/rest/push?pushRef=signed'
-				}
-			});
-			const connect = (
-				path = '/rest/push?pushRef=signed',
-				signedToken = token,
-				protocols?: string[]
-			) =>
-				Socket.makeWebSocket(`ws://127.0.0.1:${gatewayPort}${path}`, {
+			const token = yield* identity.sign();
+			const connect = (host = 'app.acme.example', routeToken = token, protocols?: string[]) =>
+				Socket.makeWebSocket(`ws://127.0.0.1:${gatewayPort}/rest/push?pushRef=signed`, {
 					protocols,
 					headers: {
-						'x-platform-route': signedToken,
-						'x-forwarded-host': 'app.acme.example',
+						'x-platform-route': routeToken,
+						'x-forwarded-host': host,
 						'x-forwarded-proto': 'http',
 						'x-forwarded-for': 'spoofed',
 						'cf-connecting-ip': 'spoofed',
@@ -390,7 +279,7 @@ it.live(
 					}
 				});
 			for (const socket of [
-				yield* connect('/rest/push?pushRef=tampered'),
+				yield* connect('unlisted.acme.example'),
 				yield* connect(undefined, 'invalid'),
 				yield* connect(undefined, token, ['unsupported'])
 			]) {
@@ -441,7 +330,7 @@ it.live(
 			);
 		}).pipe(
 			Effect.scoped,
-			Effect.provide(Layer.merge(RouteTokenCrypto.layer, BunSocket.layerWebSocketConstructor)),
+			Effect.provide(BunSocket.layerWebSocketConstructor),
 			Effect.timeout('10 seconds')
 		)
 );

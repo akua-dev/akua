@@ -36,28 +36,12 @@
               "default": "",
               "type": "string"
             },
-            "mountPublicKeySecret": {
-              "default": true,
-              "type": "boolean"
-            },
             "mountRouteTableConfigMap": {
               "default": true,
               "type": "boolean"
             },
             "otelEndpoint": {
               "default": "",
-              "type": "string"
-            },
-            "publicKeyPath": {
-              "default": "/var/run/private-ingress-gateway/public-key.pem",
-              "type": "string"
-            },
-            "publicKeySecretKey": {
-              "default": "public-key.pem",
-              "type": "string"
-            },
-            "publicKeySecretName": {
-              "default": "private-ingress-gateway-route-token-public-key",
               "type": "string"
             },
             "routeTableConfigMapKey": {

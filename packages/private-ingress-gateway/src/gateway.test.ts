@@ -1,8 +1,6 @@
-import { beforeAll, expect, layer } from '@effect/vitest';
+import { expect, layer } from '@effect/vitest';
 import { BunSocket } from '@effect/platform-bun';
-import { RouteTokenCrypto, signRouteToken } from './route-token/index';
-import { Effect, Layer, Stream } from 'effect';
-import { TestClock } from 'effect/testing';
+import { Effect, Layer, Redacted, Stream } from 'effect';
 import {
 	HttpClient,
 	HttpClientError,
@@ -14,49 +12,39 @@ import {
 	Cookies,
 	UrlParams
 } from 'effect/http';
-
+import { GatewayIdentityError, GatewayIdentityVerifier } from './identity';
 import {
-	PrivateIngressGatewayConfig,
 	PrivateIngressRouteResolver,
 	PrivateIngressRouteTableError,
 	privateIngressGatewayApp
 } from './gateway';
 
-const NOW = 1_700_000_000_000;
-let privateKeyPem: string;
-let publicKeyPem: string;
+const dispatcherToken = 'dispatcher-token';
 
-function bytesToPem(label: string, bytes: ArrayBuffer): string {
-	const binary = String.fromCharCode(...new Uint8Array(bytes));
-	const base64 = btoa(binary);
-	const lines = base64.match(/.{1,64}/g) ?? [];
-	return `-----BEGIN ${label}-----\n${lines.join('\n')}\n-----END ${label}-----`;
-}
+/** Identity's verdict on the dispatcher's token; the JWKS path itself is covered in gateway-network.test.ts. */
+const verifier = Layer.succeed(GatewayIdentityVerifier)({
+	verify: (token) =>
+		Redacted.value(token) === dispatcherToken
+			? Effect.succeed({
+					iss: 'https://id.akua.dev',
+					sub: 'service:domain-dispatcher' as const,
+					aud: 'gateway:ro_gateway',
+					iat: 1,
+					exp: 2,
+					scope: 'gateway:route'
+				})
+			: Effect.fail(new GatewayIdentityError())
+});
 
-const BoundaryServices = Layer.merge(RouteTokenCrypto.layer, BunSocket.layerWebSocketConstructor);
-
-layer(BoundaryServices)('gateway request boundary', (it) => {
-	beforeAll(() =>
-		Effect.runPromise(
-			Effect.gen(function* () {
-				const keys = yield* Effect.promise(() =>
-					crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, [
-						'sign',
-						'verify'
-					])
-				);
-				privateKeyPem = bytesToPem(
-					'PRIVATE KEY',
-					yield* Effect.promise(() => crypto.subtle.exportKey('pkcs8', keys.privateKey))
-				);
-				publicKeyPem = bytesToPem(
-					'PUBLIC KEY',
-					yield* Effect.promise(() => crypto.subtle.exportKey('spki', keys.publicKey))
-				);
-			})
-		)
+/** The mounted table: one public host, one backend. */
+const table: PrivateIngressRouteResolver['Service']['resolve'] = (publicHost) =>
+	Effect.succeed(
+		publicHost === 'app.acme.example'
+			? { url: 'http://orders.default.svc.cluster.local:8080' }
+			: null
 	);
 
+layer(BunSocket.layerWebSocketConstructor)('gateway request boundary', (it) => {
 	const runRequest = (
 		request: Request,
 		options: {
@@ -66,12 +54,8 @@ layer(BoundaryServices)('gateway request boundary', (it) => {
 		} = {}
 	) => {
 		const dependencies = Layer.mergeAll(
-			Layer.succeed(PrivateIngressGatewayConfig)({ publicKeyPem }),
-			Layer.succeed(PrivateIngressRouteResolver)({
-				resolve:
-					options.resolve ??
-					(() => Effect.succeed({ url: 'http://orders.default.svc.cluster.local:8080' }))
-			}),
+			verifier,
+			Layer.succeed(PrivateIngressRouteResolver)({ resolve: options.resolve ?? table }),
 			Layer.succeed(HttpClient.HttpClient)(
 				HttpClient.make(
 					options.execute ??
@@ -85,8 +69,7 @@ layer(BoundaryServices)('gateway request boundary', (it) => {
 				)
 			)
 		);
-		return TestClock.setTime(NOW).pipe(
-			Effect.andThen(privateIngressGatewayApp),
+		return privateIngressGatewayApp.pipe(
 			Effect.provideService(
 				HttpServerRequest.HttpServerRequest,
 				HttpServerRequest.fromWeb(request)
@@ -95,30 +78,14 @@ layer(BoundaryServices)('gateway request boundary', (it) => {
 		);
 	};
 
-	const signedRequest = Effect.fn('PrivateIngressGatewayTest.signedRequest')(function* (
-		headers: Record<string, string> = {}
-	) {
-		const token = yield* signRouteToken({
-			privateKeyPem,
-			now: NOW,
-			jti: 'gateway-test',
-			claims: {
-				workspace_id: 'ws_gateway',
-				install_id: 'inst_gateway',
-				origin_route_id: 'oro_123',
-				public_host: 'app.acme.example',
-				method: 'GET',
-				path: '/orders?include=items'
-			}
-		});
-		return new Request('https://origin.example/orders?include=items', {
+	const routedRequest = (headers: Record<string, string> = {}) =>
+		new Request('https://origin.example/orders?include=items', {
 			headers: {
 				'X-Forwarded-Host': 'app.acme.example',
-				'X-Platform-Route': token,
+				'X-Platform-Route': dispatcherToken,
 				...headers
 			}
 		});
-	});
 
 	it.effect('serves health checks without route dependencies', () =>
 		Effect.gen(function* () {
@@ -128,24 +95,11 @@ layer(BoundaryServices)('gateway request boundary', (it) => {
 	);
 
 	it.effect(
-		'forwards signed application health checks instead of replacing their JSON response',
+		'forwards routed application health checks instead of replacing their JSON response',
 		() =>
 			Effect.gen(function* () {
-				const token = yield* signRouteToken({
-					privateKeyPem,
-					now: NOW,
-					jti: 'app-health-test',
-					claims: {
-						workspace_id: 'ws_gateway',
-						install_id: 'inst_gateway',
-						origin_route_id: 'oro_123',
-						public_host: 'app.acme.example',
-						method: 'GET',
-						path: '/healthz'
-					}
-				});
 				const request = new Request('http://gateway/healthz', {
-					headers: { 'x-platform-route': token, 'x-forwarded-host': 'app.acme.example' }
+					headers: { 'x-platform-route': dispatcherToken, 'x-forwarded-host': 'app.acme.example' }
 				});
 				const response = yield* runRequest(request, {
 					upstream: Response.json({ status: 'ok' })
@@ -175,11 +129,17 @@ layer(BoundaryServices)('gateway request boundary', (it) => {
 		})
 	);
 
-	it.effect('forwards only a route whose signed claims match the request', () =>
+	it.effect('forwards a request the dispatcher authenticated to the backend of its host', () =>
 		Effect.gen(function* () {
-			const response = yield* runRequest(yield* signedRequest());
-
+			let resolved: string | undefined;
+			const response = yield* runRequest(routedRequest(), {
+				resolve: (publicHost) => {
+					resolved = publicHost;
+					return table(publicHost);
+				}
+			});
 			expect(response.status).toBe(204);
+			expect(resolved).toBe('app.acme.example');
 		})
 	);
 
@@ -188,7 +148,7 @@ layer(BoundaryServices)('gateway request boundary', (it) => {
 			const headers = new globalThis.Headers();
 			headers.append('set-cookie', 'session=one; Path=/');
 			headers.append('set-cookie', 'preference=two; Path=/');
-			const response = yield* runRequest(yield* signedRequest(), {
+			const response = yield* runRequest(routedRequest(), {
 				upstream: new Response(null, { status: 204, headers })
 			});
 
@@ -202,7 +162,7 @@ layer(BoundaryServices)('gateway request boundary', (it) => {
 
 	it.effect('preserves routing failure status contracts', () =>
 		Effect.gen(function* () {
-			const request = yield* signedRequest();
+			const request = routedRequest();
 			expect((yield* runRequest(request, { resolve: () => Effect.succeed(null) })).status).toBe(
 				404
 			);
@@ -223,7 +183,7 @@ layer(BoundaryServices)('gateway request boundary', (it) => {
 			Effect.gen(function* () {
 				let forwarded: HttpClientRequest.HttpClientRequest | undefined;
 				const response = yield* runRequest(
-					yield* signedRequest({
+					routedRequest({
 						'CF-Connecting-IP': '203.0.113.1',
 						'X-Real-IP': '203.0.113.2',
 						Forwarded: 'host=attacker.example;proto=http',
@@ -264,18 +224,26 @@ layer(BoundaryServices)('gateway request boundary', (it) => {
 			})
 	);
 
-	it.effect('rejects a public host that differs from the signed route before forwarding', () =>
+	it.effect('answers 404 for a public host its table does not list, before forwarding', () =>
 		Effect.gen(function* () {
+			let forwarded = false;
 			const response = yield* runRequest(
-				yield* signedRequest({ 'X-Forwarded-Host': 'attacker.example' })
+				routedRequest({ 'X-Forwarded-Host': 'attacker.example' }),
+				{
+					execute: (request) => {
+						forwarded = true;
+						return Effect.succeed(HttpClientResponse.fromWeb(request, new Response('leak')));
+					}
+				}
 			);
-			expect(response.status).toBe(403);
+			expect(response.status).toBe(404);
+			expect(forwarded).toBe(false);
 		})
 	);
 
 	it.effect('translates upstream transport failures to bad gateway', () =>
 		Effect.gen(function* () {
-			const response = yield* runRequest(yield* signedRequest(), {
+			const response = yield* runRequest(routedRequest(), {
 				execute: (request) =>
 					Effect.fail(
 						new HttpClientError.HttpClientError({
@@ -291,26 +259,13 @@ layer(BoundaryServices)('gateway request boundary', (it) => {
 		Effect.gen(function* () {
 			const encoder = new TextEncoder();
 			const decoder = new TextDecoder();
-			const token = yield* signRouteToken({
-				privateKeyPem,
-				now: NOW,
-				jti: 'gateway-stream-test',
-				claims: {
-					workspace_id: 'ws_gateway',
-					install_id: 'inst_gateway',
-					origin_route_id: 'oro_123',
-					public_host: 'app.acme.example',
-					method: 'POST',
-					path: '/stream'
-				}
-			});
 			const request = new Request('https://origin.example/stream', {
 				method: 'POST',
 				duplex: 'half',
 				headers: {
 					'Content-Type': 'application/octet-stream',
 					'X-Forwarded-Host': 'app.acme.example',
-					'X-Platform-Route': token
+					'X-Platform-Route': dispatcherToken
 				},
 				body: new ReadableStream({
 					start(controller) {

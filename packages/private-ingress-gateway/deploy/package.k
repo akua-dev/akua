@@ -16,12 +16,8 @@ schema Environment:
     identityIssuer?: str = "https://id.akua.dev"
     identityJwksUrl?: str = ""
     identityAudience?: str = ""
-    mountPublicKeySecret?: bool = True
     mountRouteTableConfigMap?: bool = True
-    publicKeyPath?: str = "/var/run/private-ingress-gateway/public-key.pem"
     routeTablePath?: str = "/var/run/private-ingress-gateway-routes/routes.json"
-    publicKeySecretName?: str = "private-ingress-gateway-route-token-public-key"
-    publicKeySecretKey?: str = "public-key.pem"
     routeTableConfigMapName?: str = "private-ingress-gateway-route-table"
     routeTableConfigMapKey?: str = "routes.json"
     otelEndpoint?: str = ""
@@ -57,14 +53,10 @@ _resource_limits = _values.resources.limits or {}
 _name = "private-ingress-gateway"
 _labels = {"app.kubernetes.io/name" = _name, "app.kubernetes.io/instance" = _name}
 _mounts = [
-    if _values.env.mountPublicKeySecret:
-        corev1.VolumeMount {name = "route-token-public-key", mountPath = "/var/run/private-ingress-gateway", readOnly = True}
     if _values.env.mountRouteTableConfigMap:
         corev1.VolumeMount {name = "route-table", mountPath = "/var/run/private-ingress-gateway-routes", readOnly = True}
 ] + _values.extraVolumeMounts
 _volumes = [
-    if _values.env.mountPublicKeySecret:
-        corev1.Volume {name = "route-token-public-key", secret = {secretName = _values.env.publicKeySecretName, items = [{key = _values.env.publicKeySecretKey, path = "public-key.pem"}]}}
     if _values.env.mountRouteTableConfigMap:
         corev1.Volume {name = "route-table", configMap = {name = _values.env.routeTableConfigMapName, items = [{key = _values.env.routeTableConfigMapKey, path = "routes.json"}]}}
 ] + _values.extraVolumes
@@ -99,7 +91,6 @@ resources = [
                                 if _values.env.identityJwksUrl:
                                     {name = "PRIVATE_INGRESS_GATEWAY_IDENTITY_JWKS_URL", value = _values.env.identityJwksUrl}
                             {name = "PRIVATE_INGRESS_GATEWAY_PORT", value = str(_values.service.port)}
-                            {name = "PRIVATE_INGRESS_GATEWAY_PUBLIC_KEY_PATH", value = _values.env.publicKeyPath}
                             {name = "PRIVATE_INGRESS_GATEWAY_ROUTE_TABLE_PATH", value = _values.env.routeTablePath}
                             if _values.env.otelEndpoint:
                                 {name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = _values.env.otelEndpoint}

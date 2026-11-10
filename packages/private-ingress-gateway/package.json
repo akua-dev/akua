@@ -6,7 +6,6 @@
 	"license": "Apache-2.0",
 	"exports": {
 		".": "./src/index.ts",
-		"./route-token": "./src/route-token/index.ts",
 		"./protocol": "./src/protocol.ts",
 		"./deployment-schema": "./deploy/input.schema.json"
 	},

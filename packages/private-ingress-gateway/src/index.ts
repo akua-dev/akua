@@ -2,18 +2,12 @@ import * as BunHttpServer from '@effect/platform-bun/BunHttpServer';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunSocket from '@effect/platform-bun/BunSocket';
-import {
-	ORIGIN_ROUTE_WIRE_ID_MESSAGE,
-	ORIGIN_ROUTE_WIRE_ID_PATTERN,
-	toDispatcherKvKey
-} from './protocol';
-import { RouteTokenCrypto } from './route-token/index';
+import { RouteTable, toDispatcherKvKey } from './protocol';
 import { ClusterId } from './identity';
 import { GatewayIdentityVerifier } from './identity';
 import { Config, Context, Effect, FileSystem, Layer, Option, Ref, Result, Schema } from 'effect';
 import { FetchHttpClient, HttpServer } from 'effect/http';
 import {
-	PrivateIngressGatewayConfig,
 	PrivateIngressRouteResolver,
 	PrivateIngressRouteTableError,
 	privateIngressGatewayApp,
@@ -21,33 +15,13 @@ import {
 } from './gateway';
 import { privateIngressTelemetryLayer } from './telemetry';
 
-const OriginRouteWireIdSchema = Schema.String.pipe(
-	Schema.check(
-		Schema.isPattern(ORIGIN_ROUTE_WIRE_ID_PATTERN, {
-			message: ORIGIN_ROUTE_WIRE_ID_MESSAGE
-		})
-	)
-);
-
-const RouteTableSchema = Schema.Struct({
-	routes: Schema.Array(
-		Schema.Struct({
-			origin_route_id: OriginRouteWireIdSchema,
-			public_host: Schema.NonEmptyString,
-			workspace_id: Schema.NonEmptyString,
-			install_id: Schema.NonEmptyString,
-			backend_url: Schema.URLFromString
-		})
-	)
-});
-const RouteTableJsonSchema = Schema.fromJsonString(RouteTableSchema);
-type RouteTable = typeof RouteTableSchema.Type;
+const RouteTableJsonSchema = Schema.fromJsonString(RouteTable);
 
 export class PrivateIngressGatewayStartupError extends Schema.TaggedError<
 	PrivateIngressGatewayStartupError,
 	{ readonly brand: unique symbol }
 >()('PrivateIngressGatewayStartupError', {
-	operation: Schema.Literals(['configuration', 'public_key', 'route_table']),
+	operation: Schema.Literals(['configuration', 'route_table']),
 	cause: Schema.Defect()
 }) {}
 
@@ -67,8 +41,6 @@ const environmentConfig = Effect.all({
 	identityIssuer: Config.NonEmptyString('PRIVATE_INGRESS_GATEWAY_IDENTITY_ISSUER').pipe(
 		Config.withDefault('https://id.akua.dev')
 	),
-	publicKey: Config.option(Config.NonEmptyString('PRIVATE_INGRESS_GATEWAY_PUBLIC_KEY')),
-	publicKeyPath: Config.option(Config.NonEmptyString('PRIVATE_INGRESS_GATEWAY_PUBLIC_KEY_PATH')),
 	routeTable: Config.option(Config.NonEmptyString('PRIVATE_INGRESS_GATEWAY_ROUTE_TABLE')),
 	routeTablePath: Config.option(Config.NonEmptyString('PRIVATE_INGRESS_GATEWAY_ROUTE_TABLE_PATH'))
 });
@@ -82,89 +54,16 @@ const parseRouteTable = (source: string) =>
 		)
 	);
 
-const readConfiguredText = Effect.fn('PrivateIngressGateway.readConfiguredText')(function* (args: {
-	readonly inline: Option.Option<string>;
-	readonly path: Option.Option<string>;
-	readonly operation: 'public_key' | 'route_table';
-}) {
-	if (Option.isSome(args.inline)) return args.inline.value;
-	if (Option.isNone(args.path)) {
-		return yield* new PrivateIngressGatewayStartupError({
-			operation: 'configuration',
-			cause: `${args.operation} inline value or path is required`
-		});
-	}
-	const fs = yield* FileSystem.FileSystem;
-	return yield* fs
-		.readFileString(args.path.value)
-		.pipe(
-			Effect.mapError(
-				(cause) => new PrivateIngressGatewayStartupError({ operation: args.operation, cause })
-			)
-		);
-});
-
-function routeKey(args: {
-	readonly originRouteId: string;
-	readonly publicHost: string;
-	readonly workspaceId: string;
-	readonly installId: string;
-}): string {
-	return [
-		args.originRouteId,
-		toDispatcherKvKey(args.publicHost),
-		args.workspaceId,
-		args.installId
-	].join('\0');
-}
-
+/** Host to backend; a host listed twice serves nothing, since no request can choose between them. */
 function compileRouteTable(
-	routeTable: RouteTable
+	routeTable: typeof RouteTable.Type
 ): ReadonlyMap<string, PrivateIngressRouteBackend | null> {
 	const routes = new Map<string, PrivateIngressRouteBackend | null>();
 	for (const route of routeTable.routes) {
-		const hostKey = `host\0${toDispatcherKvKey(route.public_host)}`;
-		// A duplicate host cannot be disambiguated by a cluster-scoped token.
-		routes.set(hostKey, routes.has(hostKey) ? null : { url: route.backend_url.toString() });
-		routes.set(
-			routeKey({
-				originRouteId: route.origin_route_id,
-				publicHost: route.public_host,
-				workspaceId: route.workspace_id,
-				installId: route.install_id
-			}),
-			{ url: route.backend_url.toString() }
-		);
+		const host = toDispatcherKvKey(route.public_host);
+		routes.set(host, routes.has(host) ? null : { url: route.backend_url.toString() });
 	}
 	return routes;
-}
-
-function resolveRoute(
-	routes: ReadonlyMap<string, PrivateIngressRouteBackend | null>,
-	claims: Parameters<PrivateIngressRouteResolver['Service']['resolve']>[0]
-): PrivateIngressRouteBackend | null {
-	if (
-		claims.origin_route_id === undefined &&
-		claims.workspace_id === undefined &&
-		claims.install_id === undefined
-	)
-		return routes.get(`host\0${toDispatcherKvKey(claims.public_host)}`) ?? null;
-	if (
-		claims.origin_route_id === undefined ||
-		claims.workspace_id === undefined ||
-		claims.install_id === undefined
-	)
-		return null;
-	return (
-		routes.get(
-			routeKey({
-				originRouteId: claims.origin_route_id,
-				publicHost: claims.public_host,
-				workspaceId: claims.workspace_id,
-				installId: claims.install_id
-			})
-		) ?? null
-	);
 }
 
 function fileFingerprint(info: FileSystem.File.Info): string {
@@ -192,10 +91,9 @@ const makeRouteResolver = Effect.fn('PrivateIngressGateway.makeRouteResolver')(f
 			>;
 		}>
 	>(Option.none());
-	const resolve = Effect.fn('PrivateIngressGateway.resolveRoute')(function* (
-		claims: Parameters<PrivateIngressRouteResolver['Service']['resolve']>[0]
-	) {
-		if (Option.isSome(inline)) return resolveRoute(inline.value, claims);
+	const resolve = Effect.fn('PrivateIngressGateway.resolveRoute')(function* (publicHost: string) {
+		const host = toDispatcherKvKey(publicHost);
+		if (Option.isSome(inline)) return inline.value.get(host) ?? null;
 		if (Option.isNone(environment.routeTablePath)) {
 			return yield* new PrivateIngressGatewayStartupError({
 				operation: 'configuration',
@@ -212,7 +110,7 @@ const makeRouteResolver = Effect.fn('PrivateIngressGateway.makeRouteResolver')(f
 		const fingerprint = fileFingerprint(info);
 		const current = yield* Ref.get(snapshot);
 		if (Option.isSome(current) && current.value.fingerprint === fingerprint) {
-			return resolveRoute(yield* Effect.fromResult(current.value.result), claims);
+			return (yield* Effect.fromResult(current.value.result)).get(host) ?? null;
 		}
 		const result = yield* fs.readFileString(environment.routeTablePath.value).pipe(
 			Effect.mapError(
@@ -223,12 +121,13 @@ const makeRouteResolver = Effect.fn('PrivateIngressGateway.makeRouteResolver')(f
 			Effect.result
 		);
 		yield* Ref.set(snapshot, Option.some({ fingerprint, result }));
-		const routes = yield* Effect.fromResult(result);
-		return resolveRoute(routes, claims);
+		return (yield* Effect.fromResult(result)).get(host) ?? null;
 	});
 	return PrivateIngressRouteResolver.of({
-		resolve: (claims) =>
-			resolve(claims).pipe(Effect.mapError((cause) => new PrivateIngressRouteTableError({ cause })))
+		resolve: (publicHost) =>
+			resolve(publicHost).pipe(
+				Effect.mapError((cause) => new PrivateIngressRouteTableError({ cause }))
+			)
 	});
 });
 
@@ -239,28 +138,15 @@ export const privateIngressGatewayServices = Layer.effectContext(
 				(cause) => new PrivateIngressGatewayStartupError({ operation: 'configuration', cause })
 			)
 		);
-		const publicKeyPem =
-			Option.isNone(environment.publicKey) && Option.isNone(environment.publicKeyPath)
-				? undefined
-				: yield* readConfiguredText({
-						inline: environment.publicKey,
-						path: environment.publicKeyPath,
-						operation: 'public_key'
-					});
 		const identityAudience = Option.orElse(environment.identityAudience, () =>
 			Option.map(environment.clusterId, (id) => `private-ingress-gateway:${id}`)
 		);
-		if (publicKeyPem === undefined && Option.isNone(identityAudience))
+		if (Option.isNone(identityAudience))
 			return yield* new PrivateIngressGatewayStartupError({
 				operation: 'configuration',
-				cause: 'Identity audience or migration public key is required'
+				cause: 'Identity audience or cluster ID is required'
 			});
 		const resolver = yield* makeRouteResolver(environment);
-		const context = Context.make(PrivateIngressGatewayConfig, {
-			publicKeyPem,
-			identityAudience: Option.getOrUndefined(identityAudience)
-		}).pipe(Context.add(PrivateIngressRouteResolver, resolver));
-		if (Option.isNone(identityAudience)) return context;
 		const verifier = yield* GatewayIdentityVerifier.pipe(
 			Effect.provide(
 				GatewayIdentityVerifier.layer({
@@ -270,7 +156,9 @@ export const privateIngressGatewayServices = Layer.effectContext(
 				})
 			)
 		);
-		return Context.add(context, GatewayIdentityVerifier, verifier);
+		return Context.make(PrivateIngressRouteResolver, resolver).pipe(
+			Context.add(GatewayIdentityVerifier, verifier)
+		);
 	})
 );
 
@@ -289,7 +177,6 @@ const server = Layer.unwrap(
 );
 
 export const PrivateIngressGatewayServer = HttpServer.serve(privateIngressGatewayApp).pipe(
-	Layer.provide(RouteTokenCrypto.layer),
 	Layer.provide(privateIngressUpstreamClient),
 	Layer.provide(BunSocket.layerWebSocketConstructor),
 	Layer.provide(gatewayServices),
