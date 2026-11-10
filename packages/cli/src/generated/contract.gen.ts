@@ -1444,7 +1444,7 @@ export const contract: ApiContract = {
 			"id": "operations.get",
 			"method": "GET",
 			"path": "/operations/{id}",
-			"summary": "Get operation details + steps",
+			"summary": "Get operation details",
 			"auth": true,
 			"parameters": [
 				"path:id",

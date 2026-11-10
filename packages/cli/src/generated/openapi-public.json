@@ -50,7 +50,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Operation details (with steps)",
+            "description": "Operation details",
             "content": {
               "application/json": {
                 "schema": {
@@ -190,8 +190,8 @@
             }
           }
         },
-        "description": "Returns the operation row plus its per-step progress events. Clients poll this endpoint while `done` is false; when `done` flips true, `response` may carry the typed result (`SUCCEEDED`) and `error.message` carries a failure reason when available. Prefer `POST /v1/operations/{id}:wait` for sync \"wait until done\" semantics - it long-polls server-side instead of asking the client to tight-poll.\n\nNative Install details come directly from their selected Workflow execution; legacy catalog projections may lag execution. Terminal outcomes remain immutable.",
-        "summary": "Get operation details + steps",
+        "description": "Returns the operation, answered by the resource that owns it. Visibility follows the owning resource. Clients poll this endpoint while `done` is false; when `done` flips true, `response` may carry the typed result (`SUCCEEDED`) and `error.message` carries a failure reason when available. Prefer `POST /v1/operations/{id}:wait` for sync \"wait until done\" semantics - it long-polls server-side instead of asking the client to tight-poll.\n\nThe owning resource answers directly, so the answer is never behind the Operation projection that `GET /v1/operations` reads. Terminal outcomes remain immutable.",
+        "summary": "Get operation details",
         "x-platform-visibility": "PUBLIC"
       }
     },
@@ -385,7 +385,7 @@
             }
           }
         },
-        "description": "Long-polls server-side until the operation reaches a terminal state (`SUCCEEDED`, `FAILED`, `CANCELLED`) or the timeout elapses. Returns the latest `Operation` either way - check `done` to distinguish.\n\nNative Install references are read from their selected Workflow execution with a bounded server-side wait. Legacy operations retain their existing catalog subscription. A wait timeout returns the latest snapshot and does not cancel execution.\n\nNative Install details come directly from their selected Workflow execution; legacy catalog projections may lag execution. Terminal outcomes remain immutable.",
+        "description": "Long-polls server-side until the operation reaches a terminal state (`SUCCEEDED`, `FAILED`, `CANCELLED`) or the timeout elapses. Returns the latest `Operation` either way - check `done` to distinguish.\n\nThe owning resource answers with a bounded server-side wait; visibility follows it. A wait timeout returns the latest snapshot and does not cancel execution. Terminal outcomes remain immutable.",
         "summary": "Wait for an operation to reach a terminal state",
         "x-platform-visibility": "PUBLIC"
       }
@@ -597,7 +597,7 @@
             }
           }
         },
-        "description": "Requests cancellation of an in-flight operation. Cancellation is asynchronous: successful requests return the current operation envelope while the worker drains the current step before settling into a terminal result. Replaying the request with the same Idempotency-Key is supported. If the operation has already reached a terminal state, cancellation is rejected with Unprocessable Entity.\n\nWhen accepted, the operation is not cancelled instantly; it transitions through the normal cancellation flow and may still report progress for a short time.",
+        "description": "Requests cancellation of an in-flight operation. Cancellation is asynchronous: successful requests return the current operation envelope while the owning resource settles into a terminal result. Replaying the request with the same Idempotency-Key is supported. If the operation has already reached a terminal state, cancellation is rejected with Unprocessable Entity.\n\nWhen accepted, the operation is not cancelled instantly; it transitions through the normal cancellation flow and may still report progress for a short time.",
         "summary": "Request operation cancellation",
         "x-platform-visibility": "PUBLIC"
       }
