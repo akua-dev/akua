@@ -15,7 +15,19 @@
 		"./process": "./src/process.ts",
 		"./render": "./src/render.ts",
 		"./snapshot-render": "./src/snapshot-render.ts",
-		"./memory-fs": "./src/memory-fs.ts"
+		"./memory-fs": "./src/memory-fs.ts",
+		"./archive": "./src/archive.ts",
+		"./engines": "./src/engines.ts",
+		"./git": "./src/git.ts",
+		"./helm-repository": "./src/helm-repository.ts",
+		"./host": "./src/host.ts",
+		"./host-js": "./src/host-js.ts",
+		"./host-native": "./src/host-native.ts",
+		"./native": "./src/native.ts",
+		"./oci": "./src/oci.ts",
+		"./plugins": "./src/plugins.ts",
+		"./url-source": "./src/url-source.ts",
+		"./worker": "./src/worker.ts"
 	},
 	"engines": {
 		"bun": ">=1.4.4"
