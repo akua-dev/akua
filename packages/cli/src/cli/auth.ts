@@ -12,9 +12,9 @@ import {
 	DeviceAuthorizationFailure,
 	DeviceCancelledFailure,
 	DeviceRequestFailure,
-	type CliFailure,
-	UsageFailure
+	type CliFailure
 } from '../runtime/effect-runtime';
+import { UsageFailure } from '../runtime/errors';
 import type { RenderEnvelope } from '../runtime/render';
 import { Browser, Console, Http, Process, SecureConfig } from '../runtime/services';
 import { respond } from './invocation';

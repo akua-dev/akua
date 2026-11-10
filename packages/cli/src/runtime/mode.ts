@@ -1,6 +1,6 @@
 import { Config, Effect, Option } from 'effect';
 
-import { UsageFailure } from './effect-runtime';
+import { UsageFailure } from './errors';
 
 export type OutputMode = 'human' | 'agent' | 'json' | 'quiet';
 

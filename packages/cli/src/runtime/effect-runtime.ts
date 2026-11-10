@@ -1,15 +1,9 @@
 import { Effect, Schema, Stream } from 'effect';
 
-import { AkuaCliError, usageError } from './errors';
+import { AkuaCliError, usageError, UsageFailure } from './errors';
 import type { OutputMode } from './mode';
 import { renderError, renderStreamSuccess, renderSuccess, type RenderEnvelope } from './render';
 import { Console, type SecureConfigFailure } from './services';
-
-export class UsageFailure extends Schema.TaggedError<UsageFailure>()('UsageFailure', {
-	message: Schema.String,
-	/** Help command to suggest, for example `akua clusters create --help`. */
-	help: Schema.optionalKey(Schema.String)
-}) {}
 
 export class DeviceRequestFailure extends Schema.TaggedError<DeviceRequestFailure>()(
 	'DeviceRequestFailure',

@@ -7,9 +7,9 @@ import {
 	DeviceAuthorizationFailure,
 	DeviceCancelledFailure,
 	DeviceRequestFailure,
-	runCli,
-	UsageFailure
+	runCli
 } from '../src/runtime/effect-runtime';
+import { UsageFailure } from '../src/runtime/errors';
 import {
 	Browser,
 	Console,

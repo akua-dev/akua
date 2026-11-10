@@ -1,6 +1,6 @@
 import { Config, Effect, Option, Redacted } from 'effect';
 
-import { UsageFailure } from './effect-runtime';
+import { UsageFailure } from './errors';
 import { SecureConfig, type SecureConfigFailure } from './services';
 
 /** Reads an environment variable through the active `ConfigProvider`; empty counts as unset. */
