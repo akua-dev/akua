@@ -414,13 +414,13 @@ bun_test(
     name = "cli_typecheck_test",
     size = "medium",
     srcs = [
+        "release-package-command.ts",
         "//:package.json",
         "//crates/wasm-sandbox:index.d.ts",
         "//crates/wasm-sandbox:package.json",
         "//packages/akuapkg:package.json",
         "//packages/akuapkg:srcs",
         "//packages/cli:test_srcs",
-        "release-package-command.ts",
     ],
     bun_args = [
         "../../node_modules/typescript/bin/tsc",
