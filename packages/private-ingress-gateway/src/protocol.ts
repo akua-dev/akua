@@ -20,6 +20,18 @@ export const RouteTable = Schema.Struct({
 	)
 });
 
+/**
+ * The bodies the gateway answers with itself, never its backend: a caller
+ * probing a route (Routing's publication probe) tells them from a backend's
+ * own answer by status and body.
+ */
+export const GATEWAY_ANSWERS = {
+	forbidden: { status: 403, body: 'forbidden' },
+	routeNotFound: { status: 404, body: 'route not found' },
+	badGateway: { status: 502, body: 'bad gateway' },
+	routeTableUnavailable: { status: 503, body: 'route table unavailable' }
+} as const;
+
 export const ROUTE_TOKEN_HEADER_NAME = 'x-platform-route';
 export const FORWARDED_HOST_HEADER_NAME = 'x-forwarded-host';
 export const DISPATCHER_PROBE_HEADER_NAME = 'x-platform-dispatcher-probe';

@@ -1,5 +1,6 @@
 import {
 	FORWARDED_HOST_HEADER_NAME,
+	GATEWAY_ANSWERS,
 	ROUTE_TOKEN_HEADER_NAME,
 	isTrustedForwardHeaderName,
 	resolveRouteTargetUrl,
@@ -51,10 +52,12 @@ function scrubTrustedForwardHeaders(
 	return HttpClientRequest.updateHeaders(request, Headers.removeMany(names));
 }
 
-const forbidden = HttpServerResponse.text('forbidden', { status: 403 });
-const routeNotFound = HttpServerResponse.text('route not found', { status: 404 });
-const routeTableUnavailable = HttpServerResponse.text('route table unavailable', { status: 503 });
-const badGateway = HttpServerResponse.text('bad gateway', { status: 502 });
+const answer = (of: (typeof GATEWAY_ANSWERS)[keyof typeof GATEWAY_ANSWERS]) =>
+	HttpServerResponse.text(of.body, { status: of.status });
+const forbidden = answer(GATEWAY_ANSWERS.forbidden);
+const routeNotFound = answer(GATEWAY_ANSWERS.routeNotFound);
+const routeTableUnavailable = answer(GATEWAY_ANSWERS.routeTableUnavailable);
+const badGateway = answer(GATEWAY_ANSWERS.badGateway);
 
 const relayWebSocket = Effect.fn('PrivateIngressGateway.relayWebSocket')(function* (
 	request: HttpServerRequest.HttpServerRequest,
