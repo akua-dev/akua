@@ -1,12 +1,3 @@
-// FileSystem.stat always follows symlinks (delegates to Node's fs.stat; see
-// node_modules/@effect/platform-node-shared/src/NodeFileSystem.ts), and this
-// effect version exposes no lstat-equivalent (non-symlink-following stat) on
-// the FileSystem service. assertSafeOutputDirectory's symlink-attack check
-// below needs exactly that non-following behavior, so it stays on raw
-// node:fs, bridged through Effect.try like any other live-adapter host
-// boundary.
-import { lstatSync } from 'node:fs';
-
 import { BunCrypto, BunServices } from '@effect/platform-bun';
 import { Effect, FileSystem, Layer, Path, Stream } from 'effect';
 import { Digest } from 'effect/crypto';
@@ -125,30 +116,31 @@ const assertSafeOutputDirectory = Effect.fn('assertSafeOutputDirectory')(functio
 		`Unsafe release output directory: ${outputDir}`
 	);
 
+	// FileSystem.stat follows symlinks and the service has no lstat, so a
+	// symlinked segment is found by resolving it: its real path no longer equals
+	// the lexical path rebuilt from the real workspace root.
+	const fs = yield* FileSystem.FileSystem;
+	const realWorkspace = yield* fs
+		.realPath(workspace)
+		.pipe(Effect.mapError(toReleaseFailure('inspect output directory')));
 	let currentPath = workspace;
+	let lexicalRealPath = realWorkspace;
 	const segments = path.relative(workspace, outputDir).split(path.sep);
 	for (const segment of segments) {
 		currentPath = path.join(currentPath, segment);
-		const stats = yield* lstatIfPresent(currentPath);
-		if (stats !== undefined) {
+		lexicalRealPath = path.join(lexicalRealPath, segment);
+		const realPath = yield* fs.realPath(currentPath).pipe(
+			Effect.catchReason('PlatformError', 'NotFound', () => Effect.undefined),
+			Effect.mapError(toReleaseFailure('inspect output directory'))
+		);
+		if (realPath !== undefined) {
 			yield* check(
-				!stats.isSymbolicLink(),
+				realPath === lexicalRealPath,
 				`Unsafe release output directory contains a symlink: ${currentPath}`
 			);
 		}
 	}
 });
-
-function lstatIfPresent(
-	path: string
-): Effect.Effect<ReturnType<typeof lstatSync> | undefined, ReleaseFailure> {
-	return attempt('inspect output directory', () => lstatSync(path)).pipe(
-		Effect.map((stats) => stats),
-		Effect.catch((failure) =>
-			isNotFoundError(failure.cause) ? Effect.succeed(undefined) : Effect.fail(failure)
-		)
-	);
-}
 
 const writeReleaseMetadata = Effect.fn('writeReleaseMetadata')(function* (
 	outputDir: string,
@@ -769,10 +761,6 @@ const sha256 = Effect.fn('sha256')(function* (bytes: Uint8Array) {
 
 function stableJson(value: unknown): string {
 	return `${JSON.stringify(value, null, 2)}\n`;
-}
-
-function isNotFoundError(error: unknown): boolean {
-	return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }
 
 function versionFromPayload(value: unknown): unknown {
