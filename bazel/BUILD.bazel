@@ -420,6 +420,7 @@ bun_test(
         "//packages/akuapkg:package.json",
         "//packages/akuapkg:srcs",
         "//packages/cli:test_srcs",
+        "release-package-command.ts",
     ],
     bun_args = [
         "../../node_modules/typescript/bin/tsc",
