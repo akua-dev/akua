@@ -1,4 +1,4 @@
-import { BunServices } from '@effect/platform-bun';
+import { BunCrypto, BunServices } from '@effect/platform-bun';
 import { Clock, ConfigProvider, Duration, Effect, Layer, Option } from 'effect';
 
 import { login, logout, status } from '../src/cli/auth';
@@ -115,6 +115,6 @@ function testServices(dependencies: AuthTestDependencies) {
 					catch: () => new DeviceRequestFailure({})
 				}).pipe(Effect.orDie)
 		}),
-		SecureConfigLive.pipe(Layer.provide(BunServices.layer))
+		SecureConfigLive.pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
 	);
 }
