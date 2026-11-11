@@ -2527,7 +2527,8 @@ export const contract: ApiContract = {
 						"name": {
 							"type": "string",
 							"minLength": 1,
-							"maxLength": 100
+							"maxLength": 100,
+							"pattern": "^(?=.*\\S)[^\\p{Cc}\\p{Zl}\\p{Zp}]+$"
 						},
 						"slug": {
 							"type": "string",
@@ -3781,7 +3782,8 @@ export const contract: ApiContract = {
 						"name": {
 							"type": "string",
 							"minLength": 1,
-							"maxLength": 100
+							"maxLength": 100,
+							"pattern": "^(?=.*\\S)[^\\p{Cc}\\p{Zl}\\p{Zp}]+$"
 						},
 						"organization": {
 							"type": "string",
@@ -3805,9 +3807,9 @@ export const contract: ApiContract = {
 			"properties": {
 				"name": {
 					"type": "string",
-					"minLength": 2,
+					"minLength": 1,
 					"maxLength": 50,
-					"pattern": "^[\\p{L}\\p{N}](?:[\\p{L}\\p{N}\\s\\-'&.]*[\\p{L}\\p{N}])?$"
+					"pattern": "^(?=.*\\S)[^\\p{Cc}\\p{Zl}\\p{Zp}]+$"
 				}
 			},
 			"required": [
