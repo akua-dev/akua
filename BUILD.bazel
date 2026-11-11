@@ -14,7 +14,7 @@ exports_files(
         "MODULE.bazel",
         "bun.lock",
         "package.json",
-        "patches/effect@4.1.2.patch",
+        "patches/effect@4.1.4.patch",
         "toolchains.MODULE.bazel",
     ],
     visibility = ["//visibility:public"],

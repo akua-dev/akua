@@ -118,7 +118,7 @@ bun_lock_repository = use_repo_rule("//bazel/npm:bun_lock.bzl", "bun_lock_reposi
 bun_lock_repository(
     name = "npm",
     lock = "//:bun.lock",
-    patches = {"patches/effect@4.1.2.patch": "//:patches/effect@4.1.2.patch"},
+    patches = {"patches/effect@4.1.4.patch": "//:patches/effect@4.1.4.patch"},
 )
 
 # ---------------------------------------------------------------------------
