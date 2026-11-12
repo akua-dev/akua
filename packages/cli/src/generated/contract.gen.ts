@@ -426,6 +426,16 @@ export const contract: ApiContract = {
 				"default": true
 			}
 		},
+		"query:force": {
+			"name": "force",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "boolean",
+				"description": "Delete remaining Installs and app Placements before completing Cluster deletion.",
+				"default": false
+			}
+		},
 		"query:limit": {
 			"name": "limit",
 			"in": "query",
@@ -835,7 +845,8 @@ export const contract: ApiContract = {
 				"path:id:3",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match:2"
+				"header:if-match:2",
+				"query:force"
 			]
 		},
 		{

@@ -162,6 +162,20 @@ const signedIn = Effect.gen(function* () {
 
 const accepted = () => ({ status: 202, body: { id: 'op_1', done: false } });
 
+it.effect('sends Cluster cascade consent only with the generated --force flag', () =>
+	Effect.gen(function* () {
+		const env = yield* signedIn;
+		const args = ['clusters', 'delete', 'clu_1', '--if-match', '4', '--json'];
+		const ordinary = yield* runAkua(args, { env, api: accepted });
+		const forced = yield* runAkua([...args, '--force'], { env, api: accepted });
+		expect(ordinary.exitCode, ordinary.stderr).toBe(0);
+		expect(forced.exitCode, forced.stderr).toBe(0);
+		expect(ordinary.requests[0]?.url.searchParams.get('force')).not.toBe('true');
+		expect(forced.requests[0]?.url.searchParams.get('force')).toBe('true');
+		expect(forced.requests[0]?.method).toBe('DELETE');
+	}).pipe(Effect.scoped)
+);
+
 describe('secret values', () => {
 	const createGeneric = ['protocol', 'private-string', '--name', 'token'];
 

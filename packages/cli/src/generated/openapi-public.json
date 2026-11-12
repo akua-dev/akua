@@ -8326,6 +8326,16 @@
               ]
             },
             "required": true
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "description": "Delete remaining Installs and app Placements before completing Cluster deletion.",
+              "default": false
+            },
+            "required": false
           }
         ],
         "security": [
@@ -8475,7 +8485,7 @@
             }
           }
         },
-        "description": "Removes what Akua placed on the Cluster and the Cluster itself, and returns the deletion Operation. Refused with 409 while Installs remain on it. A repeated delete returns the same Operation.",
+        "description": "Removes what Akua placed on the Cluster and the Cluster itself. Refused with 409 while Installs remain unless force=true explicitly requests cascading deletion. A repeated delete returns the same Operation.",
         "summary": "Delete a Cluster",
         "x-platform-visibility": "PUBLIC"
       }
