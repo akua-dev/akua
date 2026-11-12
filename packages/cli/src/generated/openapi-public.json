@@ -11493,6 +11493,8 @@
                 "RUNNING",
                 "SUSPENDING",
                 "SUSPENDED",
+                "RESTORING",
+                "EXPIRED",
                 "DELETING",
                 "FAILED"
               ],
@@ -25975,6 +25977,8 @@
               "RUNNING",
               "SUSPENDING",
               "SUSPENDED",
+              "RESTORING",
+              "EXPIRED",
               "DELETING",
               "FAILED"
             ],
@@ -25986,7 +25990,7 @@
               "$ref": "#/components/schemas/Condition"
             },
             "maxItems": 32,
-            "description": "What needs attention now; empty when nothing does. Reasons:\n- `trial-ended` (warning): the free trial is over and the Machine is `SUSPENDED`; its disk is kept as a snapshot for a while, then the Machine is deleted. Remedy `upgrade-plan`.\n- When `state` is `FAILED`, one error whose reason says why: `capacity-unavailable`, `provider-refused`, `provider-unavailable` or `abandoned`. Its server and capacity were already released."
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `trial-ended` (warning): the free trial is over and the Machine is `SUSPENDED`; upgrade to Pro while its snapshot is retained to restore it. Remedy `upgrade-plan`.\n- `trial-data-expired` (warning): the snapshot expired or was deleted. No server can be restored from it; a Pro upgrade still succeeds.\n- `RESTORING` waits for the replacement server to run and, for a pool Machine, its node to join; only then is the snapshot removed.\n- When `state` is `FAILED`, one error whose reason says why: `capacity-unavailable`, `provider-refused`, `provider-unavailable` or `abandoned`. Its server and capacity were already released."
           },
           "trial": {
             "anyOf": [
@@ -26185,6 +26189,7 @@
             "type": "string",
             "enum": [
               "provisioning",
+              "restoring",
               "ready",
               "draining",
               "deleted"
@@ -26858,9 +26863,10 @@
           "local-path-storage",
           "metrics-server",
           "cni",
+          "incluster-api-proxy",
           "cluster-connector"
         ],
-        "description": "`cni` and `cluster-connector` run on hosted Clusters only, applied from beside the control plane."
+        "description": "`cni`, `incluster-api-proxy` and `cluster-connector` run on hosted Clusters only, applied from beside the control plane."
       },
       "ClusterJoinCommand": {
         "type": "object",

@@ -563,6 +563,8 @@ export const contract: ApiContract = {
 					"RUNNING",
 					"SUSPENDING",
 					"SUSPENDED",
+					"RESTORING",
+					"EXPIRED",
 					"DELETING",
 					"FAILED"
 				],
