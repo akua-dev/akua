@@ -1,0 +1,186 @@
+"""Reproducible gateway binaries and images from the public source tree."""
+
+load("@npm//:workspace.bzl", "WORKSPACE_LINKS")
+load("@rules_img//img:image.bzl", "image_index", "image_manifest")
+load("@rules_img//img:load.bzl", "image_load")
+load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_files")
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+load("//bazel/bun:defs.bzl", "bun_compile", "bun_test")
+load(":compile_contract_test.bzl", "compile_contract_test")
+
+[
+    bun_compile(
+        name = "private_ingress_gateway_binary_" + arch,
+        srcs = [
+            "//packages/private-ingress-gateway:package.json",
+            "//packages/private-ingress-gateway:runtime_srcs",
+        ],
+        out = "private-ingress-gateway-" + arch,
+        entry = "//packages/private-ingress-gateway:src/index.ts",
+        node_modules = "@npm//:production_linux_x64",
+        target = target,
+        target_runtime = runtime,
+        visibility = ["//visibility:public"],
+        workspace_links = WORKSPACE_LINKS,
+    )
+    for arch, target, runtime in [
+        ("amd64", "bun-linux-x64-baseline", "@bun_runtime_linux_x64_baseline//:bun"),
+        ("arm64", "bun-linux-arm64", "@bun_runtime_linux_arm64//:bun"),
+    ]
+]
+
+[
+    pkg_files(
+        name = "binary_files_" + arch,
+        srcs = [":private_ingress_gateway_binary_" + arch],
+        attributes = pkg_attributes(mode = "0755"),
+        renames = {":private_ingress_gateway_binary_" + arch: "private-ingress-gateway"},
+    )
+    for arch in [
+        "amd64",
+        "arm64",
+    ]
+]
+
+[
+    pkg_tar(
+        name = "binary_layer_" + arch,
+        srcs = [":binary_files_" + arch],
+        extension = "tar.gz",
+        package_dir = "/",
+    )
+    for arch in [
+        "amd64",
+        "arm64",
+    ]
+]
+
+[
+    image_manifest(
+        name = "private_ingress_gateway_image_" + arch,
+        base = "@private_ingress_gateway_base_" + arch,
+        config_fragment = "//packages/private-ingress-gateway:oci-config.json",
+        entrypoint = ["/private-ingress-gateway"],
+        env = {"PRIVATE_INGRESS_GATEWAY_PORT": "8080"},
+        layers = [":binary_layer_" + arch],
+        platform = "@rules_img//img/private/platforms:linux_" + arch,
+        visibility = ["//visibility:public"],
+    )
+    for arch in [
+        "amd64",
+        "arm64",
+    ]
+]
+
+image_index(
+    name = "private_ingress_gateway_image",
+    manifests = [
+        ":private_ingress_gateway_image_amd64",
+        ":private_ingress_gateway_image_arm64",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+image_load(
+    name = "private_ingress_gateway_image_load_local",
+    image = ":private_ingress_gateway_image",
+    registry = "localhost",
+    repository = "private-ingress-gateway",
+    tag = "dev",
+)
+
+_TEST_NODE_MODULES = select({
+    "//bazel/platforms:darwin_arm64": "@npm//:darwin_arm64",
+    "//bazel/platforms:darwin_x64": "@npm//:darwin_x64",
+    "//bazel/platforms:linux_arm64": "@npm//:linux_arm64",
+    "//conditions:default": "@npm//:linux_x64",
+})
+
+bun_test(
+    name = "test",
+    size = "medium",
+    srcs = [
+        "//packages/private-ingress-gateway:package.json",
+        "//packages/private-ingress-gateway:test_srcs",
+    ],
+    bun_args = [
+        "--bun",
+        "../../node_modules/vitest/vitest.mjs",
+        "run",
+    ],
+    chdir = "packages/private-ingress-gateway",
+    node_modules = _TEST_NODE_MODULES,
+    visibility = ["//visibility:public"],
+    workspace_links = WORKSPACE_LINKS,
+)
+
+bun_test(
+    name = "typecheck_test",
+    size = "medium",
+    srcs = [
+        "//packages/private-ingress-gateway:package.json",
+        "//packages/private-ingress-gateway:test_srcs",
+    ],
+    bun_args = [
+        "../../node_modules/typescript/bin/tsc",
+        "--noEmit",
+        "--project",
+        "tsconfig.json",
+    ],
+    chdir = "packages/private-ingress-gateway",
+    node_modules = _TEST_NODE_MODULES,
+    visibility = ["//visibility:public"],
+    workspace_links = WORKSPACE_LINKS,
+)
+
+test_suite(
+    name = "check",
+    tests = [
+        ":test",
+        ":typecheck_test",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Select only the small scan verdicts for the parent build's aggregate gate.
+filegroup(
+    name = "private_ingress_gateway_path_scans",
+    srcs = [
+        ":private_ingress_gateway_binary_amd64",
+        ":private_ingress_gateway_binary_arm64",
+    ],
+    output_group = "hermetic_path_scan",
+    visibility = ["//visibility:public"],
+)
+
+compile_contract_test(
+    name = "compile_amd64_test",
+    bun_target = "bun-linux-x64-baseline",
+    runtime_repository = "bun_runtime_linux_x64_baseline",
+    target_under_test = ":private_ingress_gateway_binary_amd64",
+)
+
+compile_contract_test(
+    name = "compile_arm64_test",
+    bun_target = "bun-linux-arm64",
+    runtime_repository = "bun_runtime_linux_arm64",
+    target_under_test = ":private_ingress_gateway_binary_arm64",
+)
+
+test_suite(
+    name = "compile_action_contract_tests",
+    tests = [
+        ":compile_amd64_test",
+        ":compile_arm64_test",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "starlark_sources",
+    srcs = [
+        "BUILD.bazel",
+        "compile_contract_test.bzl",
+    ],
+    visibility = ["//visibility:public"],
+)

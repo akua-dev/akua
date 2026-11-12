@@ -96,7 +96,10 @@ export const generateContract = Effect.fn('generateContract')(function* (
 	return renderContract(contract);
 });
 
-export const buildContract = Effect.fn('buildContract')(function* (document: OpenApiDocument) {
+export const buildContract = Effect.fn('buildContract')(function* (
+	document: OpenApiDocument,
+	visibility: readonly string[] = ['PUBLIC']
+) {
 	const tagDescriptions = new Map(
 		(document.tags ?? []).map((tag): [string, string | undefined] => [tag.name, tag.description])
 	);
@@ -104,7 +107,10 @@ export const buildContract = Effect.fn('buildContract')(function* (document: Ope
 	for (const [path, methods] of Object.entries(document.paths)) {
 		for (const method of HTTP_METHODS) {
 			const operation = methods[method];
-			if (operation?.['x-platform-visibility'] === 'PUBLIC') {
+			if (
+				operation !== undefined &&
+				visibility.includes(operation['x-platform-visibility'] ?? '')
+			) {
 				publicOperations.push({ method, path, operation });
 			}
 		}

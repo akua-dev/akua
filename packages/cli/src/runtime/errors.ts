@@ -8,6 +8,12 @@ const NextStepSchema = Schema.Struct({
 });
 export type NextStep = typeof NextStepSchema.Type;
 
+export class UsageFailure extends Schema.TaggedError<UsageFailure>()('UsageFailure', {
+	message: Schema.String,
+	/** Help command to suggest, for example `akua clusters create --help`. */
+	help: Schema.optionalKey(Schema.String)
+}) {}
+
 /** A failure as the CLI prints it: the error document plus the exit code. */
 export class AkuaCliError extends Schema.TaggedError<AkuaCliError>()('AkuaCliError', {
 	type: Schema.String,

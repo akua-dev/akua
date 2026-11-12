@@ -98,8 +98,8 @@ Do not add resource- or provider-specific overlays.
 Generation tasks:
 
 ```sh
-bun run generate                         # regenerate contract.gen.ts from the committed copy
-bun run generate:check                   # fails on drift
+bazel run //:write_cli_generated                         # regenerate contract.gen.ts from the committed copy
+bazel test --config=dev_remote //:sdk_generated_drift_test                   # fails on drift
 ```
 
 Any public OpenAPI update in the canonical monorepo must regenerate and review
@@ -302,9 +302,10 @@ manifest records the embedded toolchain's version. Unix executables have mode
 The generated Homebrew manifest maps the four macOS/Linux formula selectors to
 exact release URLs and SHA-256 digests.
 
-`bun run build:binary` remains the fast host-only developer build. `bun run
-release:package` cross-compiles and verifies the whole release directory, while
-`bun run release:smoke` extracts and executes the current host archive. CI
+From the Akua monorepo root, `bazel build --config=dev_remote @akua//bazel:akua_linux_x64`
+builds the Linux executable. `bazel build --config=dev_remote @akua//bazel:release_archives`
+builds the release archives, while
+`bazel test --config=dev_remote //tools/akuapkg:cli_release_linux_x64_smoke_test` verifies the Linux archive. CI
 builds the candidate once, then macOS arm64/x64, Linux arm64/x64, and Windows x64
 hosted runners exercise the cloud CLI and a real `akua pkg init` → `check` →
 `render` → `inspect` flow from their extracted archive.

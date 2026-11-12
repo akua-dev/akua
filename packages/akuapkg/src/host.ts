@@ -1,6 +1,6 @@
 import { Context, type Effect, type PlatformError, type Scope } from "effect"
 import type { EngineError, GuestFailure, RenderError, WasmLoadError } from "./errors"
-import type { Snapshot } from "./snapshot.effect"
+import type { Snapshot } from "./snapshot"
 
 /**
  * Go wasip1 reactor ABI shared by the engines (`engine-host-wasm::EngineSpec`):

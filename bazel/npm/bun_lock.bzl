@@ -109,7 +109,7 @@ def _rewrite_patch(content, directory):
 
 def _bun_lock_repository_impl(rctx):
     lock = json.decode(_strip_trailing_commas(rctx.read(rctx.attr.lock)))
-    if lock.get("lockfileVersion") not in [1, 2]:
+    if lock.get("lockfileVersion") not in [1, 2, 3]:
         fail("Unsupported bun.lock version {}".format(lock.get("lockfileVersion")))
     workspaces = lock["workspaces"]
     packages = lock["packages"]

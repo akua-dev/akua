@@ -5,6 +5,7 @@ also loads it as an ordinary package of its own workspace, where its own
 lint, format and publication tooling reads the `*_bin` copies below.
 """
 
+load("@aspect_rules_js//js:defs.bzl", "js_library")
 load("@bazel_lib//lib:copy_to_bin.bzl", "copy_to_bin")
 
 _RELEASE_SERVICES = "scripts/runtime/release-services.ts"
@@ -26,6 +27,21 @@ filegroup(
         ["src/**/*.ts"],
         exclude = ["src/**/*.test.ts"],
     ),
+    visibility = ["//visibility:public"],
+)
+
+js_library(
+    name = "workspace_verification_package_store_src",
+    srcs = [
+        "package.json",
+        ":srcs",
+    ] + glob(["scripts/**/*.ts"]),
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "workspace_verification_production_package_src",
+    actual = ":workspace_verification_package_store_src",
     visibility = ["//visibility:public"],
 )
 

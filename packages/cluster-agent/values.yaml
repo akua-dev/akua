@@ -1,0 +1,41 @@
+# Akua API the agent and updater talk to.
+platformOrigin: https://api.akua.dev
+
+# Agent image. The digest is required; there is no default.
+image:
+  repository: pkg.akua.dev/akua/cluster-agent
+  digest: ""
+
+# Release metadata written to the akua.dev/release annotation of the agent
+# Deployment. Empty version: the chart appVersion.
+release:
+  version: ""
+  protocol: 1
+
+# Updater image. Both unset: the updater runs the agent image.
+updater:
+  image:
+    repository: ""
+    digest: ""
+
+# Exactly one of the two keys.
+#   access: { cluster: {} }                      cluster-admin for akua-apply
+#   access: { namespaces: [team-a, team-b] }     admin in each listed namespace
+# Required; the namespaces in the list must already exist.
+access: {}
+
+enrollment:
+  # code: attached cluster, single-use enrollment code.
+  # federated: hosted cluster, projected ServiceAccount token.
+  method: code
+  code: ""
+  agentId: ""
+  federatedAudience: ""
+
+# Optional: k0s, k3s, kubeadm, eks, gke, aks, other.
+distribution: ""
+
+priorityClassName: ""
+nodeSelector: {}
+tolerations: []
+affinity: {}

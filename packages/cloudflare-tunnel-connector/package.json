@@ -1,0 +1,10 @@
+{
+	"name": "@akua-dev/cloudflare-tunnel-connector",
+	"version": "0.13.6",
+	"private": true,
+	"type": "module",
+	"license": "Apache-2.0",
+	"exports": {
+		"./deployment-schema": "./input.schema.json"
+	}
+}

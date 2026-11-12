@@ -74,7 +74,7 @@ and test layers for time, I/O, process, browser, and console behavior; advance
 the clock deterministically instead of sleeping. Execute test Effects only in
 the test harness.
 
-Tests run on `vitest` (`bun run test`), using `@effect/vitest`'s `it.effect`
+Tests run on `vitest` (`bazel test --config=dev_remote @akua//bazel:cli_unit_test`), using `@effect/vitest`'s `it.effect`
 for test bodies that execute an `Effect` - write the body as `Effect.gen` and
 `yield*` instead of `await Effect.runPromise(...)`. Plain `vitest` `test`/
 `expect` stay for tests with no Effect to run (pure sync helpers, file/AST
@@ -91,8 +91,8 @@ only to deliberate live-layer bridges:
 ```sh
 rg -n '\b(Promise|async|await|throw|runPromise)\b|\bas const\b|\bas [A-Za-z_{]' src scripts
 rg -n '\b(fetch|Bun\.(file|write|spawn)|process\.|console\.|readFile|writeFile)\b' src/commands src/runtime scripts
-bun run test
-bun run check
+bazel test --config=dev_remote @akua//bazel:cli_unit_test
+bazel test --config=dev_remote @akua//bazel:cli_typecheck_test
 ```
 
 Review `package.json` and `bun.lock` together to confirm the audited exact

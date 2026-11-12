@@ -1,9 +1,9 @@
-import { Effect, Option, Schema } from 'effect';
+import { Effect, Option } from 'effect';
 import { Command, Flag } from 'effect/cli';
 
 import type { ApiContract } from '../api/contract';
 import { commandPath, operationParameters } from '../api/inputs';
-import { UsageFailure } from '../runtime/effect-runtime';
+import { UsageFailure } from '../runtime/errors';
 import type { RenderEnvelope } from '../runtime/render';
 import { commandExamples, operationBodyExample, operationContext } from './operation-context';
 import { respond } from './invocation';

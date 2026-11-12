@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "release_name": {
+      "default": "cloudflare-tunnel-connector",
+      "type": "string"
+    },
+    "values_cloudflare_tunnel_connector": {
+      "default": {},
+      "properties": {
+        "image": {
+          "default": {},
+          "properties": {
+            "pullPolicy": {
+              "default": "IfNotPresent",
+              "type": "string"
+            },
+            "repository": {
+              "default": "cloudflare/cloudflared",
+              "type": "string"
+            },
+            "tag": {
+              "default": "2026.5.1",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "namespace": {
+          "default": "platform-system",
+          "type": "string"
+        },
+        "networkPolicy": {
+          "default": {},
+          "properties": {
+            "egress": {
+              "default": [],
+              "items": {
+                "properties": {
+                  "ports": {
+                    "items": {
+                      "properties": {
+                        "endPort": {
+                          "type": "integer"
+                        },
+                        "port": {
+                          "oneOf": [
+                            {
+                              "type": "integer"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "protocol": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "to": {
+                    "items": {
+                      "properties": {
+                        "ipBlock": {
+                          "properties": {
+                            "cidr": {
+                              "type": "string"
+                            },
+                            "except": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "required": [
+                            "cidr"
+                          ],
+                          "type": "object"
+                        },
+                        "namespaceSelector": {
+                          "properties": {
+                            "matchExpressions": {
+                              "items": {
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "operator": {
+                                    "type": "string"
+                                  },
+                                  "values": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "operator"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "matchLabels": {
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "podSelector": {
+                          "properties": {
+                            "matchExpressions": {
+                              "items": {
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "operator": {
+                                    "type": "string"
+                                  },
+                                  "values": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "operator"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "matchLabels": {
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        },
+        "replicaCount": {
+          "default": 1,
+          "type": "integer"
+        },
+        "resources": {
+          "default": {},
+          "properties": {
+            "claims": {
+              "items": {
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "request": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "limits": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "requests": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "transport": {
+          "default": {},
+          "properties": {
+            "protocol": {
+              "default": "quic",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "tunnelTokenSecretKey": {
+          "default": "token",
+          "type": "string"
+        },
+        "tunnelTokenSecretName": {
+          "default": "cloudflare-tunnel-token",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "title": "Input",
+  "type": "object"
+}

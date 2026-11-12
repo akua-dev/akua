@@ -1,7 +1,7 @@
 import { Effect, FileSystem, Option, Path } from "effect"
 import { osMessage } from "../errors"
 import { ExitCode, fail } from "../contract"
-import { bareTree, RenderWorker } from "../worker.effect"
+import { bareTree, RenderWorker } from "../worker"
 
 const encoder = new TextEncoder()
 

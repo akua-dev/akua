@@ -414,6 +414,7 @@ bun_test(
     name = "cli_typecheck_test",
     size = "medium",
     srcs = [
+        "release-package-command.ts",
         "//:package.json",
         "//crates/wasm-sandbox:index.d.ts",
         "//crates/wasm-sandbox:package.json",
@@ -493,6 +494,7 @@ filegroup(
         "//bazel/{}:starlark_sources".format(package)
         for package in [
             "bun",
+            "gateway",
             "npm",
             "platforms",
             "rust",

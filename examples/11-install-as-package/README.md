@@ -22,7 +22,7 @@ PodDisruptionBudget is filtered out.
 import pkgs.upstream as upstream
 
 _up = upstream.render(upstream.Input {appName = input.app, replicas = input.replicas})
-_patched = [r | {metadata.labels = {"install.cnap.tech/tenant" = input.tenant}} for r in _up]
+_patched = [r | {metadata.labels = {"install.akua.dev/tenant" = input.tenant}} for r in _up]
 _filtered = [r for r in _patched if r.kind != "PodDisruptionBudget"]
 ```
 

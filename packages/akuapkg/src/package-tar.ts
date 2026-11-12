@@ -1,10 +1,10 @@
 import { Effect, FileSystem, Option, Path, Schema } from "effect"
 import { gunzip, gzip, tar, type TarFile, untar } from "./archive"
-import { CRDS_DIR } from "./crds.effect"
-import { sha256 } from "./downloads.effect"
+import { CRDS_DIR } from "./crds"
+import { sha256 } from "./downloads"
 import { osMessage } from "./errors"
 import { formatManifest, parseManifest } from "./manifest"
-import { collectFiles, comparePaths } from "./walk.effect"
+import { collectFiles, comparePaths, skippedName } from "./walk"
 
 /**
  * The published form of a Package: a gzipped tarball of the workspace, the
@@ -12,8 +12,9 @@ import { collectFiles, comparePaths } from "./walk.effect"
  *
  * - Included: everything the workspace walk keeps (akua.toml, akua.lock,
  *   `*.k`, `vendor/`, README, inputs.example.yaml, ...), then each vendored
- *   dependency under `.akua/vendor/<name>/` and the generated CRD schemas
- *   under `.akua/crds/`.
+ *   dependency under `.akua/vendor/<name>/`, each path dependency the walk
+ *   cannot reach (it lives in a hidden directory) where it sits, and the
+ *   generated CRD schemas under `.akua/crds/`.
  * - Excluded: hidden files and directories, render outputs (`deploy/`,
  *   `rendered/`, `out/`, `dist/`), `target/`, `node_modules/`, and the
  *   consumer's own `inputs.yaml`.
@@ -65,10 +66,15 @@ const publishedManifest = Effect.fnUntraced(function*(file: string) {
   return new TextEncoder().encode(formatManifest({ ...manifest, dependencies }))
 })
 
-/** Pack the workspace at `root`, embedding each vendored dependency tree. */
+/**
+ * Pack the workspace at `root`, embedding each vendored dependency tree at
+ * `.akua/vendor/<name>`. A tree with a `destination` (relative to the
+ * workspace) is a path dependency embedded as it is, hidden files included:
+ * its `akua.lock` digest covers them.
+ */
 export const packWorkspace = Effect.fn("packWorkspace")(function*(
   root: string,
-  vendored: ReadonlyArray<{ readonly name: string; readonly directory: string }>
+  vendored: ReadonlyArray<{ readonly name: string; readonly directory: string; readonly destination?: string }>
 ) {
   const fs = yield* FileSystem.FileSystem
   const path = yield* Path.Path
@@ -93,16 +99,19 @@ export const packWorkspace = Effect.fn("packWorkspace")(function*(
     )
   }
   const vendorFiles: Array<TarFile> = []
-  for (const { directory, name } of vendored) {
-    for (const file of yield* collectFiles(directory, () => true).pipe(Effect.mapError(io(directory)))) {
-      vendorFiles.push(yield* readFile(path.join(directory, file), `.akua/vendor/${name}/${file}`))
+  for (const { directory, name, destination } of vendored) {
+    const files = yield* collectFiles(directory, () => true, destination === undefined ? skippedName : () => false).pipe(
+      Effect.mapError(io(directory))
+    )
+    for (const file of files) {
+      vendorFiles.push(yield* readFile(path.join(directory, file), `${destination ?? `.akua/vendor/${name}`}/${file}`))
     }
   }
   const crds = path.join(root, CRDS_DIR)
   for (const file of yield* collectFiles(crds, () => true).pipe(Effect.mapError(io(crds)))) {
     vendorFiles.push(yield* readFile(path.join(crds, file), `${CRDS_DIR}/${file}`))
   }
-  return gzip(tar([...files, ...vendorFiles.toSorted((a, b) => comparePaths(a.path, b.path))]))
+  return yield* gzip(tar([...files, ...vendorFiles.toSorted((a, b) => comparePaths(a.path, b.path))]))
 })
 
 /** What a packed Package holds, read in memory. */

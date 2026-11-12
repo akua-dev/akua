@@ -156,7 +156,7 @@ so it is strict:
   still bound wall-clock time and concurrency: `@akua-dev/sdk/process` runs
   the `akuapkg` executable in a child process with a deadline, which can be
   wrapped in an OS sandbox.
-- **The browser host.** The JavaScript host (`host-js.effect.ts`) runs the
+- **The browser host.** The JavaScript host (`host-js.ts`) runs the
   same modules on the JavaScript engine's own WebAssembly. It has no memory
   caps or fuel and relies on the browser's process isolation.
 - **Wasmtime and the host code.** They are the trusted computing base.

@@ -1,7 +1,7 @@
 # Contributing to Akua
 
-Thanks for your interest. Akua is **pre-alpha**: APIs, schemas, and CLI
-surfaces are all in flux.
+Thanks for your interest. Akua is **alpha**: interfaces can still change
+before 1.0.
 
 ## What we accept today
 
@@ -36,6 +36,9 @@ one `v<version>` release (see [docs/releasing.md](docs/releasing.md)):
   `brew install akua-dev/tap/akua`. `akua pkg` embeds the same package
   toolchain host.
 
+Two companion packages (`packages/cloudflare-tunnel-connector/`,
+`packages/private-ingress-gateway/`) are built from the same tree.
+
 ## Development setup
 
 Bazel builds both from a clone, pinning every toolchain (Rust, Go, Zig, Bun)
@@ -50,8 +53,9 @@ bazel test //bazel:cli_unit_test //bazel:cli_typecheck_test //bazel:host_typeche
 Every target cross-compiles on Linux x86_64; on macOS add `--config=remote`
 with a Remote Execution endpoint, or run Bazel in a Linux container.
 
-For quick iteration on the TypeScript, `bun install` at the repository root
-and use each workspace's scripts (`cd packages/cli && bun run check`).
+Install dependencies with `bun install` at the repository root. Verify CLI
+TypeScript with `bazel test //bazel:cli_typecheck_test` and its behavior with
+`bazel test //bazel:cli_unit_test`.
 
 Build the render worker with Bazel: KCL patches 0005 and 0006
 ([third_party/kcl/patches](third_party/kcl/patches/README.md)) are applied

@@ -1,7 +1,7 @@
 import { Effect, Predicate, Schema } from "effect"
 import YAML from "yaml"
 import { kclIdent } from "./manifest"
-import { resolveInSnapshot, type Snapshot } from "./snapshot.effect"
+import { resolveInSnapshot, type Snapshot } from "./snapshot"
 import { kclStringLiteral } from "./values-schema"
 
 /**

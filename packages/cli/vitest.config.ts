@@ -9,7 +9,7 @@ import { defineConfig } from 'vitest/config';
  * (`bun run test` -> `vitest run`), so `Bun.spawn` and other Bun globals used
  * by process-boundary tests remain available.
  */
-const TestInclude = Schema.Array(Schema.String);
+const TestInclude = Schema.mutable(Schema.Array(Schema.String));
 
 export default defineConfig({
 	test: {

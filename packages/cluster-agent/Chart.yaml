@@ -1,0 +1,6 @@
+apiVersion: v2
+name: akua-cluster-agent
+description: Akua cluster agent and its updater. Installs no CRDs.
+type: application
+version: 0.0.1
+appVersion: "0.0.1"

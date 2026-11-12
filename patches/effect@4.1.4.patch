@@ -1,0 +1,271 @@
+diff --git a/dist/http/HttpClient.js b/dist/http/HttpClient.js
+index f226722..e0e0f76 100644
+--- a/dist/http/HttpClient.js
++++ b/dist/http/HttpClient.js
+@@ -1196,7 +1196,8 @@ export const layerMergedContext = effect => Layer.effect(HttpClient)(Effect.cont
+ // -----------------------------------------------------------------------------
+ const responseRegistry = /*#__PURE__*/(() => {
+   if ("FinalizationRegistry" in globalThis && globalThis.FinalizationRegistry) {
+-    const registry = /*#__PURE__*/new FinalizationRegistry(controller => {
++    let registry;
++    const getRegistry = () => registry ??= new FinalizationRegistry(controller => {
+       try {
+         controller.abort();
+       } catch {
+@@ -1205,10 +1206,10 @@ const responseRegistry = /*#__PURE__*/(() => {
+     });
+     return {
+       register(response, controller) {
+-        registry.register(response, controller, response);
++        getRegistry().register(response, controller, response);
+       },
+       unregister(response) {
+-        registry.unregister(response);
++        registry?.unregister(response);
+       }
+     };
+   }
+diff --git a/dist/http-api/HttpApiClient.js b/dist/http-api/HttpApiClient.js
+index dd6b97e..395431d 100644
+--- a/dist/http-api/HttpApiClient.js
++++ b/dist/http-api/HttpApiClient.js
+@@ -437,22 +437,24 @@ export const urlBuilder = (api, options) => {
+   return builder;
+ };
+ // ----------------------------------------------------------------------------
++const paramsRegExp = /(\/?):(\w+)(\?)?|\{([\w-]+)(:\*)?\}/g;
+ const compilePath = (path, schema) => {
+-  if (schema === undefined || !path.includes(":")) {
+-    return _ => path;
+-  }
++  if (schema === undefined || (!path.includes(":") && !path.includes("{"))) return _ => path;
+   const paramNames = HttpApiPath.getParamNames(schema);
+-  return params => HttpApiPath.replaceParams(path, paramNames, (key, optional) => {
++  return params => path.replace(paramsRegExp, (match, slash, colonKey, optional, templateKey, wildcard) => {
++    const key = templateKey ?? colonKey;
++    if (key === undefined || (paramNames !== undefined && !paramNames.has(key))) return match;
+     const value = params[key];
+-    if (value === "." || value === "..") {
+-      // dot segments survive encoding and would be resolved by URL normalization
+-      throw new Error(`Invalid path parameter: ${key}`);
++    if (value === undefined) {
++      if (optional) return "";
++      throw new Error(`Missing path parameter: ${key}`);
+     }
+-    if (value !== undefined) return encodeURIComponent(value);
+-    if (optional) return undefined;
+-    throw new Error(`Missing path parameter: ${key}`);
++    const segments = wildcard === undefined ? [value] : value.split("/");
++    if (segments.some(segment => segment === "." || segment === "..")) throw new Error(`Invalid path parameter: ${key}`);
++    return `${slash ?? ""}${segments.map(encodeURIComponent).join("/")}`;
+   });
+ };
++
+ function schemasToResponse(schemas, options, headersOptions) {
+   const hasWithHeaders = schemas.some(schema => HttpApiSchema.isWithHeaders(schema) || HttpApiSchema.getWithHeadersAnnotation(schema.ast) !== undefined);
+   const codec = hasWithHeaders ? Schema.Union(schemas.map(schema => toCodecArrayBufferWithHeaders(schema, options, headersOptions))) : toCodecArrayBuffer(schemas);
+@@ -794,6 +796,7 @@ function getEncodePayloadSchemaFromBody(schema, method) {
+       }, input, options));
+     },
+     encode(t, options) {
++      if (HttpApiSchema.isNoContent(ast)) return Effect.succeed(HttpBody.empty);
+       switch (encoding._tag) {
+         case "Multipart":
+           return Effect.fail(new SchemaIssue.Forbidden({
+diff --git a/dist/http-api/HttpApiEndpoint.d.ts b/dist/http-api/HttpApiEndpoint.d.ts
+index 8497b3c..b80f3ac 100644
+--- a/dist/http-api/HttpApiEndpoint.d.ts
++++ b/dist/http-api/HttpApiEndpoint.d.ts
+@@ -335,12 +335,8 @@ export type ClientRequest<Params extends Schema.Constraint, Query extends Schema
+     readonly query: Query["Type"];
+ }) & ([Headers["Type"]] extends [never] ? {} : {
+     readonly headers: Headers["Type"];
+-}) & ([Payload["Type"]] extends [never] ? {} : Payload["Type"] extends infer P ? P extends Brand<HttpApiSchema.MultipartTypeId> | Brand<HttpApiSchema.MultipartStreamTypeId> ? {
+-    readonly payload: FormData;
+-} : {
+-    readonly payload: ClientPayload<Payload, PayloadR>;
+-} : {
+-    readonly payload: ClientPayload<Payload, PayloadR>;
++}) & ([Payload["Type"]] extends [never] ? {} : {
++    readonly payload: Payload["Type"] extends infer P ? P extends Brand<HttpApiSchema.MultipartTypeId> | Brand<HttpApiSchema.MultipartStreamTypeId> ? FormData : Payload extends HttpApiSchema.StreamUint8Array | HttpApiSchema.StreamNdjson<any> ? ClientPayload<Payload, PayloadR> : P : never;
+ })) extends infer Req ? keyof Req extends never ? (void | {
+     readonly responseMode?: ResponseMode;
+     readonly sseOptions?: Sse.DecodeOptions | undefined;
+diff --git a/dist/http-api/internal/path.js b/dist/http-api/internal/path.js
+index 5a5e644..cb3ae3d 100644
+--- a/dist/http-api/internal/path.js
++++ b/dist/http-api/internal/path.js
+@@ -14,8 +14,8 @@ export function getParamNames(schema) {
+  */
+ export function toRouterPath(path, schema) {
+   // Preserve undeclared params for raw RouteContext consumers.
+-  if (schema === undefined || !path.includes(":")) return path;
+-  const paramNames = getParamNames(schema);
++  if (!path.includes(":")) return path;
++  const paramNames = schema === undefined ? emptyParamNames : getParamNames(schema);
+   if (paramNames === undefined) return path;
+   let out = "";
+   for (let i = 0; i < path.length; i++) {
+diff --git a/dist/internal/schema/toCodeDocument.js b/dist/internal/schema/toCodeDocument.js
+index 7848cf3..b102926 100644
+--- a/dist/internal/schema/toCodeDocument.js
++++ b/dist/internal/schema/toCodeDocument.js
+@@ -336,8 +336,14 @@ export function toCodeDocument(document) {
+         return makeCode("Schema.Any", "any");
+       case "String":
+         return makeCode("Schema.String", "string");
+-      case "Number":
+-        return makeCode("Schema.Number", "number");
++      case "Number": {
++        // Preserve the finite domain already required by JSON numbers and integers.
++        const finite = representation.checks.some((check) =>
++          check.representation?.id === "effect/schema/isFinite" ||
++          check.representation?.id === "effect/schema/isInt"
++        );
++        return makeCode(finite ? "Schema.Finite" : "Schema.Number", "number");
++      }
+       case "Boolean":
+         return makeCode("Schema.Boolean", "boolean");
+       case "BigInt":
+diff --git a/src/http/HttpClient.ts b/src/http/HttpClient.ts
+index eaf3382..5603e4d 100644
+--- a/src/http/HttpClient.ts
++++ b/src/http/HttpClient.ts
+@@ -3100,7 +3100,8 @@ export const layerMergedContext = <E, R>(
+ 
+ const responseRegistry = (() => {
+   if ("FinalizationRegistry" in globalThis && globalThis.FinalizationRegistry) {
+-    const registry = new FinalizationRegistry((controller: AbortController) => {
++    let registry: FinalizationRegistry<AbortController> | undefined
++    const getRegistry = () => registry ??= new FinalizationRegistry((controller: AbortController) => {
+       try {
+         controller.abort()
+       } catch {
+@@ -3109,10 +3110,10 @@ const responseRegistry = (() => {
+     })
+     return {
+       register(response: HttpClientResponse.HttpClientResponse, controller: AbortController) {
+-        registry.register(response, controller, response)
++        getRegistry().register(response, controller, response)
+       },
+       unregister(response: HttpClientResponse.HttpClientResponse) {
+-        registry.unregister(response)
++        registry?.unregister(response)
+       }
+     }
+   }
+diff --git a/src/http-api/HttpApiClient.ts b/src/http-api/HttpApiClient.ts
+index 45897e3..8372d99 100644
+--- a/src/http-api/HttpApiClient.ts
++++ b/src/http-api/HttpApiClient.ts
+@@ -970,22 +970,22 @@ export const urlBuilder = <Api extends HttpApi.Constraint>(api: Api, options?: {
+ 
+ // ----------------------------------------------------------------------------
+ 
++const paramsRegExp = /(\/?):(\w+)(\?)?|\{([\w-]+)(:\*)?\}/g
+ const compilePath = (path: string, schema: Schema.Top | undefined) => {
+-  if (schema === undefined || !path.includes(":")) {
+-    return (_: any) => path
+-  }
++  if (schema === undefined || (!path.includes(":") && !path.includes("{"))) return (_: any) => path
+   const paramNames = HttpApiPath.getParamNames(schema)
+-  return (params: Record<string, string | undefined>) =>
+-    HttpApiPath.replaceParams(path, paramNames, (key, optional) => {
+-      const value = params[key]
+-      if (value === "." || value === "..") {
+-        // dot segments survive encoding and would be resolved by URL normalization
+-        throw new Error(`Invalid path parameter: ${key}`)
+-      }
+-      if (value !== undefined) return encodeURIComponent(value)
+-      if (optional) return undefined
++  return (params: Record<string, string | undefined>) => path.replace(paramsRegExp, (match, slash: string | undefined, colonKey: string | undefined, optional: string | undefined, templateKey: string | undefined, wildcard: string | undefined) => {
++    const key = templateKey ?? colonKey
++    if (key === undefined || (paramNames !== undefined && !paramNames.has(key))) return match
++    const value = params[key]
++    if (value === undefined) {
++      if (optional) return ""
+       throw new Error(`Missing path parameter: ${key}`)
+-    })
++    }
++    const segments = wildcard === undefined ? [value] : value.split("/")
++    if (segments.some((segment) => segment === "." || segment === "..")) throw new Error(`Invalid path parameter: ${key}`)
++    return `${slash ?? ""}${segments.map(encodeURIComponent).join("/")}`
++  })
+ }
+ 
+ function schemasToResponse(
+@@ -1517,6 +1517,7 @@ function getEncodePayloadSchemaFromBody(
+         )
+       },
+       encode(t, options) {
++        if (HttpApiSchema.isNoContent(ast)) return Effect.succeed(HttpBody.empty)
+         switch (encoding._tag) {
+           case "Multipart":
+             return Effect.fail(
+diff --git a/src/http-api/HttpApiEndpoint.ts b/src/http-api/HttpApiEndpoint.ts
+index e4bebe7..b70d71a 100644
+--- a/src/http-api/HttpApiEndpoint.ts
++++ b/src/http-api/HttpApiEndpoint.ts
+@@ -658,12 +658,13 @@ export type ClientRequest<
+   & ([Params["Type"]] extends [never] ? {} : { readonly params: Params["Type"] })
+   & ([Query["Type"]] extends [never] ? {} : { readonly query: Query["Type"] })
+   & ([Headers["Type"]] extends [never] ? {} : { readonly headers: Headers["Type"] })
+-  & ([Payload["Type"]] extends [never] ? {}
+-    : Payload["Type"] extends infer P ?
+-      P extends Brand<HttpApiSchema.MultipartTypeId> | Brand<HttpApiSchema.MultipartStreamTypeId>
+-        ? { readonly payload: FormData }
+-      : { readonly payload: ClientPayload<Payload, PayloadR> }
+-    : { readonly payload: ClientPayload<Payload, PayloadR> })
++& ([Payload["Type"]] extends [never] ? {} : {
++  readonly payload: Payload["Type"] extends infer P
++    ? P extends Brand<HttpApiSchema.MultipartTypeId> | Brand<HttpApiSchema.MultipartStreamTypeId>
++      ? FormData
++      : Payload extends HttpApiSchema.StreamUint8Array | HttpApiSchema.StreamNdjson<any> ? ClientPayload<Payload, PayloadR> : P
++    : never
++})
+ ) extends infer Req ? keyof Req extends never ? (void | {
+       readonly responseMode?: ResponseMode
+       readonly sseOptions?: Sse.DecodeOptions | undefined
+diff --git a/src/http-api/internal/path.ts b/src/http-api/internal/path.ts
+index e1fdb18..735f593 100644
+--- a/src/http-api/internal/path.ts
++++ b/src/http-api/internal/path.ts
+@@ -19,9 +19,14 @@ export function getParamNames(schema: Schema.Constraint | undefined): ReadonlySe
+  * @internal
+  */
+ export function toRouterPath(path: string, schema: Schema.Constraint | undefined): string {
+-  // Preserve undeclared params for raw RouteContext consumers.
+-  if (schema === undefined || !path.includes(":")) return path
+-  const paramNames = getParamNames(schema)
++  if (!path.includes(":")) return path
++  // A schema of `undefined` declares zero path parameters (this differs from
++  // `getParamNames` returning `undefined`, which means "declared but its
++  // names cannot be determined" and is handled by the fallthrough below) - so
++  // every `:word` in the path is undeclared and must be escaped, matching an
++  // endpoint that has no params schema at all (e.g. an AIP collection-level
++  // custom method like `/resources:action`).
++  const paramNames = schema === undefined ? emptyParamNames : getParamNames(schema)
+   if (paramNames === undefined) return path
+ 
+   let out = ""
+diff --git a/src/internal/schema/toCodeDocument.ts b/src/internal/schema/toCodeDocument.ts
+index 332b14f..8d4d943 100644
+--- a/src/internal/schema/toCodeDocument.ts
++++ b/src/internal/schema/toCodeDocument.ts
+@@ -426,8 +426,14 @@ export function toCodeDocument(
+         return makeCode("Schema.Any", "any")
+       case "String":
+         return makeCode("Schema.String", "string")
+-      case "Number":
+-        return makeCode("Schema.Number", "number")
++      case "Number": {
++        // Preserve the finite domain already required by JSON numbers and integers.
++        const finite = representation.checks.some((check) =>
++          check.representation?.id === "effect/schema/isFinite" ||
++          check.representation?.id === "effect/schema/isInt"
++        )
++        return makeCode(finite ? "Schema.Finite" : "Schema.Number", "number")
++      }
+       case "Boolean":
+         return makeCode("Schema.Boolean", "boolean")
+       case "BigInt":

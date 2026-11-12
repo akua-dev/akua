@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: webapp
   labels:
-    install.cnap.tech/tenant: acme
+    install.akua.dev/tenant: acme
 spec:
   ports:
   - port: 80

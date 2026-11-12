@@ -1,4 +1,5 @@
-import { Effect, Schema, Stream } from "effect"
+/// <reference types="bun" />
+import { Bytes, Context, Effect, Schema, Stream } from "effect"
 
 /**
  * Untrusted archives (registry blobs, Helm-repository charts) unpacked into
@@ -35,7 +36,7 @@ export const gunzip = (bytes: Uint8Array, limit = MAX_DECOMPRESSED_BYTES) =>
         : Effect.succeed(chunk)
     ),
     Stream.runCollect,
-    Effect.map((chunks) => new Uint8Array(Bun.concatArrayBuffers(Array.from(chunks))))
+    Effect.map((chunks) => Bytes.concat(Array.from(chunks)))
   )
 
 export interface ArchiveEntry {
@@ -183,14 +184,14 @@ export const tar = (files: ReadonlyArray<TarFile>) => {
     blocks.push(tarHeader(name, file.data.length, file.mode, "0"), padded(file.data))
   }
   blocks.push(new Uint8Array(1024))
-  return new Uint8Array(Bun.concatArrayBuffers(blocks))
+  return Bytes.concat(blocks)
 }
 
 /**
  * gzip with a fixed header (no name, mtime 0, OS "unknown", as flate2
  * writes it), so the same bytes always compress to the same archive.
  */
-export const gzip = (data: Uint8Array) => {
+const defaultGzip = (data: Uint8Array) => {
   const deflated = Bun.deflateSync(new Uint8Array(data), { level: 6 })
   const out = new Uint8Array(10 + deflated.length + 8)
   out.set([0x1f, 0x8b, 8, 0, 0, 0, 0, 0, 0, 0xff])
@@ -200,3 +201,12 @@ export const gzip = (data: Uint8Array) => {
   trailer.setUint32(4, data.length >>> 0, true)
   return out
 }
+
+/** Compression stays synchronous because engines can run inside a Wasm plugin callback. */
+export const Gzip = Context.Reference<(data: Uint8Array) => Uint8Array>("akuapkg/host/Gzip", {
+  defaultValue: () => defaultGzip
+})
+
+export const gzip = Effect.fnUntraced(function*(data: Uint8Array) {
+  return (yield* Gzip)(data)
+})

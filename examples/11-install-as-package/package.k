@@ -27,7 +27,7 @@ _up = upstream.render(upstream.Input {
 
 # 2. Overlay: apply a tenant label to every upstream resource.
 _patched = [r | {
-    metadata.labels = {"install.cnap.tech/tenant" = input.tenant}
+    metadata.labels = {"install.akua.dev/tenant" = input.tenant}
 } for r in _up]
 
 # 3. Filter: this install doesn't want PDBs (single-replica policy).
@@ -38,7 +38,7 @@ _extras = [{
     apiVersion = "v1"
     kind = "ConfigMap"
     metadata.name = input.app + "-install-meta"
-    metadata.labels = {"install.cnap.tech/tenant" = input.tenant}
+    metadata.labels = {"install.akua.dev/tenant" = input.tenant}
     data.tenant = input.tenant
     data.upstreamApp = input.app
 }]

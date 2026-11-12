@@ -9,10 +9,11 @@ import {
 	statMode,
 	writeFileString
 } from './fs-test';
-import { BunServices } from '@effect/platform-bun';
+import { BunCrypto, BunServices } from '@effect/platform-bun';
 import { ConfigProvider, Effect, FileSystem, Layer, Path } from 'effect';
 
 import { main, VERSION } from '../src/bin/akua';
+import { contract } from '../src/generated/contract.gen';
 import { renderSuccess } from '../src/runtime/render';
 import { CliLive } from '../src/runtime/services-live';
 import { Console, PackageCli, PackageCliFailure } from '../src/runtime/services';
@@ -40,7 +41,9 @@ describe('config directory selection', () => {
 						stdout.push(value);
 					})
 			}),
-			Effect.provide(CliLive(VERSION).pipe(Layer.provide(BunServices.layer)))
+			Effect.provide(
+				CliLive(VERSION).pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
+			)
 		);
 		return { stdout: stdout.join(''), exitCode };
 	});
@@ -142,7 +145,7 @@ describe('config directory selection', () => {
 						JSON.parse(yield* fs.readFileString(path.join(root, directory, 'config.json')))
 					).toMatchObject({ token: `fixture-${directory}` });
 				}
-			}).pipe(Effect.scoped, Effect.provide(BunServices.layer))
+			}).pipe(Effect.scoped, Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
 		);
 	}
 
@@ -177,7 +180,7 @@ describe('config directory selection', () => {
 				data: { authenticated: true, source: 'env' }
 			});
 			expect(overridden.stdout).not.toContain('fixture-env-token');
-		}).pipe(Effect.scoped, Effect.provide(BunServices.layer))
+		}).pipe(Effect.scoped, Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
 	);
 });
 
@@ -202,7 +205,9 @@ describe('akua entrypoint', () => {
 						writeStdoutBytes: () => Effect.void,
 						writeStdout: () => Effect.void
 					}),
-					Effect.provide(CliLive(VERSION).pipe(Layer.provide(BunServices.layer)))
+					Effect.provide(
+						CliLive(VERSION).pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
+					)
 				);
 
 			expect(yield* run(['pkg'])).toBe(0);
@@ -224,7 +229,9 @@ describe('akua entrypoint', () => {
 								return 0;
 							})
 					}),
-					Effect.provide(CliLive(VERSION).pipe(Layer.provide(BunServices.layer)))
+					Effect.provide(
+						CliLive(VERSION).pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
+					)
 				);
 
 			expect(yield* run(['--json', 'pkg', 'version'])).toBe(0);
@@ -254,7 +261,9 @@ describe('akua entrypoint', () => {
 							stdout.push(value);
 						})
 				}),
-				Effect.provide(CliLive(VERSION).pipe(Layer.provide(BunServices.layer)))
+				Effect.provide(
+					CliLive(VERSION).pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
+				)
 			);
 
 			expect(exitCode).toBe(1);
@@ -272,9 +281,9 @@ describe('akua entrypoint', () => {
 		expect(root.stdout).toContain('auth');
 		expect(root.stdout).toContain('commands');
 		expect(root.stdout).toContain('pkg');
-		expect(root.stdout).toContain('machines');
-		expect(root.stdout).toContain('clusters');
-		expect(root.stdout).toContain('Kubernetes clusters and cluster access operations.');
+		for (const resource of contract.resources) {
+			expect(root.stdout).toContain(resource.name);
+		}
 
 		expect(auth.exitCode).toBe(0);
 		expect(auth.stdout).toContain('login');
@@ -321,7 +330,7 @@ describe('akua entrypoint', () => {
 		const { stdout, exitCode } = await runAkua([
 			'commands',
 			'--operation-id',
-			'offers.resolve',
+			'packages.getVersionInputs',
 			'--json'
 		]);
 
@@ -330,17 +339,21 @@ describe('akua entrypoint', () => {
 		expect(payload).toMatchObject({
 			data: [
 				{
-					operation_id: 'offers.resolve',
+					operation_id: 'packages.getVersionInputs',
 					input: {
-						parameters: [{ name: 'short_hash', in: 'query', required: true }],
-						example: { query: { short_hash: '<short_hash>' } }
+						parameters: [
+							{ name: 'id', in: 'path', required: true },
+							{ name: 'version_id', in: 'path', required: true },
+							{ name: 'akua-context', in: 'header', required: false }
+						],
+						example: { path: { id: '<id>', version_id: '<version_id>' } }
 					}
 				}
 			]
 		});
-		expect(payload.data[0].usage).toBe('akua offers resolve --short-hash <short-hash>');
+		expect(payload.data[0].usage).toBe('akua packages get-version-inputs <id> <version_id>');
 		expect(payload.next_steps[0]).toEqual({
-			command: 'akua offers resolve --short-hash <short-hash>'
+			command: 'akua packages get-version-inputs <id> <version_id>'
 		});
 	});
 
@@ -476,22 +489,22 @@ describe('akua entrypoint', () => {
 
 	test('routes normal generated commands and redacts invalid request input', async () => {
 		const home = await makeTempHome();
-		const inputPath = joinPath(home, 'machine-input.json');
+		const inputPath = joinPath(home, 'cluster-input.json');
 		const sentinel = 'request-value-must-not-be-rendered';
 		try {
 			await writeFileString(
 				inputPath,
 				JSON.stringify({
 					body: {
-						cluster_id: 'clu_123',
-						instance_type: 'cx23',
-						compute_config_id: 'ccfg_123',
+						kind: 'hosted',
+						name: 'demo',
+						region_id: 'reg_1',
 						undeclared: sentinel
 					}
 				})
 			);
 
-			const result = await runAkua(['machines', 'create', '--input', inputPath, '--json'], {
+			const result = await runAkua(['clusters', 'create', '--input', inputPath, '--json'], {
 				HOME: home,
 				AKUA_API_TOKEN: 'test-token'
 			});
@@ -501,7 +514,7 @@ describe('akua entrypoint', () => {
 				error: {
 					code: 'AKUA_INPUT_INVALID',
 					message:
-						'Invalid input for akua machines create: body.undeclared: Expected no excess property.'
+						'Invalid input for akua clusters create: body.undeclared: Expected no excess property.'
 				}
 			});
 			expect(result.stdout).not.toContain(sentinel);

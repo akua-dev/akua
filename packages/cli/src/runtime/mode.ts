@@ -1,6 +1,6 @@
 import { Config, Effect, Option } from 'effect';
 
-import { UsageFailure } from './effect-runtime';
+import { UsageFailure } from './errors';
 
 export type OutputMode = 'human' | 'agent' | 'json' | 'quiet';
 
@@ -97,7 +97,7 @@ function readOutputFlag(
 				index += 1;
 				continue;
 			}
-			if (value.startsWith('--output=') || value.startsWith('-o=')) {
+			if (value !== undefined && (value.startsWith('--output=') || value.startsWith('-o='))) {
 				const [flag, raw] = splitFlagAssignment(value);
 				if (raw === '') {
 					return yield* invalidMode(

@@ -118,7 +118,7 @@ bun_lock_repository = use_repo_rule("//bazel/npm:bun_lock.bzl", "bun_lock_reposi
 bun_lock_repository(
     name = "npm",
     lock = "//:bun.lock",
-    patches = {"patches/effect@4.0.1.patch": "//:patches/effect@4.0.1.patch"},
+    patches = {"patches/effect@4.1.4.patch": "//:patches/effect@4.1.4.patch"},
 )
 
 # ---------------------------------------------------------------------------
@@ -347,3 +347,27 @@ crate.annotation(
     version = "0.13.0",
 )
 use_repo(crate, "akua_precompile_crates", "akua_sandbox_crates", "akua_worker_crates")
+
+# The in-cluster gateway is built from this public source module on both CPU
+# architectures. Pin the platform manifests rather than a multi-platform tag.
+bazel_dep(name = "rules_img", version = "0.3.19")
+
+img_pull = use_repo_rule("@rules_img//img:pull.bzl", "pull")
+
+img_pull(
+    name = "private_ingress_gateway_base_amd64",
+    digest = "sha256:5883c320d81f76c764e114c9ab14054f037bb040907816fc9028d80d9602a7c3",
+    layer_handling = "eager",
+    registry = "gcr.io",
+    repository = "distroless/base-debian12",
+    tag = "nonroot",
+)
+
+img_pull(
+    name = "private_ingress_gateway_base_arm64",
+    digest = "sha256:d4bde5bff059360eb9fa4fb13e0a1d3e655fc7fddeffcf2803d3137c79cd6068",
+    layer_handling = "eager",
+    registry = "gcr.io",
+    repository = "distroless/base-debian12",
+    tag = "nonroot",
+)

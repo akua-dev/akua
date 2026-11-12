@@ -1,7 +1,7 @@
 import { Effect, FileSystem, Stdio, Stream } from "effect"
 import { Command } from "effect/cli"
 import { HostError } from "../errors"
-import { bareTree, RenderWorker } from "../worker.effect"
+import { bareTree, RenderWorker } from "../worker"
 import type { VerbContext } from "./context"
 import { writeStdout } from "./context"
 import { NOT_FOUND } from "./files"

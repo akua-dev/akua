@@ -1,0 +1,70 @@
+{{- $ns := include "akua.namespace" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: akua-agent-updater
+  namespace: {{ $ns }}
+  labels:
+    {{- include "akua.componentLabels" (dict "root" . "component" "updater") | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "akua.selectorLabels" "updater" | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "akua.componentLabels" (dict "root" . "component" "updater") | nindent 8 }}
+    spec:
+      serviceAccountName: akua-agent-updater
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        {{- include "akua.podSecurityContext" . | nindent 8 }}
+      {{- include "akua.scheduling" . | nindent 6 }}
+      containers:
+        - name: updater
+          image: {{ include "akua.updaterImage" . | quote }}
+          command: ["/usr/local/bin/akua-cluster-agent", "updater"]
+          env:
+            - name: AKUA_PLATFORM_ORIGIN
+              value: {{ .Values.platformOrigin | quote }}
+            - name: AKUA_AGENT_VERSION
+              value: {{ default .Chart.AppVersion .Values.release.version | quote }}
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_EXTRA_CA_CERTS
+              value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            - name: AKUA_HEALTH_PORT
+              value: "8081"
+          # Part of the agent's gate when it applies a new updater.
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            # Room for its own akua-apply engine while it applies a bundle.
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            {{- include "akua.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

@@ -1,0 +1,123 @@
+{{- $ns := include "akua.namespace" . -}}
+{{- $image := include "akua.agentImage" . -}}
+{{- $federated := eq .Values.enrollment.method "federated" -}}
+{{- if $federated -}}
+{{- if not .Values.enrollment.agentId -}}
+{{- fail "enrollment.agentId is required when enrollment.method is federated" -}}
+{{- end -}}
+{{- if not .Values.enrollment.federatedAudience -}}
+{{- fail "enrollment.federatedAudience is required when enrollment.method is federated" -}}
+{{- end -}}
+{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: akua-agent
+  namespace: {{ $ns }}
+  labels:
+    {{- include "akua.componentLabels" (dict "root" . "component" "agent") | nindent 4 }}
+  annotations:
+    # The updater reads and rewrites this on every update; a helm upgrade
+    # re-sets it, which is the intended repair behaviour.
+    akua.dev/release: {{ dict "version" (default .Chart.AppVersion .Values.release.version) "image" $image "protocol" (int (default 1 .Values.release.protocol)) | toJson | quote }}
+spec:
+  replicas: 1
+  # Two agents must never reconcile at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "akua.selectorLabels" "agent" | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "akua.componentLabels" (dict "root" . "component" "agent") | nindent 8 }}
+    spec:
+      serviceAccountName: akua-agent
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        {{- include "akua.podSecurityContext" . | nindent 8 }}
+      {{- include "akua.scheduling" . | nindent 6 }}
+      containers:
+        - name: agent
+          image: {{ $image | quote }}
+          command: ["/usr/local/bin/akua-cluster-agent", "agent"]
+          env:
+            - name: AKUA_PLATFORM_ORIGIN
+              value: {{ .Values.platformOrigin | quote }}
+            - name: AKUA_AGENT_IMAGE
+              value: {{ $image | quote }}
+            - name: AKUA_KUBERNETES_CONNECTION
+              value: inCluster
+            - name: AKUA_IMPERSONATE
+              value: serviceAccount
+            - name: AKUA_ENROLLMENT_METHOD
+              value: {{ .Values.enrollment.method | quote }}
+            {{- if not $federated }}
+            - name: AKUA_ENROLLMENT_CODE
+              valueFrom:
+                secretKeyRef:
+                  name: akua-agent-enrollment
+                  key: code
+                  optional: true
+            {{- else }}
+            - name: AKUA_AGENT_ID
+              value: {{ .Values.enrollment.agentId | quote }}
+            - name: AKUA_FEDERATED_TOKEN_PATH
+              value: /var/run/secrets/akua.dev/serviceaccount/token
+            {{- end }}
+            {{- with .Values.distribution }}
+            - name: AKUA_DISTRIBUTION
+              value: {{ . | quote }}
+            {{- end }}
+            - name: AKUA_HEALTH_PORT
+              value: "8080"
+            - name: NODE_EXTRA_CA_CERTS
+              value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+          securityContext:
+            {{- include "akua.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- if $federated }}
+            - name: federated-token
+              mountPath: /var/run/secrets/akua.dev/serviceaccount
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if $federated }}
+        - name: federated-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: token
+                  audience: {{ .Values.enrollment.federatedAudience | quote }}
+                  expirationSeconds: 3600
+        {{- end }}

@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 /**
  * The promise filesystem API isomorphic-git drives, in memory: a fetched
  * repository never touches the host disk, and no host path is reachable

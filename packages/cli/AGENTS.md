@@ -36,9 +36,9 @@ guide doesn't cover, search through the source code in `node_modules/effect/src`
 
 ## Validation
 
-Run `bun run check` and `bun run generate:check` for every change that touches the public API surface. Release
+Run `bazel test --config=dev_remote @akua//bazel:cli_typecheck_test` and `bazel test --config=dev_remote //:sdk_generated_drift_test` for every change that touches the public API surface. Release
 changes also require the focused release/workflow tests and a current-host
-compiled archive smoke through `bun run release:smoke`.
+compiled archive smoke through `bazel test --config=dev_remote //tools/akuapkg:cli_release_linux_x64_smoke_test`.
 
 ## Public API command contract
 
@@ -74,7 +74,7 @@ Before changing production CLI code in `src/` or `scripts/`, load
 `skills/effect-v4/SKILL.md`. Keep command flow on the audited Effect v4
 services/layers and tagged-failure model; only the binary terminal owns the
 runtime/fiber handoff. Before handoff, run the skill's source scan, focused Bun
-tests, and `bun run check`; inspect each source scan hit rather than treating
+tests, and `bazel test --config=dev_remote @akua//bazel:cli_typecheck_test`; inspect each source scan hit rather than treating
 the command as a cosmetic check.
 
 - All production control flow and recoverable failure paths use

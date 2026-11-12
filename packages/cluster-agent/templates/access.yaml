@@ -1,0 +1,66 @@
+{{- /*
+The customer's grant to akua-system/akua-apply. These bindings are the whole
+authority of every apply and prune; the agent holds none of it itself.
+*/ -}}
+{{- $ns := include "akua.namespace" . -}}
+{{- include "akua.access" . -}}
+{{- if not (hasKey .Values.access "cluster") }}
+{{- /*
+akua-system is Akua's own namespace on every cluster: the baseline
+connector and the agent bundle are applied there as akua-apply, so the
+namespaced objects of a release update without the customer.
+*/}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: akua-apply-system
+  namespace: {{ $ns }}
+  labels:
+    {{- include "akua.componentLabels" (dict "root" . "component" "agent") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+  - kind: ServiceAccount
+    name: akua-apply
+    namespace: {{ $ns }}
+---
+{{- end }}
+{{- if hasKey .Values.access "cluster" }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: akua-apply
+  labels:
+    {{- include "akua.componentLabels" (dict "root" . "component" "agent") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: akua-apply
+    namespace: {{ $ns }}
+{{- else }}
+{{- range $i, $target := .Values.access.namespaces }}
+{{- if $i }}
+---
+{{- end }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: akua-apply
+  namespace: {{ $target }}
+  labels:
+    {{- include "akua.componentLabels" (dict "root" $ "component" "agent") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+  - kind: ServiceAccount
+    name: akua-apply
+    namespace: {{ $ns }}
+{{- end }}
+{{- end }}

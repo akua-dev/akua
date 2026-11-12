@@ -4,90 +4,40 @@ import type { ApiContract } from '../api/contract';
 export const contract: ApiContract = {
 	"resources": [
 		{
-			"name": "access-decisions",
-			"title": "Access Decisions"
-		},
-		{
 			"name": "api-tokens",
 			"title": "API Tokens"
 		},
 		{
-			"name": "cloudflare",
-			"title": "Cloudflare",
-			"description": "Cloudflare account credentials and gateway control."
+			"name": "billing-accounts",
+			"title": "Billing accounts"
 		},
 		{
 			"name": "clusters",
-			"title": "Clusters",
-			"description": "Kubernetes clusters and cluster access operations."
-		},
-		{
-			"name": "compute-configs",
-			"title": "ComputeConfigs",
-			"description": "Workspace compute provider configurations."
-		},
-		{
-			"name": "connect-sessions",
-			"title": "Connect sessions"
-		},
-		{
-			"name": "connection-grants",
-			"title": "Connection grants"
+			"title": "clusters"
 		},
 		{
 			"name": "connections",
-			"title": "Connections"
-		},
-		{
-			"name": "connectors",
-			"title": "Connectors"
-		},
-		{
-			"name": "custom-domains",
-			"title": "Custom domains",
-			"description": "Workspace custom domains and routing targets."
-		},
-		{
-			"name": "dashboard-preferences",
-			"title": "Dashboard Preferences"
-		},
-		{
-			"name": "dashboard-surfaces",
-			"title": "Dashboard Surfaces"
-		},
-		{
-			"name": "dashboards",
-			"title": "Dashboards",
-			"description": "Dashboard and widget resources."
-		},
-		{
-			"name": "entitlements",
-			"title": "Entitlements",
-			"description": "Effective workspace capabilities and limits."
+			"title": "Vault connections"
 		},
 		{
 			"name": "installs",
-			"title": "Installs",
-			"description": "Installation and render operations."
-		},
-		{
-			"name": "machine-quotes",
-			"title": "Machine quotes"
+			"title": "installs"
 		},
 		{
 			"name": "machines",
-			"title": "Machines",
-			"description": "Compute machines and lifecycle events."
+			"title": "machines"
 		},
 		{
-			"name": "notifications",
-			"title": "Notifications",
-			"description": "User notification state."
+			"name": "node-pools",
+			"title": "Node pools"
+		},
+		{
+			"name": "nodes",
+			"title": "Nodes"
 		},
 		{
 			"name": "offers",
-			"title": "Offers",
-			"description": "Marketplace offers and redemption tracking."
+			"title": "offers"
 		},
 		{
 			"name": "opencodes",
@@ -95,58 +45,27 @@ export const contract: ApiContract = {
 		},
 		{
 			"name": "operations",
-			"title": "Operations",
-			"description": "Long-running operation status and controls."
+			"title": "operations"
 		},
 		{
 			"name": "order-drafts",
-			"title": "Order Drafts",
-			"description": "Draft checkout orders and checkout sessions."
+			"title": "Order Drafts"
 		},
 		{
 			"name": "organizations",
-			"title": "Organizations",
-			"description": "Organizations, memberships, and managed workspaces."
+			"title": "Organizations"
 		},
 		{
 			"name": "packages",
-			"title": "Packages",
-			"description": "Software packages, versions, and input schemas."
-		},
-		{
-			"name": "preview-hostnames",
-			"title": "Preview hostnames",
-			"description": "Install preview hostnames and routing state."
+			"title": "packages"
 		},
 		{
 			"name": "products",
-			"title": "Products",
-			"description": "Marketplace product catalog resources."
-		},
-		{
-			"name": "quotas",
-			"title": "Quotas",
-			"description": "Workspace quota limits and usage."
+			"title": "products"
 		},
 		{
 			"name": "regions",
-			"title": "Regions",
-			"description": "Available deployment regions."
-		},
-		{
-			"name": "registry",
-			"title": "Registry",
-			"description": "Container registry credentials and repositories."
-		},
-		{
-			"name": "repositories",
-			"title": "Repositories",
-			"description": "Source repositories available to the workspace."
-		},
-		{
-			"name": "repository-change-requests",
-			"title": "Repository change requests",
-			"description": "Fork-backed repository change reviews and lifecycle actions."
+			"title": "regions"
 		},
 		{
 			"name": "sandboxes",
@@ -154,31 +73,15 @@ export const contract: ApiContract = {
 		},
 		{
 			"name": "secrets",
-			"title": "Secrets",
-			"description": "Workspace secrets and secret versions."
-		},
-		{
-			"name": "snippet-runs",
-			"title": "Snippet Runs"
-		},
-		{
-			"name": "snippets",
-			"title": "Snippets",
-			"description": "Reusable snippets and snippet runs."
+			"title": "vaultSecrets"
 		},
 		{
 			"name": "vaults",
-			"title": "Vaults"
-		},
-		{
-			"name": "workspace-subdomains",
-			"title": "Workspace subdomains",
-			"description": "Workspace subdomain identity."
+			"title": "vaults"
 		},
 		{
 			"name": "workspaces",
-			"title": "Workspaces",
-			"description": "Workspace resources, members, and billing state."
+			"title": "Billing accounts"
 		}
 	],
 	"parameters": {
@@ -191,14 +94,6 @@ export const contract: ApiContract = {
 				"minLength": 1,
 				"maxLength": 53,
 				"description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace."
-			}
-		},
-		"header:akua-context:2": {
-			"name": "akua-context",
-			"in": "header",
-			"required": false,
-			"schema": {
-				"type": "string"
 			}
 		},
 		"header:idempotency-key": {
@@ -215,17 +110,6 @@ export const contract: ApiContract = {
 		"header:idempotency-key:2": {
 			"name": "idempotency-key",
 			"in": "header",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted; repeated requests with the same key in the same workspace resolve consistently instead of creating a duplicate. When omitted, the server mints a key for this request.",
-				"minLength": 1,
-				"maxLength": 64
-			}
-		},
-		"header:idempotency-key:3": {
-			"name": "idempotency-key",
-			"in": "header",
 			"required": true,
 			"schema": {
 				"type": "string",
@@ -234,41 +118,7 @@ export const contract: ApiContract = {
 				"description": "Required caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used."
 			}
 		},
-		"header:idempotency-key:4": {
-			"name": "idempotency-key",
-			"in": "header",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Required caller key for idempotent machine lifecycle operations.",
-				"minLength": 1,
-				"maxLength": 64
-			}
-		},
-		"header:idempotency-key:5": {
-			"name": "idempotency-key",
-			"in": "header",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 64,
-				"description": "Required caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
-				"pattern": "^[^\\r\\n]+$"
-			}
-		},
 		"header:if-match": {
-			"name": "if-match",
-			"in": "header",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 256,
-				"description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata."
-			}
-		},
-		"header:if-match:2": {
 			"name": "if-match",
 			"in": "header",
 			"required": false,
@@ -279,21 +129,36 @@ export const contract: ApiContract = {
 				"maxLength": 64
 			}
 		},
-		"header:if-match:3": {
+		"header:if-match:2": {
 			"name": "if-match",
 			"in": "header",
 			"required": true,
 			"schema": {
-				"type": "string"
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 256,
+				"description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata."
 			}
 		},
-		"path:chk_id": {
-			"name": "chk_id",
+		"header:if-match:3": {
+			"name": "if-match",
+			"in": "header",
+			"required": false,
+			"schema": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 256,
+				"description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata."
+			}
+		},
+		"path:billing_account": {
+			"name": "billing_account",
 			"in": "path",
 			"required": true,
 			"schema": {
 				"type": "string",
-				"description": "Checkout session ID"
+				"minLength": 3,
+				"maxLength": 54
 			}
 		},
 		"path:command_id": {
@@ -304,15 +169,12 @@ export const contract: ApiContract = {
 				"$ref": "#/$defs/SandboxCommandId"
 			}
 		},
-		"path:custom_domain_id": {
-			"name": "custom_domain_id",
+		"path:connection": {
+			"name": "connection",
 			"in": "path",
 			"required": true,
 			"schema": {
-				"type": "string",
-				"description": "Custom domain ID",
-				"minLength": 1,
-				"maxLength": 54
+				"$ref": "#/$defs/ConnectionId"
 			}
 		},
 		"path:grant_id": {
@@ -329,109 +191,11 @@ export const contract: ApiContract = {
 			"required": true,
 			"schema": {
 				"type": "string",
-				"description": "Token ID. Prefixed form `tok_<id>` is canonical.",
-				"minLength": 1,
-				"maxLength": 54
+				"minLength": 2,
+				"maxLength": 192
 			}
 		},
 		"path:id:10": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Dashboard ID",
-				"minLength": 1,
-				"maxLength": 55
-			}
-		},
-		"path:id:11": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 55
-			}
-		},
-		"path:id:12": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Install ID",
-				"minLength": 1,
-				"maxLength": 55
-			}
-		},
-		"path:id:13": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 100
-			}
-		},
-		"path:id:14": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Notification ID. Prefixed form `ntf_<id>` is canonical.",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"path:id:15": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Offer ID",
-				"minLength": 1,
-				"maxLength": 56
-			}
-		},
-		"path:id:16": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Operation ID. Prefixed form `op_<id>` is canonical; bare IDs accepted during transition.",
-				"minLength": 1,
-				"maxLength": 53
-			}
-		},
-		"path:id:17": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Order draft ID",
-				"minLength": 1,
-				"maxLength": 55
-			}
-		},
-		"path:id:18": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Organization ID. Prefixed form `org_<id>` is canonical.",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"path:id:19": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -442,100 +206,7 @@ export const contract: ApiContract = {
 				"maxLength": 54
 			}
 		},
-		"path:id:2": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Cloudflare connection ID. Prefixed form `cfcon_<id>` is canonical.",
-				"minLength": 1,
-				"maxLength": 56
-			}
-		},
-		"path:id:20": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Product ID",
-				"minLength": 1,
-				"maxLength": 55
-			}
-		},
-		"path:id:21": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Region ID. Prefixed form `reg_<id>` is canonical.",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"path:id:22": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Registry connection ID. Prefixed form `rcon_<id>` is canonical.",
-				"minLength": 1,
-				"maxLength": 55
-			}
-		},
-		"path:id:23": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Repository ID",
-				"minLength": 1,
-				"maxLength": 55
-			}
-		},
-		"path:id:24": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Secret ID. Prefixed form `sec_<id>` is canonical.",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"path:id:25": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Snippet ID",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"path:id:26": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"$ref": "#/$defs/VaultId"
-			}
-		},
-		"path:id:27": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"$ref": "#/$defs/OpenCodeServerId"
-			}
-		},
-		"path:id:28": {
+		"path:id:11": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -543,12 +214,23 @@ export const contract: ApiContract = {
 				"$ref": "#/$defs/SandboxId"
 			}
 		},
-		"path:id:29": {
+		"path:id:12": {
 			"name": "id",
 			"in": "path",
 			"required": true,
 			"schema": {
-				"type": "string"
+				"$ref": "#/$defs/OpenCodeServerId"
+			}
+		},
+		"path:id:2": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"description": "Install ID",
+				"minLength": 1,
+				"maxLength": 55
 			}
 		},
 		"path:id:3": {
@@ -556,7 +238,9 @@ export const contract: ApiContract = {
 			"in": "path",
 			"required": true,
 			"schema": {
-				"$ref": "#/$defs/ConnectionGrantId"
+				"type": "string",
+				"minLength": 3,
+				"maxLength": 54
 			}
 		},
 		"path:id:4": {
@@ -564,47 +248,12 @@ export const contract: ApiContract = {
 			"in": "path",
 			"required": true,
 			"schema": {
-				"$ref": "#/$defs/ConnectionId"
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 53
 			}
 		},
 		"path:id:5": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"$ref": "#/$defs/ConnectorSlug"
-			}
-		},
-		"path:id:6": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"$ref": "#/$defs/ConnectSessionId"
-			}
-		},
-		"path:id:7": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"path:id:8": {
-			"name": "id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Cluster ID.",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"path:id:9": {
 			"name": "id",
 			"in": "path",
 			"required": true,
@@ -615,144 +264,101 @@ export const contract: ApiContract = {
 				"maxLength": 53
 			}
 		},
+		"path:id:6": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"description": "Product ID",
+				"minLength": 1,
+				"maxLength": 55
+			}
+		},
+		"path:id:7": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"description": "Offer ID",
+				"minLength": 1,
+				"maxLength": 56
+			}
+		},
+		"path:id:8": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"description": "Order draft ID",
+				"minLength": 1,
+				"maxLength": 55
+			}
+		},
+		"path:id:9": {
+			"name": "id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 54
+			}
+		},
 		"path:invitationId": {
 			"name": "invitationId",
 			"in": "path",
 			"required": true,
 			"schema": {
 				"type": "string",
-				"pattern": "^orgi_[a-z0-9]+$"
-			}
-		},
-		"path:metric": {
-			"name": "metric",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Quota metric (URL-encoded service/resource)."
-			}
-		},
-		"path:offer": {
-			"name": "offer",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Parent offer ID",
-				"minLength": 1,
-				"maxLength": 56
-			}
-		},
-		"path:package_id": {
-			"name": "package_id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Artifact Hub package id"
-			}
-		},
-		"path:path": {
-			"name": "path",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Kube API path forwarded verbatim"
-			}
-		},
-		"path:port": {
-			"name": "port",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "integer",
-				"minimum": 1,
-				"maximum": 65535,
-				"description": "The port a service in the sandbox listens on."
-			}
-		},
-		"path:preview_hostname_id": {
-			"name": "preview_hostname_id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Preview hostname ID",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"path:render_id": {
-			"name": "render_id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Render ID",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"path:req_id": {
-			"name": "req_id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Subscription change request ID",
-				"minLength": 1,
+				"minLength": 3,
 				"maxLength": 55
 			}
 		},
-		"path:revision_id": {
-			"name": "revision_id",
+		"path:name": {
+			"name": "name",
 			"in": "path",
 			"required": true,
 			"schema": {
 				"type": "string",
 				"minLength": 1,
-				"maxLength": 55
+				"maxLength": 253,
+				"pattern": "^[a-z0-9](?:[-a-z0-9.]*[a-z0-9])?$"
 			}
 		},
-		"path:run_id": {
-			"name": "run_id",
+		"path:node_pool_id": {
+			"name": "node_pool_id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"$ref": "#/$defs/NodePoolId"
+			}
+		},
+		"path:secret": {
+			"name": "secret",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"$ref": "#/$defs/SecretId"
+			}
+		},
+		"path:token_id": {
+			"name": "token_id",
 			"in": "path",
 			"required": true,
 			"schema": {
 				"type": "string",
-				"minLength": 1,
-				"maxLength": 54
+				"pattern": "^[a-z0-9]{6}$"
 			}
 		},
-		"path:userId": {
-			"name": "userId",
+		"path:vault": {
+			"name": "vault",
 			"in": "path",
 			"required": true,
 			"schema": {
-				"type": "string",
-				"description": "User ID of the member whose role is being updated",
-				"minLength": 1
-			}
-		},
-		"path:userId:2": {
-			"name": "userId",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "User ID of the member being removed",
-				"minLength": 1
-			}
-		},
-		"path:userId:3": {
-			"name": "userId",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "Member user ID"
+				"$ref": "#/$defs/VaultId"
 			}
 		},
 		"path:version": {
@@ -760,8 +366,7 @@ export const contract: ApiContract = {
 			"in": "path",
 			"required": true,
 			"schema": {
-				"type": "string",
-				"description": "Chart version"
+				"$ref": "#/$defs/VersionSelector"
 			}
 		},
 		"path:version_id": {
@@ -772,119 +377,6 @@ export const contract: ApiContract = {
 				"type": "string",
 				"minLength": 1,
 				"maxLength": 55
-			}
-		},
-		"path:vid": {
-			"name": "vid",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "SecretVersion ID. Prefixed form `secv_<id>` is canonical.",
-				"minLength": 1,
-				"maxLength": 55
-			}
-		},
-		"path:vid:2": {
-			"name": "vid",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"description": "SecretVersion ID (`secv_<id>`), `latest`, or a version alias such as `current`.",
-				"minLength": 1,
-				"maxLength": 128
-			}
-		},
-		"path:wbs_id": {
-			"name": "wbs_id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"path:wgt_id": {
-			"name": "wgt_id",
-			"in": "path",
-			"required": true,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"query:agent": {
-			"name": "agent",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"description": "Filter to change requests created by this agent",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"query:binding_kind": {
-			"name": "binding_kind",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"pinned",
-					"floating"
-				]
-			}
-		},
-		"query:cluster_id": {
-			"name": "cluster_id",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"query:cluster_id:2": {
-			"name": "cluster_id",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"description": "Cluster ID to include cluster-scoped concurrency quotas",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"query:connection": {
-			"name": "connection",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"$ref": "#/$defs/ConnectionId"
-			}
-		},
-		"query:connector": {
-			"name": "connector",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"$ref": "#/$defs/ConnectorSlug"
-			}
-		},
-		"query:container": {
-			"name": "container",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"description": "Container name",
-				"minLength": 1,
-				"maxLength": 253
 			}
 		},
 		"query:create_parents": {
@@ -910,7 +402,9 @@ export const contract: ApiContract = {
 			"in": "query",
 			"required": false,
 			"schema": {
-				"type": "string"
+				"type": "string",
+				"maxLength": 512,
+				"description": "Pagination cursor from a previous response's `next_cursor`."
 			}
 		},
 		"query:cursor:3": {
@@ -919,72 +413,7 @@ export const contract: ApiContract = {
 			"required": false,
 			"schema": {
 				"type": "string",
-				"maxLength": 512,
-				"description": "Pagination cursor from a previous response's `next_cursor`."
-			}
-		},
-		"query:cursor:4": {
-			"name": "cursor",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"anyOf": [
-					{
-						"type": "string"
-					},
-					{
-						"type": "null"
-					}
-				]
-			}
-		},
-		"query:dashboard": {
-			"name": "dashboard",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 55
-			}
-		},
-		"query:external_id": {
-			"name": "external_id",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"maxLength": 100
-			}
-		},
-		"query:feature": {
-			"name": "feature",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"anyOf": [
-					{
-						"type": "string"
-					},
-					{
-						"type": "null"
-					}
-				]
-			}
-		},
-		"query:feature_set": {
-			"name": "feature_set",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"anyOf": [
-					{
-						"type": "string"
-					},
-					{
-						"type": "null"
-					}
-				]
+				"maxLength": 512
 			}
 		},
 		"query:follow": {
@@ -992,75 +421,9 @@ export const contract: ApiContract = {
 			"in": "query",
 			"required": false,
 			"schema": {
-				"anyOf": [
-					{
-						"type": "boolean"
-					},
-					{
-						"type": "null"
-					}
-				],
-				"description": "Follow log output",
-				"default": true
-			}
-		},
-		"query:follow:2": {
-			"name": "follow",
-			"in": "query",
-			"required": false,
-			"schema": {
 				"type": "boolean",
 				"description": "Keep the stream open until the command finished. Default true.",
 				"default": true
-			}
-		},
-		"query:force": {
-			"name": "force",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"anyOf": [
-					{
-						"type": "boolean"
-					},
-					{
-						"type": "null"
-					}
-				],
-				"default": false
-			}
-		},
-		"query:fork_repository": {
-			"name": "fork_repository",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"description": "Filter to the change request backed by this fork repository",
-				"minLength": 1,
-				"maxLength": 55
-			}
-		},
-		"query:include_schema": {
-			"name": "include_schema",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"true",
-					"false"
-				],
-				"description": "Also fetch the chart's published values-schema and merge it in"
-			}
-		},
-		"query:kind": {
-			"name": "kind",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"description": "Filter by secret kind."
 			}
 		},
 		"query:limit": {
@@ -1085,43 +448,20 @@ export const contract: ApiContract = {
 				"maximum": 100
 			}
 		},
-		"query:limit:3": {
-			"name": "limit",
+		"query:node_pool_id": {
+			"name": "node_pool_id",
 			"in": "query",
-			"required": false,
+			"required": true,
 			"schema": {
-				"type": "integer",
-				"description": "Dashboard revisions per page (1-10, default 10)",
-				"default": 10,
-				"minimum": 1,
-				"maximum": 10
+				"$ref": "#/$defs/NodePoolId"
 			}
 		},
-		"query:limit:4": {
-			"name": "limit",
+		"query:node_pool_id:2": {
+			"name": "node_pool_id",
 			"in": "query",
 			"required": false,
 			"schema": {
-				"anyOf": [
-					{
-						"type": "string",
-						"pattern": "^[+-]?\\d*\\.?\\d+(?:[Ee][+-]?\\d+)?$"
-					},
-					{
-						"type": "null"
-					}
-				]
-			}
-		},
-		"query:offer": {
-			"name": "offer",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"description": "Filter by offer ID",
-				"minLength": 1,
-				"maxLength": 56
+				"$ref": "#/$defs/NodePoolId"
 			}
 		},
 		"query:offset": {
@@ -1152,47 +492,19 @@ export const contract: ApiContract = {
 			"required": false,
 			"schema": {
 				"type": "string",
+				"minLength": 3,
+				"maxLength": 54
+			}
+		},
+		"query:organization:2": {
+			"name": "organization",
+			"in": "query",
+			"required": false,
+			"schema": {
+				"type": "string",
 				"minLength": 1,
 				"maxLength": 54,
-				"description": "Filter by owning organization. Requires membership; excludes managed customer Workspaces."
-			}
-		},
-		"query:owner_id": {
-			"name": "owner_id",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"description": "Required when `owner_type` is set. Ignored otherwise."
-			}
-		},
-		"query:owner_type": {
-			"name": "owner_type",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"install",
-					"repository_change_request",
-					"repository",
-					"workspace",
-					"machine",
-					"cluster",
-					"package",
-					"sandbox"
-				]
-			}
-		},
-		"query:parent_repository": {
-			"name": "parent_repository",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"description": "Filter to change requests targeting this parent repository",
-				"minLength": 1,
-				"maxLength": 55
+				"description": "Filter by owning organization. Requires membership."
 			}
 		},
 		"query:path": {
@@ -1207,41 +519,6 @@ export const contract: ApiContract = {
 				"description": "Absolute path inside the sandbox."
 			}
 		},
-		"query:pod": {
-			"name": "pod",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"description": "Pod name (all pods if omitted)",
-				"minLength": 1,
-				"maxLength": 253
-			}
-		},
-		"query:principal_id": {
-			"name": "principal_id",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 100
-			}
-		},
-		"query:principal_type": {
-			"name": "principal_type",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"user",
-					"agent",
-					"opencode_server",
-					"sandbox"
-				]
-			}
-		},
 		"query:product_id": {
 			"name": "product_id",
 			"in": "query",
@@ -1252,71 +529,14 @@ export const contract: ApiContract = {
 				"maxLength": 55
 			}
 		},
-		"query:purpose": {
-			"name": "purpose",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"deploy",
-					"package",
-					"repository_change_request",
-					"workspace"
-				],
-				"description": "Filter by repository purpose (deploy / package / repository_change_request / workspace)"
-			}
-		},
 		"query:short_hash": {
 			"name": "short_hash",
 			"in": "query",
 			"required": true,
 			"schema": {
 				"type": "string",
-				"description": "Offer short hash from the customer-clicked URL",
-				"minLength": 1,
-				"maxLength": 64
-			}
-		},
-		"query:since_seconds": {
-			"name": "since_seconds",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"anyOf": [
-					{
-						"type": "integer"
-					},
-					{
-						"type": "null"
-					}
-				],
-				"description": "Only return logs newer than this many seconds",
-				"default": 0
-			}
-		},
-		"query:snippet": {
-			"name": "snippet",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 54
-			}
-		},
-		"query:source": {
-			"name": "source",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"manual",
-					"dashboard_open",
-					"dashboard_refresh",
-					"agent"
-				]
+				"description": "Offer short hash from the customer link `/i/<short_hash>`",
+				"pattern": "^[0-9A-Za-z]{8}$"
 			}
 		},
 		"query:state": {
@@ -1326,10 +546,9 @@ export const contract: ApiContract = {
 			"schema": {
 				"type": "string",
 				"enum": [
-					"provisioning",
-					"active",
-					"failed",
-					"releasing"
+					"PENDING",
+					"ACTIVE",
+					"CLOSED"
 				]
 			}
 		},
@@ -1340,12 +559,12 @@ export const contract: ApiContract = {
 			"schema": {
 				"type": "string",
 				"enum": [
-					"ACTIVE",
 					"PROVISIONING",
+					"RUNNING",
 					"SUSPENDING",
 					"SUSPENDED",
-					"RESUMING",
-					"DELETING"
+					"DELETING",
+					"FAILED"
 				],
 				"description": "Machine lifecycle state."
 			}
@@ -1355,14 +574,7 @@ export const contract: ApiContract = {
 			"in": "query",
 			"required": false,
 			"schema": {
-				"type": "string",
-				"enum": [
-					"provisioning",
-					"active",
-					"evicted",
-					"releasing"
-				],
-				"description": "Current preview hostname lifecycle state."
+				"$ref": "#/$defs/SandboxState"
 			}
 		},
 		"query:state:4": {
@@ -1370,106 +582,7 @@ export const contract: ApiContract = {
 			"in": "query",
 			"required": false,
 			"schema": {
-				"type": "string",
-				"enum": [
-					"AWAITING_CHANGES",
-					"VALIDATING",
-					"READY",
-					"ACCEPTING",
-					"ACCEPTED",
-					"REJECTED",
-					"WITHDRAWN",
-					"EXPIRED",
-					"FAILED"
-				],
-				"description": "Filter by lifecycle state"
-			}
-		},
-		"query:state:5": {
-			"name": "state",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"enabled",
-					"disabled",
-					"destroyed"
-				],
-				"description": "Filter by secret version state."
-			}
-		},
-		"query:state:6": {
-			"name": "state",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"succeeded",
-					"failed",
-					"timed_out"
-				]
-			}
-		},
-		"query:state:7": {
-			"name": "state",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"$ref": "#/$defs/SandboxState"
-			}
-		},
-		"query:state:8": {
-			"name": "state",
-			"in": "query",
-			"required": false,
-			"schema": {
 				"$ref": "#/$defs/SandboxCommandState"
-			}
-		},
-		"query:status": {
-			"name": "status",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"allOf": [
-					{
-						"$ref": "#/$defs/OrderDraftStatus"
-					},
-					{
-						"description": "Wizard phase. Driven by the order draft actor; mirrored on every patch to the row so reactive UIs render one column. `done` and `terminated` are terminal."
-					}
-				]
-			}
-		},
-		"query:tail": {
-			"name": "tail",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"anyOf": [
-					{
-						"type": "integer"
-					},
-					{
-						"type": "null"
-					}
-				],
-				"description": "Lines to tail"
-			}
-		},
-		"query:target_kind": {
-			"name": "target_kind",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"install",
-					"cluster",
-					"external"
-				]
 			}
 		},
 		"query:timeout": {
@@ -1483,33 +596,10 @@ export const contract: ApiContract = {
 				"maximum": 60
 			}
 		},
-		"query:track": {
-			"name": "track",
+		"query:vault_id": {
+			"name": "vault_id",
 			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"minLength": 1,
-				"maxLength": 100
-			}
-		},
-		"query:unread": {
-			"name": "unread",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"true",
-					"false"
-				],
-				"description": "When set to `true`, only unread notifications are returned."
-			}
-		},
-		"query:vault": {
-			"name": "vault",
-			"in": "query",
-			"required": false,
+			"required": true,
 			"schema": {
 				"$ref": "#/$defs/VaultId"
 			}
@@ -1521,126 +611,22 @@ export const contract: ApiContract = {
 			"schema": {
 				"type": "string",
 				"enum": [
+					"public",
 					"basic",
 					"full"
 				],
-				"default": "basic"
-			}
-		},
-		"query:view:2": {
-			"name": "view",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"basic",
-					"full"
-				],
-				"description": "Controls whether sensitive source provenance is included. `basic` omits `composed_from_sources`.",
-				"default": "basic"
-			}
-		},
-		"query:view:3": {
-			"name": "view",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"basic",
-					"full"
-				],
-				"description": "Controls inclusion of implementation detail fields.",
-				"default": "basic"
-			}
-		},
-		"query:view:4": {
-			"name": "view",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"basic",
-					"full"
-				],
-				"description": "Basic view is the default; full includes implementation details like render hashes and implementation refs.",
-				"default": "basic"
-			}
-		},
-		"query:view:5": {
-			"name": "view",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"type": "string",
-				"enum": [
-					"basic",
-					"full"
-				],
-				"description": "Control whether output and error details are included.",
-				"default": "basic"
-			}
-		},
-		"query:workspace": {
-			"name": "workspace",
-			"in": "query",
-			"required": false,
-			"schema": {
-				"anyOf": [
-					{
-						"type": "string"
-					},
-					{
-						"type": "null"
-					}
-				]
+				"description": "`public` is what anyone with the link sees, also without a session (only for an Offer open to anyone signed in); `basic` (the default when signed in) is what a customer the Offer is for may see; `full` is for members of the seller Workspace. Without a session the answer is `public`."
 			}
 		}
 	},
 	"operations": [
-		{
-			"id": "accessDecisions.explain",
-			"method": "POST",
-			"path": "/access_decisions",
-			"summary": "Explain an access decision",
-			"auth": true,
-			"parameters": [
-				"header:akua-context"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/ExplainAccessDecisionBody"
-				}
-			}
-		},
-		{
-			"id": "accessDecisions.explainBatch",
-			"method": "POST",
-			"path": "/access_decisions:explainBatch",
-			"summary": "Explain multiple access decisions",
-			"auth": true,
-			"parameters": [
-				"header:akua-context"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/ExplainAccessDecisionsBatchBody"
-				}
-			}
-		},
 		{
 			"id": "apiTokens.create",
 			"method": "POST",
 			"path": "/api_tokens",
 			"summary": "Create an API token",
 			"auth": true,
-			"parameters": [
-				"header:akua-context"
-			],
+			"parameters": [],
 			"body": {
 				"required": true,
 				"schema": {
@@ -1649,13 +635,22 @@ export const contract: ApiContract = {
 			}
 		},
 		{
+			"id": "apiTokens.get",
+			"method": "GET",
+			"path": "/api_tokens/{id}",
+			"summary": "Get an API token",
+			"auth": true,
+			"parameters": [
+				"path:id:3"
+			]
+		},
+		{
 			"id": "apiTokens.list",
 			"method": "GET",
 			"path": "/api_tokens",
 			"summary": "List API tokens",
 			"auth": true,
 			"parameters": [
-				"header:akua-context",
 				"query:cursor",
 				"query:limit"
 			]
@@ -1667,123 +662,163 @@ export const contract: ApiContract = {
 			"summary": "Revoke an API token",
 			"auth": true,
 			"parameters": [
-				"path:id",
-				"header:akua-context"
+				"path:id:3"
 			]
 		},
 		{
-			"id": "cloudflare.createCredential",
+			"id": "billingAccounts.close",
 			"method": "POST",
-			"path": "/cloudflare_connections",
-			"summary": "Create Cloudflare credential",
+			"path": "/billing_accounts/{billing_account}:close",
+			"summary": "Close a billing account",
 			"auth": true,
 			"parameters": [
-				"header:akua-context"
+				"path:billing_account",
+				"header:idempotency-key",
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/CreateCloudflareCredentialBody"
+					"$ref": "#/$defs/CloseBillingAccountRequest"
 				}
 			}
 		},
 		{
-			"id": "cloudflare.deleteCredential",
-			"method": "DELETE",
-			"path": "/cloudflare_connections/{id}",
-			"summary": "Delete Cloudflare credential",
-			"auth": true,
-			"parameters": [
-				"path:id:2",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "cloudflare.listCredentials",
-			"method": "GET",
-			"path": "/cloudflare_connections",
-			"summary": "List Cloudflare credentials",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit"
-			]
-		},
-		{
-			"id": "clusters.create",
+			"id": "billingAccounts.create",
 			"method": "POST",
-			"path": "/clusters",
-			"summary": "Create cluster",
+			"path": "/billing_accounts",
+			"summary": "Create a billing account",
 			"auth": true,
 			"parameters": [
-				"header:akua-context",
 				"header:idempotency-key:2"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"description": "Display name for the cluster.",
-							"minLength": 2,
-							"maxLength": 32
-						},
-						"region_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"network_profile": {
-							"type": "string",
-							"enum": [
-								"linux_cilium",
-								"mixed_os_calico"
-							],
-							"description": "Immutable networking profile for managed KaaS clusters. Defaults to `linux_cilium`. `mixed_os_calico` adds Windows worker support, which is not generally available yet: creating a cluster with it returns `403 Forbidden` unless Windows worker support is enabled for the workspace.",
-							"default": "linux_cilium"
-						}
-					},
-					"required": [
-						"name",
-						"region_id"
-					],
-					"additionalProperties": false
+					"$ref": "#/$defs/CreateBillingAccountRequest"
 				}
 			}
 		},
 		{
-			"id": "clusters.createWorkerBootstrap",
-			"method": "POST",
-			"path": "/clusters/{id}/worker_bootstraps",
-			"summary": "Create worker bootstrap",
+			"id": "billingAccounts.get",
+			"method": "GET",
+			"path": "/billing_accounts/{billing_account}",
+			"summary": "Get a billing account",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:billing_account"
+			]
+		},
+		{
+			"id": "billingAccounts.getIamPolicy",
+			"method": "GET",
+			"path": "/billing_accounts/{billing_account}:getIamPolicy",
+			"summary": "Get a billing account policy",
+			"auth": true,
+			"parameters": [
+				"path:billing_account"
+			]
+		},
+		{
+			"id": "billingAccounts.list",
+			"method": "GET",
+			"path": "/billing_accounts",
+			"summary": "List billing accounts",
+			"auth": true,
+			"parameters": [
+				"query:organization",
+				"query:cursor:3",
+				"query:state"
+			]
+		},
+		{
+			"id": "billingAccounts.setIamPolicy",
+			"method": "POST",
+			"path": "/billing_accounts/{billing_account}:setIamPolicy",
+			"summary": "Set a billing account policy",
+			"auth": true,
+			"parameters": [
+				"path:billing_account",
+				"header:idempotency-key",
+				"header:if-match:2"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/SetIamPolicyRequest"
+				}
+			}
+		},
+		{
+			"id": "billingAccounts.startPaymentSetup",
+			"method": "POST",
+			"path": "/billing_accounts/{billing_account}:startPaymentSetup",
+			"summary": "Start adding a card",
+			"auth": true,
+			"parameters": [
+				"path:billing_account",
+				"header:idempotency-key"
+			]
+		},
+		{
+			"id": "billingAccounts.testIamPermissions",
+			"method": "POST",
+			"path": "/billing_accounts/{billing_account}:testIamPermissions",
+			"summary": "Test billing account permissions",
+			"auth": true,
+			"parameters": [
+				"path:billing_account"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/TestIamPermissionsRequest"
+				}
+			}
+		},
+		{
+			"id": "clusters.create",
+			"method": "POST",
+			"path": "/clusters",
+			"summary": "Create a Cluster",
+			"auth": true,
+			"parameters": [
 				"header:akua-context",
 				"header:idempotency-key"
 			],
 			"body": {
-				"required": false,
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/ClusterCreateBody"
+				}
+			}
+		},
+		{
+			"id": "clusters.createJoinToken",
+			"method": "POST",
+			"path": "/clusters/{id}/join_tokens",
+			"summary": "Create a join token",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"header:akua-context",
+				"header:idempotency-key"
+			],
+			"body": {
+				"required": true,
 				"schema": {
 					"type": "object",
 					"properties": {
-						"node_name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 63,
-							"pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
-							"description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must not match an existing node in the cluster."
-						},
 						"ttl_seconds": {
 							"type": "integer",
-							"description": "Token TTL in seconds (optional).",
+							"description": "Lifetime of the token in seconds.",
 							"minimum": 60,
 							"maximum": 86400
 						}
 					},
+					"required": [
+						"ttl_seconds"
+					],
 					"additionalProperties": false
 				}
 			}
@@ -1792,97 +827,34 @@ export const contract: ApiContract = {
 			"id": "clusters.delete",
 			"method": "DELETE",
 			"path": "/clusters/{id}",
-			"summary": "Delete cluster",
+			"summary": "Delete a Cluster",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:id:3",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
-		},
-		{
-			"id": "clusters.exec",
-			"method": "POST",
-			"path": "/clusters/{id}:exec",
-			"summary": "Execute command in cluster",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/ExecBody"
-				}
-			}
 		},
 		{
 			"id": "clusters.get",
 			"method": "GET",
 			"path": "/clusters/{id}",
-			"summary": "Get cluster",
+			"summary": "Get a Cluster",
 			"auth": true,
 			"parameters": [
-				"path:id:8",
+				"path:id:3",
 				"header:akua-context"
 			]
 		},
 		{
-			"id": "clusters.getCapabilities",
-			"method": "GET",
-			"path": "/clusters/{id}/capabilities",
-			"summary": "Get cluster capabilities",
-			"auth": true,
-			"parameters": [
-				"path:id:8",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "clusters.getComputeSettings",
-			"method": "GET",
-			"path": "/clusters/{id}/compute_settings",
-			"summary": "Get cluster compute settings",
-			"auth": true,
-			"parameters": [
-				"path:id:29",
-				"header:akua-context:2"
-			]
-		},
-		{
-			"id": "clusters.getKubeconfig",
-			"method": "GET",
-			"path": "/clusters/{id}/kubeconfig",
-			"summary": "Get cluster kubeconfig",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "clusters.getWorkerBootstrap",
-			"method": "GET",
-			"path": "/clusters/{id}/worker_bootstraps/{wbs_id}",
-			"summary": "Get cluster worker bootstrap",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"path:wbs_id",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "clusters.import",
+			"id": "clusters.issueConnectorInstall",
 			"method": "POST",
-			"path": "/clusters:import",
-			"summary": "Import cluster",
+			"path": "/clusters/{id}/connector_install",
+			"summary": "Issue the ClusterConnector install command",
 			"auth": true,
 			"parameters": [
+				"path:id:3",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
@@ -1891,25 +863,12 @@ export const contract: ApiContract = {
 				"schema": {
 					"type": "object",
 					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"region_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"kubeconfig": {
-							"type": "string",
-							"minLength": 1
+						"access": {
+							"$ref": "#/$defs/ClusterAccess"
 						}
 					},
 					"required": [
-						"name",
-						"region_id",
-						"kubeconfig"
+						"access"
 					],
 					"additionalProperties": false
 				}
@@ -1919,7 +878,7 @@ export const contract: ApiContract = {
 			"id": "clusters.list",
 			"method": "GET",
 			"path": "/clusters",
-			"summary": "List clusters",
+			"summary": "List Clusters",
 			"auth": true,
 			"parameters": [
 				"header:akua-context",
@@ -1928,2423 +887,168 @@ export const contract: ApiContract = {
 			]
 		},
 		{
-			"id": "clusters.listAddresses",
+			"id": "clusters.listCapabilities",
 			"method": "GET",
-			"path": "/clusters/{id}/addresses",
-			"summary": "List cluster addresses",
+			"path": "/clusters/{id}/capabilities",
+			"summary": "List capabilities",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"query:cursor:2",
-				"query:limit:2"
-			]
-		},
-		{
-			"id": "clusters.listWorkerBootstraps",
-			"method": "GET",
-			"path": "/clusters/{id}/worker_bootstraps",
-			"summary": "List cluster worker bootstraps",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
+				"path:id:3",
 				"header:akua-context",
 				"query:cursor",
 				"query:limit"
 			]
 		},
 		{
-			"id": "clusters.proxyKube",
+			"id": "clusters.listJoinTokens",
 			"method": "GET",
-			"path": "/clusters/{id}/kube_proxy/{path:*}",
-			"summary": "Proxy cluster API",
+			"path": "/clusters/{id}/join_tokens",
+			"summary": "List join tokens",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
-				"path:path",
-				"header:akua-context"
+				"path:id:3",
+				"header:akua-context",
+				"query:cursor",
+				"query:limit"
 			]
 		},
 		{
-			"id": "clusters.refreshCapabilities",
-			"method": "POST",
-			"path": "/clusters/{id}/capabilities:refresh",
-			"summary": "Refresh cluster capabilities",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:idempotency-key"
-			]
-		},
-		{
-			"id": "clusters.resume",
-			"method": "POST",
-			"path": "/clusters/{id}:resume",
-			"summary": "Resume cluster",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			]
-		},
-		{
-			"id": "clusters.revokeWorkerBootstrap",
-			"method": "POST",
-			"path": "/clusters/{id}/worker_bootstraps/{wbs_id}:revoke",
-			"summary": "Revoke worker bootstrap",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"path:wbs_id",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			]
-		},
-		{
-			"id": "clusters.suspend",
-			"method": "POST",
-			"path": "/clusters/{id}:suspend",
-			"summary": "Suspend cluster",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			]
-		},
-		{
-			"id": "clusters.update",
-			"method": "PATCH",
-			"path": "/clusters/{id}",
-			"summary": "Update cluster",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"region_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"provider": {
-							"type": "string",
-							"enum": [
-								"managed_kaas",
-								"imported_byoc"
-							],
-							"description": "Cluster control-plane family: managed (`managed_kaas`) vs imported self-managed (`imported_byoc`)."
-						},
-						"kubeconfig": {
-							"type": "string",
-							"minLength": 1
-						}
-					},
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "clusters.updateComputeSettings",
-			"method": "PATCH",
-			"path": "/clusters/{id}/compute_settings",
-			"summary": "Update cluster compute settings",
-			"auth": true,
-			"parameters": [
-				"path:id:29",
-				"header:if-match:3",
-				"header:akua-context:2"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"anyOf": [
-						{
-							"type": "object",
-							"properties": {
-								"auto_scaling_enabled": {
-									"type": "boolean"
-								},
-								"max_machines": {
-									"anyOf": [
-										{
-											"type": "integer",
-											"minimum": 0,
-											"maximum": 100
-										},
-										{
-											"type": "null"
-										}
-									]
-								}
-							},
-							"required": [
-								"auto_scaling_enabled"
-							],
-							"additionalProperties": false
-						},
-						{
-							"type": "object",
-							"properties": {
-								"auto_scaling_enabled": {
-									"anyOf": [
-										{
-											"type": "boolean"
-										},
-										{
-											"type": "null"
-										}
-									]
-								},
-								"max_machines": {
-									"type": "integer",
-									"minimum": 0,
-									"maximum": 100
-								}
-							},
-							"required": [
-								"max_machines"
-							],
-							"additionalProperties": false
-						}
-					]
-				}
-			}
-		},
-		{
-			"id": "computeConfigs.create",
-			"method": "POST",
-			"path": "/compute_configs",
-			"summary": "Create compute config",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"header:idempotency-key"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"provider": {
-							"type": "string",
-							"enum": [
-								"hcloud"
-							]
-						},
-						"provider_config": {
-							"type": "object",
-							"properties": {
-								"region": {
-									"type": "string",
-									"minLength": 1
-								},
-								"image": {
-									"type": "string",
-									"minLength": 1
-								},
-								"machine_type_filter": {
-									"type": "string"
-								}
-							},
-							"required": [
-								"region",
-								"image"
-							],
-							"additionalProperties": false
-						},
-						"credential_scope": {
-							"$ref": "#/$defs/CredentialScope"
-						}
-					},
-					"required": [
-						"name",
-						"provider",
-						"provider_config",
-						"credential_scope"
-					],
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "computeConfigs.delete",
+			"id": "clusters.revokeJoinToken",
 			"method": "DELETE",
-			"path": "/compute_configs/{id}",
-			"summary": "Delete compute config",
+			"path": "/clusters/{id}/join_tokens/{token_id}",
+			"summary": "Revoke a join token",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			]
-		},
-		{
-			"id": "computeConfigs.get",
-			"method": "GET",
-			"path": "/compute_configs/{id}",
-			"summary": "Get compute config",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "computeConfigs.list",
-			"method": "GET",
-			"path": "/compute_configs",
-			"summary": "List compute configs",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:view"
-			]
-		},
-		{
-			"id": "computeConfigs.update",
-			"method": "PATCH",
-			"path": "/compute_configs/{id}",
-			"summary": "Update compute config",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"provider_config": {
-							"type": "object",
-							"properties": {
-								"region": {
-									"type": "string",
-									"minLength": 1
-								},
-								"image": {
-									"type": "string",
-									"minLength": 1
-								},
-								"machine_type_filter": {
-									"type": "string"
-								}
-							},
-							"additionalProperties": false
-						},
-						"credential_scope": {
-							"$ref": "#/$defs/CredentialScope"
-						}
-					},
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "connectionGrants.create",
-			"method": "POST",
-			"path": "/connection_grants",
-			"summary": "Create a connection grant",
-			"auth": true,
-			"parameters": [
+				"path:id:3",
+				"path:token_id",
 				"header:akua-context",
 				"header:idempotency-key"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/CreateConnectionGrantRequest"
-				}
-			}
-		},
-		{
-			"id": "connectionGrants.get",
-			"method": "GET",
-			"path": "/connection_grants/{id}",
-			"summary": "Get a connection grant",
-			"auth": true,
-			"parameters": [
-				"path:id:3",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "connectionGrants.list",
-			"method": "GET",
-			"path": "/connection_grants",
-			"summary": "List connection grants",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:vault",
-				"query:connection",
-				"query:connector",
-				"query:principal_type",
-				"query:principal_id"
-			]
-		},
-		{
-			"id": "connectionGrants.revoke",
-			"method": "POST",
-			"path": "/connection_grants/{id}:revoke",
-			"summary": "Revoke a connection grant",
-			"auth": true,
-			"parameters": [
-				"path:id:3",
-				"header:akua-context"
 			]
 		},
 		{
 			"id": "connections.create",
 			"method": "POST",
-			"path": "/connections",
+			"path": "/vaults/{vault}/connections",
 			"summary": "Create a connection",
 			"auth": true,
 			"parameters": [
+				"path:vault",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/CreateConnectionRequest"
+					"$ref": "#/$defs/CreateVaultConnectionRequest"
 				}
 			}
 		},
 		{
 			"id": "connections.get",
 			"method": "GET",
-			"path": "/connections/{id}",
+			"path": "/vaults/{vault}/connections/{connection}",
 			"summary": "Get a connection",
 			"auth": true,
 			"parameters": [
-				"path:id:4",
+				"path:vault",
+				"path:connection",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "connections.getIamPolicy",
+			"method": "GET",
+			"path": "/vaults/{vault}/connections/{connection}:getIamPolicy",
+			"summary": "Get a connection policy",
+			"auth": true,
+			"parameters": [
+				"path:vault",
+				"path:connection",
 				"header:akua-context"
 			]
 		},
 		{
 			"id": "connections.list",
 			"method": "GET",
-			"path": "/connections",
+			"path": "/vaults/{vault}/connections",
 			"summary": "List connections",
 			"auth": true,
 			"parameters": [
+				"path:vault",
 				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:vault",
-				"query:connector"
+				"query:cursor:3",
+				"query:limit:2"
 			]
 		},
 		{
 			"id": "connections.revoke",
 			"method": "POST",
-			"path": "/connections/{id}:revoke",
+			"path": "/vaults/{vault}/connections/{connection}:revoke",
 			"summary": "Revoke a connection",
 			"auth": true,
 			"parameters": [
-				"path:id:4",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "connectors.get",
-			"method": "GET",
-			"path": "/connectors/{id}",
-			"summary": "Get a connector",
-			"auth": true,
-			"parameters": [
-				"path:id:5",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "connectors.list",
-			"method": "GET",
-			"path": "/connectors",
-			"summary": "List connectors",
-			"auth": true,
-			"parameters": [
+				"path:vault",
+				"path:connection",
 				"header:akua-context",
-				"query:cursor",
-				"query:limit"
+				"header:idempotency-key"
 			]
 		},
 		{
-			"id": "connectSessions.create",
+			"id": "connections.setCredential",
 			"method": "POST",
-			"path": "/connect_sessions",
-			"summary": "Create a connect session",
+			"path": "/vaults/{vault}/connections/{connection}:setCredential",
+			"summary": "Set a connection credential",
 			"auth": true,
 			"parameters": [
+				"path:vault",
+				"path:connection",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/CreateConnectSessionRequest"
+					"$ref": "#/$defs/SetConnectionCredentialRequest"
 				}
 			}
 		},
 		{
-			"id": "connectSessions.get",
-			"method": "GET",
-			"path": "/connect_sessions/{id}",
-			"summary": "Get a connect session",
-			"auth": true,
-			"parameters": [
-				"path:id:6",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "connectSessions.list",
-			"method": "GET",
-			"path": "/connect_sessions",
-			"summary": "List connect sessions",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:vault",
-				"query:connection"
-			]
-		},
-		{
-			"id": "customDomains.create",
+			"id": "connections.setIamPolicy",
 			"method": "POST",
-			"path": "/workspaces/{id}/custom_domains",
-			"summary": "Create custom domain",
+			"path": "/vaults/{vault}/connections/{connection}:setIamPolicy",
+			"summary": "Set a connection policy",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/CreateCustomDomainBody"
-				}
-			}
-		},
-		{
-			"id": "customDomains.delete",
-			"method": "DELETE",
-			"path": "/workspaces/{id}/custom_domains/{custom_domain_id}",
-			"summary": "Delete custom domain",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"path:custom_domain_id",
-				"header:if-match",
-				"header:idempotency-key:3"
-			]
-		},
-		{
-			"id": "customDomains.get",
-			"method": "GET",
-			"path": "/workspaces/{id}/custom_domains/{custom_domain_id}",
-			"summary": "Get custom domain",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"path:custom_domain_id"
-			]
-		},
-		{
-			"id": "customDomains.list",
-			"method": "GET",
-			"path": "/workspaces/{id}/custom_domains",
-			"summary": "List custom domains",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"query:cursor",
-				"query:limit",
-				"query:target_kind",
-				"query:state"
-			]
-		},
-		{
-			"id": "customDomains.update",
-			"method": "PATCH",
-			"path": "/workspaces/{id}/custom_domains/{custom_domain_id}",
-			"summary": "Update custom domain",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"path:custom_domain_id",
-				"header:if-match",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/UpdateCustomDomainBody"
-				}
-			}
-		},
-		{
-			"id": "dashboardPreferences.get",
-			"method": "GET",
-			"path": "/dashboard_preferences",
-			"summary": "Get your dashboard preferences",
-			"auth": true,
-			"parameters": [
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "dashboardPreferences.suggestRole",
-			"method": "POST",
-			"path": "/dashboard_preferences:suggestRole",
-			"summary": "Suggest what you mainly do",
-			"auth": true,
-			"parameters": [
-				"header:akua-context"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/DashboardRoleSuggestionRequest"
-				}
-			}
-		},
-		{
-			"id": "dashboardPreferences.update",
-			"method": "PATCH",
-			"path": "/dashboard_preferences",
-			"summary": "Update your dashboard preferences",
-			"auth": true,
-			"parameters": [
-				"header:akua-context"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/DashboardPreferencesUpdate"
-				}
-			}
-		},
-		{
-			"id": "dashboards.create",
-			"method": "POST",
-			"path": "/dashboards",
-			"summary": "Create dashboard",
-			"auth": true,
-			"parameters": [
-				"header:akua-context"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"description": {
-							"type": "string",
-							"maxLength": 500
-						},
-						"widgets": {
-							"type": "array",
-							"items": {
-								"oneOf": [
-									{
-										"type": "object",
-										"properties": {
-											"snippet_id": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 54
-											},
-											"title": {
-												"type": "string",
-												"maxLength": 100
-											},
-											"display_type": {
-												"type": "string",
-												"enum": [
-													"table",
-													"stat",
-													"json",
-													"logs",
-													"timeseries"
-												],
-												"description": "Controls how the snippet result is rendered in dashboard widgets"
-											},
-											"col_span": {
-												"type": "number",
-												"enum": [
-													1,
-													2,
-													3,
-													4
-												],
-												"default": 2
-											}
-										},
-										"required": [
-											"snippet_id"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"widget_type": {
-												"type": "string",
-												"enum": [
-													"snippet"
-												]
-											},
-											"snippet_id": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 54
-											},
-											"snippet_etag": {
-												"anyOf": [
-													{
-														"type": "string"
-													},
-													{
-														"type": "null"
-													}
-												],
-												"default": null
-											},
-											"title": {
-												"type": "string",
-												"maxLength": 100
-											},
-											"col_span": {
-												"type": "number",
-												"enum": [
-													1,
-													2,
-													3,
-													4
-												],
-												"default": 2
-											},
-											"height": {
-												"type": "string",
-												"enum": [
-													"compact",
-													"standard",
-													"tall"
-												],
-												"default": "standard"
-											},
-											"drill_down": {
-												"anyOf": [
-													{
-														"type": "string",
-														"minLength": 1,
-														"maxLength": 2048
-													},
-													{
-														"type": "null"
-													}
-												],
-												"default": null
-											},
-											"visualization_options": {
-												"type": "object",
-												"default": {}
-											},
-											"freshness_policy": {
-												"oneOf": [
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"provider_default"
-																]
-															}
-														},
-														"required": [
-															"mode"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"max_age"
-																]
-															},
-															"max_age_seconds": {
-																"type": "integer",
-																"minimum": 30,
-																"maximum": 86400
-															}
-														},
-														"required": [
-															"mode",
-															"max_age_seconds"
-														],
-														"additionalProperties": false
-													}
-												],
-												"default": {
-													"mode": "provider_default"
-												}
-											},
-											"input_bindings": {
-												"type": "object",
-												"additionalProperties": {
-													"oneOf": [
-														{
-															"type": "object",
-															"properties": {
-																"mode": {
-																	"type": "string",
-																	"enum": [
-																		"inherit"
-																	]
-																},
-																"filter_key": {
-																	"anyOf": [
-																		{
-																			"type": "string",
-																			"enum": [
-																				"time",
-																				"comparison",
-																				"cluster",
-																				"install",
-																				"product",
-																				"package",
-																				"region",
-																				"status"
-																			]
-																		},
-																		{
-																			"type": "string",
-																			"pattern": "^var\\.[a-z][a-z0-9_]{0,31}$"
-																		}
-																	]
-																}
-															},
-															"required": [
-																"mode",
-																"filter_key"
-															],
-															"additionalProperties": false
-														},
-														{
-															"type": "object",
-															"properties": {
-																"mode": {
-																	"type": "string",
-																	"enum": [
-																		"fixed"
-																	]
-																},
-																"value": {}
-															},
-															"required": [
-																"mode",
-																"value"
-															],
-															"additionalProperties": false
-														},
-														{
-															"type": "object",
-															"properties": {
-																"mode": {
-																	"type": "string",
-																	"enum": [
-																		"unbound"
-																	]
-																}
-															},
-															"required": [
-																"mode"
-															],
-															"additionalProperties": false
-														}
-													]
-												},
-												"default": {}
-											},
-											"visualization": {
-												"anyOf": [
-													{
-														"type": "string",
-														"enum": [
-															"stat",
-															"sparkline",
-															"line",
-															"area",
-															"bar",
-															"donut",
-															"table",
-															"status_list",
-															"logs",
-															"json"
-														]
-													},
-													{
-														"type": "null"
-													}
-												],
-												"default": null
-											},
-											"refresh_policy": {
-												"oneOf": [
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"on_load"
-																]
-															}
-														},
-														"required": [
-															"mode"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"manual"
-																]
-															}
-														},
-														"required": [
-															"mode"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"interval"
-																]
-															},
-															"interval_seconds": {
-																"type": "integer",
-																"minimum": 60,
-																"maximum": 86400
-															}
-														},
-														"required": [
-															"mode",
-															"interval_seconds"
-														],
-														"additionalProperties": false
-													}
-												],
-												"default": {
-													"mode": "on_load"
-												}
-											},
-											"display_type": {
-												"anyOf": [
-													{
-														"type": "string",
-														"enum": [
-															"table",
-															"stat",
-															"json",
-															"logs",
-															"timeseries"
-														]
-													},
-													{
-														"type": "null"
-													}
-												],
-												"description": "Controls how the snippet result is rendered in dashboard widgets",
-												"default": null
-											}
-										},
-										"required": [
-											"widget_type",
-											"snippet_id"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"widget_type": {
-												"type": "string",
-												"enum": [
-													"platform_metric"
-												]
-											},
-											"metric_key": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100,
-												"pattern": "^[a-z][a-z0-9_]*$"
-											},
-											"metric_version": {
-												"type": "integer",
-												"exclusiveMinimum": 0
-											},
-											"filter_bindings": {
-												"type": "object",
-												"additionalProperties": {
-													"oneOf": [
-														{
-															"type": "object",
-															"properties": {
-																"mode": {
-																	"type": "string",
-																	"enum": [
-																		"inherit"
-																	]
-																},
-																"filter_key": {
-																	"anyOf": [
-																		{
-																			"type": "string",
-																			"enum": [
-																				"time",
-																				"comparison",
-																				"cluster",
-																				"install",
-																				"product",
-																				"package",
-																				"region",
-																				"status"
-																			]
-																		},
-																		{
-																			"type": "string",
-																			"pattern": "^var\\.[a-z][a-z0-9_]{0,31}$"
-																		}
-																	]
-																}
-															},
-															"required": [
-																"mode",
-																"filter_key"
-															],
-															"additionalProperties": false
-														},
-														{
-															"type": "object",
-															"properties": {
-																"mode": {
-																	"type": "string",
-																	"enum": [
-																		"fixed"
-																	]
-																},
-																"value": {}
-															},
-															"required": [
-																"mode",
-																"value"
-															],
-															"additionalProperties": false
-														},
-														{
-															"type": "object",
-															"properties": {
-																"mode": {
-																	"type": "string",
-																	"enum": [
-																		"unbound"
-																	]
-																}
-															},
-															"required": [
-																"mode"
-															],
-															"additionalProperties": false
-														}
-													]
-												},
-												"default": {}
-											},
-											"title": {
-												"type": "string",
-												"maxLength": 100
-											},
-											"col_span": {
-												"type": "number",
-												"enum": [
-													1,
-													2,
-													3,
-													4
-												],
-												"default": 2
-											},
-											"height": {
-												"type": "string",
-												"enum": [
-													"compact",
-													"standard",
-													"tall"
-												],
-												"default": "standard"
-											},
-											"drill_down": {
-												"anyOf": [
-													{
-														"type": "string",
-														"minLength": 1,
-														"maxLength": 2048
-													},
-													{
-														"type": "null"
-													}
-												],
-												"default": null
-											},
-											"visualization_options": {
-												"type": "object",
-												"default": {}
-											},
-											"freshness_policy": {
-												"oneOf": [
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"provider_default"
-																]
-															}
-														},
-														"required": [
-															"mode"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"max_age"
-																]
-															},
-															"max_age_seconds": {
-																"type": "integer",
-																"minimum": 30,
-																"maximum": 86400
-															}
-														},
-														"required": [
-															"mode",
-															"max_age_seconds"
-														],
-														"additionalProperties": false
-													}
-												],
-												"default": {
-													"mode": "provider_default"
-												}
-											}
-										},
-										"required": [
-											"widget_type",
-											"metric_key",
-											"metric_version"
-										],
-										"additionalProperties": false
-									}
-								]
-							},
-							"maxItems": 24
-						}
-					},
-					"required": [
-						"name"
-					],
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "dashboards.createRevision",
-			"method": "POST",
-			"path": "/dashboards/{id}/revisions",
-			"summary": "Create dashboard revision",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"header:if-match",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"description": {
-							"anyOf": [
-								{
-									"type": "string",
-									"maxLength": 500
-								},
-								{
-									"type": "null"
-								}
-							]
-						},
-						"filter_definitions": {
-							"type": "array",
-							"items": {
-								"oneOf": [
-									{
-										"type": "object",
-										"properties": {
-											"kind": {
-												"type": "string",
-												"enum": [
-													"time"
-												]
-											},
-											"key": {
-												"type": "string",
-												"enum": [
-													"time"
-												]
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											}
-										},
-										"required": [
-											"kind",
-											"key",
-											"label"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"kind": {
-												"type": "string",
-												"enum": [
-													"comparison"
-												]
-											},
-											"key": {
-												"type": "string",
-												"enum": [
-													"comparison"
-												]
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											}
-										},
-										"required": [
-											"kind",
-											"key",
-											"label"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"kind": {
-												"type": "string",
-												"enum": [
-													"resource"
-												]
-											},
-											"key": {
-												"type": "string",
-												"enum": [
-													"cluster",
-													"install",
-													"product",
-													"package",
-													"region"
-												]
-											},
-											"resource": {
-												"type": "string",
-												"enum": [
-													"cluster",
-													"install",
-													"product",
-													"package",
-													"region"
-												]
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											}
-										},
-										"required": [
-											"kind",
-											"key",
-											"resource",
-											"label"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"kind": {
-												"type": "string",
-												"enum": [
-													"status"
-												]
-											},
-											"key": {
-												"type": "string",
-												"enum": [
-													"status"
-												]
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"options": {
-												"type": "array",
-												"items": {
-													"type": "string",
-													"minLength": 1,
-													"maxLength": 100
-												},
-												"minItems": 1,
-												"maxItems": 100
-											}
-										},
-										"required": [
-											"kind",
-											"key",
-											"label",
-											"options"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"kind": {
-												"type": "string",
-												"enum": [
-													"variable"
-												]
-											},
-											"key": {
-												"type": "string",
-												"pattern": "^var\\.[a-z][a-z0-9_]{0,31}$"
-											},
-											"input": {
-												"oneOf": [
-													{
-														"type": "object",
-														"properties": {
-															"key": {
-																"type": "string",
-																"pattern": "^[a-z][a-z0-9_]{0,31}$"
-															},
-															"label": {
-																"type": "string",
-																"minLength": 1,
-																"maxLength": 100
-															},
-															"description": {
-																"type": "string",
-																"maxLength": 500
-															},
-															"required": {
-																"type": "boolean"
-															},
-															"kind": {
-																"type": "string",
-																"enum": [
-																	"time_range"
-																]
-															},
-															"default": {
-																"type": "object",
-																"properties": {
-																	"from": {
-																		"type": "integer"
-																	},
-																	"to": {
-																		"type": "integer"
-																	}
-																},
-																"required": [
-																	"from",
-																	"to"
-																],
-																"additionalProperties": false
-															}
-														},
-														"required": [
-															"key",
-															"label",
-															"kind"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"key": {
-																"type": "string",
-																"pattern": "^[a-z][a-z0-9_]{0,31}$"
-															},
-															"label": {
-																"type": "string",
-																"minLength": 1,
-																"maxLength": 100
-															},
-															"description": {
-																"type": "string",
-																"maxLength": 500
-															},
-															"required": {
-																"type": "boolean"
-															},
-															"kind": {
-																"type": "string",
-																"enum": [
-																	"resource"
-																]
-															},
-															"resource": {
-																"type": "string",
-																"enum": [
-																	"cluster",
-																	"install",
-																	"product",
-																	"package",
-																	"region"
-																]
-															},
-															"default": {
-																"anyOf": [
-																	{
-																		"type": "string",
-																		"maxLength": 255
-																	},
-																	{
-																		"type": "array",
-																		"items": {
-																			"type": "string",
-																			"maxLength": 255
-																		},
-																		"minItems": 1,
-																		"maxItems": 100
-																	}
-																]
-															},
-															"multiple": {
-																"type": "boolean"
-															}
-														},
-														"required": [
-															"key",
-															"label",
-															"kind",
-															"resource"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"key": {
-																"type": "string",
-																"pattern": "^[a-z][a-z0-9_]{0,31}$"
-															},
-															"label": {
-																"type": "string",
-																"minLength": 1,
-																"maxLength": 100
-															},
-															"description": {
-																"type": "string",
-																"maxLength": 500
-															},
-															"required": {
-																"type": "boolean"
-															},
-															"kind": {
-																"type": "string",
-																"enum": [
-																	"enum"
-																]
-															},
-															"options": {
-																"type": "array",
-																"items": {
-																	"type": "string",
-																	"minLength": 1,
-																	"maxLength": 100
-																},
-																"minItems": 1,
-																"maxItems": 100
-															},
-															"default": {
-																"type": "string",
-																"minLength": 1,
-																"maxLength": 100
-															}
-														},
-														"required": [
-															"key",
-															"label",
-															"kind",
-															"options"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"key": {
-																"type": "string",
-																"pattern": "^[a-z][a-z0-9_]{0,31}$"
-															},
-															"label": {
-																"type": "string",
-																"minLength": 1,
-																"maxLength": 100
-															},
-															"description": {
-																"type": "string",
-																"maxLength": 500
-															},
-															"required": {
-																"type": "boolean"
-															},
-															"kind": {
-																"type": "string",
-																"enum": [
-																	"boolean"
-																]
-															},
-															"default": {
-																"type": "boolean"
-															}
-														},
-														"required": [
-															"key",
-															"label",
-															"kind"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"key": {
-																"type": "string",
-																"pattern": "^[a-z][a-z0-9_]{0,31}$"
-															},
-															"label": {
-																"type": "string",
-																"minLength": 1,
-																"maxLength": 100
-															},
-															"description": {
-																"type": "string",
-																"maxLength": 500
-															},
-															"required": {
-																"type": "boolean"
-															},
-															"kind": {
-																"type": "string",
-																"enum": [
-																	"number"
-																]
-															},
-															"min": {
-																"type": "number"
-															},
-															"max": {
-																"type": "number"
-															},
-															"default": {
-																"type": "number"
-															}
-														},
-														"required": [
-															"key",
-															"label",
-															"kind"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"key": {
-																"type": "string",
-																"pattern": "^[a-z][a-z0-9_]{0,31}$"
-															},
-															"label": {
-																"type": "string",
-																"minLength": 1,
-																"maxLength": 100
-															},
-															"description": {
-																"type": "string",
-																"maxLength": 500
-															},
-															"required": {
-																"type": "boolean"
-															},
-															"kind": {
-																"type": "string",
-																"enum": [
-																	"text"
-																]
-															},
-															"default": {
-																"type": "string",
-																"maxLength": 500
-															},
-															"max_length": {
-																"type": "integer",
-																"minimum": 1,
-																"maximum": 500
-															}
-														},
-														"required": [
-															"key",
-															"label",
-															"kind"
-														],
-														"additionalProperties": false
-													}
-												]
-											}
-										},
-										"required": [
-											"kind",
-											"key",
-											"input"
-										],
-										"additionalProperties": false
-									}
-								]
-							},
-							"maxItems": 24
-						},
-						"default_filter_values": {
-							"type": "object"
-						},
-						"summary": {
-							"type": "string",
-							"maxLength": 500
-						},
-						"widgets": {
-							"type": "array",
-							"items": {
-								"oneOf": [
-									{
-										"type": "object",
-										"properties": {
-											"widget_id": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 54
-											},
-											"title": {
-												"type": "string",
-												"maxLength": 100
-											},
-											"col_span": {
-												"type": "number",
-												"enum": [
-													1,
-													2,
-													3,
-													4
-												]
-											},
-											"height": {
-												"type": "string",
-												"enum": [
-													"compact",
-													"standard",
-													"tall"
-												]
-											},
-											"drill_down": {
-												"anyOf": [
-													{
-														"type": "string",
-														"minLength": 1,
-														"maxLength": 2048
-													},
-													{
-														"type": "null"
-													}
-												]
-											},
-											"visualization_options": {
-												"type": "object"
-											},
-											"freshness_policy": {
-												"oneOf": [
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"provider_default"
-																]
-															}
-														},
-														"required": [
-															"mode"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"max_age"
-																]
-															},
-															"max_age_seconds": {
-																"type": "integer",
-																"minimum": 30,
-																"maximum": 86400
-															}
-														},
-														"required": [
-															"mode",
-															"max_age_seconds"
-														],
-														"additionalProperties": false
-													}
-												]
-											},
-											"widget_type": {
-												"type": "string",
-												"enum": [
-													"snippet"
-												]
-											},
-											"snippet_id": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 54
-											},
-											"input_bindings": {
-												"type": "object",
-												"additionalProperties": {
-													"oneOf": [
-														{
-															"type": "object",
-															"properties": {
-																"mode": {
-																	"type": "string",
-																	"enum": [
-																		"inherit"
-																	]
-																},
-																"filter_key": {
-																	"anyOf": [
-																		{
-																			"type": "string",
-																			"enum": [
-																				"time",
-																				"comparison",
-																				"cluster",
-																				"install",
-																				"product",
-																				"package",
-																				"region",
-																				"status"
-																			]
-																		},
-																		{
-																			"type": "string",
-																			"pattern": "^var\\.[a-z][a-z0-9_]{0,31}$"
-																		}
-																	]
-																}
-															},
-															"required": [
-																"mode",
-																"filter_key"
-															],
-															"additionalProperties": false
-														},
-														{
-															"type": "object",
-															"properties": {
-																"mode": {
-																	"type": "string",
-																	"enum": [
-																		"fixed"
-																	]
-																},
-																"value": {}
-															},
-															"required": [
-																"mode",
-																"value"
-															],
-															"additionalProperties": false
-														},
-														{
-															"type": "object",
-															"properties": {
-																"mode": {
-																	"type": "string",
-																	"enum": [
-																		"unbound"
-																	]
-																}
-															},
-															"required": [
-																"mode"
-															],
-															"additionalProperties": false
-														}
-													]
-												}
-											},
-											"visualization": {
-												"anyOf": [
-													{
-														"type": "string",
-														"enum": [
-															"stat",
-															"sparkline",
-															"line",
-															"area",
-															"bar",
-															"donut",
-															"table",
-															"status_list",
-															"logs",
-															"json"
-														]
-													},
-													{
-														"type": "null"
-													}
-												]
-											},
-											"refresh_policy": {
-												"oneOf": [
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"on_load"
-																]
-															}
-														},
-														"required": [
-															"mode"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"manual"
-																]
-															}
-														},
-														"required": [
-															"mode"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"interval"
-																]
-															},
-															"interval_seconds": {
-																"type": "integer",
-																"minimum": 60,
-																"maximum": 86400
-															}
-														},
-														"required": [
-															"mode",
-															"interval_seconds"
-														],
-														"additionalProperties": false
-													}
-												]
-											},
-											"display_type": {
-												"anyOf": [
-													{
-														"type": "string",
-														"enum": [
-															"table",
-															"stat",
-															"json",
-															"logs",
-															"timeseries"
-														]
-													},
-													{
-														"type": "null"
-													}
-												],
-												"description": "Controls how the snippet result is rendered in dashboard widgets"
-											}
-										},
-										"required": [
-											"col_span",
-											"height",
-											"drill_down",
-											"visualization_options",
-											"freshness_policy",
-											"widget_type",
-											"snippet_id",
-											"input_bindings",
-											"visualization",
-											"refresh_policy",
-											"display_type"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"widget_id": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 54
-											},
-											"title": {
-												"type": "string",
-												"maxLength": 100
-											},
-											"col_span": {
-												"type": "number",
-												"enum": [
-													1,
-													2,
-													3,
-													4
-												]
-											},
-											"height": {
-												"type": "string",
-												"enum": [
-													"compact",
-													"standard",
-													"tall"
-												]
-											},
-											"drill_down": {
-												"anyOf": [
-													{
-														"type": "string",
-														"minLength": 1,
-														"maxLength": 2048
-													},
-													{
-														"type": "null"
-													}
-												]
-											},
-											"visualization_options": {
-												"type": "object"
-											},
-											"freshness_policy": {
-												"oneOf": [
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"provider_default"
-																]
-															}
-														},
-														"required": [
-															"mode"
-														],
-														"additionalProperties": false
-													},
-													{
-														"type": "object",
-														"properties": {
-															"mode": {
-																"type": "string",
-																"enum": [
-																	"max_age"
-																]
-															},
-															"max_age_seconds": {
-																"type": "integer",
-																"minimum": 30,
-																"maximum": 86400
-															}
-														},
-														"required": [
-															"mode",
-															"max_age_seconds"
-														],
-														"additionalProperties": false
-													}
-												]
-											},
-											"widget_type": {
-												"type": "string",
-												"enum": [
-													"platform_metric"
-												]
-											},
-											"metric_key": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100,
-												"pattern": "^[a-z][a-z0-9_]*$"
-											},
-											"metric_version": {
-												"type": "integer",
-												"exclusiveMinimum": 0
-											},
-											"filter_bindings": {
-												"type": "object",
-												"additionalProperties": {
-													"oneOf": [
-														{
-															"type": "object",
-															"properties": {
-																"mode": {
-																	"type": "string",
-																	"enum": [
-																		"inherit"
-																	]
-																},
-																"filter_key": {
-																	"anyOf": [
-																		{
-																			"type": "string",
-																			"enum": [
-																				"time",
-																				"comparison",
-																				"cluster",
-																				"install",
-																				"product",
-																				"package",
-																				"region",
-																				"status"
-																			]
-																		},
-																		{
-																			"type": "string",
-																			"pattern": "^var\\.[a-z][a-z0-9_]{0,31}$"
-																		}
-																	]
-																}
-															},
-															"required": [
-																"mode",
-																"filter_key"
-															],
-															"additionalProperties": false
-														},
-														{
-															"type": "object",
-															"properties": {
-																"mode": {
-																	"type": "string",
-																	"enum": [
-																		"fixed"
-																	]
-																},
-																"value": {}
-															},
-															"required": [
-																"mode",
-																"value"
-															],
-															"additionalProperties": false
-														},
-														{
-															"type": "object",
-															"properties": {
-																"mode": {
-																	"type": "string",
-																	"enum": [
-																		"unbound"
-																	]
-																}
-															},
-															"required": [
-																"mode"
-															],
-															"additionalProperties": false
-														}
-													]
-												}
-											}
-										},
-										"required": [
-											"col_span",
-											"height",
-											"drill_down",
-											"visualization_options",
-											"freshness_policy",
-											"widget_type",
-											"metric_key",
-											"metric_version",
-											"filter_bindings"
-										],
-										"additionalProperties": false
-									}
-								]
-							},
-							"maxItems": 24
-						}
-					},
-					"required": [
-						"name",
-						"description",
-						"filter_definitions",
-						"default_filter_values",
-						"widgets"
-					],
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "dashboards.createWidget",
-			"method": "POST",
-			"path": "/dashboards/{id}/widgets",
-			"summary": "Create dashboard widget",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"header:akua-context",
-				"header:idempotency-key"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/CreateDashboardWidgetBody"
-				}
-			}
-		},
-		{
-			"id": "dashboards.delete",
-			"method": "DELETE",
-			"path": "/dashboards/{id}",
-			"summary": "Delete dashboard",
-			"auth": true,
-			"parameters": [
-				"path:id:10",
-				"header:if-match"
-			]
-		},
-		{
-			"id": "dashboards.deleteWidget",
-			"method": "DELETE",
-			"path": "/dashboards/{id}/widgets/{wgt_id}",
-			"summary": "Delete dashboard widget",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"path:wgt_id",
-				"header:akua-context",
-				"header:if-match"
-			]
-		},
-		{
-			"id": "dashboards.get",
-			"method": "GET",
-			"path": "/dashboards/{id}",
-			"summary": "Get dashboard details",
-			"auth": true,
-			"parameters": [
-				"path:id:10"
-			]
-		},
-		{
-			"id": "dashboards.getRevision",
-			"method": "GET",
-			"path": "/dashboards/{id}/revisions/{revision_id}",
-			"summary": "Get dashboard revision",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"path:revision_id"
-			]
-		},
-		{
-			"id": "dashboards.getWidget",
-			"method": "GET",
-			"path": "/dashboards/{id}/widgets/{wgt_id}",
-			"summary": "Get dashboard widget",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"path:wgt_id"
-			]
-		},
-		{
-			"id": "dashboards.getWorkspaceOverview",
-			"method": "GET",
-			"path": "/dashboards/workspace_overview",
-			"summary": "Get the workspace overview dashboard",
-			"auth": true,
-			"parameters": [
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "dashboards.list",
-			"method": "GET",
-			"path": "/dashboards",
-			"summary": "List dashboards in workspace",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit"
-			]
-		},
-		{
-			"id": "dashboards.listRevisions",
-			"method": "GET",
-			"path": "/dashboards/{id}/revisions",
-			"summary": "List dashboard revisions",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"query:cursor",
-				"query:limit:3"
-			]
-		},
-		{
-			"id": "dashboards.listWidgets",
-			"method": "GET",
-			"path": "/dashboards/{id}/widgets",
-			"summary": "List dashboard widgets",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"query:cursor",
-				"query:limit"
-			]
-		},
-		{
-			"id": "dashboards.resetToRecommended",
-			"method": "POST",
-			"path": "/dashboards/{id}:resetToRecommended",
-			"summary": "Reset the Workspace overview to the recommended configuration",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"header:if-match",
-				"header:idempotency-key:3"
-			]
-		},
-		{
-			"id": "dashboards.restoreRevision",
-			"method": "POST",
-			"path": "/dashboards/{id}/revisions/{revision_id}:restore",
-			"summary": "Restore dashboard revision",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"path:revision_id",
-				"header:if-match",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"summary": {
-							"anyOf": [
-								{
-									"type": "string",
-									"maxLength": 500
-								},
-								{
-									"type": "null"
-								}
-							]
-						}
-					},
-					"required": [
-						"summary"
-					],
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "dashboards.update",
-			"method": "PATCH",
-			"path": "/dashboards/{id}",
-			"summary": "Update dashboard",
-			"auth": true,
-			"parameters": [
-				"path:id:10",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"description": {
-							"type": "string",
-							"maxLength": 500
-						}
-					},
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "dashboards.updateWidget",
-			"method": "PATCH",
-			"path": "/dashboards/{id}/widgets/{wgt_id}",
-			"summary": "Update dashboard widget",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"path:wgt_id",
+				"path:vault",
+				"path:connection",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
-				"required": false,
+				"required": true,
 				"schema": {
-					"$ref": "#/$defs/UpdateDashboardWidgetBody"
+					"$ref": "#/$defs/SetIamPolicyRequest"
 				}
 			}
 		},
 		{
-			"id": "dashboardSurfaces.list",
-			"method": "GET",
-			"path": "/dashboard_surfaces",
-			"summary": "List dashboard surfaces",
+			"id": "connections.testIamPermissions",
+			"method": "POST",
+			"path": "/vaults/{vault}/connections/{connection}:testIamPermissions",
+			"summary": "Test connection permissions",
 			"auth": true,
 			"parameters": [
+				"path:vault",
+				"path:connection",
 				"header:akua-context"
-			]
-		},
-		{
-			"id": "entitlements.list",
-			"method": "GET",
-			"path": "/entitlements",
-			"summary": "List entitlements",
-			"auth": true,
-			"parameters": [
-				"header:akua-context:2",
-				"query:workspace",
-				"query:feature_set",
-				"query:feature",
-				"query:limit:4",
-				"query:cursor:4"
-			]
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/TestIamPermissionsRequest"
+				}
+			}
 		},
 		{
 			"id": "installs.create",
@@ -4364,34 +1068,16 @@ export const contract: ApiContract = {
 			}
 		},
 		{
-			"id": "installs.createRender",
-			"method": "POST",
-			"path": "/installs/{id}/renders",
-			"summary": "Create install render",
-			"auth": true,
-			"parameters": [
-				"path:id:12",
-				"header:akua-context",
-				"header:idempotency-key"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/CreateInstallRenderBody"
-				}
-			}
-		},
-		{
 			"id": "installs.delete",
 			"method": "DELETE",
 			"path": "/installs/{id}",
 			"summary": "Delete install",
 			"auth": true,
 			"parameters": [
-				"path:id:12",
+				"path:id:2",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -4401,49 +1087,7 @@ export const contract: ApiContract = {
 			"summary": "Get install details",
 			"auth": true,
 			"parameters": [
-				"path:id:12",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "installs.getLogs",
-			"method": "GET",
-			"path": "/installs/{id}/logs",
-			"summary": "Stream install logs",
-			"auth": true,
-			"parameters": [
-				"path:id:12",
-				"header:akua-context",
-				"query:pod",
-				"query:container",
-				"query:follow",
-				"query:tail",
-				"query:since_seconds"
-			],
-			"stream": {
-				"failureEvent": "effect/http-api/stream/failure"
-			}
-		},
-		{
-			"id": "installs.getRender",
-			"method": "GET",
-			"path": "/installs/{id}/renders/{render_id}",
-			"summary": "Get install render",
-			"auth": true,
-			"parameters": [
-				"path:id:12",
-				"path:render_id",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "installs.getStatus",
-			"method": "GET",
-			"path": "/installs/{id}/status",
-			"summary": "Get install status",
-			"auth": true,
-			"parameters": [
-				"path:id:12",
+				"path:id:2",
 				"header:akua-context"
 			]
 		},
@@ -4461,234 +1105,16 @@ export const contract: ApiContract = {
 			]
 		},
 		{
-			"id": "installs.listPods",
-			"method": "GET",
-			"path": "/installs/{id}/pods",
-			"summary": "List install pods",
-			"auth": true,
-			"parameters": [
-				"path:id:12",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "installs.listRenders",
-			"method": "GET",
-			"path": "/installs/{id}/renders",
-			"summary": "List install renders",
-			"auth": true,
-			"parameters": [
-				"path:id:12",
-				"header:akua-context",
-				"query:cursor",
-				"query:limit"
-			]
-		},
-		{
-			"id": "installs.restore",
-			"method": "POST",
-			"path": "/installs/{id}:restore",
-			"summary": "Restore install render",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"header:akua-context",
-				"header:if-match",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/RestoreInstallBody"
-				}
-			}
-		},
-		{
-			"id": "installs.setAutomaticUpdates",
-			"method": "PATCH",
-			"path": "/installs/{id}/automatic_updates",
-			"summary": "Set automatic install updates",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"header:akua-context",
-				"header:if-match",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/SetInstallAutomaticUpdatesBody"
-				}
-			}
-		},
-		{
-			"id": "installs.updateVersion",
-			"method": "POST",
-			"path": "/installs/{id}:update",
-			"summary": "Update install version",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"header:akua-context",
-				"header:if-match",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/UpdateInstallVersionBody"
-				}
-			}
-		},
-		{
-			"id": "machineQuotes.accept",
-			"method": "POST",
-			"path": "/machine_quotes/{id}:accept",
-			"summary": "Order a quoted machine",
-			"auth": true,
-			"parameters": [
-				"path:id:13",
-				"header:akua-context",
-				"header:if-match"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"quote_revision": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						}
-					},
-					"required": [
-						"quote_revision"
-					],
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "machineQuotes.create",
-			"method": "POST",
-			"path": "/machine_quotes",
-			"summary": "Quote a managed machine",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"header:idempotency-key"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"cluster_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"instance_type": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"machine_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						}
-					},
-					"required": [
-						"cluster_id"
-					],
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "machineQuotes.get",
-			"method": "GET",
-			"path": "/machine_quotes/{id}",
-			"summary": "Get a machine quote",
-			"auth": true,
-			"parameters": [
-				"path:id:13",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "machines.create",
-			"method": "POST",
-			"path": "/machines",
-			"summary": "Create machine",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"header:idempotency-key"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"cluster_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"instance_type": {
-							"type": "string",
-							"minLength": 1,
-							"description": "Provider instance type name. For managed machines on the Free plan (compute_config_id omitted), choose `cax11`, `cx23`, or `cpx22`. With compute_config_id, use a type supported by that provider account and region. Availability and plan quotas are checked when creating the machine."
-						},
-						"compute_config_id": {
-							"type": "string",
-							"description": "Compute config that supplies the provider account for this machine. Omit it to explicitly request an Akua system-managed machine on platform infrastructure; free-tier instance types and machine quotas then apply.",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"name": {
-							"type": "string",
-							"maxLength": 120
-						},
-						"node_name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 63,
-							"pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
-							"description": "Optional Kubernetes node name. A DNS-1123 label of at most 63 characters; must be unique in the cluster. Defaults to cnap- plus the final eight machine ID characters."
-						},
-						"node_claim": {
-							"type": "object"
-						}
-					},
-					"required": [
-						"cluster_id",
-						"instance_type"
-					],
-					"additionalProperties": false
-				}
-			}
-		},
-		{
 			"id": "machines.delete",
 			"method": "DELETE",
 			"path": "/machines/{id}",
 			"summary": "Delete machine",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:id:3",
 				"header:akua-context",
-				"header:idempotency-key:4",
-				"header:if-match"
+				"header:idempotency-key",
+				"header:if-match:2"
 			]
 		},
 		{
@@ -4698,7 +1124,7 @@ export const contract: ApiContract = {
 			"summary": "Get machine",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:id:3",
 				"header:akua-context"
 			]
 		},
@@ -4712,116 +1138,124 @@ export const contract: ApiContract = {
 				"header:akua-context",
 				"query:cursor",
 				"query:limit",
-				"query:cluster_id",
-				"query:state:2",
-				"query:view"
+				"query:state:2"
 			]
 		},
 		{
-			"id": "machines.resume",
+			"id": "nodePools.create",
 			"method": "POST",
-			"path": "/machines/{id}:resume",
-			"summary": "Resume machine",
+			"path": "/clusters/{id}/node_pools",
+			"summary": "Create a node pool",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:idempotency-key:4",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/ResumeMachineBody"
-				}
-			}
-		},
-		{
-			"id": "machines.suspend",
-			"method": "POST",
-			"path": "/machines/{id}:suspend",
-			"summary": "Suspend machine",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:idempotency-key:4",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/SuspendMachineBody"
-				}
-			}
-		},
-		{
-			"id": "machines.update",
-			"method": "PATCH",
-			"path": "/machines/{id}",
-			"summary": "Update machine",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
+				"path:id:3",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"query:node_pool_id"
 			],
 			"body": {
-				"required": false,
+				"required": true,
 				"schema": {
-					"type": "object",
-					"properties": {
-						"name": {
-							"anyOf": [
-								{
-									"type": "string",
-									"maxLength": 120
-								},
-								{
-									"type": "null"
-								}
-							]
-						}
-					},
-					"additionalProperties": false
+					"$ref": "#/$defs/CreateNodePoolBody"
 				}
 			}
 		},
 		{
-			"id": "notifications.getUnreadCount",
-			"method": "GET",
-			"path": "/notifications/unread_count",
-			"summary": "Count unread notifications",
-			"auth": true,
-			"parameters": []
-		},
-		{
-			"id": "notifications.list",
-			"method": "GET",
-			"path": "/notifications",
-			"summary": "List recent notifications",
+			"id": "nodePools.delete",
+			"method": "DELETE",
+			"path": "/clusters/{id}/node_pools/{node_pool_id}",
+			"summary": "Delete a node pool",
 			"auth": true,
 			"parameters": [
-				"query:unread"
+				"path:id:3",
+				"path:node_pool_id",
+				"header:akua-context",
+				"header:idempotency-key",
+				"header:if-match:2"
 			]
 		},
 		{
-			"id": "notifications.markAllRead",
-			"method": "POST",
-			"path": "/notifications/mark_all_read",
-			"summary": "Mark all notifications as read",
-			"auth": true,
-			"parameters": []
-		},
-		{
-			"id": "notifications.markRead",
-			"method": "PATCH",
-			"path": "/notifications/{id}/read",
-			"summary": "Mark a notification as read",
+			"id": "nodePools.get",
+			"method": "GET",
+			"path": "/clusters/{id}/node_pools/{node_pool_id}",
+			"summary": "Get a node pool",
 			"auth": true,
 			"parameters": [
-				"path:id:14"
+				"path:id:3",
+				"path:node_pool_id",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "nodePools.list",
+			"method": "GET",
+			"path": "/clusters/{id}/node_pools",
+			"summary": "List node pools",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"header:akua-context",
+				"query:cursor:3",
+				"query:limit:2"
+			]
+		},
+		{
+			"id": "nodePools.setSize",
+			"method": "POST",
+			"path": "/clusters/{id}/node_pools/{node_pool_id}:setSize",
+			"summary": "Resize a node pool",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:node_pool_id",
+				"header:akua-context",
+				"header:idempotency-key",
+				"header:if-match:2"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/SetNodePoolSizeBody"
+				}
+			}
+		},
+		{
+			"id": "nodes.get",
+			"method": "GET",
+			"path": "/clusters/{id}/nodes/{name}",
+			"summary": "Get a node",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:name",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "nodes.list",
+			"method": "GET",
+			"path": "/clusters/{id}/nodes",
+			"summary": "List nodes",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"header:akua-context",
+				"query:cursor:3",
+				"query:limit:2",
+				"query:node_pool_id:2"
+			]
+		},
+		{
+			"id": "nodes.remove",
+			"method": "DELETE",
+			"path": "/clusters/{id}/nodes/{name}",
+			"summary": "Remove a node",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:name",
+				"header:akua-context",
+				"header:idempotency-key"
 			]
 		},
 		{
@@ -4831,10 +1265,10 @@ export const contract: ApiContract = {
 			"summary": "Archive offer",
 			"auth": true,
 			"parameters": [
-				"path:id:15",
+				"path:id:7",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -4850,7 +1284,7 @@ export const contract: ApiContract = {
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/CreateOfferBody"
+					"$ref": "#/$defs/CreateOfferRequest"
 				}
 			}
 		},
@@ -4859,9 +1293,10 @@ export const contract: ApiContract = {
 			"method": "GET",
 			"path": "/offers/{id}",
 			"summary": "Get offer details",
-			"auth": true,
+			"auth": false,
 			"parameters": [
-				"path:id:15"
+				"path:id:7",
+				"query:view"
 			]
 		},
 		{
@@ -4888,19 +1323,6 @@ export const contract: ApiContract = {
 			]
 		},
 		{
-			"id": "offers.unarchive",
-			"method": "POST",
-			"path": "/offers/{id}:unarchive",
-			"summary": "Unarchive offer",
-			"auth": true,
-			"parameters": [
-				"path:id:15",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			]
-		},
-		{
 			"id": "opencodes.create",
 			"method": "POST",
 			"path": "/opencodes",
@@ -4924,7 +1346,7 @@ export const contract: ApiContract = {
 			"summary": "Sign in to an OpenCode Server's web UI",
 			"auth": true,
 			"parameters": [
-				"path:id:27",
+				"path:id:12",
 				"header:akua-context"
 			]
 		},
@@ -4935,7 +1357,7 @@ export const contract: ApiContract = {
 			"summary": "Delete an OpenCode Server",
 			"auth": true,
 			"parameters": [
-				"path:id:27",
+				"path:id:12",
 				"header:akua-context",
 				"header:idempotency-key"
 			]
@@ -4947,7 +1369,7 @@ export const contract: ApiContract = {
 			"summary": "Get an OpenCode Server",
 			"auth": true,
 			"parameters": [
-				"path:id:27",
+				"path:id:12",
 				"header:akua-context"
 			]
 		},
@@ -4970,7 +1392,7 @@ export const contract: ApiContract = {
 			"summary": "Resume an OpenCode Server",
 			"auth": true,
 			"parameters": [
-				"path:id:27",
+				"path:id:12",
 				"header:akua-context",
 				"header:idempotency-key"
 			]
@@ -4982,7 +1404,7 @@ export const contract: ApiContract = {
 			"summary": "Suspend an OpenCode Server",
 			"auth": true,
 			"parameters": [
-				"path:id:27",
+				"path:id:12",
 				"header:akua-context",
 				"header:idempotency-key"
 			]
@@ -4994,9 +1416,9 @@ export const contract: ApiContract = {
 			"summary": "Update an OpenCode Server",
 			"auth": true,
 			"parameters": [
-				"path:id:27",
+				"path:id:12",
 				"header:akua-context",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
@@ -5012,35 +1434,21 @@ export const contract: ApiContract = {
 			"summary": "Request operation cancellation",
 			"auth": true,
 			"parameters": [
-				"path:id:16",
+				"path:id",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match:2"
+				"header:if-match"
 			]
 		},
 		{
 			"id": "operations.get",
 			"method": "GET",
 			"path": "/operations/{id}",
-			"summary": "Get operation details + steps",
+			"summary": "Get operation details",
 			"auth": true,
 			"parameters": [
-				"path:id:16",
+				"path:id",
 				"header:akua-context"
-			]
-		},
-		{
-			"id": "operations.list",
-			"method": "GET",
-			"path": "/operations",
-			"summary": "List operations",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:owner_type",
-				"query:owner_id"
 			]
 		},
 		{
@@ -5050,7 +1458,7 @@ export const contract: ApiContract = {
 			"summary": "Wait for an operation to reach a terminal state",
 			"auth": true,
 			"parameters": [
-				"path:id:16",
+				"path:id",
 				"header:akua-context",
 				"query:timeout"
 			]
@@ -5062,71 +1470,24 @@ export const contract: ApiContract = {
 			"summary": "Cancel order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:17",
-				"header:if-match"
-			]
-		},
-		{
-			"id": "orderDrafts.claim",
-			"method": "POST",
-			"path": "/order_drafts/{id}:claim",
-			"summary": "Claim order draft",
-			"auth": true,
-			"parameters": [
-				"path:id:17",
-				"header:if-match"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/ClaimOrderDraftBody"
-				}
-			}
-		},
-		{
-			"id": "orderDrafts.create",
-			"method": "POST",
-			"path": "/offers/{offer}/order_drafts",
-			"summary": "Create order draft",
-			"auth": true,
-			"parameters": [
-				"path:offer",
-				"header:akua-context",
+				"path:id:8",
+				"header:if-match:2",
 				"header:idempotency-key"
 			]
 		},
 		{
-			"id": "orderDrafts.createCheckoutSession",
+			"id": "orderDrafts.create",
 			"method": "POST",
-			"path": "/order_drafts/{id}/checkout_sessions",
-			"summary": "Create order draft checkout session",
+			"path": "/order_drafts",
+			"summary": "Create order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:17",
-				"header:if-match"
-			]
-		},
-		{
-			"id": "orderDrafts.createWorkerBootstrap",
-			"method": "POST",
-			"path": "/order_drafts/{id}:createWorkerBootstrap",
-			"summary": "Create order draft worker bootstrap",
-			"auth": true,
-			"parameters": [
-				"path:id:17"
+				"header:idempotency-key"
 			],
 			"body": {
-				"required": false,
+				"required": true,
 				"schema": {
-					"type": "object",
-					"properties": {
-						"ttl_seconds": {
-							"type": "integer",
-							"minimum": 60,
-							"maximum": 86400
-						}
-					},
-					"additionalProperties": false
+					"$ref": "#/$defs/CreateOrderDraftBody"
 				}
 			}
 		},
@@ -5134,125 +1495,72 @@ export const contract: ApiContract = {
 			"id": "orderDrafts.get",
 			"method": "GET",
 			"path": "/order_drafts/{id}",
-			"summary": "Get order draft details",
+			"summary": "Get order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:17"
+				"path:id:8"
 			]
 		},
 		{
-			"id": "orderDrafts.getCheckoutSession",
-			"method": "GET",
-			"path": "/order_drafts/{id}/checkout_sessions/{chk_id}",
-			"summary": "Get order draft checkout session",
-			"auth": true,
-			"parameters": [
-				"path:id:17",
-				"path:chk_id"
-			]
-		},
-		{
-			"id": "orderDrafts.list",
-			"method": "GET",
-			"path": "/order_drafts",
-			"summary": "List order drafts",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:offer",
-				"query:status"
-			]
-		},
-		{
-			"id": "orderDrafts.listCheckoutSessions",
-			"method": "GET",
-			"path": "/order_drafts/{id}/checkout_sessions",
-			"summary": "List order draft checkout sessions",
-			"auth": true,
-			"parameters": [
-				"path:id:17",
-				"query:cursor",
-				"query:limit"
-			]
-		},
-		{
-			"id": "orderDrafts.selectWorkspace",
+			"id": "orderDrafts.redeem",
 			"method": "POST",
-			"path": "/order_drafts/{id}:selectWorkspace",
-			"summary": "Select order workspace",
+			"path": "/order_drafts/{id}:redeem",
+			"summary": "Redeem order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:17",
-				"header:if-match"
+				"path:id:8",
+				"header:if-match:2",
+				"header:idempotency-key"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/SelectOrderDraftWorkspaceBody"
+					"$ref": "#/$defs/RedeemOrderDraftBody"
 				}
 			}
 		},
 		{
-			"id": "orderDrafts.submitConfigure",
-			"method": "POST",
-			"path": "/order_drafts/{id}:submitConfiguration",
-			"summary": "Submit configure values",
+			"id": "orderDrafts.update",
+			"method": "PATCH",
+			"path": "/order_drafts/{id}",
+			"summary": "Update order draft",
 			"auth": true,
 			"parameters": [
-				"path:id:17",
-				"header:if-match"
+				"path:id:8",
+				"header:if-match:2",
+				"header:idempotency-key"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/SubmitConfigureOrderDraftBody"
+					"$ref": "#/$defs/UpdateOrderDraftBody"
 				}
 			}
 		},
 		{
 			"id": "organizations.acceptInvitation",
 			"method": "POST",
+			"path": "/organizations/{id}/invitations/{invitationId}:accept",
+			"summary": "Accept organization invitation",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:invitationId"
+			]
+		},
+		{
+			"id": "organizations.acceptInvitationToken",
+			"method": "POST",
 			"path": "/organization_invitations/accept",
-			"summary": "Accept an organization invitation",
+			"summary": "Accept organization invitation by link",
 			"auth": true,
 			"parameters": [],
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/OrganizationInvitationAcceptRequest"
+					"$ref": "#/$defs/OrganizationInvitationTokenRequest"
 				}
 			}
-		},
-		{
-			"id": "organizations.addMember",
-			"method": "POST",
-			"path": "/organizations/{id}/members",
-			"summary": "Add organization member",
-			"auth": true,
-			"parameters": [
-				"path:id:18",
-				"header:idempotency-key",
-				"header:if-match"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/OrganizationAddMemberRequest"
-				}
-			}
-		},
-		{
-			"id": "organizations.cancelInvitation",
-			"method": "DELETE",
-			"path": "/organizations/{id}/invitations/{invitationId}",
-			"summary": "Cancel an organization invitation",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"path:invitationId"
-			]
 		},
 		{
 			"id": "organizations.create",
@@ -5274,10 +1582,11 @@ export const contract: ApiContract = {
 			"id": "organizations.createInvitation",
 			"method": "POST",
 			"path": "/organizations/{id}/invitations",
-			"summary": "Invite an organization member by email",
+			"summary": "Invite to organization",
 			"auth": true,
 			"parameters": [
-				"path:id:7"
+				"path:id:3",
+				"header:idempotency-key"
 			],
 			"body": {
 				"required": true,
@@ -5287,25 +1596,46 @@ export const contract: ApiContract = {
 			}
 		},
 		{
+			"id": "organizations.declineInvitation",
+			"method": "POST",
+			"path": "/organizations/{id}/invitations/{invitationId}:decline",
+			"summary": "Decline organization invitation",
+			"auth": true,
+			"parameters": [
+				"path:id:3",
+				"path:invitationId"
+			]
+		},
+		{
 			"id": "organizations.delete",
 			"method": "DELETE",
 			"path": "/organizations/{id}",
 			"summary": "Delete organization",
 			"auth": true,
 			"parameters": [
-				"path:id:18",
+				"path:id:3",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:3"
 			]
 		},
 		{
 			"id": "organizations.get",
 			"method": "GET",
 			"path": "/organizations/{id}",
-			"summary": "Get organization details",
+			"summary": "Get organization",
 			"auth": true,
 			"parameters": [
-				"path:id:18"
+				"path:id:3"
+			]
+		},
+		{
+			"id": "organizations.getIamPolicy",
+			"method": "GET",
+			"path": "/organizations/{id}:getIamPolicy",
+			"summary": "Get an Organization policy",
+			"auth": true,
+			"parameters": [
+				"path:id:3"
 			]
 		},
 		{
@@ -5315,7 +1645,7 @@ export const contract: ApiContract = {
 			"summary": "List organizations",
 			"auth": true,
 			"parameters": [
-				"query:cursor",
+				"query:cursor:2",
 				"query:limit"
 			]
 		},
@@ -5323,96 +1653,51 @@ export const contract: ApiContract = {
 			"id": "organizations.listInvitations",
 			"method": "GET",
 			"path": "/organizations/{id}/invitations",
-			"summary": "List pending organization invitations",
+			"summary": "List organization invitations",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
-				"query:cursor",
+				"path:id:3",
+				"query:cursor:2",
 				"query:limit"
 			]
 		},
 		{
-			"id": "organizations.listManagedWorkspaces",
+			"id": "organizations.listMyInvitations",
 			"method": "GET",
-			"path": "/organizations/{id}/workspaces",
-			"summary": "List managed workspaces",
+			"path": "/organization_invitations",
+			"summary": "List my invitations",
 			"auth": true,
 			"parameters": [
-				"path:id:18",
-				"query:cursor",
+				"query:cursor:2",
 				"query:limit"
 			]
 		},
 		{
-			"id": "organizations.listMembers",
-			"method": "GET",
-			"path": "/organizations/{id}/members",
-			"summary": "List organization members",
-			"auth": true,
-			"parameters": [
-				"path:id:18",
-				"query:cursor",
-				"query:limit"
-			]
-		},
-		{
-			"id": "organizations.removeMember",
-			"method": "DELETE",
-			"path": "/organizations/{id}/members/{userId}",
-			"summary": "Remove organization member",
-			"auth": true,
-			"parameters": [
-				"path:id:18",
-				"path:userId:2",
-				"header:idempotency-key",
-				"header:if-match"
-			]
-		},
-		{
-			"id": "organizations.resendInvitation",
+			"id": "organizations.revokeInvitation",
 			"method": "POST",
-			"path": "/organizations/{id}/invitations/{invitationId}/resend",
-			"summary": "Resend an organization invitation",
+			"path": "/organizations/{id}/invitations/{invitationId}:revoke",
+			"summary": "Revoke organization invitation",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:id:3",
 				"path:invitationId"
 			]
 		},
 		{
-			"id": "organizations.update",
-			"method": "PATCH",
-			"path": "/organizations/{id}",
-			"summary": "Update organization",
+			"id": "organizations.setIamPolicy",
+			"method": "POST",
+			"path": "/organizations/{id}:setIamPolicy",
+			"summary": "Set an Organization policy",
 			"auth": true,
 			"parameters": [
-				"path:id:18",
+				"path:id:3",
 				"header:idempotency-key",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/OrganizationUpdateRequest"
-				}
-			}
-		},
-		{
-			"id": "organizations.updateMemberRole",
-			"method": "PATCH",
-			"path": "/organizations/{id}/members/{userId}",
-			"summary": "Update member role",
-			"auth": true,
-			"parameters": [
-				"path:id:18",
-				"path:userId",
-				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/OrganizationUpdateMemberRoleRequest"
+					"$ref": "#/$defs/SetOrganizationIamPolicyRequest"
 				}
 			}
 		},
@@ -5429,7 +1714,7 @@ export const contract: ApiContract = {
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/CreatePackageBody"
+					"$ref": "#/$defs/CreatePackageRequest"
 				}
 			}
 		},
@@ -5440,29 +1725,16 @@ export const contract: ApiContract = {
 			"summary": "Create package version",
 			"auth": true,
 			"parameters": [
-				"path:id:19",
+				"path:id:10",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/CreatePackageVersionBody"
+					"$ref": "#/$defs/CreatePackageVersionRequest"
 				}
 			}
-		},
-		{
-			"id": "packages.delete",
-			"method": "DELETE",
-			"path": "/packages/{id}",
-			"summary": "Delete package",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			]
 		},
 		{
 			"id": "packages.get",
@@ -5471,32 +1743,7 @@ export const contract: ApiContract = {
 			"summary": "Get package details",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"query:view:2"
-			]
-		},
-		{
-			"id": "packages.getArtifacthubValuesSchema",
-			"method": "GET",
-			"path": "/packages/artifacthub/{package_id}/versions/{version}/values_schema",
-			"summary": "Resolve Artifact Hub chart values + schema",
-			"auth": true,
-			"parameters": [
-				"path:package_id",
-				"path:version",
-				"query:include_schema"
-			]
-		},
-		{
-			"id": "packages.getVersion",
-			"method": "GET",
-			"path": "/packages/{id}/versions/{version_id}",
-			"summary": "Get package version details",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"path:version_id",
+				"path:id:9",
 				"header:akua-context"
 			]
 		},
@@ -5507,130 +1754,9 @@ export const contract: ApiContract = {
 			"summary": "Get package version input schema",
 			"auth": true,
 			"parameters": [
-				"path:id:7",
+				"path:id:9",
 				"path:version_id",
 				"header:akua-context"
-			]
-		},
-		{
-			"id": "packages.importPublished",
-			"method": "POST",
-			"path": "/packages:import",
-			"summary": "Import published package",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"header:idempotency-key"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/ImportPackageBody"
-				}
-			}
-		},
-		{
-			"id": "packages.list",
-			"method": "GET",
-			"path": "/packages",
-			"summary": "List packages",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:view:2"
-			]
-		},
-		{
-			"id": "packages.listVersions",
-			"method": "GET",
-			"path": "/packages/{id}/versions",
-			"summary": "List package versions",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"query:cursor",
-				"query:limit"
-			]
-		},
-		{
-			"id": "previewHostnames.bindFloating",
-			"method": "POST",
-			"path": "/installs/{id}/preview_hostnames:bindFloating",
-			"summary": "Bind floating preview hostname",
-			"auth": true,
-			"parameters": [
-				"path:id:12",
-				"header:akua-context",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/BindFloatingPreviewHostnameBody"
-				}
-			}
-		},
-		{
-			"id": "previewHostnames.bindPinned",
-			"method": "POST",
-			"path": "/installs/{id}/preview_hostnames:bindPinned",
-			"summary": "Bind pinned preview hostname",
-			"auth": true,
-			"parameters": [
-				"path:id:12",
-				"header:akua-context",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/BindPinnedPreviewHostnameBody"
-				}
-			}
-		},
-		{
-			"id": "previewHostnames.delete",
-			"method": "DELETE",
-			"path": "/installs/{id}/preview_hostnames/{preview_hostname_id}",
-			"summary": "Delete preview hostname",
-			"auth": true,
-			"parameters": [
-				"path:id:12",
-				"path:preview_hostname_id",
-				"header:akua-context",
-				"header:if-match",
-				"header:idempotency-key:3"
-			]
-		},
-		{
-			"id": "previewHostnames.get",
-			"method": "GET",
-			"path": "/installs/{id}/preview_hostnames/{preview_hostname_id}",
-			"summary": "Get preview hostname",
-			"auth": true,
-			"parameters": [
-				"path:id:12",
-				"path:preview_hostname_id",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "previewHostnames.list",
-			"method": "GET",
-			"path": "/installs/{id}/preview_hostnames",
-			"summary": "List preview hostnames",
-			"auth": true,
-			"parameters": [
-				"path:id:12",
-				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:binding_kind",
-				"query:track",
-				"query:state:3"
 			]
 		},
 		{
@@ -5640,17 +1766,11 @@ export const contract: ApiContract = {
 			"summary": "Archive product",
 			"auth": true,
 			"parameters": [
-				"path:id:20",
+				"path:id:6",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/ArchiveProductBody"
-				}
-			}
+				"header:if-match:2"
+			]
 		},
 		{
 			"id": "products.create",
@@ -5665,7 +1785,7 @@ export const contract: ApiContract = {
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/CreateProductBody"
+					"$ref": "#/$defs/CreateProductRequest"
 				}
 			}
 		},
@@ -5676,7 +1796,7 @@ export const contract: ApiContract = {
 			"summary": "Get product details",
 			"auth": true,
 			"parameters": [
-				"path:id:20",
+				"path:id:6",
 				"header:akua-context"
 			]
 		},
@@ -5693,113 +1813,6 @@ export const contract: ApiContract = {
 			]
 		},
 		{
-			"id": "products.unarchive",
-			"method": "POST",
-			"path": "/products/{id}:unarchive",
-			"summary": "Unarchive product",
-			"auth": true,
-			"parameters": [
-				"path:id:20",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"type": "object",
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "products.update",
-			"method": "PATCH",
-			"path": "/products/{id}",
-			"summary": "Update product",
-			"auth": true,
-			"parameters": [
-				"path:id:20",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/UpdateProductBody"
-				}
-			}
-		},
-		{
-			"id": "quotas.get",
-			"method": "GET",
-			"path": "/quotas/{metric}",
-			"summary": "Get quota usage for a specific metric",
-			"auth": true,
-			"parameters": [
-				"path:metric",
-				"header:akua-context",
-				"query:cluster_id:2"
-			]
-		},
-		{
-			"id": "quotas.list",
-			"method": "GET",
-			"path": "/quotas",
-			"summary": "List quota usage for the authenticated user",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cluster_id:2"
-			]
-		},
-		{
-			"id": "regions.create",
-			"method": "POST",
-			"path": "/regions",
-			"summary": "Create region",
-			"auth": true,
-			"parameters": [
-				"header:akua-context"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"icon": {
-							"type": "string",
-							"description": "Icon URL",
-							"format": "uri",
-							"maxLength": 256
-						}
-					},
-					"required": [
-						"name"
-					],
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "regions.delete",
-			"method": "DELETE",
-			"path": "/regions/{id}",
-			"summary": "Delete region",
-			"auth": true,
-			"parameters": [
-				"path:id:21",
-				"header:akua-context",
-				"header:if-match"
-			]
-		},
-		{
 			"id": "regions.list",
 			"method": "GET",
 			"path": "/regions",
@@ -5812,363 +1825,13 @@ export const contract: ApiContract = {
 			]
 		},
 		{
-			"id": "regions.update",
-			"method": "PATCH",
-			"path": "/regions/{id}",
-			"summary": "Update region",
-			"auth": true,
-			"parameters": [
-				"path:id:21",
-				"header:akua-context",
-				"header:if-match"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"icon": {
-							"anyOf": [
-								{
-									"type": "string",
-									"format": "uri",
-									"maxLength": 256
-								},
-								{
-									"type": "null"
-								}
-							],
-							"description": "Icon URL. Send `null` to remove the icon."
-						}
-					},
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "registry.createCredential",
-			"method": "POST",
-			"path": "/registry_connections",
-			"summary": "Create registry credential",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"header:idempotency-key"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"registry_url": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 2048
-						},
-						"type": {
-							"type": "string",
-							"enum": [
-								"basic",
-								"token",
-								"oauth"
-							],
-							"description": "Authentication scheme used to talk to the upstream registry."
-						},
-						"credentials": {
-							"type": "object",
-							"properties": {
-								"username": {
-									"type": "string",
-									"description": "Username for basic auth",
-									"minLength": 1,
-									"maxLength": 200
-								},
-								"password": {
-									"type": "string",
-									"description": "Password for basic auth",
-									"format": "password",
-									"minLength": 1,
-									"maxLength": 500
-								},
-								"token": {
-									"type": "string",
-									"description": "Bearer token for token auth",
-									"format": "password",
-									"minLength": 1,
-									"maxLength": 2000
-								},
-								"client_id": {
-									"type": "string",
-									"description": "Client ID for OAuth",
-									"minLength": 1,
-									"maxLength": 200
-								},
-								"client_secret": {
-									"type": "string",
-									"description": "Client secret for OAuth",
-									"format": "password",
-									"minLength": 1,
-									"maxLength": 500
-								},
-								"token_url": {
-									"type": "string",
-									"description": "Token endpoint URL for OAuth",
-									"minLength": 1,
-									"maxLength": 2048
-								}
-							},
-							"additionalProperties": false,
-							"description": "Auth credentials (type-dependent)"
-						}
-					},
-					"required": [
-						"name",
-						"registry_url",
-						"type",
-						"credentials"
-					],
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "registry.deleteCredential",
-			"method": "DELETE",
-			"path": "/registry_connections/{id}",
-			"summary": "Delete registry credential",
-			"auth": true,
-			"parameters": [
-				"path:id:22",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "registry.listCredentials",
-			"method": "GET",
-			"path": "/registry_connections",
-			"summary": "List registry credentials",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit"
-			]
-		},
-		{
-			"id": "repositories.create",
-			"method": "POST",
-			"path": "/repositories",
-			"summary": "Create workspace repository",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/CreateRepositoryBody"
-				}
-			}
-		},
-		{
-			"id": "repositories.createCommit",
-			"method": "POST",
-			"path": "/repositories/{id}/commits",
-			"summary": "Create the initial repository commit",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"header:akua-context",
-				"header:idempotency-key:5"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/CreateRepositoryCommitBody"
-				}
-			}
-		},
-		{
-			"id": "repositories.createToken",
-			"method": "POST",
-			"path": "/repositories/{id}:createToken",
-			"summary": "Create workspace repository write token",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"header:akua-context",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/CreateRepositoryTokenBody"
-				}
-			}
-		},
-		{
-			"id": "repositories.get",
-			"method": "GET",
-			"path": "/repositories/{id}",
-			"summary": "Get repository details",
-			"auth": true,
-			"parameters": [
-				"path:id:23",
-				"header:akua-context",
-				"query:view:4"
-			]
-		},
-		{
-			"id": "repositories.getBranch",
-			"method": "GET",
-			"path": "/repositories/{id}/branches/main",
-			"summary": "Read the repository main branch",
-			"auth": true,
-			"parameters": [
-				"path:id:11",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "repositories.list",
-			"method": "GET",
-			"path": "/repositories",
-			"summary": "List repositories in workspace",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:purpose",
-				"query:view:3"
-			]
-		},
-		{
-			"id": "repositoryChangeRequests.accept",
-			"method": "POST",
-			"path": "/repository_change_requests/{id}:accept",
-			"summary": "Accept repository change request",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:if-match",
-				"header:idempotency-key:3"
-			]
-		},
-		{
-			"id": "repositoryChangeRequests.create",
-			"method": "POST",
-			"path": "/repository_change_requests",
-			"summary": "Create repository change request",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/CreateRepositoryChangeRequestBody"
-				}
-			}
-		},
-		{
-			"id": "repositoryChangeRequests.createToken",
-			"method": "POST",
-			"path": "/repository_change_requests/{id}:createToken",
-			"summary": "Create repository change request token",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/CreateRepositoryChangeRequestTokenBody"
-				}
-			}
-		},
-		{
-			"id": "repositoryChangeRequests.get",
-			"method": "GET",
-			"path": "/repository_change_requests/{id}",
-			"summary": "Get repository change request",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "repositoryChangeRequests.list",
-			"method": "GET",
-			"path": "/repository_change_requests",
-			"summary": "List repository change requests",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:state:4",
-				"query:parent_repository",
-				"query:fork_repository",
-				"query:agent"
-			]
-		},
-		{
-			"id": "repositoryChangeRequests.reject",
-			"method": "POST",
-			"path": "/repository_change_requests/{id}:reject",
-			"summary": "Reject repository change request",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:if-match",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/RejectRepositoryChangeRequestBody"
-				}
-			}
-		},
-		{
-			"id": "repositoryChangeRequests.withdraw",
-			"method": "POST",
-			"path": "/repository_change_requests/{id}:withdraw",
-			"summary": "Withdraw repository change request",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:if-match",
-				"header:idempotency-key:3"
-			]
-		},
-		{
 			"id": "sandboxes.cancelCommand",
 			"method": "POST",
 			"path": "/sandboxes/{id}/commands/{command_id}:cancel",
 			"summary": "Cancel a command",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"path:command_id",
 				"header:akua-context"
 			]
@@ -6197,10 +1860,10 @@ export const contract: ApiContract = {
 			"summary": "Delete a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -6210,7 +1873,7 @@ export const contract: ApiContract = {
 			"summary": "Fork a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
@@ -6228,7 +1891,7 @@ export const contract: ApiContract = {
 			"summary": "Get a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context"
 			]
 		},
@@ -6239,7 +1902,7 @@ export const contract: ApiContract = {
 			"summary": "Get a command",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"path:command_id",
 				"header:akua-context"
 			]
@@ -6251,7 +1914,7 @@ export const contract: ApiContract = {
 			"summary": "Grant access to a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -6269,9 +1932,9 @@ export const contract: ApiContract = {
 			"auth": true,
 			"parameters": [
 				"header:akua-context",
-				"query:cursor:3",
+				"query:cursor:2",
 				"query:limit",
-				"query:state:7",
+				"query:state:3",
 				"query:opencode"
 			]
 		},
@@ -6282,9 +1945,9 @@ export const contract: ApiContract = {
 			"summary": "List access grants",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context",
-				"query:cursor:3",
+				"query:cursor:2",
 				"query:limit"
 			]
 		},
@@ -6295,11 +1958,11 @@ export const contract: ApiContract = {
 			"summary": "List commands",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context",
-				"query:cursor:3",
+				"query:cursor:2",
 				"query:limit",
-				"query:state:8"
+				"query:state:4"
 			]
 		},
 		{
@@ -6309,7 +1972,7 @@ export const contract: ApiContract = {
 			"summary": "List files",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -6320,24 +1983,13 @@ export const contract: ApiContract = {
 			}
 		},
 		{
-			"id": "sandboxes.listPreviews",
-			"method": "GET",
-			"path": "/sandboxes/{id}/previews",
-			"summary": "List previews",
-			"auth": true,
-			"parameters": [
-				"path:id:28",
-				"header:akua-context"
-			]
-		},
-		{
 			"id": "sandboxes.makeDirectory",
 			"method": "POST",
 			"path": "/sandboxes/{id}:makeDirectory",
 			"summary": "Make a directory",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -6354,7 +2006,7 @@ export const contract: ApiContract = {
 			"summary": "Move a file",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -6371,7 +2023,7 @@ export const contract: ApiContract = {
 			"summary": "Read a file",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -6389,7 +2041,7 @@ export const contract: ApiContract = {
 			"summary": "Remove files",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -6406,10 +2058,10 @@ export const contract: ApiContract = {
 			"summary": "Resume a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -6419,7 +2071,7 @@ export const contract: ApiContract = {
 			"summary": "Revoke access to a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"path:grant_id",
 				"header:akua-context"
 			]
@@ -6431,7 +2083,7 @@ export const contract: ApiContract = {
 			"summary": "Run a command",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -6448,7 +2100,7 @@ export const contract: ApiContract = {
 			"summary": "Get file metadata",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -6465,11 +2117,11 @@ export const contract: ApiContract = {
 			"summary": "Stream command output",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"path:command_id",
 				"header:akua-context",
 				"query:offset",
-				"query:follow:2"
+				"query:follow"
 			],
 			"lines": true
 		},
@@ -6480,22 +2132,10 @@ export const contract: ApiContract = {
 			"summary": "Suspend a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
-			]
-		},
-		{
-			"id": "sandboxes.unexposePort",
-			"method": "DELETE",
-			"path": "/sandboxes/{id}/previews/{port}",
-			"summary": "Unexpose a port",
-			"auth": true,
-			"parameters": [
-				"path:id:28",
-				"path:port",
-				"header:akua-context"
+				"header:if-match:2"
 			]
 		},
 		{
@@ -6505,9 +2145,9 @@ export const contract: ApiContract = {
 			"summary": "Update a sandbox",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
@@ -6523,7 +2163,7 @@ export const contract: ApiContract = {
 			"summary": "Write to a command’s input",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"path:command_id",
 				"header:akua-context"
 			],
@@ -6541,7 +2181,7 @@ export const contract: ApiContract = {
 			"summary": "Write a file",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context",
 				"query:path",
 				"query:create_parents"
@@ -6557,7 +2197,7 @@ export const contract: ApiContract = {
 			"summary": "Write several files",
 			"auth": true,
 			"parameters": [
-				"path:id:28",
+				"path:id:11",
 				"header:akua-context"
 			],
 			"body": {
@@ -6570,382 +2210,181 @@ export const contract: ApiContract = {
 		{
 			"id": "secrets.accessVersion",
 			"method": "POST",
-			"path": "/secrets/{id}/versions/{vid}:access",
-			"summary": "Access secret version plaintext",
+			"path": "/vaults/{vault}/secrets/{secret}/versions/{version}:access",
+			"summary": "Access a secret version",
 			"auth": true,
 			"parameters": [
-				"path:id:24",
-				"path:vid:2",
+				"path:vault",
+				"path:secret",
+				"path:version",
 				"header:akua-context"
 			]
 		},
 		{
-			"id": "secrets.create",
+			"id": "secrets.addVersion",
 			"method": "POST",
-			"path": "/secrets",
-			"summary": "Create secret",
+			"path": "/vaults/{vault}/secrets/{secret}:addVersion",
+			"summary": "Add a secret version",
 			"auth": true,
 			"parameters": [
+				"path:vault",
+				"path:secret",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/CreateSecretBody"
+					"$ref": "#/$defs/AddSecretVersionRequest"
 				}
 			}
 		},
 		{
-			"id": "secrets.createVersion",
+			"id": "secrets.create",
 			"method": "POST",
-			"path": "/secrets/{id}/versions",
-			"summary": "Create secret version",
+			"path": "/vaults/{vault}/secrets",
+			"summary": "Create a secret",
 			"auth": true,
 			"parameters": [
-				"path:id:24",
+				"path:vault",
 				"header:akua-context",
 				"header:idempotency-key"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/CreateSecretVersionBody"
+					"$ref": "#/$defs/CreateSecretRequest"
 				}
 			}
 		},
 		{
 			"id": "secrets.delete",
 			"method": "DELETE",
-			"path": "/secrets/{id}",
-			"summary": "Delete secret",
+			"path": "/vaults/{vault}/secrets/{secret}",
+			"summary": "Delete a secret",
 			"auth": true,
 			"parameters": [
-				"path:id:24",
+				"path:vault",
+				"path:secret",
 				"header:akua-context",
-				"header:if-match",
-				"query:force"
+				"header:idempotency-key",
+				"header:if-match:3"
 			]
 		},
 		{
 			"id": "secrets.destroyVersion",
 			"method": "POST",
-			"path": "/secrets/{id}/versions/{vid}:destroy",
-			"summary": "Destroy secret version",
+			"path": "/vaults/{vault}/secrets/{secret}/versions/{version}:destroy",
+			"summary": "Destroy a version",
 			"auth": true,
 			"parameters": [
-				"path:id:24",
-				"path:vid",
+				"path:vault",
+				"path:secret",
+				"path:version",
 				"header:akua-context",
-				"header:if-match"
+				"header:idempotency-key",
+				"header:if-match:2"
 			]
 		},
 		{
 			"id": "secrets.disableVersion",
 			"method": "POST",
-			"path": "/secrets/{id}/versions/{vid}:disable",
-			"summary": "Disable secret version",
+			"path": "/vaults/{vault}/secrets/{secret}/versions/{version}:disable",
+			"summary": "Disable a version",
 			"auth": true,
 			"parameters": [
-				"path:id:24",
-				"path:vid",
+				"path:vault",
+				"path:secret",
+				"path:version",
 				"header:akua-context",
-				"header:if-match"
+				"header:idempotency-key",
+				"header:if-match:2"
 			]
 		},
 		{
 			"id": "secrets.enableVersion",
 			"method": "POST",
-			"path": "/secrets/{id}/versions/{vid}:enable",
-			"summary": "Enable a disabled secret version",
+			"path": "/vaults/{vault}/secrets/{secret}/versions/{version}:enable",
+			"summary": "Enable a version",
 			"auth": true,
 			"parameters": [
-				"path:id:24",
-				"path:vid",
+				"path:vault",
+				"path:secret",
+				"path:version",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			]
 		},
 		{
 			"id": "secrets.get",
 			"method": "GET",
-			"path": "/secrets/{id}",
-			"summary": "Get secret",
+			"path": "/vaults/{vault}/secrets/{secret}",
+			"summary": "Get a secret",
 			"auth": true,
 			"parameters": [
-				"path:id:24",
+				"path:vault",
+				"path:secret",
 				"header:akua-context"
 			]
 		},
 		{
 			"id": "secrets.getVersion",
 			"method": "GET",
-			"path": "/secrets/{id}/versions/{vid}",
-			"summary": "Get secret version",
+			"path": "/vaults/{vault}/secrets/{secret}/versions/{version}",
+			"summary": "Get a version",
 			"auth": true,
 			"parameters": [
-				"path:id:24",
-				"path:vid",
+				"path:vault",
+				"path:secret",
+				"path:version",
 				"header:akua-context"
 			]
 		},
 		{
 			"id": "secrets.list",
 			"method": "GET",
-			"path": "/secrets",
+			"path": "/vaults/{vault}/secrets",
 			"summary": "List secrets",
 			"auth": true,
 			"parameters": [
+				"path:vault",
 				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:kind"
+				"query:cursor:3",
+				"query:limit:2"
 			]
 		},
 		{
 			"id": "secrets.listVersions",
 			"method": "GET",
-			"path": "/secrets/{id}/versions",
-			"summary": "List secret versions",
+			"path": "/vaults/{vault}/secrets/{secret}/versions",
+			"summary": "List versions",
 			"auth": true,
 			"parameters": [
-				"path:id:24",
+				"path:vault",
+				"path:secret",
 				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:state:5"
-			]
-		},
-		{
-			"id": "secrets.undelete",
-			"method": "POST",
-			"path": "/secrets/{id}:undelete",
-			"summary": "Restore a soft-deleted secret",
-			"auth": true,
-			"parameters": [
-				"path:id:24",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
+				"query:cursor:3",
+				"query:limit:2"
 			]
 		},
 		{
 			"id": "secrets.update",
 			"method": "PATCH",
-			"path": "/secrets/{id}",
-			"summary": "Update secret",
+			"path": "/vaults/{vault}/secrets/{secret}",
+			"summary": "Update a secret",
 			"auth": true,
 			"parameters": [
-				"path:id:24",
+				"path:vault",
+				"path:secret",
 				"header:akua-context",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/UpdateSecretBody"
-				}
-			}
-		},
-		{
-			"id": "secrets.validateToken",
-			"method": "POST",
-			"path": "/secrets/validate_token",
-			"summary": "Validate a provider token",
-			"auth": true,
-			"parameters": [],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/ValidateProviderTokenBody"
-				}
-			}
-		},
-		{
-			"id": "snippetRuns.get",
-			"method": "GET",
-			"path": "/snippet_runs/{id}",
-			"summary": "Get workspace snippet run",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "snippetRuns.list",
-			"method": "GET",
-			"path": "/snippet_runs",
-			"summary": "List workspace snippet runs",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:state:6",
-				"query:source",
-				"query:snippet",
-				"query:dashboard",
-				"query:view:5"
-			]
-		},
-		{
-			"id": "snippets.create",
-			"method": "POST",
-			"path": "/snippets",
-			"summary": "Create snippet",
-			"auth": true,
-			"parameters": [],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/CreateSnippetBody"
-				}
-			}
-		},
-		{
-			"id": "snippets.createRun",
-			"method": "POST",
-			"path": "/snippets/{id}/runs",
-			"summary": "Create snippet run",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"header:akua-context",
-				"header:idempotency-key"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/CreateSnippetRunBody"
-				}
-			}
-		},
-		{
-			"id": "snippets.delete",
-			"method": "DELETE",
-			"path": "/snippets/{id}",
-			"summary": "Archive snippet",
-			"auth": true,
-			"parameters": [
-				"path:id:25",
-				"header:if-match"
-			]
-		},
-		{
-			"id": "snippets.execute",
-			"method": "POST",
-			"path": "/snippets:execute",
-			"summary": "Execute ad-hoc snippet code",
-			"auth": true,
-			"parameters": [
-				"header:akua-context"
+				"header:idempotency-key",
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"$ref": "#/$defs/ExecuteSnippetBody"
-				}
-			}
-		},
-		{
-			"id": "snippets.executeStored",
-			"method": "POST",
-			"path": "/snippets/{id}:execute",
-			"summary": "Execute stored snippet",
-			"auth": true,
-			"parameters": [
-				"path:id:7"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/ExecuteStoredSnippetBody"
-				}
-			}
-		},
-		{
-			"id": "snippets.get",
-			"method": "GET",
-			"path": "/snippets/{id}",
-			"summary": "Get snippet details",
-			"auth": true,
-			"parameters": [
-				"path:id:25"
-			]
-		},
-		{
-			"id": "snippets.getRun",
-			"method": "GET",
-			"path": "/snippets/{id}/runs/{run_id}",
-			"summary": "Get snippet run",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"path:run_id"
-			]
-		},
-		{
-			"id": "snippets.getUsage",
-			"method": "GET",
-			"path": "/snippets/{id}:usage",
-			"summary": "Get snippet dashboard usage",
-			"auth": true,
-			"parameters": [
-				"path:id:25"
-			]
-		},
-		{
-			"id": "snippets.list",
-			"method": "GET",
-			"path": "/snippets",
-			"summary": "List snippets in workspace",
-			"auth": true,
-			"parameters": [
-				"header:akua-context",
-				"query:cursor",
-				"query:limit"
-			]
-		},
-		{
-			"id": "snippets.listRuns",
-			"method": "GET",
-			"path": "/snippets/{id}/runs",
-			"summary": "List snippet runs",
-			"auth": true,
-			"parameters": [
-				"path:id:7",
-				"query:cursor",
-				"query:limit",
-				"query:state:6",
-				"query:view:5"
-			]
-		},
-		{
-			"id": "snippets.listUsage",
-			"method": "GET",
-			"path": "/snippets:usage",
-			"summary": "List snippet dashboard usage in workspace",
-			"auth": true,
-			"parameters": [
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "snippets.update",
-			"method": "PATCH",
-			"path": "/snippets/{id}",
-			"summary": "Update snippet",
-			"auth": true,
-			"parameters": [
-				"path:id:25",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"$ref": "#/$defs/UpdateSnippetBody"
+					"$ref": "#/$defs/UpdateSecretRequest"
 				}
 			}
 		},
@@ -6957,7 +2396,8 @@ export const contract: ApiContract = {
 			"auth": true,
 			"parameters": [
 				"header:akua-context",
-				"header:idempotency-key"
+				"header:idempotency-key",
+				"query:vault_id"
 			],
 			"body": {
 				"required": true,
@@ -6969,22 +2409,35 @@ export const contract: ApiContract = {
 		{
 			"id": "vaults.delete",
 			"method": "DELETE",
-			"path": "/vaults/{id}",
+			"path": "/vaults/{vault}",
 			"summary": "Delete a vault",
 			"auth": true,
 			"parameters": [
-				"path:id:26",
-				"header:akua-context"
+				"path:vault",
+				"header:akua-context",
+				"header:idempotency-key",
+				"header:if-match:3"
 			]
 		},
 		{
 			"id": "vaults.get",
 			"method": "GET",
-			"path": "/vaults/{id}",
+			"path": "/vaults/{vault}",
 			"summary": "Get a vault",
 			"auth": true,
 			"parameters": [
-				"path:id:26",
+				"path:vault",
+				"header:akua-context"
+			]
+		},
+		{
+			"id": "vaults.getIamPolicy",
+			"method": "GET",
+			"path": "/vaults/{vault}:getIamPolicy",
+			"summary": "Get a vault policy",
+			"auth": true,
+			"parameters": [
+				"path:vault",
 				"header:akua-context"
 			]
 		},
@@ -6996,102 +2449,58 @@ export const contract: ApiContract = {
 			"auth": true,
 			"parameters": [
 				"header:akua-context",
-				"query:cursor",
-				"query:limit",
-				"query:external_id"
+				"query:cursor:3",
+				"query:limit:2"
 			]
 		},
 		{
-			"id": "workspaces.addMember",
-			"method": "POST",
-			"path": "/workspaces/{id}/members",
-			"summary": "Add workspace member",
+			"id": "vaults.listAuditEvents",
+			"method": "GET",
+			"path": "/vaults/{vault}/audit_events",
+			"summary": "List vault audit events",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:vault",
 				"header:akua-context",
-				"header:idempotency-key"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"user_id": {
-							"type": "string",
-							"description": "BetterAuth user ID of the workspace member to add"
-						},
-						"role": {
-							"type": "string",
-							"enum": [
-								"admin",
-								"member"
-							]
-						}
-					},
-					"required": [
-						"user_id",
-						"role"
-					],
-					"additionalProperties": false
-				}
-			}
+				"query:cursor:3",
+				"query:limit:2"
+			]
 		},
 		{
-			"id": "workspaces.cancelSubscription",
+			"id": "vaults.setIamPolicy",
 			"method": "POST",
-			"path": "/workspaces/{id}/subscription:cancel",
-			"summary": "Cancel workspace subscription",
+			"path": "/vaults/{vault}:setIamPolicy",
+			"summary": "Set a vault policy",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:vault",
 				"header:akua-context",
 				"header:idempotency-key",
-				"header:if-match"
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"type": "object",
-					"properties": {
-						"effective": {
-							"type": "string",
-							"enum": [
-								"period_end"
-							]
-						}
-					},
-					"required": [
-						"effective"
-					],
-					"additionalProperties": false
+					"$ref": "#/$defs/SetIamPolicyRequest"
 				}
 			}
 		},
 		{
-			"id": "workspaces.changeSubscriptionTier",
-			"method": "POST",
-			"path": "/workspaces/{id}/subscription:changeTier",
-			"summary": "Change workspace subscription tier",
+			"id": "vaults.update",
+			"method": "PATCH",
+			"path": "/vaults/{vault}",
+			"summary": "Update a vault",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
+				"path:vault",
 				"header:akua-context",
-				"header:if-match"
+				"header:idempotency-key",
+				"header:if-match:2"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"type": "object",
-					"properties": {
-						"tier": {
-							"type": "string"
-						}
-					},
-					"required": [
-						"tier"
-					],
-					"additionalProperties": false
+					"$ref": "#/$defs/UpdateVaultRequest"
 				}
 			}
 		},
@@ -7113,12 +2522,13 @@ export const contract: ApiContract = {
 							"type": "string",
 							"minLength": 1,
 							"maxLength": 54,
-							"description": "Owning organization. Requires owner or admin permission. Omit to use your personal organization."
+							"description": "The Organization the Workspace is created in (its parent). Required: the server picks none. You must be an owner or admin of it. Clients may default it, as the dashboard does from its current Organization and the CLI from its configuration."
 						},
 						"name": {
 							"type": "string",
 							"minLength": 1,
-							"maxLength": 100
+							"maxLength": 100,
+							"pattern": "^(?=.*\\S)[^\\p{Cc}\\p{Zl}\\p{Zp}]+$"
 						},
 						"slug": {
 							"type": "string",
@@ -7127,24 +2537,12 @@ export const contract: ApiContract = {
 						}
 					},
 					"required": [
+						"organization",
 						"name"
 					],
 					"additionalProperties": false
 				}
 			}
-		},
-		{
-			"id": "workspaces.delete",
-			"method": "DELETE",
-			"path": "/workspaces/{id}",
-			"summary": "Delete workspace",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			]
 		},
 		{
 			"id": "workspaces.get",
@@ -7153,52 +2551,17 @@ export const contract: ApiContract = {
 			"summary": "Get workspace",
 			"auth": true,
 			"parameters": [
-				"path:id:9"
+				"path:id:5"
 			]
 		},
 		{
-			"id": "workspaces.getAccessState",
+			"id": "workspaces.getBillingInfo",
 			"method": "GET",
-			"path": "/workspaces/{id}/access_state",
-			"summary": "Get workspace access state",
+			"path": "/workspaces/{id}/billing_info",
+			"summary": "Get Workspace billing",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "workspaces.getManagement",
-			"method": "GET",
-			"path": "/workspaces/{id}/management",
-			"summary": "Get workspace management access",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "workspaces.getSubscription",
-			"method": "GET",
-			"path": "/workspaces/{id}/subscription",
-			"summary": "Get workspace subscription",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"header:akua-context"
-			]
-		},
-		{
-			"id": "workspaces.getSubscriptionChangeRequest",
-			"method": "GET",
-			"path": "/workspaces/{id}/subscription/change_requests/{req_id}",
-			"summary": "Get subscription change request",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"path:req_id",
-				"header:akua-context"
+				"path:id:4"
 			]
 		},
 		{
@@ -7208,393 +2571,251 @@ export const contract: ApiContract = {
 			"summary": "List workspaces",
 			"auth": true,
 			"parameters": [
-				"query:organization",
+				"query:organization:2",
 				"query:cursor",
 				"query:limit"
 			]
 		},
 		{
-			"id": "workspaces.listMembers",
+			"id": "workspaces.listServices",
 			"method": "GET",
-			"path": "/workspaces/{id}/members",
-			"summary": "List workspace members",
+			"path": "/workspaces/{id}/services",
+			"summary": "List Workspace services",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
-				"header:akua-context",
-				"query:cursor",
-				"query:limit"
+				"path:id:4"
 			]
 		},
 		{
-			"id": "workspaces.listSubscriptionChangeRequests",
-			"method": "GET",
-			"path": "/workspaces/{id}/subscription/change_requests",
-			"summary": "List subscription change requests",
+			"id": "workspaces.updateBillingInfo",
+			"method": "PUT",
+			"path": "/workspaces/{id}/billing_info",
+			"summary": "Link a billing account",
 			"auth": true,
 			"parameters": [
-				"path:id:9",
-				"header:akua-context",
-				"query:cursor",
-				"query:limit"
-			]
-		},
-		{
-			"id": "workspaces.reactivateSubscription",
-			"method": "POST",
-			"path": "/workspaces/{id}/subscription:reactivate",
-			"summary": "Reactivate workspace subscription",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"header:akua-context",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"type": "object",
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "workspaces.removeMember",
-			"method": "DELETE",
-			"path": "/workspaces/{id}/members/{userId}",
-			"summary": "Remove workspace member",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"path:userId:3",
-				"header:akua-context",
-				"header:idempotency-key"
-			]
-		},
-		{
-			"id": "workspaces.revokeManagement",
-			"method": "POST",
-			"path": "/workspaces/{id}:revokeManagement",
-			"summary": "Revoke workspace management access",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match"
-			]
-		},
-		{
-			"id": "workspaces.update",
-			"method": "PATCH",
-			"path": "/workspaces/{id}",
-			"summary": "Update workspace",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"header:akua-context",
-				"header:if-match"
-			],
-			"body": {
-				"required": false,
-				"schema": {
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"slug": {
-							"type": "string",
-							"minLength": 3,
-							"maxLength": 39
-						}
-					},
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "workspaces.updateMember",
-			"method": "PATCH",
-			"path": "/workspaces/{id}/members/{userId}",
-			"summary": "Update workspace member role",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"path:userId:3",
-				"header:akua-context",
+				"path:id:4",
 				"header:idempotency-key"
 			],
 			"body": {
 				"required": true,
 				"schema": {
-					"type": "object",
-					"properties": {
-						"role": {
-							"type": "string",
-							"enum": [
-								"admin",
-								"member"
-							]
-						}
-					},
-					"required": [
-						"role"
-					],
-					"additionalProperties": false
-				}
-			}
-		},
-		{
-			"id": "workspaceSubdomains.get",
-			"method": "GET",
-			"path": "/workspaces/{id}/subdomain",
-			"summary": "Get workspace subdomain",
-			"auth": true,
-			"parameters": [
-				"path:id:9"
-			]
-		},
-		{
-			"id": "workspaceSubdomains.setName",
-			"method": "POST",
-			"path": "/workspaces/{id}/subdomain:setName",
-			"summary": "Set workspace subdomain name",
-			"auth": true,
-			"parameters": [
-				"path:id:9",
-				"header:if-match",
-				"header:idempotency-key:3"
-			],
-			"body": {
-				"required": true,
-				"schema": {
-					"$ref": "#/$defs/SetWorkspaceSubdomainNameBody"
+					"$ref": "#/$defs/UpdateWorkspaceBillingInfoRequest"
 				}
 			}
 		}
 	],
 	"definitions": {
-		"AccessSubject": {
+		"AddSecretVersionRequest": {
 			"type": "object",
 			"properties": {
-				"user_id": {
-					"type": "string",
-					"minLength": 1
-				},
-				"organization_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				},
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
+				"payload": {
+					"type": "string"
 				}
 			},
+			"required": [
+				"payload"
+			],
 			"additionalProperties": false
 		},
-		"ArchiveProductBody": {
+		"BillingAccountName": {
+			"type": "string",
+			"pattern": "^billingAccounts\\/bac_[A-Za-z0-9]+$",
+			"title": "BillingAccountName"
+		},
+		"Binding": {
 			"type": "object",
 			"properties": {
-				"cascade_offers": {
-					"type": "boolean",
-					"default": false
+				"role": {
+					"$ref": "#/$defs/RoleName"
 				},
-				"archive_reason": {
-					"type": "string",
-					"maxLength": 500
+				"members": {
+					"type": "array",
+					"prefixItems": [
+						{
+							"$ref": "#/$defs/Member"
+						}
+					],
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/Member"
+					},
+					"maxItems": 64
+				},
+				"condition": {
+					"$ref": "#/$defs/BindingCondition"
 				}
 			},
+			"required": [
+				"role",
+				"members"
+			],
 			"additionalProperties": false
 		},
-		"BindFloatingPreviewHostnameBody": {
+		"BindingCondition": {
 			"type": "object",
 			"properties": {
-				"track": {
+				"title": {
 					"type": "string",
 					"minLength": 1,
 					"maxLength": 100
 				},
-				"render_id": {
+				"description": {
 					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
+					"maxLength": 512
 				},
-				"protocol": {
-					"type": "string",
-					"enum": [
-						"http",
-						"websocket",
-						"grpc"
+				"expires_at": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 9007199254740991,
+					"description": "Unix timestamp (seconds)"
+				},
+				"operations": {
+					"type": "array",
+					"prefixItems": [
+						{
+							"type": "string",
+							"pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+							"maxLength": 96
+						}
 					],
-					"description": "Transport class for route forwarding.",
-					"default": "http"
-				},
-				"routing_mode": {
+					"minItems": 1,
+					"items": {
+						"type": "string",
+						"pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+						"maxLength": 96
+					},
+					"maxItems": 100
+				}
+			},
+			"required": [
+				"title"
+			],
+			"additionalProperties": false
+		},
+		"CloseBillingAccountRequest": {
+			"type": "object",
+			"properties": {
+				"reason": {
 					"type": "string",
-					"enum": [
-						"through_dispatcher",
-						"bypass_dispatcher"
+					"minLength": 1,
+					"maxLength": 512
+				}
+			},
+			"additionalProperties": false
+		},
+		"ClusterAccess": {
+			"oneOf": [
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"cluster"
+							]
+						}
+					},
+					"required": [
+						"kind"
 					],
-					"description": "Whether traffic uses the dispatcher Worker or bypasses it.",
-					"default": "through_dispatcher"
-				}
-			},
-			"required": [
-				"track",
-				"render_id"
-			],
-			"additionalProperties": false
-		},
-		"BindPinnedPreviewHostnameBody": {
-			"type": "object",
-			"properties": {
-				"render_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
+					"additionalProperties": false
 				},
-				"protocol": {
-					"type": "string",
-					"enum": [
-						"http",
-						"websocket",
-						"grpc"
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"namespaces"
+							]
+						},
+						"namespaces": {
+							"type": "array",
+							"prefixItems": [
+								{
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 63
+								}
+							],
+							"minItems": 1,
+							"items": {
+								"type": "string",
+								"minLength": 1,
+								"maxLength": 63
+							},
+							"maxItems": 256
+						}
+					},
+					"required": [
+						"kind",
+						"namespaces"
 					],
-					"description": "Transport class for route forwarding.",
-					"default": "http"
-				},
-				"routing_mode": {
-					"type": "string",
-					"enum": [
-						"through_dispatcher",
-						"bypass_dispatcher"
+					"additionalProperties": false
+				}
+			]
+		},
+		"ClusterCreateBody": {
+			"anyOf": [
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"hosted"
+							],
+							"description": "Akua runs the control plane in the Region; you join your own servers."
+						},
+						"name": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 63,
+							"pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
+							"description": "A DNS label, unique in the Workspace."
+						},
+						"region_id": {
+							"type": "string",
+							"minLength": 3,
+							"maxLength": 54
+						}
+					},
+					"required": [
+						"kind",
+						"name",
+						"region_id"
 					],
-					"description": "Whether traffic uses the dispatcher Worker or bypasses it.",
-					"default": "through_dispatcher"
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"attached"
+							],
+							"description": "An existing Kubernetes cluster that runs the Akua cluster agent."
+						},
+						"name": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 63,
+							"pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$",
+							"description": "A DNS label, unique in the Workspace."
+						},
+						"access": {
+							"$ref": "#/$defs/ClusterAccess"
+						}
+					},
+					"required": [
+						"kind",
+						"name",
+						"access"
+					],
+					"additionalProperties": false
 				}
-			},
-			"required": [
-				"render_id"
-			],
-			"additionalProperties": false
-		},
-		"ChannelPolicyActivateResource": {
-			"type": "object",
-			"properties": {
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"offer_channel_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				},
-				"channel_policy_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 56
-				},
-				"resource_state": {
-					"type": "string",
-					"enum": [
-						"approved"
-					]
-				}
-			},
-			"required": [
-				"workspace_id",
-				"offer_channel_id",
-				"channel_policy_id",
-				"resource_state"
-			],
-			"additionalProperties": false
-		},
-		"ChannelPolicyApproveResource": {
-			"type": "object",
-			"properties": {
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"offer_channel_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				},
-				"channel_policy_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 56
-				},
-				"resource_state": {
-					"type": "string",
-					"enum": [
-						"draft"
-					]
-				}
-			},
-			"required": [
-				"workspace_id",
-				"offer_channel_id",
-				"channel_policy_id",
-				"resource_state"
-			],
-			"additionalProperties": false
-		},
-		"ClaimOrderDraftBody": {
-			"type": "object",
-			"properties": {
-				"claim_token": {
-					"type": "string",
-					"format": "password"
-				}
-			},
-			"required": [
-				"claim_token"
-			],
-			"additionalProperties": false
-		},
-		"ClusterCockpitResource": {
-			"type": "object",
-			"properties": {
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"cluster_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				}
-			},
-			"required": [
-				"workspace_id",
-				"cluster_id"
-			],
-			"additionalProperties": false
-		},
-		"CommercialMode": {
-			"type": "string",
-			"enum": [
-				"paid",
-				"non_billable_test"
-			],
-			"description": "Customer commercial path requested for an offer. `paid` routes through checkout when policy requires it; `non_billable_test` creates a non-billable test offer when policy allows it."
-		},
-		"ConnectionGrantId": {
-			"type": "string",
-			"pattern": "^cgr_[^\\s/]{1,64}$",
-			"title": "ConnectionGrantId",
-			"description": "A connection grant id"
+			]
 		},
 		"ConnectionId": {
 			"type": "string",
@@ -7607,12 +2828,6 @@ export const contract: ApiContract = {
 			"pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
 			"title": "ConnectorSlug",
 			"description": "A connector's stable slug."
-		},
-		"ConnectSessionId": {
-			"type": "string",
-			"pattern": "^cses_[^\\s/]{1,64}$",
-			"title": "ConnectSessionId",
-			"description": "A connect session id"
 		},
 		"CreateApiTokenRequest": {
 			"type": "object",
@@ -7634,6 +2849,40 @@ export const contract: ApiContract = {
 						}
 					],
 					"description": "Unix timestamp (seconds) when the token expires. Omit or pass null for no expiry."
+				},
+				"workspace_id": {
+					"anyOf": [
+						{
+							"type": "string",
+							"minLength": 2,
+							"maxLength": 53
+						},
+						{
+							"type": "null"
+						}
+					],
+					"description": "The only Workspace the token may act in. Omitted or null: every Workspace the person may use."
+				},
+				"roles": {
+					"anyOf": [
+						{
+							"type": "array",
+							"prefixItems": [
+								{
+									"$ref": "#/$defs/RoleName"
+								}
+							],
+							"minItems": 1,
+							"items": {
+								"$ref": "#/$defs/RoleName"
+							},
+							"maxItems": 16
+						},
+						{
+							"type": "null"
+						}
+					],
+					"description": "A ceiling of IAM roles: the token may do only what one of these roles includes, and only what the person may. Omitted or null: the rights of the person."
 				}
 			},
 			"required": [
@@ -7641,1265 +2890,154 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
-		"CreateCloudflareCredentialBody": {
+		"CreateBillingAccountRequest": {
 			"type": "object",
 			"properties": {
-				"name": {
+				"organization": {
+					"type": "string",
+					"minLength": 3,
+					"maxLength": 54
+				},
+				"display_name": {
 					"type": "string",
 					"minLength": 1,
 					"maxLength": 100
-				},
-				"account_id": {
-					"type": "string",
-					"description": "Cloudflare account ID.",
-					"minLength": 1,
-					"maxLength": 200,
-					"pattern": "^[A-Za-z0-9_-]+$"
-				},
-				"origin_zone_id": {
-					"type": "string",
-					"description": "Cloudflare zone ID used for Access-protected origin hostnames.",
-					"minLength": 1,
-					"maxLength": 200,
-					"pattern": "^[A-Za-z0-9_-]+$"
-				},
-				"origin_hostname_suffix": {
-					"type": "string",
-					"description": "Hostname suffix used for Access-protected origin hostnames.",
-					"minLength": 1,
-					"maxLength": 253
-				},
-				"api_token": {
-					"type": "string",
-					"description": "Cloudflare API token. Stored as a platform Secret; never returned.",
-					"format": "password",
-					"minLength": 1,
-					"maxLength": 2000
 				}
 			},
 			"required": [
-				"name",
-				"account_id",
-				"origin_zone_id",
-				"origin_hostname_suffix",
-				"api_token"
-			],
-			"additionalProperties": false
-		},
-		"CreateConnectionGrantRequest": {
-			"type": "object",
-			"properties": {
-				"vault_id": {
-					"$ref": "#/$defs/VaultId"
-				},
-				"target": {
-					"$ref": "#/$defs/GrantTarget"
-				},
-				"principal": {
-					"$ref": "#/$defs/GrantPrincipal"
-				},
-				"operations": {
-					"type": "array",
-					"items": {
-						"type": "string",
-						"maxLength": 100
-					},
-					"maxItems": 100
-				},
-				"approval": {
-					"type": "string",
-					"enum": [
-						"none",
-						"per_action"
-					]
-				},
-				"expires_at": {
-					"type": "integer",
-					"minimum": 0
-				}
-			},
-			"required": [
-				"target",
-				"principal"
-			],
-			"additionalProperties": false
-		},
-		"CreateConnectionRequest": {
-			"type": "object",
-			"properties": {
-				"connector": {
-					"$ref": "#/$defs/ConnectorSlug"
-				},
-				"vault_id": {
-					"$ref": "#/$defs/VaultId_1"
-				},
-				"name": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 100
-				},
-				"owner": {
-					"anyOf": [
-						{
-							"type": "object",
-							"properties": {
-								"type": {
-									"type": "string",
-									"enum": [
-										"workspace"
-									]
-								}
-							},
-							"required": [
-								"type"
-							],
-							"additionalProperties": false
-						},
-						{
-							"type": "object",
-							"properties": {
-								"type": {
-									"type": "string",
-									"enum": [
-										"user"
-									]
-								}
-							},
-							"required": [
-								"type"
-							],
-							"additionalProperties": false
-						},
-						{
-							"type": "object",
-							"properties": {
-								"type": {
-									"type": "string",
-									"enum": [
-										"external_user"
-									]
-								},
-								"external_user_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 200
-								}
-							},
-							"required": [
-								"type",
-								"external_user_id"
-							],
-							"additionalProperties": false
-						}
-					],
-					"description": "Defaults to the calling user. A user owner is always the authenticated caller, never a client-supplied id."
-				}
-			},
-			"required": [
-				"connector"
-			],
-			"additionalProperties": false
-		},
-		"CreateConnectSessionRequest": {
-			"type": "object",
-			"properties": {
-				"connection_id": {
-					"$ref": "#/$defs/ConnectionId"
-				},
-				"vault_id": {
-					"$ref": "#/$defs/VaultId"
-				}
-			},
-			"required": [
-				"connection_id"
-			],
-			"additionalProperties": false
-		},
-		"CreateCustomDomainBody": {
-			"type": "object",
-			"properties": {
-				"hostname": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 253
-				},
-				"target": {
-					"oneOf": [
-						{
-							"type": "object",
-							"properties": {
-								"kind": {
-									"type": "string",
-									"enum": [
-										"install"
-									]
-								},
-								"install_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								}
-							},
-							"required": [
-								"kind",
-								"install_id"
-							],
-							"additionalProperties": false
-						},
-						{
-							"type": "object",
-							"properties": {
-								"kind": {
-									"type": "string",
-									"enum": [
-										"cluster"
-									]
-								},
-								"cluster_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								}
-							},
-							"required": [
-								"kind",
-								"cluster_id"
-							],
-							"additionalProperties": false
-						},
-						{
-							"type": "object",
-							"properties": {
-								"kind": {
-									"type": "string",
-									"enum": [
-										"external"
-									]
-								},
-								"endpoint": {
-									"type": "string",
-									"format": "uri"
-								},
-								"mtls_secret_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								}
-							},
-							"required": [
-								"kind",
-								"endpoint"
-							],
-							"additionalProperties": false
-						}
-					]
-				},
-				"protocol": {
-					"type": "string",
-					"enum": [
-						"http",
-						"websocket",
-						"grpc"
-					],
-					"description": "Transport class for route forwarding.",
-					"default": "http"
-				},
-				"routing_mode": {
-					"type": "string",
-					"enum": [
-						"through_dispatcher",
-						"bypass_dispatcher"
-					],
-					"description": "Whether traffic uses the dispatcher Worker or bypasses it.",
-					"default": "through_dispatcher"
-				}
-			},
-			"required": [
-				"hostname",
-				"target"
-			],
-			"additionalProperties": false
-		},
-		"CreateDashboardWidgetBody": {
-			"oneOf": [
-				{
-					"type": "object",
-					"properties": {
-						"snippet_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"title": {
-							"type": "string",
-							"maxLength": 100
-						},
-						"col_span": {
-							"type": "number",
-							"enum": [
-								1,
-								2,
-								3,
-								4
-							]
-						},
-						"display_type": {
-							"anyOf": [
-								{
-									"type": "string",
-									"enum": [
-										"table",
-										"stat",
-										"json",
-										"logs",
-										"timeseries"
-									]
-								},
-								{
-									"type": "null"
-								}
-							],
-							"description": "Controls how the snippet result is rendered in dashboard widgets"
-						},
-						"position": {
-							"type": "integer"
-						}
-					},
-					"required": [
-						"snippet_id",
-						"col_span"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"title": {
-							"type": "string",
-							"maxLength": 100
-						},
-						"col_span": {
-							"type": "number",
-							"enum": [
-								1,
-								2,
-								3,
-								4
-							]
-						},
-						"position": {
-							"type": "integer"
-						},
-						"height": {
-							"type": "string",
-							"enum": [
-								"compact",
-								"standard",
-								"tall"
-							],
-							"default": "standard"
-						},
-						"drill_down": {
-							"anyOf": [
-								{
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 2048
-								},
-								{
-									"type": "null"
-								}
-							],
-							"default": null
-						},
-						"visualization_options": {
-							"type": "object",
-							"default": {}
-						},
-						"freshness_policy": {
-							"oneOf": [
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"provider_default"
-											]
-										}
-									},
-									"required": [
-										"mode"
-									],
-									"additionalProperties": false
-								},
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"max_age"
-											]
-										},
-										"max_age_seconds": {
-											"type": "integer",
-											"minimum": 30,
-											"maximum": 86400
-										}
-									},
-									"required": [
-										"mode",
-										"max_age_seconds"
-									],
-									"additionalProperties": false
-								}
-							],
-							"default": {
-								"mode": "provider_default"
-							}
-						},
-						"widget_type": {
-							"type": "string",
-							"enum": [
-								"snippet"
-							]
-						},
-						"snippet_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"snippet_etag": {
-							"anyOf": [
-								{
-									"type": "string"
-								},
-								{
-									"type": "null"
-								}
-							],
-							"default": null
-						},
-						"input_bindings": {
-							"type": "object",
-							"additionalProperties": {
-								"oneOf": [
-									{
-										"type": "object",
-										"properties": {
-											"mode": {
-												"type": "string",
-												"enum": [
-													"inherit"
-												]
-											},
-											"filter_key": {
-												"anyOf": [
-													{
-														"type": "string",
-														"enum": [
-															"time",
-															"comparison",
-															"cluster",
-															"install",
-															"product",
-															"package",
-															"region",
-															"status"
-														]
-													},
-													{
-														"type": "string",
-														"pattern": "^var\\.[a-z][a-z0-9_]{0,31}$"
-													}
-												]
-											}
-										},
-										"required": [
-											"mode",
-											"filter_key"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"mode": {
-												"type": "string",
-												"enum": [
-													"fixed"
-												]
-											},
-											"value": {}
-										},
-										"required": [
-											"mode",
-											"value"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"mode": {
-												"type": "string",
-												"enum": [
-													"unbound"
-												]
-											}
-										},
-										"required": [
-											"mode"
-										],
-										"additionalProperties": false
-									}
-								]
-							},
-							"default": {}
-						},
-						"visualization": {
-							"anyOf": [
-								{
-									"type": "string",
-									"enum": [
-										"stat",
-										"sparkline",
-										"line",
-										"area",
-										"bar",
-										"donut",
-										"table",
-										"status_list",
-										"logs",
-										"json"
-									]
-								},
-								{
-									"type": "null"
-								}
-							],
-							"default": null
-						},
-						"refresh_policy": {
-							"oneOf": [
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"on_load"
-											]
-										}
-									},
-									"required": [
-										"mode"
-									],
-									"additionalProperties": false
-								},
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"manual"
-											]
-										}
-									},
-									"required": [
-										"mode"
-									],
-									"additionalProperties": false
-								},
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"interval"
-											]
-										},
-										"interval_seconds": {
-											"type": "integer",
-											"minimum": 60,
-											"maximum": 86400
-										}
-									},
-									"required": [
-										"mode",
-										"interval_seconds"
-									],
-									"additionalProperties": false
-								}
-							],
-							"default": {
-								"mode": "on_load"
-							}
-						},
-						"display_type": {
-							"anyOf": [
-								{
-									"type": "string",
-									"enum": [
-										"table",
-										"stat",
-										"json",
-										"logs",
-										"timeseries"
-									]
-								},
-								{
-									"type": "null"
-								}
-							],
-							"description": "Controls how the snippet result is rendered in dashboard widgets",
-							"default": null
-						}
-					},
-					"required": [
-						"col_span",
-						"widget_type",
-						"snippet_id"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"title": {
-							"type": "string",
-							"maxLength": 100
-						},
-						"col_span": {
-							"type": "number",
-							"enum": [
-								1,
-								2,
-								3,
-								4
-							]
-						},
-						"position": {
-							"type": "integer"
-						},
-						"height": {
-							"type": "string",
-							"enum": [
-								"compact",
-								"standard",
-								"tall"
-							],
-							"default": "standard"
-						},
-						"drill_down": {
-							"anyOf": [
-								{
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 2048
-								},
-								{
-									"type": "null"
-								}
-							],
-							"default": null
-						},
-						"visualization_options": {
-							"type": "object",
-							"default": {}
-						},
-						"freshness_policy": {
-							"oneOf": [
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"provider_default"
-											]
-										}
-									},
-									"required": [
-										"mode"
-									],
-									"additionalProperties": false
-								},
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"max_age"
-											]
-										},
-										"max_age_seconds": {
-											"type": "integer",
-											"minimum": 30,
-											"maximum": 86400
-										}
-									},
-									"required": [
-										"mode",
-										"max_age_seconds"
-									],
-									"additionalProperties": false
-								}
-							],
-							"default": {
-								"mode": "provider_default"
-							}
-						},
-						"widget_type": {
-							"type": "string",
-							"enum": [
-								"platform_metric"
-							]
-						},
-						"metric_key": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100,
-							"pattern": "^[a-z][a-z0-9_]*$"
-						},
-						"metric_version": {
-							"type": "integer",
-							"exclusiveMinimum": 0
-						},
-						"filter_bindings": {
-							"type": "object",
-							"additionalProperties": {
-								"oneOf": [
-									{
-										"type": "object",
-										"properties": {
-											"mode": {
-												"type": "string",
-												"enum": [
-													"inherit"
-												]
-											},
-											"filter_key": {
-												"anyOf": [
-													{
-														"type": "string",
-														"enum": [
-															"time",
-															"comparison",
-															"cluster",
-															"install",
-															"product",
-															"package",
-															"region",
-															"status"
-														]
-													},
-													{
-														"type": "string",
-														"pattern": "^var\\.[a-z][a-z0-9_]{0,31}$"
-													}
-												]
-											}
-										},
-										"required": [
-											"mode",
-											"filter_key"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"mode": {
-												"type": "string",
-												"enum": [
-													"fixed"
-												]
-											},
-											"value": {}
-										},
-										"required": [
-											"mode",
-											"value"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"mode": {
-												"type": "string",
-												"enum": [
-													"unbound"
-												]
-											}
-										},
-										"required": [
-											"mode"
-										],
-										"additionalProperties": false
-									}
-								]
-							},
-							"default": {}
-						}
-					},
-					"required": [
-						"col_span",
-						"widget_type",
-						"metric_key",
-						"metric_version"
-					],
-					"additionalProperties": false
-				}
-			]
-		},
-		"CreateHostedPackageVersionBody": {
-			"type": "object",
-			"properties": {
-				"source": {
-					"type": "object",
-					"properties": {
-						"repository_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 55
-						},
-						"ref": {
-							"type": "string",
-							"description": "Immutable lowercase 40-character commit SHA in the authored workspace repository. Akua validates that exact checkout and reads its package version from akua.toml.",
-							"pattern": "^[0-9a-f]{40}$"
-						}
-					},
-					"required": [
-						"repository_id",
-						"ref"
-					],
-					"additionalProperties": false
-				}
-			},
-			"required": [
-				"source"
+				"organization",
+				"display_name"
 			],
 			"additionalProperties": false
 		},
 		"CreateInstallBody": {
-			"anyOf": [
-				{
-					"type": "object",
-					"properties": {
-						"product_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 55
-						},
-						"region_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"cluster_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"initial_values": {
-							"type": "object"
-						}
-					},
-					"required": [
-						"product_id",
-						"region_id"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"package_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"package_version_pin": {
-							"$ref": "#/$defs/InstallPackageVersionPin"
-						},
-						"region_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"cluster_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"initial_values": {
-							"type": "object"
-						}
-					},
-					"required": [
-						"package_id",
-						"package_version_pin",
-						"region_id"
-					],
-					"additionalProperties": false
-				}
-			],
-			"description": "Provide either `product_id` for product-based installations or `package_id` with `package_version_pin` for direct package installations."
-		},
-		"CreateInstallRenderBody": {
 			"type": "object",
 			"properties": {
-				"message": {
+				"package_id": {
 					"type": "string",
-					"maxLength": 255
+					"minLength": 3,
+					"maxLength": 54
 				},
-				"skip_unchanged": {
-					"anyOf": [
-						{
-							"type": "boolean"
-						},
-						{
-							"type": "null"
-						}
-					],
-					"default": true
+				"package_version_pin": {
+					"$ref": "#/$defs/InstallPackageVersionPin"
 				},
-				"extra_annotations": {
-					"type": "object",
-					"additionalProperties": {
-						"type": "string"
-					}
+				"cluster_id": {
+					"type": "string",
+					"minLength": 3,
+					"maxLength": 54
+				},
+				"initial_values": {
+					"type": "object"
+				},
+				"storage_class": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 253,
+					"pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9](?:[-a-z0-9]*[a-z0-9])?)*$",
+					"description": "The StorageClass every volume the Package renders names. Omit it and Akua picks one the Cluster offers (`storage_classes`): its only one, else a network-attached one before a node-local one, then by name. On a Cluster with none, Akua adds local-path when you hold `cluster.addons.create`; otherwise an Install with volumes fails `storage-class-unavailable`."
 				}
 			},
+			"required": [
+				"package_id",
+				"package_version_pin",
+				"cluster_id"
+			],
+			"additionalProperties": false,
+			"description": "Install a Package version, identified by `package_id` and `package_version_pin`."
+		},
+		"CreateNodePoolBody": {
+			"type": "object",
+			"properties": {
+				"machine_type": {
+					"$ref": "#/$defs/MachineType_1"
+				},
+				"node_count": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 10,
+					"description": "Number of nodes the pool keeps, 0 to 10 at launch."
+				},
+				"locations": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"pattern": "^[a-z][a-z0-9-]{1,31}$"
+					},
+					"maxItems": 1,
+					"description": "Where the pool places its Machines in the Cluster’s Region; empty lets Akua choose. One location at launch."
+				},
+				"image": {
+					"$ref": "#/$defs/NodeImage_1"
+				},
+				"labels": {
+					"$ref": "#/$defs/NodeLabels"
+				}
+			},
+			"required": [
+				"machine_type",
+				"node_count"
+			],
 			"additionalProperties": false
 		},
-		"CreateOfferBody": {
-			"oneOf": [
-				{
-					"type": "object",
-					"properties": {
-						"product_id": {
-							"type": "string",
-							"description": "Product ID for attribution and package-version resolution. Required for channel-backed offers. When `package_version_id` is omitted, the server uses the product’s current package version pin.",
-							"minLength": 1,
-							"maxLength": 55
-						},
-						"package_version_id": {
-							"type": "string",
-							"description": "Package version ID to pin explicitly at create time. Optional when `product_id` is supplied; if both are supplied, this value overrides the product’s current package version pin.",
-							"minLength": 1,
-							"maxLength": 55
-						},
-						"allowed_emails": {
-							"type": "array",
-							"items": {
-								"type": "string",
-								"format": "email",
-								"maxLength": 254
-							},
-							"description": "Verified customer email allowlist. Empty or omitted means any authenticated customer can redeem the offer.",
-							"maxItems": 50
-						},
-						"field_values": {
-							"type": "object",
-							"additionalProperties": {
-								"type": "object",
-								"properties": {
-									"value": {
-										"description": "Pre-fill value for this schema property"
-									},
-									"locked": {
-										"type": "boolean",
-										"description": "When true the customer cannot override; submit ignores client value"
-									}
-								},
-								"required": [
-									"value",
-									"locked"
-								],
-								"additionalProperties": false
-							},
-							"description": "Package input pre-fills keyed by input-schema property name. Values are validated against the resolved package version input schema before the offer is created."
-						},
-						"customer": {
-							"$ref": "#/$defs/OfferCustomerSnapshot"
-						},
-						"internal_note": {
-							"type": "string",
-							"description": "Seller-only internal context for this offer. Never returned by customer resolve.",
-							"maxLength": 500
-						},
-						"commercial_mode": {
-							"allOf": [
-								{
-									"$ref": "#/$defs/CommercialMode"
-								},
-								{
-									"description": "Requested customer path for channel policy resolution. This is not settlement authority; the active channel policy decides the final terms."
-								}
-							]
-						},
-						"pricing_request": {
-							"$ref": "#/$defs/OfferPricingRequest"
-						},
-						"notes": {
-							"type": "string",
-							"description": "Seller-authored offer note. Customer resolve returns it only to authenticated callers authorized through an open allowlist or a verified-email match.",
-							"maxLength": 500
-						},
-						"expires_at": {
-							"type": "integer",
-							"description": "Unix timestamp in seconds after which the offer can no longer be redeemed. Omit for no explicit expiration.",
-							"exclusiveMinimum": 0
-						},
-						"max_uses": {
-							"anyOf": [
-								{
-									"type": "integer",
-									"maximum": 10000,
-									"exclusiveMinimum": 0
-								},
-								{
-									"type": "null"
-								}
-							],
-							"description": "Maximum number of successful redemptions allowed for this offer. Omit for the default single-use behavior; send null for unlimited redemptions."
-						},
-						"order_ttl_minutes": {
-							"type": "integer",
-							"description": "Per-redemption order TTL in minutes. Defaults to 120; capped at 1440 (24h).",
-							"maximum": 1440,
-							"exclusiveMinimum": 0
-						},
-						"tier": {
-							"type": "string",
-							"description": "Legacy advisory billing tier for non-channel offers. Channel-backed offers use `commercial_mode` and `pricing_request`.",
-							"maxLength": 32
-						}
-					},
-					"required": [
-						"product_id"
-					],
-					"additionalProperties": false
+		"CreateOfferRequest": {
+			"type": "object",
+			"properties": {
+				"product_id": {
+					"type": "string",
+					"description": "An active Product of the Akua-Context Workspace; the Offer installs its Package version.",
+					"minLength": 1,
+					"maxLength": 55
 				},
-				{
-					"type": "object",
-					"properties": {
-						"package_version_id": {
-							"type": "string",
-							"description": "Package version ID to pin explicitly at create time. Optional when `product_id` is supplied; if both are supplied, this value overrides the product’s current package version pin.",
-							"minLength": 1,
-							"maxLength": 55
-						},
-						"allowed_emails": {
-							"type": "array",
-							"items": {
-								"type": "string",
-								"format": "email",
-								"maxLength": 254
-							},
-							"description": "Verified customer email allowlist. Empty or omitted means any authenticated customer can redeem the offer.",
-							"maxItems": 50
-						},
-						"field_values": {
-							"type": "object",
-							"additionalProperties": {
-								"type": "object",
-								"properties": {
-									"value": {
-										"description": "Pre-fill value for this schema property"
-									},
-									"locked": {
-										"type": "boolean",
-										"description": "When true the customer cannot override; submit ignores client value"
-									}
-								},
-								"required": [
-									"value",
-									"locked"
-								],
-								"additionalProperties": false
-							},
-							"description": "Package input pre-fills keyed by input-schema property name. Values are validated against the resolved package version input schema before the offer is created."
-						},
-						"customer": {
-							"$ref": "#/$defs/OfferCustomerSnapshot"
-						},
-						"internal_note": {
-							"type": "string",
-							"description": "Seller-only internal context for this offer. Never returned by customer resolve.",
-							"maxLength": 500
-						},
-						"commercial_mode": {
-							"allOf": [
-								{
-									"$ref": "#/$defs/CommercialMode"
-								},
-								{
-									"description": "Requested customer path for channel policy resolution. This is not settlement authority; the active channel policy decides the final terms."
-								}
-							]
-						},
-						"pricing_request": {
-							"$ref": "#/$defs/OfferPricingRequest"
-						},
-						"notes": {
-							"type": "string",
-							"description": "Seller-authored offer note. Customer resolve returns it only to authenticated callers authorized through an open allowlist or a verified-email match.",
-							"maxLength": 500
-						},
-						"expires_at": {
-							"type": "integer",
-							"description": "Unix timestamp in seconds after which the offer can no longer be redeemed. Omit for no explicit expiration.",
-							"exclusiveMinimum": 0
-						},
-						"max_uses": {
-							"anyOf": [
-								{
-									"type": "integer",
-									"maximum": 10000,
-									"exclusiveMinimum": 0
-								},
-								{
-									"type": "null"
-								}
-							],
-							"description": "Maximum number of successful redemptions allowed for this offer. Omit for the default single-use behavior; send null for unlimited redemptions."
-						},
-						"order_ttl_minutes": {
-							"type": "integer",
-							"description": "Per-redemption order TTL in minutes. Defaults to 120; capped at 1440 (24h).",
-							"maximum": 1440,
-							"exclusiveMinimum": 0
-						},
-						"tier": {
-							"type": "string",
-							"description": "Legacy advisory billing tier for non-channel offers. Channel-backed offers use `commercial_mode` and `pricing_request`.",
-							"maxLength": 32
-						}
-					},
-					"required": [
-						"package_version_id"
-					],
-					"additionalProperties": false
+				"terms": {
+					"$ref": "#/$defs/OfferTerms"
 				},
-				{
+				"audience": {
+					"$ref": "#/$defs/OfferAudience"
+				},
+				"field_values": {
 					"type": "object",
-					"properties": {
-						"product_id": {
-							"type": "string",
-							"description": "Product ID for attribution and package-version resolution. Required for channel-backed offers. When `package_version_id` is omitted, the server uses the product’s current package version pin.",
-							"minLength": 1,
-							"maxLength": 55
-						},
-						"package_version_id": {
-							"type": "string",
-							"description": "Package version ID to pin explicitly at create time. Optional when `product_id` is supplied; if both are supplied, this value overrides the product’s current package version pin.",
-							"minLength": 1,
-							"maxLength": 55
-						},
-						"allowed_emails": {
-							"type": "array",
-							"items": {
-								"type": "string",
-								"format": "email",
-								"maxLength": 254
-							},
-							"description": "Verified customer email allowlist. Empty or omitted means any authenticated customer can redeem the offer.",
-							"maxItems": 50
-						},
-						"field_values": {
-							"type": "object",
-							"additionalProperties": {
-								"type": "object",
-								"properties": {
-									"value": {
-										"description": "Pre-fill value for this schema property"
-									},
-									"locked": {
-										"type": "boolean",
-										"description": "When true the customer cannot override; submit ignores client value"
-									}
-								},
-								"required": [
-									"value",
-									"locked"
-								],
-								"additionalProperties": false
-							},
-							"description": "Package input pre-fills keyed by input-schema property name. Values are validated against the resolved package version input schema before the offer is created."
-						},
-						"customer": {
-							"$ref": "#/$defs/OfferCustomerSnapshot"
-						},
-						"internal_note": {
-							"type": "string",
-							"description": "Seller-only internal context for this offer. Never returned by customer resolve.",
-							"maxLength": 500
-						},
-						"commercial_mode": {
-							"allOf": [
-								{
-									"$ref": "#/$defs/CommercialMode"
-								},
-								{
-									"description": "Requested customer path for channel policy resolution. This is not settlement authority; the active channel policy decides the final terms."
-								}
-							]
-						},
-						"pricing_request": {
-							"$ref": "#/$defs/OfferPricingRequest"
-						},
-						"notes": {
-							"type": "string",
-							"description": "Seller-authored offer note. Customer resolve returns it only to authenticated callers authorized through an open allowlist or a verified-email match.",
-							"maxLength": 500
-						},
-						"expires_at": {
-							"type": "integer",
-							"description": "Unix timestamp in seconds after which the offer can no longer be redeemed. Omit for no explicit expiration.",
-							"exclusiveMinimum": 0
-						},
-						"max_uses": {
-							"anyOf": [
-								{
-									"type": "integer",
-									"maximum": 10000,
-									"exclusiveMinimum": 0
-								},
-								{
-									"type": "null"
-								}
-							],
-							"description": "Maximum number of successful redemptions allowed for this offer. Omit for the default single-use behavior; send null for unlimited redemptions."
-						},
-						"order_ttl_minutes": {
-							"type": "integer",
-							"description": "Per-redemption order TTL in minutes. Defaults to 120; capped at 1440 (24h).",
-							"maximum": 1440,
-							"exclusiveMinimum": 0
-						},
-						"offer_channel_id": {
-							"type": "string",
-							"description": "Offer Channel whose active policy resolves approval, checkout, support, and pricing terms.",
-							"minLength": 1,
-							"maxLength": 54
-						}
+					"propertyNames": {
+						"type": "string",
+						"description": "JSON pointer to an input of the values schema",
+						"maxLength": 512,
+						"pattern": "^(?:\\/[^/]*)+$"
 					},
-					"required": [
-						"product_id",
-						"offer_channel_id"
-					],
-					"additionalProperties": false
+					"additionalProperties": {
+						"type": "object",
+						"properties": {
+							"value": {},
+							"locked": {
+								"type": "boolean",
+								"description": "The customer cannot change a locked value; it is granted with the Package."
+							}
+						},
+						"required": [
+							"value",
+							"locked"
+						],
+						"additionalProperties": false
+					},
+					"description": "Prefilled and locked inputs, by JSON pointer into the version's values schema. An input marked sensitive (`x-ui.sensitive`) must be a locked string; Akua keeps it in the Offer's own vault and never shows it again."
+				},
+				"max_redemptions": {
+					"type": "integer",
+					"description": "How many customer Workspaces may redeem the Offer.",
+					"minimum": 1,
+					"maximum": 1000
+				},
+				"expires_at": {
+					"type": "integer",
+					"description": "Unix timestamp (seconds) after which nobody can redeem.",
+					"exclusiveMinimum": 0
 				}
+			},
+			"required": [
+				"product_id",
+				"terms",
+				"audience",
+				"max_redemptions"
 			],
-			"description": "Provide either `product_id` or `package_version_id`. Product-backed requests may omit `package_version_id`; the server resolves the product’s current package version pin at create time, validates `field_values` against the resolved package version input schema, and stores the resolved package version on the offer."
+			"additionalProperties": false
 		},
 		"CreateOpenCodeServer": {
 			"type": "object",
@@ -8934,6 +3072,9 @@ export const contract: ApiContract = {
 				},
 				"features": {
 					"$ref": "#/$defs/OpenCodeFeatures"
+				},
+				"vault_id": {
+					"$ref": "#/$defs/VaultId_1"
 				}
 			},
 			"required": [
@@ -8941,243 +3082,76 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
-		"CreatePackageBody": {
+		"CreateOrderDraftBody": {
+			"type": "object",
+			"properties": {
+				"offer": {
+					"type": "string",
+					"description": "The Offer ID (`offer_...`) or the 8-character short hash from the Offer link",
+					"minLength": 1,
+					"maxLength": 56
+				},
+				"workspace": {
+					"$ref": "#/$defs/OrderDraftWorkspace"
+				},
+				"cluster_id": {
+					"anyOf": [
+						{
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 55
+						},
+						{
+							"type": "null"
+						}
+					],
+					"description": "A Cluster in the Workspace; `null` clears it. To use a new hosted Cluster, create it (and its server) through /v1/clusters first."
+				},
+				"values": {
+					"type": "object",
+					"description": "Replaces the configuration values as a whole. Sensitive fields (`x-ui.sensitive`) are refused here; send them with `:redeem`."
+				}
+			},
+			"required": [
+				"offer"
+			],
+			"additionalProperties": false
+		},
+		"CreatePackageRequest": {
 			"type": "object",
 			"properties": {
 				"name": {
 					"type": "string",
 					"minLength": 1,
-					"maxLength": 120
+					"maxLength": 100
 				},
-				"display_image_url": {
-					"type": "string",
-					"format": "uri",
-					"maxLength": 2048
-				},
-				"keep_source_repository": {
-					"type": "boolean",
-					"default": false
-				},
-				"sources": {
-					"type": "array",
-					"items": {
-						"oneOf": [
-							{
-								"$ref": "#/$defs/CreatePackageHelmSource"
-							},
-							{
-								"$ref": "#/$defs/CreatePackageHostedSource"
-							}
-						]
-					},
-					"minItems": 1,
-					"maxItems": 1
+				"source": {
+					"$ref": "#/$defs/PackageHelmOciSource"
 				}
 			},
 			"required": [
 				"name",
-				"sources"
+				"source"
 			],
 			"additionalProperties": false
 		},
-		"CreatePackageHelmSource": {
+		"CreatePackageVersionRequest": {
 			"type": "object",
 			"properties": {
-				"kind": {
-					"type": "string",
-					"enum": [
-						"helm"
-					]
-				},
-				"repo_url": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 2048,
-					"pattern": "^oci:\\/\\/"
-				},
-				"chart": {
-					"type": "string",
-					"maxLength": 255
-				},
-				"target_revision": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 256
-				},
-				"path": {
-					"type": "string",
-					"maxLength": 2048
-				},
-				"values": {
-					"type": "object"
-				}
-			},
-			"required": [
-				"kind",
-				"repo_url",
-				"target_revision"
-			],
-			"additionalProperties": false
-		},
-		"CreatePackageHostedSource": {
-			"type": "object",
-			"properties": {
-				"kind": {
-					"type": "string",
-					"enum": [
-						"hosted"
-					]
-				},
-				"repository_id": {
-					"type": "string",
-					"description": "Ephemeral platform-hosted workspace repository containing authored source.",
-					"minLength": 1,
-					"maxLength": 55
-				},
-				"ref": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 512
-				}
-			},
-			"required": [
-				"kind",
-				"repository_id",
-				"ref"
-			],
-			"additionalProperties": false
-		},
-		"CreatePackageVersionBody": {
-			"anyOf": [
-				{
-					"$ref": "#/$defs/CreatePackageVersionOciBody"
-				},
-				{
-					"$ref": "#/$defs/CreateHostedPackageVersionBody"
-				}
-			]
-		},
-		"CreatePackageVersionOciBody": {
-			"type": "object",
-			"properties": {
-				"semver": {
+				"version": {
 					"type": "string",
 					"minLength": 1,
 					"maxLength": 128,
-					"pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
-				},
-				"ref": {
-					"type": "string",
-					"description": "Immutable package content reference. For OCI-backed packages this is normally the digest returned by `akua publish`; Akua verifies it against the published artifact before registering the version.",
-					"minLength": 1,
-					"maxLength": 512
-				},
-				"input_schema": {
-					"allOf": [
-						{
-							"$ref": "#/$defs/PackageVersionInputs"
-						},
-						{
-							"description": "JSON Schema exported from the Akua package version. Used to render future install forms; Akua verifies it against the published artifact before registering the version."
-						}
-					]
-				},
-				"compatibility": {
-					"type": "object",
-					"properties": {
-						"clusterTypes": {
-							"type": "array",
-							"items": {
-								"type": "string"
-							}
-						},
-						"kubernetes": {
-							"type": "object",
-							"properties": {
-								"minVersion": {
-									"type": "string"
-								},
-								"maxVersion": {
-									"type": "string"
-								}
-							},
-							"additionalProperties": false
-						},
-						"placement": {
-							"type": "object",
-							"properties": {
-								"providers": {
-									"anyOf": [
-										{
-											"type": "string",
-											"enum": [
-												"any"
-											]
-										},
-										{
-											"type": "array",
-											"items": {
-												"type": "string"
-											}
-										}
-									]
-								},
-								"regions": {
-									"anyOf": [
-										{
-											"type": "string",
-											"enum": [
-												"any"
-											]
-										},
-										{
-											"type": "array",
-											"items": {
-												"type": "string"
-											}
-										}
-									]
-								}
-							},
-							"required": [
-								"providers",
-								"regions"
-							],
-							"additionalProperties": false
-						},
-						"kaas": {
-							"type": "object",
-							"properties": {
-								"networkProfile": {
-									"type": "string",
-									"enum": [
-										"linux_cilium",
-										"mixed_os_calico"
-									]
-								}
-							},
-							"required": [
-								"networkProfile"
-							],
-							"additionalProperties": false
-						}
-					},
-					"required": [
-						"clusterTypes",
-						"kubernetes",
-						"placement"
-					],
-					"additionalProperties": false
+					"pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$",
+					"description": "The chart version to publish; Akua pulls the chart at this tag from the Package repository."
 				}
 			},
 			"required": [
-				"semver",
-				"ref",
-				"input_schema"
+				"version"
 			],
 			"additionalProperties": false
 		},
-		"CreateProductBody": {
+		"CreateProductRequest": {
 			"type": "object",
 			"properties": {
 				"name": {
@@ -9187,269 +3161,34 @@ export const contract: ApiContract = {
 				},
 				"package_id": {
 					"type": "string",
+					"description": "A Package of the Akua-Context Workspace.",
 					"minLength": 1,
 					"maxLength": 54
 				},
-				"package_version_pin": {
-					"$ref": "#/$defs/PackageVersionPin"
-				},
-				"custom_image": {
+				"package_version": {
 					"type": "string",
-					"description": "Custom display image URL — overrides the package logo",
-					"format": "uri"
+					"minLength": 1,
+					"maxLength": 128,
+					"pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$",
+					"description": "The published Package version the Product offers. Offers made for the Product install exactly this version."
 				},
-				"custom_description": {
+				"description": {
 					"type": "string",
-					"description": "Custom display description — overrides the package description",
 					"maxLength": 500
 				},
 				"support_email": {
 					"type": "string",
-					"description": "Seller support email shown to customers when an install or offer link needs help.",
+					"description": "Shown to customers on Offer pages when they need help.",
 					"format": "email",
-					"maxLength": 254
-				},
-				"marketplace": {
-					"$ref": "#/$defs/ProductMarketplace"
+					"maxLength": 254,
+					"pattern": "^[^\\s@]+@[^\\s@]+$"
 				}
 			},
 			"required": [
 				"name",
 				"package_id",
-				"package_version_pin"
+				"package_version"
 			],
-			"additionalProperties": false
-		},
-		"CreateRepositoryBody": {
-			"type": "object",
-			"properties": {
-				"purpose": {
-					"type": "string",
-					"enum": [
-						"workspace"
-					]
-				}
-			},
-			"required": [
-				"purpose"
-			],
-			"additionalProperties": false
-		},
-		"CreateRepositoryChangeRequestBody": {
-			"oneOf": [
-				{
-					"type": "object",
-					"properties": {
-						"parent_repository_id": {
-							"type": "string",
-							"description": "Repository that will receive the accepted change request.",
-							"minLength": 1,
-							"maxLength": 55
-						},
-						"expires_at_seconds": {
-							"type": "integer",
-							"description": "Seconds until the repository change request expires.",
-							"exclusiveMinimum": 0
-						},
-						"kind": {
-							"type": "string",
-							"enum": [
-								"user"
-							]
-						}
-					},
-					"required": [
-						"parent_repository_id",
-						"kind"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"parent_repository_id": {
-							"type": "string",
-							"description": "Repository that will receive the accepted change request.",
-							"minLength": 1,
-							"maxLength": 55
-						},
-						"expires_at_seconds": {
-							"type": "integer",
-							"description": "Seconds until the repository change request expires.",
-							"exclusiveMinimum": 0
-						},
-						"kind": {
-							"type": "string",
-							"enum": [
-								"wizard"
-							]
-						}
-					},
-					"required": [
-						"parent_repository_id",
-						"kind"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"parent_repository_id": {
-							"type": "string",
-							"description": "Repository that will receive the accepted change request.",
-							"minLength": 1,
-							"maxLength": 55
-						},
-						"expires_at_seconds": {
-							"type": "integer",
-							"description": "Seconds until the repository change request expires.",
-							"exclusiveMinimum": 0
-						},
-						"kind": {
-							"type": "string",
-							"enum": [
-								"agent"
-							],
-							"description": "Agent actor creating the change request."
-						},
-						"agent_id": {
-							"type": "string",
-							"description": "Agent that found the likely source or configuration fix.",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"remediation_evidence": {
-							"type": "object",
-							"properties": {
-								"summary": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 2000
-								},
-								"likely_fix": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 2000
-								},
-								"resource_refs": {
-									"type": "array",
-									"items": {
-										"type": "object",
-										"properties": {
-											"resource": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 120
-											},
-											"id": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 200
-											}
-										},
-										"required": [
-											"resource",
-											"id"
-										],
-										"additionalProperties": false
-									},
-									"minItems": 1,
-									"maxItems": 20
-								}
-							},
-							"required": [
-								"summary",
-								"likely_fix",
-								"resource_refs"
-							],
-							"additionalProperties": false,
-							"description": "Evidence that the agent found a likely source or configuration fix before opening the change request."
-						}
-					},
-					"required": [
-						"parent_repository_id",
-						"kind",
-						"agent_id",
-						"remediation_evidence"
-					],
-					"additionalProperties": false
-				}
-			]
-		},
-		"CreateRepositoryChangeRequestTokenBody": {
-			"type": "object",
-			"properties": {
-				"scope": {
-					"type": "string",
-					"enum": [
-						"read",
-						"write"
-					],
-					"default": "write"
-				},
-				"expires_in_seconds": {
-					"type": "integer",
-					"description": "Seconds until the fork write token expires. Maximum is one hour.",
-					"maximum": 3600,
-					"exclusiveMinimum": 0
-				}
-			},
-			"additionalProperties": false
-		},
-		"CreateRepositoryCommitBody": {
-			"type": "object",
-			"properties": {
-				"message": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 200
-				},
-				"expected_parent_sha": {
-					"type": "null"
-				},
-				"files": {
-					"type": "array",
-					"items": {
-						"type": "object",
-						"properties": {
-							"path": {
-								"type": "string",
-								"minLength": 1,
-								"maxLength": 240,
-								"pattern": "^[A-Za-z0-9_.-]+(?:\\/[A-Za-z0-9_.-]+)*$"
-							},
-							"content": {
-								"type": "string",
-								"maxLength": 16384
-							}
-						},
-						"required": [
-							"path",
-							"content"
-						],
-						"additionalProperties": false
-					},
-					"minItems": 1,
-					"maxItems": 32
-				}
-			},
-			"required": [
-				"message",
-				"expected_parent_sha",
-				"files"
-			],
-			"additionalProperties": false
-		},
-		"CreateRepositoryTokenBody": {
-			"type": "object",
-			"properties": {
-				"revoke_after_seconds": {
-					"type": "integer",
-					"description": "Seconds until the platform begins scheduled token revocation. Minimum is 60 seconds, maximum is one hour, and the schedule is capped to the remaining repository lifetime.",
-					"minimum": 60,
-					"maximum": 3600
-				}
-			},
 			"additionalProperties": false
 		},
 		"CreateSandboxAccessGrantBody": {
@@ -9573,1326 +3312,105 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
-		"CreateSecretBody": {
-			"oneOf": [
-				{
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 200
-						},
-						"description": {
-							"type": "string",
-							"maxLength": 500
-						},
-						"labels": {
-							"type": "object",
-							"additionalProperties": {
-								"type": "string",
-								"maxLength": 200
-							}
-						},
-						"kind": {
-							"type": "string",
-							"enum": [
-								"cloud_provider/hcloud"
-							]
-						},
-						"value": {
-							"type": "string",
-							"format": "password",
-							"minLength": 1
-						}
-					},
-					"required": [
-						"name",
-						"kind",
-						"value"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 200
-						},
-						"description": {
-							"type": "string",
-							"maxLength": 500
-						},
-						"labels": {
-							"type": "object",
-							"additionalProperties": {
-								"type": "string",
-								"maxLength": 200
-							}
-						},
-						"kind": {
-							"type": "string",
-							"enum": [
-								"cloud_provider/aws"
-							]
-						},
-						"value": {
-							"type": "string",
-							"format": "password",
-							"minLength": 1
-						},
-						"aws_access_key_id": {
-							"type": "string"
-						}
-					},
-					"required": [
-						"name",
-						"kind",
-						"value"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 200
-						},
-						"description": {
-							"type": "string",
-							"maxLength": 500
-						},
-						"labels": {
-							"type": "object",
-							"additionalProperties": {
-								"type": "string",
-								"maxLength": 200
-							}
-						},
-						"kind": {
-							"type": "string",
-							"enum": [
-								"cloud_provider/gcp"
-							]
-						},
-						"value": {
-							"type": "string",
-							"format": "password",
-							"minLength": 1
-						}
-					},
-					"required": [
-						"name",
-						"kind",
-						"value"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 200
-						},
-						"description": {
-							"type": "string",
-							"maxLength": 500
-						},
-						"labels": {
-							"type": "object",
-							"additionalProperties": {
-								"type": "string",
-								"maxLength": 200
-							}
-						},
-						"kind": {
-							"type": "string",
-							"enum": [
-								"cloud_provider/azure"
-							]
-						},
-						"value": {
-							"type": "string",
-							"format": "password",
-							"minLength": 1
-						}
-					},
-					"required": [
-						"name",
-						"kind",
-						"value"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 200
-						},
-						"description": {
-							"type": "string",
-							"maxLength": 500
-						},
-						"labels": {
-							"type": "object",
-							"additionalProperties": {
-								"type": "string",
-								"maxLength": 200
-							}
-						},
-						"kind": {
-							"type": "string",
-							"enum": [
-								"oci_registry"
-							]
-						},
-						"value": {
-							"type": "string",
-							"format": "password",
-							"minLength": 1
-						},
-						"username": {
-							"type": "string"
-						}
-					},
-					"required": [
-						"name",
-						"kind",
-						"value"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 200
-						},
-						"description": {
-							"type": "string",
-							"maxLength": 500
-						},
-						"labels": {
-							"type": "object",
-							"additionalProperties": {
-								"type": "string",
-								"maxLength": 200
-							}
-						},
-						"kind": {
-							"type": "string",
-							"enum": [
-								"cloudflare_api"
-							]
-						},
-						"value": {
-							"type": "string",
-							"format": "password",
-							"minLength": 1
-						}
-					},
-					"required": [
-						"name",
-						"kind",
-						"value"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 200
-						},
-						"description": {
-							"type": "string",
-							"maxLength": 500
-						},
-						"labels": {
-							"type": "object",
-							"additionalProperties": {
-								"type": "string",
-								"maxLength": 200
-							}
-						},
-						"kind": {
-							"type": "string",
-							"enum": [
-								"webhook_signing"
-							]
-						},
-						"value": {
-							"type": "string",
-							"format": "password",
-							"minLength": 16
-						}
-					},
-					"required": [
-						"name",
-						"kind",
-						"value"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 200
-						},
-						"description": {
-							"type": "string",
-							"maxLength": 500
-						},
-						"labels": {
-							"type": "object",
-							"additionalProperties": {
-								"type": "string",
-								"maxLength": 200
-							}
-						},
-						"kind": {
-							"type": "string",
-							"enum": [
-								"generic"
-							]
-						},
-						"value": {
-							"type": "string",
-							"format": "password",
-							"minLength": 1
-						}
-					},
-					"required": [
-						"name",
-						"kind",
-						"value"
-					],
-					"additionalProperties": false
-				}
-			]
-		},
-		"CreateSecretVersionBody": {
+		"CreateSecretRequest": {
 			"type": "object",
 			"properties": {
-				"value": {
-					"type": "string",
-					"format": "password",
-					"minLength": 1
+				"secret_id": {
+					"$ref": "#/$defs/SecretId"
 				},
-				"comment": {
-					"type": "string",
-					"maxLength": 200
+				"labels": {
+					"type": "object",
+					"patternProperties": {
+						"^[a-z][a-z0-9_-]{0,62}$": {
+							"type": "string",
+							"maxLength": 63
+						}
+					},
+					"additionalProperties": false,
+					"maxProperties": 64
+				},
+				"payload": {
+					"type": "string"
 				}
 			},
 			"required": [
-				"value"
+				"secret_id"
 			],
 			"additionalProperties": false
 		},
-		"CreateSnippetBody": {
-			"oneOf": [
-				{
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"description": {
-							"type": "string",
-							"description": "Optional human-readable description",
-							"maxLength": 500
-						},
-						"code": {
-							"type": "string",
-							"description": "Async JavaScript function body. Executed in a sandboxed runtime with access to platform.request().",
-							"minLength": 1,
-							"maxLength": 50000
-						},
-						"display_type": {
-							"type": "string",
-							"enum": [
-								"table",
-								"stat",
-								"json",
-								"logs",
-								"timeseries"
-							],
-							"description": "Controls how the snippet result is rendered in dashboard widgets"
-						},
-						"inputs": {
-							"type": "array",
-							"items": {
-								"oneOf": [
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"time_range"
-												]
-											},
-											"default": {
-												"type": "object",
-												"properties": {
-													"from": {
-														"type": "integer"
-													},
-													"to": {
-														"type": "integer"
-													}
-												},
-												"required": [
-													"from",
-													"to"
-												],
-												"additionalProperties": false
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"resource"
-												]
-											},
-											"resource": {
-												"type": "string",
-												"enum": [
-													"cluster",
-													"install",
-													"product",
-													"package",
-													"region"
-												]
-											},
-											"default": {
-												"anyOf": [
-													{
-														"type": "string",
-														"maxLength": 255
-													},
-													{
-														"type": "array",
-														"items": {
-															"type": "string",
-															"maxLength": 255
-														},
-														"minItems": 1,
-														"maxItems": 100
-													}
-												]
-											},
-											"multiple": {
-												"type": "boolean"
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind",
-											"resource"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"enum"
-												]
-											},
-											"options": {
-												"type": "array",
-												"items": {
-													"type": "string",
-													"minLength": 1,
-													"maxLength": 100
-												},
-												"minItems": 1,
-												"maxItems": 100
-											},
-											"default": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind",
-											"options"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"boolean"
-												]
-											},
-											"default": {
-												"type": "boolean"
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"number"
-												]
-											},
-											"min": {
-												"type": "number"
-											},
-											"max": {
-												"type": "number"
-											},
-											"default": {
-												"type": "number"
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"text"
-												]
-											},
-											"default": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"max_length": {
-												"type": "integer",
-												"minimum": 1,
-												"maximum": 500
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									}
-								]
-							},
-							"maxItems": 16
-						},
-						"visibility": {
-							"type": "string",
-							"enum": [
-								"workspace",
-								"session"
-							],
-							"description": "Whether the snippet is reusable workspace state or scoped to an agent session."
-						},
-						"origin": {
-							"type": "string",
-							"enum": [
-								"user",
-								"agent",
-								"system"
-							],
-							"description": "Who authored the snippet descriptor."
-						},
-						"agent_session_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"agent_turn_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"purpose": {
-							"type": "string",
-							"enum": [
-								"general",
-								"prepared_action",
-								"reactive_read",
-								"widget"
-							]
-						}
-					},
-					"required": [
-						"name",
-						"code",
-						"display_type"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"description": {
-							"type": "string",
-							"description": "Optional human-readable description",
-							"maxLength": 500
-						},
-						"code": {
-							"type": "string",
-							"description": "Async JavaScript function body. Executed in a sandboxed runtime with access to platform.request().",
-							"minLength": 1,
-							"maxLength": 50000
-						},
-						"display_type": {
-							"type": "string",
-							"enum": [
-								"table",
-								"stat",
-								"json",
-								"logs",
-								"timeseries"
-							],
-							"description": "Controls how the snippet result is rendered in dashboard widgets"
-						},
-						"inputs": {
-							"type": "array",
-							"items": {
-								"oneOf": [
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"time_range"
-												]
-											},
-											"default": {
-												"type": "object",
-												"properties": {
-													"from": {
-														"type": "integer"
-													},
-													"to": {
-														"type": "integer"
-													}
-												},
-												"required": [
-													"from",
-													"to"
-												],
-												"additionalProperties": false
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"resource"
-												]
-											},
-											"resource": {
-												"type": "string",
-												"enum": [
-													"cluster",
-													"install",
-													"product",
-													"package",
-													"region"
-												]
-											},
-											"default": {
-												"anyOf": [
-													{
-														"type": "string",
-														"maxLength": 255
-													},
-													{
-														"type": "array",
-														"items": {
-															"type": "string",
-															"maxLength": 255
-														},
-														"minItems": 1,
-														"maxItems": 100
-													}
-												]
-											},
-											"multiple": {
-												"type": "boolean"
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind",
-											"resource"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"enum"
-												]
-											},
-											"options": {
-												"type": "array",
-												"items": {
-													"type": "string",
-													"minLength": 1,
-													"maxLength": 100
-												},
-												"minItems": 1,
-												"maxItems": 100
-											},
-											"default": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind",
-											"options"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"boolean"
-												]
-											},
-											"default": {
-												"type": "boolean"
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"number"
-												]
-											},
-											"min": {
-												"type": "number"
-											},
-											"max": {
-												"type": "number"
-											},
-											"default": {
-												"type": "number"
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"text"
-												]
-											},
-											"default": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"max_length": {
-												"type": "integer",
-												"minimum": 1,
-												"maximum": 500
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									}
-								]
-							},
-							"maxItems": 16
-						},
-						"visibility": {
-							"type": "string",
-							"enum": [
-								"workspace",
-								"session"
-							],
-							"description": "Whether the snippet is reusable workspace state or scoped to an agent session."
-						},
-						"origin": {
-							"type": "string",
-							"enum": [
-								"user",
-								"agent",
-								"system"
-							],
-							"description": "Who authored the snippet descriptor."
-						},
-						"agent_session_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"agent_turn_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"purpose": {
-							"type": "string",
-							"enum": [
-								"general",
-								"prepared_action",
-								"reactive_read",
-								"widget"
-							]
-						},
-						"result_contract_version": {
-							"type": "number",
-							"enum": [
-								1
-							]
-						},
-						"result_type": {
-							"type": "string",
-							"enum": [
-								"scalar",
-								"timeseries",
-								"categorical",
-								"table",
-								"status_list",
-								"logs",
-								"json"
-							]
-						},
-						"default_visualization": {
-							"type": "string",
-							"enum": [
-								"stat",
-								"sparkline",
-								"line",
-								"area",
-								"bar",
-								"donut",
-								"table",
-								"status_list",
-								"logs",
-								"json"
-							]
-						}
-					},
-					"required": [
-						"name",
-						"code",
-						"display_type",
-						"result_contract_version",
-						"result_type",
-						"default_visualization"
-					],
-					"additionalProperties": false
-				}
-			]
-		},
-		"CreateSnippetRunBody": {
+		"CreateVaultConnectionRequest": {
 			"type": "object",
 			"properties": {
-				"inputs": {
-					"type": "object"
+				"connector": {
+					"$ref": "#/$defs/ConnectorSlug"
 				},
-				"overrides": {
-					"type": "object",
-					"description": "Legacy execution metadata retained for compatibility. It is not applied as runtime input."
-				},
-				"agent_turn_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				},
-				"context": {
-					"oneOf": [
-						{
-							"type": "object",
-							"properties": {
-								"source": {
-									"type": "string",
-									"enum": [
-										"manual"
-									]
-								}
-							},
-							"required": [
-								"source"
-							],
-							"additionalProperties": false
-						},
-						{
-							"type": "object",
-							"properties": {
-								"source": {
-									"type": "string",
-									"enum": [
-										"agent"
-									]
-								},
-								"agent_turn_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								}
-							},
-							"required": [
-								"source"
-							],
-							"additionalProperties": false
-						},
-						{
-							"type": "object",
-							"properties": {
-								"source": {
-									"type": "string",
-									"enum": [
-										"dashboard_open"
-									]
-								},
-								"dashboard_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"widget_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								}
-							},
-							"required": [
-								"source",
-								"dashboard_id",
-								"widget_id"
-							],
-							"additionalProperties": false
-						},
-						{
-							"type": "object",
-							"properties": {
-								"source": {
-									"type": "string",
-									"enum": [
-										"dashboard_refresh"
-									]
-								},
-								"dashboard_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"widget_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								}
-							},
-							"required": [
-								"source",
-								"dashboard_id",
-								"widget_id"
-							],
-							"additionalProperties": false
-						}
-					]
-				}
-			},
-			"additionalProperties": false
-		},
-		"CreateVaultRequest": {
-			"type": "object",
-			"properties": {
 				"name": {
 					"type": "string",
 					"minLength": 1,
 					"maxLength": 100
 				},
-				"external_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 100,
-					"description": "The reseller's own id for the end customer. Unique within the Workspace."
-				},
-				"metadata": {
-					"type": "object",
-					"propertyNames": {
-						"type": "string",
-						"maxLength": 64
-					},
-					"additionalProperties": {
-						"type": "string",
-						"maxLength": 500
-					},
-					"maxProperties": 32
-				}
-			},
-			"required": [
-				"name"
-			],
-			"additionalProperties": false
-		},
-		"CredentialScope": {
-			"oneOf": [
-				{
-					"type": "object",
-					"properties": {
-						"kind": {
-							"type": "string",
-							"enum": [
-								"system"
-							],
-							"description": "Use system-managed provider credentials."
-						}
-					},
-					"required": [
-						"kind"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"kind": {
-							"type": "string",
-							"enum": [
-								"byom"
-							]
-						},
-						"secret_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 54
-						},
-						"secret_version_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 55
-						}
-					},
-					"required": [
-						"kind",
-						"secret_id"
-					],
-					"additionalProperties": false
-				}
-			]
-		},
-		"DashboardPreferencesUpdate": {
-			"type": "object",
-			"properties": {
-				"locale": {
-					"type": "string",
-					"enum": [
-						"en",
-						"de"
-					]
-				},
-				"role_preset": {
-					"type": "string",
-					"enum": [
-						"owners",
-						"operations",
-						"developers",
-						"vendors"
-					]
-				},
-				"role_preset_source": {
-					"type": "string",
-					"enum": [
-						"question",
-						"website",
-						"settings"
-					]
-				},
-				"technical_details": {
+				"owner": {
 					"anyOf": [
 						{
-							"type": "boolean"
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": [
+										"workspace"
+									]
+								}
+							},
+							"required": [
+								"type"
+							],
+							"additionalProperties": false
+						},
+						{
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": [
+										"user"
+									]
+								}
+							},
+							"required": [
+								"type"
+							],
+							"additionalProperties": false
+						},
+						{
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": [
+										"external_user"
+									]
+								},
+								"external_user_id": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 200
+								}
+							},
+							"required": [
+								"type",
+								"external_user_id"
+							],
+							"additionalProperties": false
+						}
+					],
+					"description": "Defaults to the calling user. A user owner is always the authenticated caller, never a client-supplied id."
+				},
+				"auth_method": {
+					"anyOf": [
+						{
+							"type": "string",
+							"minLength": 1,
+							"description": "Declared connector authentication method. Defaults to api_token. Akua delegated uses the verified signed-in person without a stored credential."
 						},
 						{
 							"type": "null"
@@ -10900,1478 +3418,43 @@ export const contract: ApiContract = {
 					]
 				}
 			},
-			"additionalProperties": false
-		},
-		"DashboardRoleSuggestionRequest": {
-			"type": "object",
-			"properties": {
-				"landing": {
-					"type": "array",
-					"items": {
-						"type": "object",
-						"properties": {
-							"kind": {
-								"type": "string",
-								"enum": [
-									"role_tab",
-									"role_page",
-									"use_case_page",
-									"use_case_chip"
-								]
-							},
-							"role_preset": {
-								"type": "string",
-								"enum": [
-									"owners",
-									"operations",
-									"developers",
-									"vendors"
-								]
-							},
-							"use_case": {
-								"type": "string",
-								"enum": [
-									"customer-database",
-									"online-orders",
-									"email-assistant",
-									"social-posts",
-									"up-to-date",
-									"automation",
-									"website",
-									"customer-cloud",
-									"more-customers",
-									"staged-updates",
-									"customer-template",
-									"partner-channel"
-								]
-							}
-						},
-						"required": [
-							"kind",
-							"role_preset"
-						],
-						"additionalProperties": false
-					},
-					"maxItems": 20
-				},
-				"signup_source": {
-					"type": "string",
-					"maxLength": 200
-				},
-				"utm": {
-					"type": "object",
-					"properties": {
-						"source": {
-							"type": "string",
-							"maxLength": 200
-						},
-						"medium": {
-							"type": "string",
-							"maxLength": 200
-						},
-						"campaign": {
-							"type": "string",
-							"maxLength": 200
-						},
-						"content": {
-							"type": "string",
-							"maxLength": 200
-						},
-						"term": {
-							"type": "string",
-							"maxLength": 200
-						}
-					},
-					"additionalProperties": false
-				},
-				"dashboard_visits": {
-					"type": "array",
-					"items": {
-						"type": "string",
-						"enum": [
-							"home",
-							"workspace",
-							"marketplace",
-							"packages",
-							"products",
-							"offers",
-							"managed_deployments",
-							"customers",
-							"apps",
-							"agents",
-							"repository_change_requests",
-							"operations",
-							"docs",
-							"compute",
-							"machines",
-							"clusters",
-							"secrets",
-							"registries",
-							"regions",
-							"cloudflare",
-							"dashboards",
-							"snippets",
-							"runs",
-							"quotas",
-							"api_tokens",
-							"billing",
-							"account",
-							"organization_members",
-							"organization",
-							"notifications",
-							"payments",
-							"access"
-						]
-					},
-					"maxItems": 20
-				},
-				"first_chat_message": {
-					"type": "string",
-					"maxLength": 2000
-				}
-			},
-			"additionalProperties": false
-		},
-		"ExecBody": {
-			"type": "object",
-			"properties": {
-				"namespace": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 253
-				},
-				"pod": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 253
-				},
-				"container": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 253
-				},
-				"command": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					}
-				}
-			},
 			"required": [
-				"namespace",
-				"pod",
-				"command"
+				"connector"
 			],
 			"additionalProperties": false
 		},
-		"ExecuteSnippetBody": {
+		"CreateVaultRequest": {
 			"type": "object",
 			"properties": {
-				"code": {
+				"display_name": {
 					"type": "string",
-					"description": "Async JavaScript function body. Executed in a sandboxed runtime with access to platform.request().",
 					"minLength": 1,
-					"maxLength": 50000
+					"maxLength": 100
 				},
-				"inputs": {
-					"type": "object"
+				"labels": {
+					"type": "object",
+					"patternProperties": {
+						"^[a-z][a-z0-9_-]{0,62}$": {
+							"type": "string",
+							"maxLength": 63
+						}
+					},
+					"additionalProperties": false,
+					"maxProperties": 64
+				},
+				"annotations": {
+					"type": "object",
+					"patternProperties": {
+						"^([a-z0-9.-]{1,253}\\/)?[A-Za-z0-9_.-]{1,63}$": {
+							"type": "string",
+							"maxLength": 1024
+						}
+					},
+					"additionalProperties": false,
+					"maxProperties": 32,
+					"description": "Opaque key-value data for clients (AIP-148)."
 				}
 			},
-			"required": [
-				"code"
-			],
-			"additionalProperties": false
-		},
-		"ExecuteStoredSnippetBody": {
-			"type": "object",
-			"properties": {
-				"inputs": {
-					"type": "object"
-				}
-			},
-			"additionalProperties": false
-		},
-		"ExplainAccessDecisionBody": {
-			"oneOf": [
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"clusters.create"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/WorkspaceClassResource"
-						}
-					},
-					"required": [
-						"permission"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"offers.create_via_channel"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/OfferChannelCreateResource"
-						},
-						"context": {
-							"$ref": "#/$defs/OfferChannelDecisionContext"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"offers.create_non_channel_paid_product_offer"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/NonChannelPaidProductOfferResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"offers.create_non_billable_test_offer"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/NonBillableTestOfferResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"offer_channels.create"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/OfferChannelCreateDecisionResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"offer_channels.inspect"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/OfferChannelInspectResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"channel_policies.approve"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ChannelPolicyApproveResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"channel_policies.activate"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ChannelPolicyActivateResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"offers.approve_channel_offer"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/OfferChannelModerationResource"
-						},
-						"context": {
-							"$ref": "#/$defs/OfferChannelDecisionContext"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"offers.reject_channel_offer"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/OfferChannelModerationResource"
-						},
-						"context": {
-							"$ref": "#/$defs/OfferChannelDecisionContext"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"workspaces.inspect_class"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/WorkspaceClassResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"workspaces.inspect_membership"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/WorkspaceMembershipResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"products.create"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ProductCockpitResource"
-						}
-					},
-					"required": [
-						"permission"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"products.get"
-							]
-						},
-						"resource": {
-							"type": "object",
-							"properties": {
-								"product_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"workspace_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 53
-								},
-								"package_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								},
-								"package_version_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"resource_state": {
-									"type": "string",
-									"enum": [
-										"draft",
-										"active",
-										"archived"
-									]
-								}
-							},
-							"required": [
-								"product_id",
-								"workspace_id"
-							],
-							"additionalProperties": false
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"products.update"
-							]
-						},
-						"resource": {
-							"type": "object",
-							"properties": {
-								"product_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"workspace_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 53
-								},
-								"package_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								},
-								"package_version_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"resource_state": {
-									"type": "string",
-									"enum": [
-										"draft",
-										"active",
-										"archived"
-									]
-								}
-							},
-							"required": [
-								"product_id",
-								"workspace_id"
-							],
-							"additionalProperties": false
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"products.archive"
-							]
-						},
-						"resource": {
-							"type": "object",
-							"properties": {
-								"product_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"workspace_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 53
-								},
-								"package_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								},
-								"package_version_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"resource_state": {
-									"type": "string",
-									"enum": [
-										"draft",
-										"active",
-										"archived"
-									]
-								}
-							},
-							"required": [
-								"product_id",
-								"workspace_id"
-							],
-							"additionalProperties": false
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"products.unarchive"
-							]
-						},
-						"resource": {
-							"type": "object",
-							"properties": {
-								"product_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"workspace_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 53
-								},
-								"package_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								},
-								"package_version_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"resource_state": {
-									"type": "string",
-									"enum": [
-										"draft",
-										"active",
-										"archived"
-									]
-								}
-							},
-							"required": [
-								"product_id",
-								"workspace_id"
-							],
-							"additionalProperties": false
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"products.inspect_readiness"
-							]
-						},
-						"resource": {
-							"type": "object",
-							"properties": {
-								"product_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"workspace_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 53
-								},
-								"package_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								},
-								"package_version_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"resource_state": {
-									"type": "string",
-									"enum": [
-										"draft",
-										"active",
-										"archived"
-									]
-								}
-							},
-							"required": [
-								"product_id",
-								"workspace_id"
-							],
-							"additionalProperties": false
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"products.inspect_offer_creation"
-							]
-						},
-						"resource": {
-							"type": "object",
-							"properties": {
-								"product_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"workspace_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 53
-								},
-								"package_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								},
-								"package_version_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"resource_state": {
-									"type": "string",
-									"enum": [
-										"draft",
-										"active",
-										"archived"
-									]
-								}
-							},
-							"required": [
-								"product_id",
-								"workspace_id"
-							],
-							"additionalProperties": false
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"products.inspect_channels"
-							]
-						},
-						"resource": {
-							"type": "object",
-							"properties": {
-								"product_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"workspace_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 53
-								},
-								"package_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								},
-								"package_version_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"resource_state": {
-									"type": "string",
-									"enum": [
-										"draft",
-										"active",
-										"archived"
-									]
-								}
-							},
-							"required": [
-								"product_id",
-								"workspace_id"
-							],
-							"additionalProperties": false
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"products.inspect_installs"
-							]
-						},
-						"resource": {
-							"type": "object",
-							"properties": {
-								"product_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"workspace_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 53
-								},
-								"package_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								},
-								"package_version_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"resource_state": {
-									"type": "string",
-									"enum": [
-										"draft",
-										"active",
-										"archived"
-									]
-								}
-							},
-							"required": [
-								"product_id",
-								"workspace_id"
-							],
-							"additionalProperties": false
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"packages.create"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/PackageCockpitResource"
-						}
-					},
-					"required": [
-						"permission"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"packages.import_published_package"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/PackageCockpitResource"
-						}
-					},
-					"required": [
-						"permission"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"packages.get"
-							]
-						},
-						"resource": {
-							"type": "object",
-							"properties": {
-								"package_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								},
-								"package_version_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"workspace_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 53
-								}
-							},
-							"required": [
-								"package_id",
-								"workspace_id"
-							],
-							"additionalProperties": false
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"package_versions.get"
-							]
-						},
-						"resource": {
-							"type": "object",
-							"properties": {
-								"package_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								},
-								"package_version_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"workspace_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 53
-								}
-							},
-							"required": [
-								"package_id",
-								"package_version_id",
-								"workspace_id"
-							],
-							"additionalProperties": false
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"package_versions.inputs"
-							]
-						},
-						"resource": {
-							"type": "object",
-							"properties": {
-								"package_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								},
-								"package_version_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								},
-								"workspace_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 53
-								}
-							},
-							"required": [
-								"package_id",
-								"package_version_id",
-								"workspace_id"
-							],
-							"additionalProperties": false
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"clusters.update"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ClusterCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"clusters.delete"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ClusterCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"clusters.suspend"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ClusterCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"clusters.resume"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ClusterCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"clusters.refresh_capabilities"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ClusterCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"clusters.get_kubeconfig"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ClusterCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"clusters.create_worker_bootstrap"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ClusterCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"clusters.revoke_worker_bootstrap"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ClusterCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"machines.create"
-							]
-						},
-						"resource": {
-							"anyOf": [
-								{
-									"$ref": "#/$defs/ClusterCockpitResource"
-								},
-								{
-									"$ref": "#/$defs/MachineAdmissionResource"
-								}
-							]
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"machines.update"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/MachineCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"machines.delete"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/MachineCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"machines.suspend"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/MachineCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"machines.resume"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/MachineCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"compute_configs.update"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ClusterCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"subject": {
-							"$ref": "#/$defs/AccessSubject"
-						},
-						"permission": {
-							"type": "string",
-							"enum": [
-								"installs.create"
-							]
-						},
-						"resource": {
-							"$ref": "#/$defs/ClusterCockpitResource"
-						}
-					},
-					"required": [
-						"permission",
-						"resource"
-					],
-					"additionalProperties": false
-				}
-			]
-		},
-		"ExplainAccessDecisionsBatchBody": {
-			"type": "object",
-			"properties": {
-				"requests": {
-					"type": "array",
-					"items": {
-						"$ref": "#/$defs/ExplainAccessDecisionBody"
-					},
-					"minItems": 1,
-					"maxItems": 25
-				}
-			},
-			"required": [
-				"requests"
-			],
 			"additionalProperties": false
 		},
 		"ForkSandboxBody": {
@@ -12389,122 +3472,6 @@ export const contract: ApiContract = {
 			},
 			"required": [
 				"name"
-			],
-			"additionalProperties": false
-		},
-		"GrantPrincipal": {
-			"type": "object",
-			"properties": {
-				"type": {
-					"type": "string",
-					"enum": [
-						"user",
-						"agent",
-						"opencode_server",
-						"sandbox"
-					]
-				},
-				"id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 100
-				}
-			},
-			"required": [
-				"type",
-				"id"
-			],
-			"additionalProperties": false
-		},
-		"GrantTarget": {
-			"anyOf": [
-				{
-					"type": "object",
-					"properties": {
-						"type": {
-							"type": "string",
-							"enum": [
-								"connection"
-							]
-						},
-						"connection_id": {
-							"$ref": "#/$defs/ConnectionId"
-						}
-					},
-					"required": [
-						"type",
-						"connection_id"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"type": {
-							"type": "string",
-							"enum": [
-								"connector"
-							]
-						},
-						"connector": {
-							"$ref": "#/$defs/ConnectorSlug"
-						},
-						"owner": {
-							"type": "string",
-							"enum": [
-								"acting_user"
-							]
-						}
-					},
-					"required": [
-						"type",
-						"connector",
-						"owner"
-					],
-					"additionalProperties": false
-				}
-			],
-			"description": "One connection, or a connector's connection owned by the acting user, which Connect resolves at request time."
-		},
-		"ImportPackageBody": {
-			"type": "object",
-			"properties": {
-				"name": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 120
-				},
-				"description": {
-					"anyOf": [
-						{
-							"type": "string",
-							"maxLength": 1000
-						},
-						{
-							"type": "null"
-						}
-					]
-				},
-				"display_image_url": {
-					"type": "string",
-					"format": "uri",
-					"maxLength": 2048
-				},
-				"oci_ref": {
-					"type": "string",
-					"description": "OCI reference for the published Akua Package repository. If this registry matches an active workspace registry credential, Akua uses that credential to inspect the artifact.",
-					"minLength": 1,
-					"maxLength": 2048,
-					"pattern": "^oci:\\/\\/"
-				},
-				"version": {
-					"$ref": "#/$defs/CreatePackageVersionOciBody"
-				}
-			},
-			"required": [
-				"name",
-				"oci_ref",
-				"version"
 			],
 			"additionalProperties": false
 		},
@@ -12579,55 +3546,10 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
-		"MachineAdmissionResource": {
-			"type": "object",
-			"properties": {
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"cpu": {
-					"type": "integer",
-					"exclusiveMinimum": 0
-				},
-				"memory_bytes": {
-					"type": "integer",
-					"exclusiveMinimum": 0
-				}
-			},
-			"required": [
-				"workspace_id",
-				"cpu",
-				"memory_bytes"
-			],
-			"additionalProperties": false
-		},
-		"MachineCockpitResource": {
-			"type": "object",
-			"properties": {
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"cluster_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				},
-				"machine_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				}
-			},
-			"required": [
-				"workspace_id",
-				"cluster_id",
-				"machine_id"
-			],
-			"additionalProperties": false
+		"MachineType_1": {
+			"type": "string",
+			"pattern": "^[a-z][a-z0-9-]{0,31}$",
+			"description": "Server type Akua orders for each node, in the Cluster’s Region. The free trial covers one `cx23`."
 		},
 		"MakeSandboxDirectoryBody": {
 			"type": "object",
@@ -12648,6 +3570,12 @@ export const contract: ApiContract = {
 				"path"
 			],
 			"additionalProperties": false
+		},
+		"Member": {
+			"type": "string",
+			"pattern": "^(user:[^\\s]{1,64}|service:[a-z][a-z0-9-]{0,62}|(?:workload|workforce):[a-z][a-z0-9-]{0,62}\\/[A-Za-z0-9_-]{1,128})$",
+			"title": "Member",
+			"description": "A person (`user:<id>`), service agent (`service:<name>`), workload (`workload:<pool>/<id>`) or workforce identity (`workforce:<pool>/<subject>`)"
 		},
 		"MoveSandboxFileBody": {
 			"type": "object",
@@ -12677,279 +3605,101 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
-		"NonBillableTestOfferResource": {
-			"type": "object",
-			"properties": {
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"product_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 55
-				},
-				"package_version_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 55
-				},
-				"target_workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"target_workspace_class": {
+		"NodeImage_1": {
+			"anyOf": [
+				{
 					"type": "string",
 					"enum": [
-						"standard",
-						"platform",
-						"sandbox"
-					]
-				},
-				"commercial_mode": {
-					"type": "string",
-					"enum": [
-						"non_billable_test"
+						"ubuntu-24.04"
 					]
 				}
-			},
-			"required": [
-				"workspace_id",
-				"package_version_id",
-				"commercial_mode"
 			],
-			"additionalProperties": false
+			"default": "ubuntu-24.04"
 		},
-		"NonChannelPaidProductOfferResource": {
+		"NodeLabels": {
 			"type": "object",
-			"properties": {
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"product_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 55
-				},
-				"package_version_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 55
-				},
-				"target_workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"commercial_mode": {
-					"type": "string",
-					"enum": [
-						"paid"
-					]
-				}
+			"propertyNames": {
+				"type": "string",
+				"maxLength": 317,
+				"pattern": "^(?:[a-z0-9](?:[-a-z0-9.]{0,251}[a-z0-9])?\\/)?[A-Za-z0-9](?:[-A-Za-z0-9_.]{0,61}[A-Za-z0-9])?$"
 			},
-			"required": [
-				"workspace_id",
-				"product_id",
-				"package_version_id",
-				"commercial_mode"
-			],
-			"additionalProperties": false
-		},
-		"OfferChannelCreateDecisionResource": {
-			"type": "object",
-			"properties": {
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"product_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 55
-				},
-				"partner_organization_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				}
+			"additionalProperties": {
+				"type": "string",
+				"pattern": "^(?:[A-Za-z0-9](?:[-A-Za-z0-9_.]{0,61}[A-Za-z0-9])?)?$"
 			},
-			"required": [
-				"workspace_id"
-			],
-			"additionalProperties": false
+			"maxProperties": 32
 		},
-		"OfferChannelCreateResource": {
-			"type": "object",
-			"properties": {
-				"offer_channel_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				},
-				"target_workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"product_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 55
-				},
-				"commercial_mode": {
-					"type": "string",
-					"enum": [
-						"paid",
-						"non_billable_test"
-					]
-				}
-			},
-			"required": [
-				"offer_channel_id",
-				"product_id",
-				"commercial_mode"
-			],
-			"additionalProperties": false
+		"NodePoolId": {
+			"type": "string",
+			"pattern": "^[a-z](?:[-a-z0-9]{0,38}[a-z0-9])?$",
+			"description": "A DNS label of at most 40 characters, unique in the Cluster. Every node of the pool carries it as the label `akua.dev/node-pool`."
 		},
-		"OfferChannelDecisionContext": {
-			"type": "object",
-			"properties": {
-				"selected_organization_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				},
-				"stripe_mode": {
-					"type": "string",
-					"enum": [
-						"live",
-						"test",
-						"sandbox"
-					]
-				}
-			},
-			"additionalProperties": false
-		},
-		"OfferChannelInspectResource": {
-			"type": "object",
-			"properties": {
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"offer_channel_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				},
-				"product_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 55
-				}
-			},
-			"required": [
-				"workspace_id"
-			],
-			"additionalProperties": false
-		},
-		"OfferChannelModerationResource": {
-			"type": "object",
-			"properties": {
-				"offer_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 56
-				},
-				"offer_channel_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				},
-				"owner_workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"resource_state": {
-					"type": "string",
-					"enum": [
-						"pending_approval",
-						"approved",
-						"rejected"
-					]
-				}
-			},
-			"required": [
-				"offer_id",
-				"offer_channel_id",
-				"owner_workspace_id",
-				"resource_state"
-			],
-			"additionalProperties": false
-		},
-		"OfferCustomerSnapshot": {
-			"type": "object",
-			"properties": {
-				"display_name": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 200
-				},
-				"external_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 200
-				}
-			},
-			"required": [
-				"display_name"
-			],
-			"additionalProperties": false,
-			"description": "Seller-maintained customer context captured when the offer is created. Never returned by customer resolve."
-		},
-		"OfferPricingRequest": {
-			"type": "object",
-			"properties": {
-				"currency": {
-					"type": "string",
-					"enum": [
-						"eur",
-						"usd"
-					],
-					"description": "ISO currency code for the requested price."
-				},
-				"unit_amount": {
-					"type": "integer",
-					"description": "Requested price in the smallest currency unit, for example cents for EUR or USD.",
-					"minimum": 0,
-					"maximum": 100000000
-				},
-				"interval": {
-					"allOf": [
-						{
-							"$ref": "#/$defs/PricingInterval"
-						},
-						{
-							"description": "Billing interval for the requested price."
+		"OfferAudience": {
+			"oneOf": [
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"anyone-signed-in"
+							]
 						}
-					]
+					},
+					"required": [
+						"kind"
+					],
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"emails"
+							]
+						},
+						"emails": {
+							"type": "array",
+							"items": {
+								"type": "string",
+								"format": "email",
+								"maxLength": 254,
+								"pattern": "^[^\\s@]+@[^\\s@]+$"
+							},
+							"minItems": 1,
+							"maxItems": 500
+						}
+					},
+					"required": [
+						"kind",
+						"emails"
+					],
+					"additionalProperties": false
 				}
-			},
-			"required": [
-				"currency",
-				"unit_amount",
-				"interval"
 			],
-			"additionalProperties": false,
-			"description": "Requested customer-visible price for channel policy resolution. The active policy validates the request before the offer is created."
+			"description": "Who may redeem: anyone signed in with the link, or only people whose verified email is listed."
+		},
+		"OfferTerms": {
+			"oneOf": [
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"no-charge"
+							]
+						}
+					},
+					"required": [
+						"kind"
+					],
+					"additionalProperties": false
+				}
+			],
+			"description": "What the customer pays: nothing, for now."
 		},
 		"OpenCodeBudget": {
 			"type": "object",
@@ -12997,59 +3747,69 @@ export const contract: ApiContract = {
 			"title": "OpenCode Server id",
 			"description": "OpenCode Server id (`oc_...`)."
 		},
-		"OrderDraftStatus": {
-			"type": "string",
-			"enum": [
-				"auth",
-				"workspace",
-				"compute",
-				"compute_bootstrap",
-				"configure",
-				"payment",
-				"install",
-				"done",
-				"cleaning_up",
-				"terminated"
-			],
-			"description": "Wizard phase. Driven by the order draft actor; mirrored on every patch to the row so reactive UIs render one column. `done` and `terminated` are terminal."
-		},
-		"OrganizationAddMemberRequest": {
-			"type": "object",
-			"properties": {
-				"user_id": {
-					"type": "string",
-					"description": "BetterAuth user ID of the user to add"
-				},
-				"role": {
-					"type": "string",
-					"enum": [
-						"owner",
-						"admin",
-						"member"
+		"OrderDraftWorkspace": {
+			"oneOf": [
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"existing"
+							]
+						},
+						"workspace_id": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 53
+						}
+					},
+					"required": [
+						"kind",
+						"workspace_id"
 					],
-					"description": "Membership role in the organization",
-					"default": "member"
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"properties": {
+						"kind": {
+							"type": "string",
+							"enum": [
+								"new"
+							]
+						},
+						"name": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100,
+							"pattern": "^(?=.*\\S)[^\\p{Cc}\\p{Zl}\\p{Zp}]+$"
+						},
+						"organization": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 54,
+							"description": "The Organization the new Workspace is created in; the customer must be its owner or admin. There is no default."
+						}
+					},
+					"required": [
+						"kind",
+						"name",
+						"organization"
+					],
+					"additionalProperties": false
 				}
-			},
-			"required": [
-				"user_id"
 			],
-			"additionalProperties": false
+			"description": "An existing Workspace of the customer, or a new one in a named Organization of the customer, created at once and owned by the customer. Setting the same new name again on this draft answers the same Workspace."
 		},
 		"OrganizationCreateRequest": {
 			"type": "object",
 			"properties": {
 				"name": {
 					"type": "string",
-					"minLength": 2,
+					"minLength": 1,
 					"maxLength": 50,
-					"pattern": "^[\\p{L}\\p{N}](?:[\\p{L}\\p{N}\\s\\-'&.]*[\\p{L}\\p{N}])?$"
-				},
-				"slug": {
-					"type": "string",
-					"minLength": 3,
-					"maxLength": 39,
-					"pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
+					"pattern": "^(?=.*\\S)[^\\p{Cc}\\p{Zl}\\p{Zp}]+$"
 				}
 			},
 			"required": [
@@ -13057,7 +3817,36 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
-		"OrganizationInvitationAcceptRequest": {
+		"OrganizationInvitationCreateRequest": {
+			"type": "object",
+			"properties": {
+				"email": {
+					"type": "string",
+					"maxLength": 254,
+					"allOf": [
+						{
+							"pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+							"format": "email"
+						}
+					]
+				},
+				"role": {
+					"type": "string",
+					"enum": [
+						"roles/member",
+						"roles/admin",
+						"roles/owner"
+					],
+					"description": "Only an owner may invite an owner. `roles/viewer` is granted through `:setIamPolicy`."
+				}
+			},
+			"required": [
+				"email",
+				"role"
+			],
+			"additionalProperties": false
+		},
+		"OrganizationInvitationTokenRequest": {
 			"type": "object",
 			"properties": {
 				"token": {
@@ -13072,215 +3861,49 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
-		"OrganizationInvitationCreateRequest": {
+		"PackageHelmOciSource": {
 			"type": "object",
 			"properties": {
-				"email": {
-					"type": "string"
-				},
-				"role": {
+				"kind": {
 					"type": "string",
 					"enum": [
-						"owner",
-						"admin",
-						"member"
-					],
-					"description": "Membership role in the organization",
-					"default": "member"
-				}
-			},
-			"required": [
-				"email"
-			],
-			"additionalProperties": false
-		},
-		"OrganizationUpdateMemberRoleRequest": {
-			"type": "object",
-			"properties": {
-				"role": {
-					"type": "string",
-					"enum": [
-						"owner",
-						"admin",
-						"member"
-					],
-					"description": "Membership role in the organization"
-				}
-			},
-			"required": [
-				"role"
-			],
-			"additionalProperties": false
-		},
-		"OrganizationUpdateRequest": {
-			"type": "object",
-			"properties": {
-				"name": {
-					"type": "string",
-					"minLength": 2,
-					"maxLength": 50,
-					"pattern": "^[\\p{L}\\p{N}](?:[\\p{L}\\p{N}\\s\\-'&.]*[\\p{L}\\p{N}])?$"
-				},
-				"slug": {
-					"type": "string",
-					"minLength": 3,
-					"maxLength": 39,
-					"pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
-				},
-				"icon": {
-					"anyOf": [
-						{
-							"type": "string",
-							"format": "uri",
-							"maxLength": 256
-						},
-						{
-							"type": "null"
-						}
+						"helm-oci"
 					]
-				}
-			},
-			"additionalProperties": false
-		},
-		"PackageCockpitResource": {
-			"type": "object",
-			"properties": {
-				"package_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
 				},
-				"package_version_id": {
+				"repository": {
 					"type": "string",
-					"minLength": 1,
-					"maxLength": 55
+					"description": "Public OCI repository that holds the chart, without the chart name. Akua pulls each version anonymously.",
+					"minLength": 7,
+					"maxLength": 2048,
+					"pattern": "^oci:\\/\\/[^\\s]+$"
 				},
-				"workspace_id": {
+				"chart": {
 					"type": "string",
 					"minLength": 1,
-					"maxLength": 53
+					"maxLength": 253
 				}
 			},
 			"required": [
-				"workspace_id"
+				"kind",
+				"repository",
+				"chart"
 			],
 			"additionalProperties": false
 		},
-		"PackageVersionInputs": {
-			"type": "object"
-		},
-		"PackageVersionPin": {
-			"oneOf": [
-				{
-					"type": "object",
-					"properties": {
-						"kind": {
-							"type": "string",
-							"enum": [
-								"latest"
-							]
-						}
-					},
-					"required": [
-						"kind"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"kind": {
-							"type": "string",
-							"enum": [
-								"pinned"
-							]
-						},
-						"version": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 128,
-							"pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
-						}
-					},
-					"required": [
-						"kind",
-						"version"
-					],
-					"additionalProperties": false
-				}
-			]
-		},
-		"PricingInterval": {
+		"PermissionName": {
 			"type": "string",
-			"enum": [
-				"month",
-				"year"
-			]
+			"pattern": "^[a-z][a-z0-9-]{0,62}\\.[a-z][a-z0-9-]{0,62}\\.[a-z][a-z0-9-]{0,62}$",
+			"title": "PermissionName",
+			"description": "A permission `service.resource.verb`"
 		},
-		"ProductCockpitResource": {
+		"RedeemOrderDraftBody": {
 			"type": "object",
 			"properties": {
-				"product_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 55
-				},
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"package_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				},
-				"package_version_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 55
-				},
-				"resource_state": {
-					"type": "string",
-					"enum": [
-						"draft",
-						"active",
-						"archived"
-					]
+				"sensitive_values": {
+					"type": "object",
+					"description": "The sensitive configuration values, as a values object holding only those fields. They go to the Install and its vault and are never stored on the draft."
 				}
 			},
-			"required": [
-				"workspace_id"
-			],
-			"additionalProperties": false
-		},
-		"ProductMarketplace": {
-			"type": "object",
-			"properties": {
-				"published": {
-					"type": "boolean",
-					"description": "Whether the product is publicly visible on the marketplace"
-				}
-			},
-			"required": [
-				"published"
-			],
-			"additionalProperties": false,
-			"description": "Marketplace listing config. Omit to keep the product unlisted."
-		},
-		"RejectRepositoryChangeRequestBody": {
-			"type": "object",
-			"properties": {
-				"rejection_reason": {
-					"type": "string",
-					"description": "Reason shown in audit logs and review UI.",
-					"minLength": 1,
-					"maxLength": 2000
-				}
-			},
-			"required": [
-				"rejection_reason"
-			],
 			"additionalProperties": false
 		},
 		"RemoveSandboxFilesBody": {
@@ -13308,23 +3931,11 @@ export const contract: ApiContract = {
 			],
 			"additionalProperties": false
 		},
-		"RestoreInstallBody": {
-			"type": "object",
-			"properties": {
-				"render_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 54
-				}
-			},
-			"required": [
-				"render_id"
-			],
-			"additionalProperties": false
-		},
-		"ResumeMachineBody": {
-			"type": "object",
-			"additionalProperties": false
+		"RoleName": {
+			"type": "string",
+			"pattern": "^roles\\/(owner|admin|member|viewer|[a-z][a-z0-9-]{0,62}\\.[a-z][A-Za-z]{0,62})$",
+			"title": "RoleName",
+			"description": "A basic role `roles/<name>` or a predefined role `roles/<service>.<role>`"
 		},
 		"RunSandboxCommandBody": {
 			"anyOf": [
@@ -13503,7 +4114,7 @@ export const contract: ApiContract = {
 				"previews",
 				"manage"
 			],
-			"description": "`run_commands`: commands. `files`: files. `terminal`: terminals. `previews`: previews. `manage`: all permissions, lifecycle, settings and access grants."
+			"description": "`run_commands`: commands. `files`: files. `terminal`: terminals. `previews`: reserved; sandboxes have no previews. `manage`: all permissions, lifecycle, settings and access grants."
 		},
 		"SandboxSize": {
 			"type": "string",
@@ -13545,732 +4156,100 @@ export const contract: ApiContract = {
 			],
 			"description": "`ACTIVE` sandboxes run commands and file operations. `SUSPENDED` sandboxes keep their files and cost only storage. `-ING` states are in flight; `FAILED` sandboxes can only be deleted."
 		},
-		"SelectOrderDraftWorkspaceBody": {
-			"oneOf": [
-				{
-					"type": "object",
-					"properties": {
-						"kind": {
-							"type": "string",
-							"enum": [
-								"existing"
-							]
-						},
-						"workspace_id": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 53
-						}
-					},
-					"required": [
-						"kind",
-						"workspace_id"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"kind": {
-							"type": "string",
-							"enum": [
-								"new"
-							]
-						},
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"allow_seller_management": {
-							"type": "boolean",
-							"description": "Whether the seller organization may manage this customer-owned workspace. Defaults to true when omitted."
-						}
-					},
-					"required": [
-						"kind"
-					],
-					"additionalProperties": false
-				}
-			]
+		"SecretId": {
+			"type": "string",
+			"pattern": "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$",
+			"title": "SecretId",
+			"description": "A secret id, unique in its vault"
 		},
-		"SetInstallAutomaticUpdatesBody": {
+		"SetConnectionCredentialRequest": {
 			"type": "object",
 			"properties": {
-				"automatic_updates_enabled": {
-					"type": "boolean"
+				"fields": {
+					"type": "object",
+					"patternProperties": {
+						"^[A-Z][A-Z0-9_]{0,62}$": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 8192
+						}
+					},
+					"additionalProperties": false,
+					"minProperties": 1,
+					"maxProperties": 8
 				}
 			},
 			"required": [
-				"automatic_updates_enabled"
+				"fields"
 			],
 			"additionalProperties": false
 		},
-		"SetWorkspaceSubdomainNameBody": {
+		"SetIamPolicyRequest": {
 			"type": "object",
 			"properties": {
-				"name": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 63
+				"bindings": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/Binding"
+					},
+					"maxItems": 100
 				}
 			},
 			"required": [
-				"name"
+				"bindings"
 			],
 			"additionalProperties": false
 		},
-		"SubmitConfigureOrderDraftBody": {
+		"SetNodePoolSizeBody": {
 			"type": "object",
 			"properties": {
-				"field_values": {
-					"type": "object",
-					"description": "Customer-supplied configure form values, keyed by field name"
+				"node_count": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 10,
+					"description": "Number of nodes the pool keeps, 0 to 10 at launch."
 				}
 			},
 			"required": [
-				"field_values"
+				"node_count"
 			],
 			"additionalProperties": false
 		},
-		"SuspendMachineBody": {
+		"SetOrganizationIamPolicyRequest": {
 			"type": "object",
 			"properties": {
-				"reason": {
-					"type": "string",
-					"enum": [
-						"manual",
-						"downgrade"
-					]
-				}
-			},
-			"additionalProperties": false
-		},
-		"UpdateCustomDomainBody": {
-			"type": "object",
-			"properties": {
-				"target": {
-					"oneOf": [
-						{
-							"type": "object",
-							"properties": {
-								"kind": {
-									"type": "string",
-									"enum": [
-										"install"
-									]
-								},
-								"install_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 55
-								}
-							},
-							"required": [
-								"kind",
-								"install_id"
-							],
-							"additionalProperties": false
-						},
-						{
-							"type": "object",
-							"properties": {
-								"kind": {
-									"type": "string",
-									"enum": [
-										"cluster"
-									]
-								},
-								"cluster_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								}
-							},
-							"required": [
-								"kind",
-								"cluster_id"
-							],
-							"additionalProperties": false
-						},
-						{
-							"type": "object",
-							"properties": {
-								"kind": {
-									"type": "string",
-									"enum": [
-										"external"
-									]
-								},
-								"endpoint": {
-									"type": "string",
-									"format": "uri"
-								},
-								"mtls_secret_id": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 54
-								}
-							},
-							"required": [
-								"kind",
-								"endpoint"
-							],
-							"additionalProperties": false
-						}
-					]
-				},
-				"protocol": {
-					"type": "string",
-					"enum": [
-						"http",
-						"websocket",
-						"grpc"
-					],
-					"description": "Transport class for route forwarding."
-				},
-				"routing_mode": {
-					"type": "string",
-					"enum": [
-						"through_dispatcher",
-						"bypass_dispatcher"
-					],
-					"description": "Whether traffic uses the dispatcher Worker or bypasses it."
-				}
-			},
-			"additionalProperties": false
-		},
-		"UpdateDashboardWidgetBody": {
-			"oneOf": [
-				{
-					"type": "object",
-					"properties": {
-						"title": {
-							"anyOf": [
-								{
-									"type": "string",
-									"maxLength": 100
-								},
-								{
-									"type": "null"
-								}
-							]
-						},
-						"col_span": {
-							"type": "number",
-							"enum": [
-								1,
-								2,
-								3,
-								4
-							]
-						},
-						"position": {
-							"type": "integer"
-						},
-						"display_type": {
-							"anyOf": [
-								{
-									"type": "string",
-									"enum": [
-										"table",
-										"stat",
-										"json",
-										"logs",
-										"timeseries"
-									]
-								},
-								{
-									"type": "null"
-								}
-							],
-							"description": "Controls how the snippet result is rendered in dashboard widgets"
-						}
+				"bindings": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/Binding"
 					},
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"title": {
-							"anyOf": [
-								{
-									"type": "string",
-									"maxLength": 100
-								},
-								{
-									"type": "null"
-								}
-							]
-						},
-						"col_span": {
-							"type": "number",
-							"enum": [
-								1,
-								2,
-								3,
-								4
-							]
-						},
-						"position": {
-							"type": "integer"
-						},
-						"height": {
-							"type": "string",
-							"enum": [
-								"compact",
-								"standard",
-								"tall"
-							]
-						},
-						"drill_down": {
-							"anyOf": [
-								{
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 2048
-								},
-								{
-									"type": "null"
-								}
-							]
-						},
-						"visualization_options": {
-							"type": "object"
-						},
-						"freshness_policy": {
-							"oneOf": [
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"provider_default"
-											]
-										}
-									},
-									"required": [
-										"mode"
-									],
-									"additionalProperties": false
-								},
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"max_age"
-											]
-										},
-										"max_age_seconds": {
-											"type": "integer",
-											"minimum": 30,
-											"maximum": 86400
-										}
-									},
-									"required": [
-										"mode",
-										"max_age_seconds"
-									],
-									"additionalProperties": false
-								}
-							]
-						},
-						"widget_type": {
-							"type": "string",
-							"enum": [
-								"snippet"
-							]
-						},
-						"snippet_etag": {
-							"anyOf": [
-								{
-									"type": "string"
-								},
-								{
-									"type": "null"
-								}
-							]
-						},
-						"input_bindings": {
-							"type": "object",
-							"additionalProperties": {
-								"oneOf": [
-									{
-										"type": "object",
-										"properties": {
-											"mode": {
-												"type": "string",
-												"enum": [
-													"inherit"
-												]
-											},
-											"filter_key": {
-												"anyOf": [
-													{
-														"type": "string",
-														"enum": [
-															"time",
-															"comparison",
-															"cluster",
-															"install",
-															"product",
-															"package",
-															"region",
-															"status"
-														]
-													},
-													{
-														"type": "string",
-														"pattern": "^var\\.[a-z][a-z0-9_]{0,31}$"
-													}
-												]
-											}
-										},
-										"required": [
-											"mode",
-											"filter_key"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"mode": {
-												"type": "string",
-												"enum": [
-													"fixed"
-												]
-											},
-											"value": {}
-										},
-										"required": [
-											"mode",
-											"value"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"mode": {
-												"type": "string",
-												"enum": [
-													"unbound"
-												]
-											}
-										},
-										"required": [
-											"mode"
-										],
-										"additionalProperties": false
-									}
-								]
-							}
-						},
-						"visualization": {
-							"anyOf": [
-								{
-									"type": "string",
-									"enum": [
-										"stat",
-										"sparkline",
-										"line",
-										"area",
-										"bar",
-										"donut",
-										"table",
-										"status_list",
-										"logs",
-										"json"
-									]
-								},
-								{
-									"type": "null"
-								}
-							]
-						},
-						"refresh_policy": {
-							"oneOf": [
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"on_load"
-											]
-										}
-									},
-									"required": [
-										"mode"
-									],
-									"additionalProperties": false
-								},
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"manual"
-											]
-										}
-									},
-									"required": [
-										"mode"
-									],
-									"additionalProperties": false
-								},
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"interval"
-											]
-										},
-										"interval_seconds": {
-											"type": "integer",
-											"minimum": 60,
-											"maximum": 86400
-										}
-									},
-									"required": [
-										"mode",
-										"interval_seconds"
-									],
-									"additionalProperties": false
-								}
-							]
-						},
-						"display_type": {
-							"anyOf": [
-								{
-									"type": "string",
-									"enum": [
-										"table",
-										"stat",
-										"json",
-										"logs",
-										"timeseries"
-									]
-								},
-								{
-									"type": "null"
-								}
-							],
-							"description": "Controls how the snippet result is rendered in dashboard widgets"
-						}
-					},
-					"required": [
-						"widget_type"
-					],
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"title": {
-							"anyOf": [
-								{
-									"type": "string",
-									"maxLength": 100
-								},
-								{
-									"type": "null"
-								}
-							]
-						},
-						"col_span": {
-							"type": "number",
-							"enum": [
-								1,
-								2,
-								3,
-								4
-							]
-						},
-						"position": {
-							"type": "integer"
-						},
-						"height": {
-							"type": "string",
-							"enum": [
-								"compact",
-								"standard",
-								"tall"
-							]
-						},
-						"drill_down": {
-							"anyOf": [
-								{
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 2048
-								},
-								{
-									"type": "null"
-								}
-							]
-						},
-						"visualization_options": {
-							"type": "object"
-						},
-						"freshness_policy": {
-							"oneOf": [
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"provider_default"
-											]
-										}
-									},
-									"required": [
-										"mode"
-									],
-									"additionalProperties": false
-								},
-								{
-									"type": "object",
-									"properties": {
-										"mode": {
-											"type": "string",
-											"enum": [
-												"max_age"
-											]
-										},
-										"max_age_seconds": {
-											"type": "integer",
-											"minimum": 30,
-											"maximum": 86400
-										}
-									},
-									"required": [
-										"mode",
-										"max_age_seconds"
-									],
-									"additionalProperties": false
-								}
-							]
-						},
-						"widget_type": {
-							"type": "string",
-							"enum": [
-								"platform_metric"
-							]
-						},
-						"metric_key": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100,
-							"pattern": "^[a-z][a-z0-9_]*$"
-						},
-						"metric_version": {
-							"type": "integer",
-							"exclusiveMinimum": 0
-						},
-						"filter_bindings": {
-							"type": "object",
-							"additionalProperties": {
-								"oneOf": [
-									{
-										"type": "object",
-										"properties": {
-											"mode": {
-												"type": "string",
-												"enum": [
-													"inherit"
-												]
-											},
-											"filter_key": {
-												"anyOf": [
-													{
-														"type": "string",
-														"enum": [
-															"time",
-															"comparison",
-															"cluster",
-															"install",
-															"product",
-															"package",
-															"region",
-															"status"
-														]
-													},
-													{
-														"type": "string",
-														"pattern": "^var\\.[a-z][a-z0-9_]{0,31}$"
-													}
-												]
-											}
-										},
-										"required": [
-											"mode",
-											"filter_key"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"mode": {
-												"type": "string",
-												"enum": [
-													"fixed"
-												]
-											},
-											"value": {}
-										},
-										"required": [
-											"mode",
-											"value"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"mode": {
-												"type": "string",
-												"enum": [
-													"unbound"
-												]
-											}
-										},
-										"required": [
-											"mode"
-										],
-										"additionalProperties": false
-									}
-								]
-							}
-						}
-					},
-					"required": [
-						"widget_type"
-					],
-					"additionalProperties": false
-				}
-			]
-		},
-		"UpdateInstallVersionBody": {
-			"type": "object",
-			"properties": {
-				"package_version_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 55
+					"maxItems": 100
 				}
 			},
 			"required": [
-				"package_version_id"
+				"bindings"
+			],
+			"additionalProperties": false
+		},
+		"TestIamPermissionsRequest": {
+			"type": "object",
+			"properties": {
+				"permissions": {
+					"type": "array",
+					"prefixItems": [
+						{
+							"$ref": "#/$defs/PermissionName"
+						}
+					],
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/PermissionName"
+					},
+					"maxItems": 100
+				}
+			},
+			"required": [
+				"permissions"
 			],
 			"additionalProperties": false
 		},
@@ -14323,60 +4302,28 @@ export const contract: ApiContract = {
 			"additionalProperties": false,
 			"description": "Fields left out stay as they are. `labels` replaces the whole map; `features` changes only the toggles named."
 		},
-		"UpdateProductBody": {
+		"UpdateOrderDraftBody": {
 			"type": "object",
 			"properties": {
-				"name": {
-					"type": "string",
-					"minLength": 2,
-					"maxLength": 64
+				"workspace": {
+					"$ref": "#/$defs/OrderDraftWorkspace"
 				},
-				"package_version_pin": {
-					"$ref": "#/$defs/PackageVersionPin"
-				},
-				"custom_image": {
+				"cluster_id": {
 					"anyOf": [
 						{
 							"type": "string",
-							"format": "uri"
-						},
-						{
-							"type": "null"
-						}
-					]
-				},
-				"custom_description": {
-					"anyOf": [
-						{
-							"type": "string",
-							"maxLength": 500
-						},
-						{
-							"type": "null"
-						}
-					]
-				},
-				"support_email": {
-					"anyOf": [
-						{
-							"type": "string",
-							"format": "email",
-							"maxLength": 254
-						},
-						{
-							"type": "string",
-							"enum": [
-								""
-							]
+							"minLength": 1,
+							"maxLength": 55
 						},
 						{
 							"type": "null"
 						}
 					],
-					"description": "Seller support email shown to customers when an install needs help. Send null or an empty string to clear."
+					"description": "A Cluster in the Workspace; `null` clears it. To use a new hosted Cluster, create it (and its server) through /v1/clusters first."
 				},
-				"marketplace": {
-					"$ref": "#/$defs/ProductMarketplace"
+				"values": {
+					"type": "object",
+					"description": "Replaces the configuration values as a whole. Sensitive fields (`x-ui.sensitive`) are refused here; send them with `:redeem`."
 				}
 			},
 			"additionalProperties": false
@@ -14409,865 +4356,94 @@ export const contract: ApiContract = {
 			},
 			"additionalProperties": false
 		},
-		"UpdateSecretBody": {
+		"UpdateSecretRequest": {
 			"type": "object",
 			"properties": {
-				"name": {
+				"labels": {
+					"type": "object",
+					"patternProperties": {
+						"^[a-z][a-z0-9_-]{0,62}$": {
+							"type": "string",
+							"maxLength": 63
+						}
+					},
+					"additionalProperties": false,
+					"maxProperties": 64
+				}
+			},
+			"required": [
+				"labels"
+			],
+			"additionalProperties": false
+		},
+		"UpdateVaultRequest": {
+			"type": "object",
+			"properties": {
+				"display_name": {
 					"type": "string",
 					"minLength": 1,
-					"maxLength": 200
-				},
-				"description": {
-					"type": "string",
-					"maxLength": 500
+					"maxLength": 100
 				},
 				"labels": {
 					"type": "object",
-					"additionalProperties": {
-						"type": "string",
-						"maxLength": 200
-					}
+					"patternProperties": {
+						"^[a-z][a-z0-9_-]{0,62}$": {
+							"type": "string",
+							"maxLength": 63
+						}
+					},
+					"additionalProperties": false,
+					"maxProperties": 64
 				},
-				"mime_type": {
-					"type": "string",
-					"maxLength": 100
-				},
-				"version_aliases": {
+				"annotations": {
 					"type": "object",
-					"additionalProperties": {
-						"type": "integer",
-						"exclusiveMinimum": 0
-					}
+					"patternProperties": {
+						"^([a-z0-9.-]{1,253}\\/)?[A-Za-z0-9_.-]{1,63}$": {
+							"type": "string",
+							"maxLength": 1024
+						}
+					},
+					"additionalProperties": false,
+					"maxProperties": 32,
+					"description": "Opaque key-value data for clients (AIP-148)."
 				}
 			},
 			"additionalProperties": false
 		},
-		"UpdateSnippetBody": {
-			"oneOf": [
-				{
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"description": {
-							"type": "string",
-							"maxLength": 500
-						},
-						"code": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 50000
-						},
-						"display_type": {
-							"type": "string",
-							"enum": [
-								"table",
-								"stat",
-								"json",
-								"logs",
-								"timeseries"
-							],
-							"description": "Controls how the snippet result is rendered in dashboard widgets"
-						},
-						"inputs": {
-							"type": "array",
-							"items": {
-								"oneOf": [
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"time_range"
-												]
-											},
-											"default": {
-												"type": "object",
-												"properties": {
-													"from": {
-														"type": "integer"
-													},
-													"to": {
-														"type": "integer"
-													}
-												},
-												"required": [
-													"from",
-													"to"
-												],
-												"additionalProperties": false
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"resource"
-												]
-											},
-											"resource": {
-												"type": "string",
-												"enum": [
-													"cluster",
-													"install",
-													"product",
-													"package",
-													"region"
-												]
-											},
-											"default": {
-												"anyOf": [
-													{
-														"type": "string",
-														"maxLength": 255
-													},
-													{
-														"type": "array",
-														"items": {
-															"type": "string",
-															"maxLength": 255
-														},
-														"minItems": 1,
-														"maxItems": 100
-													}
-												]
-											},
-											"multiple": {
-												"type": "boolean"
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind",
-											"resource"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"enum"
-												]
-											},
-											"options": {
-												"type": "array",
-												"items": {
-													"type": "string",
-													"minLength": 1,
-													"maxLength": 100
-												},
-												"minItems": 1,
-												"maxItems": 100
-											},
-											"default": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind",
-											"options"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"boolean"
-												]
-											},
-											"default": {
-												"type": "boolean"
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"number"
-												]
-											},
-											"min": {
-												"type": "number"
-											},
-											"max": {
-												"type": "number"
-											},
-											"default": {
-												"type": "number"
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"text"
-												]
-											},
-											"default": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"max_length": {
-												"type": "integer",
-												"minimum": 1,
-												"maximum": 500
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									}
-								]
-							},
-							"maxItems": 16
-						},
-						"visibility": {
-							"type": "string",
-							"enum": [
-								"workspace",
-								"session"
-							],
-							"description": "Whether the snippet is reusable workspace state or scoped to an agent session."
-						},
-						"purpose": {
-							"type": "string",
-							"enum": [
-								"general",
-								"prepared_action",
-								"reactive_read",
-								"widget"
-							]
-						},
-						"result_type": {
-							"type": "string",
-							"enum": [
-								"scalar",
-								"timeseries",
-								"categorical",
-								"table",
-								"status_list",
-								"logs",
-								"json"
-							]
-						},
-						"default_visualization": {
-							"type": "string",
-							"enum": [
-								"stat",
-								"sparkline",
-								"line",
-								"area",
-								"bar",
-								"donut",
-								"table",
-								"status_list",
-								"logs",
-								"json"
-							]
-						}
-					},
-					"additionalProperties": false
-				},
-				{
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 100
-						},
-						"description": {
-							"type": "string",
-							"maxLength": 500
-						},
-						"code": {
-							"type": "string",
-							"minLength": 1,
-							"maxLength": 50000
-						},
-						"display_type": {
-							"type": "string",
-							"enum": [
-								"table",
-								"stat",
-								"json",
-								"logs",
-								"timeseries"
-							],
-							"description": "Controls how the snippet result is rendered in dashboard widgets"
-						},
-						"inputs": {
-							"type": "array",
-							"items": {
-								"oneOf": [
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"time_range"
-												]
-											},
-											"default": {
-												"type": "object",
-												"properties": {
-													"from": {
-														"type": "integer"
-													},
-													"to": {
-														"type": "integer"
-													}
-												},
-												"required": [
-													"from",
-													"to"
-												],
-												"additionalProperties": false
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"resource"
-												]
-											},
-											"resource": {
-												"type": "string",
-												"enum": [
-													"cluster",
-													"install",
-													"product",
-													"package",
-													"region"
-												]
-											},
-											"default": {
-												"anyOf": [
-													{
-														"type": "string",
-														"maxLength": 255
-													},
-													{
-														"type": "array",
-														"items": {
-															"type": "string",
-															"maxLength": 255
-														},
-														"minItems": 1,
-														"maxItems": 100
-													}
-												]
-											},
-											"multiple": {
-												"type": "boolean"
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind",
-											"resource"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"enum"
-												]
-											},
-											"options": {
-												"type": "array",
-												"items": {
-													"type": "string",
-													"minLength": 1,
-													"maxLength": 100
-												},
-												"minItems": 1,
-												"maxItems": 100
-											},
-											"default": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind",
-											"options"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"boolean"
-												]
-											},
-											"default": {
-												"type": "boolean"
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"number"
-												]
-											},
-											"min": {
-												"type": "number"
-											},
-											"max": {
-												"type": "number"
-											},
-											"default": {
-												"type": "number"
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									},
-									{
-										"type": "object",
-										"properties": {
-											"key": {
-												"type": "string",
-												"pattern": "^[a-z][a-z0-9_]{0,31}$"
-											},
-											"label": {
-												"type": "string",
-												"minLength": 1,
-												"maxLength": 100
-											},
-											"description": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"required": {
-												"type": "boolean"
-											},
-											"kind": {
-												"type": "string",
-												"enum": [
-													"text"
-												]
-											},
-											"default": {
-												"type": "string",
-												"maxLength": 500
-											},
-											"max_length": {
-												"type": "integer",
-												"minimum": 1,
-												"maximum": 500
-											}
-										},
-										"required": [
-											"key",
-											"label",
-											"kind"
-										],
-										"additionalProperties": false
-									}
-								]
-							},
-							"maxItems": 16
-						},
-						"visibility": {
-							"type": "string",
-							"enum": [
-								"workspace",
-								"session"
-							],
-							"description": "Whether the snippet is reusable workspace state or scoped to an agent session."
-						},
-						"purpose": {
-							"type": "string",
-							"enum": [
-								"general",
-								"prepared_action",
-								"reactive_read",
-								"widget"
-							]
-						},
-						"result_contract_version": {
-							"type": "number",
-							"enum": [
-								1
-							]
-						},
-						"result_type": {
-							"type": "string",
-							"enum": [
-								"scalar",
-								"timeseries",
-								"categorical",
-								"table",
-								"status_list",
-								"logs",
-								"json"
-							]
-						},
-						"default_visualization": {
-							"type": "string",
-							"enum": [
-								"stat",
-								"sparkline",
-								"line",
-								"area",
-								"bar",
-								"donut",
-								"table",
-								"status_list",
-								"logs",
-								"json"
-							]
-						}
-					},
-					"required": [
-						"result_contract_version",
-						"result_type",
-						"default_visualization"
-					],
-					"additionalProperties": false
-				}
-			]
-		},
-		"ValidateProviderTokenBody": {
+		"UpdateWorkspaceBillingInfoRequest": {
 			"type": "object",
 			"properties": {
-				"provider": {
-					"type": "string",
-					"enum": [
-						"hcloud"
-					],
-					"description": "Cloud provider to validate the token against."
-				},
-				"value": {
-					"type": "string",
-					"description": "The provider API token to probe. Consumed, never stored.",
-					"format": "password",
-					"minLength": 1
+				"billing_account": {
+					"anyOf": [
+						{
+							"$ref": "#/$defs/BillingAccountName"
+						},
+						{
+							"type": "null"
+						}
+					]
 				}
 			},
 			"required": [
-				"provider",
-				"value"
+				"billing_account"
 			],
 			"additionalProperties": false
 		},
 		"VaultId": {
 			"type": "string",
-			"pattern": "^vlt_[^\\s/]{1,64}$",
+			"pattern": "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$",
 			"title": "VaultId",
-			"description": "A vault id"
+			"description": "A vault id chosen by its creator, unique in the Workspace. `default` is the Workspace vault."
 		},
 		"VaultId_1": {
 			"type": "string",
-			"pattern": "^vlt_[^\\s/]{1,64}$",
-			"title": "VaultId",
-			"description": "The vault that holds the connection. Defaults to the Workspace's default vault, or to the vault named by `Akua-Context`."
+			"description": "An existing Vault of this Workspace that you may use. The server does not own it. Left out, a new Vault is created for this server."
 		},
-		"WorkspaceClassResource": {
-			"type": "object",
-			"properties": {
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"required_class": {
-					"type": "string",
-					"enum": [
-						"standard",
-						"platform",
-						"sandbox"
-					]
-				}
-			},
-			"required": [
-				"workspace_id"
-			],
-			"additionalProperties": false
-		},
-		"WorkspaceMembershipResource": {
-			"type": "object",
-			"properties": {
-				"workspace_id": {
-					"type": "string",
-					"minLength": 1,
-					"maxLength": 53
-				},
-				"required_roles": {
-					"type": "array",
-					"items": {
-						"type": "string",
-						"enum": [
-							"owner",
-							"admin",
-							"member"
-						]
-					}
-				}
-			},
-			"required": [
-				"workspace_id"
-			],
-			"additionalProperties": false
+		"VersionSelector": {
+			"type": "string",
+			"pattern": "^(latest|[1-9][0-9]{0,8})$",
+			"title": "VersionSelector",
+			"description": "A version number or `latest`"
 		},
 		"WriteSandboxFilesBody": {
 			"type": "object",

@@ -9,14 +9,15 @@ import {
   PROVENANCE_FILE,
   staleGeneratedCrds,
   writeGeneratedCrds
-} from "../crds.effect"
-import { type ResolvedDependency, resolvePackage } from "../dependencies.effect"
+} from "../crds"
+import { type ResolvedDependency, resolvePackage } from "../dependencies"
 import { crdTree } from "../kcl-modules"
 import type { ManifestInvalid } from "../errors"
 import { emptyLock, formatLock, type Lock, type LockUpdate, parseLock } from "../lockfile"
 import { formatManifest, kclIdent, type Manifest, parseManifest } from "../manifest"
 import { joinPath, readOptional } from "./files"
 import { reportable } from "./report"
+import { skippedName } from "../walk"
 
 /**
  * `akua.toml` and `akua.lock` in a workspace, read and written as the
@@ -128,21 +129,32 @@ export const priorLock = (workspace: string) =>
   )
 
 /**
- * The OCI and git dependencies a published Package carries under
- * `.akua/vendor/` so it renders offline once pulled. Path dependencies are
- * already in the workspace. A resolution failure is a loud warning, not an
- * error: the artifact still packs, but needs the network to render.
+ * The dependency trees a published Package carries so it renders offline once
+ * pulled: the OCI and git dependencies under `.akua/vendor/`, and the path
+ * dependencies that sit where the workspace walk never enters (a vendored
+ * chart at `.akua/vendor/<name>` is a path dependency in a hidden directory,
+ * so only this list puts it in the artifact). Path dependencies in visible
+ * directories are already in the workspace. A resolution failure is a loud
+ * warning, not an error: the artifact still packs, but needs the network to
+ * render.
  */
 export const vendorTrees = (workspace: string, fetchers: FetchServices) =>
-  resolvePackage(workspace, { offline: false, verifySignatures: false, pins: "oci" }).pipe(
-    Effect.map(({ dependencies }) =>
-      dependencies
-        // CRD dependencies ship as their generated schemas, under `.akua/crds/`.
-        .filter(({ kind, locked }) =>
-          kind !== "crds" && (locked.kind === "oci" || locked.kind === "git") && Option.isNone(locked.replaced)
-        )
-        .map(({ name, root }) => ({ name, directory: root }))
-    ),
+  Effect.gen(function*() {
+    const fs = yield* FileSystem.FileSystem
+    const path = yield* Path.Path
+    const base = yield* fs.realPath(workspace)
+    const { dependencies } = yield* resolvePackage(workspace, { offline: false, verifySignatures: false, pins: "oci" })
+    return dependencies.flatMap(({ name, kind, root, locked }) => {
+      if (Option.isSome(locked.replaced)) return []
+      // CRD dependencies ship as their generated schemas, under `.akua/crds/`.
+      if (locked.kind === "oci" || locked.kind === "git") return kind === "crds" ? [] : [{ name, directory: root }]
+      if (locked.kind !== "path") return []
+      const relative = path.relative(base, root)
+      const segments = relative.split(path.sep)
+      const inside = relative !== "" && segments[0] !== ".." && !path.isAbsolute(relative)
+      return inside && segments.some(skippedName) ? [{ name, directory: root, destination: segments.join("/") }] : []
+    })
+  }).pipe(
     Effect.catch((error) =>
       Console.error(`warning: dep resolution failed, packed artifact will not render offline: ${error.message}`).pipe(
         Effect.as([])
@@ -175,7 +187,8 @@ export const generateCrds = Effect.fnUntraced(function*(resolved: ReadonlyArray<
   return {
     trees,
     summaries,
-    digests: new Map(trees.map((tree) => [tree.dependency, generatedCrdsDigest(tree)]))
+    digests: new Map(yield* Effect.forEach(trees, (tree) =>
+      generatedCrdsDigest(tree).pipe(Effect.map((digest): readonly [string, string] => [tree.dependency, digest]))))
   } satisfies CrdGeneration
 })
 

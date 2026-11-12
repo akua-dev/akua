@@ -3,7 +3,7 @@
 
   <h1>Akua</h1>
 
-  <p>Your digitalization partner for everything IT in your company.</p>
+  <p>Build it once. Install it for every customer.</p>
 
   <p>
     <a href="https://github.com/akua-dev/akua/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/akua-dev/akua?label=release&style=flat-square"></a>
@@ -14,16 +14,18 @@
 
 ---
 
-Akua sets up the software your company needs, keeps it running, and asks
-before anything important happens, on servers you own. Built for companies without their own IT department: for example, a customer
-database, an online shop or an n8n automation.
+Each customer gets their own install, on a server run by Akua or on their
+own. Every one stays up to date. Your coding agent runs it all: it builds the
+software with you, publishes it as a package, and installs it for each
+customer.
 
-This repository holds Akua's open-source tools. They work with Akua and on
-their own:
+This repository holds the open-source tools behind that: the `akua` CLI your
+coding agent uses to publish and install, and `akuapkg`, the package format.
+They work with Akua and on their own:
 
 | Tool                           | What it does                                                                                                                                                              | Install                                         |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| [`akua`](packages/cli/)        | Run Akua from a terminal, a CI pipeline or a coding agent: clusters, machines, installs, domains, team. Every command is generated from Akua's public API.                | `brew install akua-dev/tap/akua`                |
+| [`akua`](packages/cli/)        | Publish and install from a terminal, a CI pipeline or a coding agent: clusters, machines, installs, domains, team. Every command is generated from Akua's public API.                | `brew install akua-dev/tap/akua`                |
 | [`akuapkg`](packages/akuapkg/) | Build typed Kubernetes packages: KCL instead of YAML templates, Helm and Kustomize in a sandbox, every dependency pinned by digest. Also built into `akua` as `akua pkg`. | `curl -fsSL https://cli.akua.dev/install \| sh` |
 
 ## Quick start
@@ -45,7 +47,7 @@ Full guide: [docs.akua.dev/cli](https://docs.akua.dev/cli).
 
 ### Let your coding agent set Akua up
 
-Give your agent one instruction:
+Give your coding agent one instruction:
 
 ```text
 Fetch https://docs.akua.dev/agent-setup/prompt and complete the Akua CLI
@@ -75,13 +77,17 @@ Docs: [docs.akua.dev/akua](https://docs.akua.dev/akua).
 | [`packages/cli`](packages/cli/)         | The `akua` CLI                                                                                                               |
 | [`packages/akuapkg`](packages/akuapkg/) | akuapkg: the Bun + Effect host, its CLI and TypeScript SDK                                                                   |
 | [`crates/`](crates/)                    | The sandboxed render worker (Rust to WebAssembly), the Helm and Kustomize engines (Go to WebAssembly) and the Wasmtime addon |
+| [`packages/cluster-agent`](packages/cluster-agent/) | The Helm chart and Akua package that install Akua's agent, which runs in a customer's cluster and keeps its installs up to date |
+| [`packages/cloudflare-tunnel-connector`](packages/cloudflare-tunnel-connector/) | An akuapkg Package that runs `cloudflared` in a cluster |
+| [`packages/private-ingress-gateway`](packages/private-ingress-gateway/) | The in-cluster HTTP boundary for routes whose services are not public |
 | [`plugins/`](plugins/)                  | Agent plugins and skills                                                                                                     |
 | [`examples/`](examples/)                | Runnable packages, each with its rendered output                                                                             |
 | [`docs/`](docs/)                        | Format specifications (package, lockfile, CLI contract), security model, building and releasing                              |
 
 `akua` and `akuapkg` release together: one version, one
 [GitHub Release](https://github.com/akua-dev/akua/releases) with archives for
-macOS, Linux and Windows. Changes: [CHANGELOG.md](CHANGELOG.md).
+macOS, Linux and Windows. Changes: the release notes on each
+[GitHub Release](https://github.com/akua-dev/akua/releases).
 
 ## Status
 

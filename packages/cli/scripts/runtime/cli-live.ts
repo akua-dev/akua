@@ -18,6 +18,7 @@ export const ScriptCliLive = Layer.mergeAll(
 		Terminal.make({
 			columns: Effect.succeed(process.stdout.columns ?? 80),
 			rows: Effect.succeed(process.stdout.rows ?? 24),
+			size: Effect.die('Terminal size changes are unavailable'),
 			readInput: Effect.die('Interactive terminal input is unavailable'),
 			readLine: Effect.die('Interactive terminal input is unavailable'),
 			display: () => Effect.void

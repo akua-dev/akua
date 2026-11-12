@@ -118,26 +118,40 @@ function renderArray(values: readonly unknown[], indent: number, key = 'items'):
 
 	const rows = values.filter(isRecord);
 	if (rows.length === values.length) {
-		const keys = Object.keys(rows[0] ?? {}).filter((candidate) =>
-			rows.every(
-				(row) =>
-					row[candidate] === undefined ||
-					row[candidate] === null ||
-					typeof row[candidate] !== 'object'
-			)
-		);
-		if (keys.length > 0) {
+		const keys = Object.keys(rows[0] ?? {});
+		// A compact table only when every cell is a scalar; rows with nested
+		// arrays or objects render as blocks so no field is dropped.
+		if (keys.length > 0 && rows.every((row) => Object.values(row).every(isScalar))) {
 			return [
 				`${prefix}${key}[${rows.length}]{${keys.join(',')}}:`,
 				...rows.map((row) => `${prefix}  ${keys.map((field) => escapeCell(row[field])).join(',')}`)
 			];
 		}
+		return [
+			`${prefix}${key}[${rows.length}]:`,
+			...rows.flatMap((row) => {
+				const block = renderValue(row, indent + 4);
+				return block.map((line, index) =>
+					index === 0 ? `${prefix}  - ${line.slice(indent + 4)}` : line
+				);
+			})
+		];
 	}
 
 	return [
 		`${prefix}${key}[${values.length}]:`,
-		...values.map((item) => `${prefix}  ${String(item)}`)
+		...values.flatMap((item) =>
+			isScalar(item)
+				? [`${prefix}  ${String(item)}`]
+				: renderValue(item, indent + 4).map((line, index) =>
+						index === 0 ? `${prefix}  - ${line.slice(indent + 4)}` : line
+					)
+		)
 	];
+}
+
+function isScalar(value: unknown): boolean {
+	return value === undefined || value === null || typeof value !== 'object';
 }
 
 function escapeCell(value: unknown): string {

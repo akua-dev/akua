@@ -6,7 +6,7 @@ import { OperationFailure } from '../api/failure';
 import { findOperation } from '../api/inputs';
 import { decodeRequest } from '../api/request';
 import { configPath, optionalEnv } from '../runtime/credentials';
-import { UsageFailure } from '../runtime/effect-runtime';
+import { UsageFailure } from '../runtime/errors';
 import { SecureConfig, type SecureConfigFailure, type StoredWorkspace } from '../runtime/services';
 
 export type WorkspaceSource = 'flag' | 'env' | 'config';

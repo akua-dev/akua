@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: webapp
   labels:
-    install.cnap.tech/tenant: acme
+    install.akua.dev/tenant: acme
 spec:
   replicas: 3
   selector:

@@ -1,7 +1,7 @@
 import { Effect, Option } from "effect"
 import { Command, Flag } from "effect/cli"
 import { ExitCode, fail } from "../contract"
-import type { ResolvedDependency } from "../dependencies.effect"
+import type { ResolvedDependency } from "../dependencies"
 import { lockBody, mergeIntoLock } from "../lockfile"
 import type { VerbContext } from "./context"
 import { joinPath, readOptional } from "./files"

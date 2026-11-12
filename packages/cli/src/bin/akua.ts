@@ -1,13 +1,13 @@
 #!/usr/bin/env bun
-import { BunRuntime, BunServices } from '@effect/platform-bun';
-import { Effect, type Layer, Stdio } from 'effect';
+import { BunCrypto, BunRuntime, BunServices } from '@effect/platform-bun';
+import { Effect, Layer, Stdio } from 'effect';
 
 import { runAkua } from '../cli/main';
 import { ExitStatus } from '../runtime/exit-codes';
 import { CliLive, type CliPlatform, PackageCliLive } from '../runtime/services-live';
 import type { CliServices, PackageCli } from '../runtime/services';
 
-export const VERSION = '0.13.3'; // the Cargo workspace version (test/version.test.ts)
+export const VERSION = '0.13.6'; // the Cargo workspace version (test/version.test.ts)
 
 export function main(argv: readonly string[]): Effect.Effect<number, never, CliServices> {
 	return runAkua(argv, VERSION);
@@ -22,6 +22,9 @@ export const akuaProgram = (packageCli: Layer.Layer<PackageCli, never, CliPlatfo
 		const stdio = yield* Stdio.Stdio;
 		const code = yield* main(yield* stdio.args);
 		if (code !== 0) return yield* new ExitStatus({ code });
-	}).pipe(Effect.provide(CliLive(VERSION, packageCli)), Effect.provide(BunServices.layer));
+	}).pipe(
+		Effect.provide(CliLive(VERSION, packageCli)),
+		Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer))
+	);
 
 if (import.meta.main) BunRuntime.runMain(akuaProgram(PackageCliLive));

@@ -1,0 +1,8 @@
+[package]
+name    = "kaas-capability-cloudflare-tunnel-connector"
+version = "0.1.6"
+edition = "akua.dev/v1alpha1"
+
+[dependencies]
+# Typed Kubernetes schemas; switch versions with `akuapkg add k8s --k8s <version> --force`.
+k8s = { oci = "oci://ghcr.io/kcl-lang/k8s", version = "1.35" }

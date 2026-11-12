@@ -1,4 +1,4 @@
-import { BunServices } from '@effect/platform-bun';
+import { BunCrypto, BunServices } from '@effect/platform-bun';
 import { describe, expect, it } from '@effect/vitest';
 import { type Cause, Effect, Layer, Option, Queue, Terminal } from 'effect';
 
@@ -17,6 +17,7 @@ const terminal = (keys: ReadonlyArray<Terminal.UserInput>) =>
 		Terminal.make({
 			columns: Effect.succeed(80),
 			rows: Effect.succeed(24),
+			size: Effect.die('unused'),
 			readInput: Effect.gen(function* () {
 				const queue = yield* Queue.unbounded<Terminal.UserInput, Cause.Done>();
 				yield* Queue.offerAll(queue, keys);
@@ -36,7 +37,12 @@ describe('akua workspaces use without a name', () => {
 			const chosen = yield* chooseWorkspace([team, other]);
 			expect(chosen).toEqual(other);
 		}).pipe(
-			Effect.provide(Layer.merge(BunServices.layer, terminal([press('down'), press('return')])))
+			Effect.provide(
+				Layer.merge(
+					Layer.mergeAll(BunServices.layer, BunCrypto.layer),
+					terminal([press('down'), press('return')])
+				)
+			)
 		)
 	);
 

@@ -1,0 +1,1393 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "cluster_id": {
+      "type": "string"
+    },
+    "values_private_ingress_gateway": {
+      "default": {},
+      "properties": {
+        "args": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "command": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "env": {
+          "default": {},
+          "properties": {
+            "identityAudience": {
+              "default": "",
+              "type": "string"
+            },
+            "identityIssuer": {
+              "default": "https://id.akua.dev",
+              "type": "string"
+            },
+            "identityJwksUrl": {
+              "default": "",
+              "type": "string"
+            },
+            "mountRouteTableConfigMap": {
+              "default": true,
+              "type": "boolean"
+            },
+            "otelEndpoint": {
+              "default": "",
+              "type": "string"
+            },
+            "routeTableConfigMapKey": {
+              "default": "routes.json",
+              "type": "string"
+            },
+            "routeTableConfigMapName": {
+              "default": "private-ingress-gateway-route-table",
+              "type": "string"
+            },
+            "routeTablePath": {
+              "default": "/var/run/private-ingress-gateway-routes/routes.json",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "extraVolumeMounts": {
+          "default": [],
+          "items": {
+            "properties": {
+              "mountPath": {
+                "type": "string"
+              },
+              "mountPropagation": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "readOnly": {
+                "type": "boolean"
+              },
+              "recursiveReadOnly": {
+                "type": "string"
+              },
+              "subPath": {
+                "type": "string"
+              },
+              "subPathExpr": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "mountPath",
+              "name"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "extraVolumes": {
+          "default": [],
+          "items": {
+            "properties": {
+              "awsElasticBlockStore": {
+                "properties": {
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "partition": {
+                    "type": "integer"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "volumeID": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "volumeID"
+                ],
+                "type": "object"
+              },
+              "azureDisk": {
+                "properties": {
+                  "cachingMode": {
+                    "type": "string"
+                  },
+                  "diskName": {
+                    "type": "string"
+                  },
+                  "diskURI": {
+                    "type": "string"
+                  },
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "diskName",
+                  "diskURI"
+                ],
+                "type": "object"
+              },
+              "azureFile": {
+                "properties": {
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "secretName": {
+                    "type": "string"
+                  },
+                  "shareName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "secretName",
+                  "shareName"
+                ],
+                "type": "object"
+              },
+              "cephfs": {
+                "properties": {
+                  "monitors": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "secretFile": {
+                    "type": "string"
+                  },
+                  "secretRef": {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "user": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "monitors"
+                ],
+                "type": "object"
+              },
+              "cinder": {
+                "properties": {
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "secretRef": {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "volumeID": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "volumeID"
+                ],
+                "type": "object"
+              },
+              "configMap": {
+                "properties": {
+                  "defaultMode": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "mode": {
+                          "type": "integer"
+                        },
+                        "path": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "path"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "optional": {
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
+              },
+              "csi": {
+                "properties": {
+                  "driver": {
+                    "type": "string"
+                  },
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "nodePublishSecretRef": {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "volumeAttributes": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "driver"
+                ],
+                "type": "object"
+              },
+              "downwardAPI": {
+                "properties": {
+                  "defaultMode": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "properties": {
+                        "fieldRef": {
+                          "properties": {
+                            "apiVersion": {
+                              "type": "string"
+                            },
+                            "fieldPath": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "fieldPath"
+                          ],
+                          "type": "object"
+                        },
+                        "mode": {
+                          "type": "integer"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "resourceFieldRef": {
+                          "properties": {
+                            "containerName": {
+                              "type": "string"
+                            },
+                            "divisor": {
+                              "type": "string"
+                            },
+                            "resource": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "resource"
+                          ],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "path"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              },
+              "emptyDir": {
+                "properties": {
+                  "medium": {
+                    "type": "string"
+                  },
+                  "sizeLimit": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "ephemeral": {
+                "properties": {
+                  "volumeClaimTemplate": {
+                    "properties": {
+                      "metadata": {
+                        "properties": {
+                          "annotations": {
+                            "additionalProperties": {
+                              "type": "string"
+                            },
+                            "type": "object"
+                          },
+                          "creationTimestamp": {
+                            "type": "string"
+                          },
+                          "deletionGracePeriodSeconds": {
+                            "type": "integer"
+                          },
+                          "deletionTimestamp": {
+                            "type": "string"
+                          },
+                          "finalizers": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "generateName": {
+                            "type": "string"
+                          },
+                          "generation": {
+                            "type": "integer"
+                          },
+                          "labels": {
+                            "additionalProperties": {
+                              "type": "string"
+                            },
+                            "type": "object"
+                          },
+                          "managedFields": {
+                            "items": {
+                              "properties": {
+                                "apiVersion": {
+                                  "type": "string"
+                                },
+                                "fieldsType": {
+                                  "type": "string"
+                                },
+                                "fieldsV1": {},
+                                "manager": {
+                                  "type": "string"
+                                },
+                                "operation": {
+                                  "type": "string"
+                                },
+                                "subresource": {
+                                  "type": "string"
+                                },
+                                "time": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "namespace": {
+                            "type": "string"
+                          },
+                          "ownerReferences": {
+                            "items": {
+                              "properties": {
+                                "apiVersion": {
+                                  "type": "string"
+                                },
+                                "blockOwnerDeletion": {
+                                  "type": "boolean"
+                                },
+                                "controller": {
+                                  "type": "boolean"
+                                },
+                                "kind": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "uid": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "apiVersion",
+                                "kind",
+                                "name",
+                                "uid"
+                              ],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "resourceVersion": {
+                            "type": "string"
+                          },
+                          "selfLink": {
+                            "type": "string"
+                          },
+                          "uid": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "spec": {
+                        "properties": {
+                          "accessModes": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "dataSource": {
+                            "properties": {
+                              "apiGroup": {
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "name"
+                            ],
+                            "type": "object"
+                          },
+                          "dataSourceRef": {
+                            "properties": {
+                              "apiGroup": {
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "namespace": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "name"
+                            ],
+                            "type": "object"
+                          },
+                          "resources": {
+                            "properties": {
+                              "limits": {
+                                "additionalProperties": {
+                                  "type": "string"
+                                },
+                                "type": "object"
+                              },
+                              "requests": {
+                                "additionalProperties": {
+                                  "type": "string"
+                                },
+                                "type": "object"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "selector": {
+                            "properties": {
+                              "matchExpressions": {
+                                "items": {
+                                  "properties": {
+                                    "key": {
+                                      "type": "string"
+                                    },
+                                    "operator": {
+                                      "type": "string"
+                                    },
+                                    "values": {
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "type": "array"
+                                    }
+                                  },
+                                  "required": [
+                                    "key",
+                                    "operator"
+                                  ],
+                                  "type": "object"
+                                },
+                                "type": "array"
+                              },
+                              "matchLabels": {
+                                "additionalProperties": {
+                                  "type": "string"
+                                },
+                                "type": "object"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "storageClassName": {
+                            "type": "string"
+                          },
+                          "volumeAttributesClassName": {
+                            "type": "string"
+                          },
+                          "volumeMode": {
+                            "type": "string"
+                          },
+                          "volumeName": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "spec"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              },
+              "fc": {
+                "properties": {
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "lun": {
+                    "type": "integer"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "targetWWNs": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "wwids": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              },
+              "flexVolume": {
+                "properties": {
+                  "driver": {
+                    "type": "string"
+                  },
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "options": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "secretRef": {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "driver"
+                ],
+                "type": "object"
+              },
+              "flocker": {
+                "properties": {
+                  "datasetName": {
+                    "type": "string"
+                  },
+                  "datasetUUID": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "gcePersistentDisk": {
+                "properties": {
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "partition": {
+                    "type": "integer"
+                  },
+                  "pdName": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "pdName"
+                ],
+                "type": "object"
+              },
+              "gitRepo": {
+                "properties": {
+                  "directory": {
+                    "type": "string"
+                  },
+                  "repository": {
+                    "type": "string"
+                  },
+                  "revision": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "repository"
+                ],
+                "type": "object"
+              },
+              "glusterfs": {
+                "properties": {
+                  "endpoints": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "endpoints",
+                  "path"
+                ],
+                "type": "object"
+              },
+              "hostPath": {
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path"
+                ],
+                "type": "object"
+              },
+              "image": {
+                "properties": {
+                  "pullPolicy": {
+                    "type": "string"
+                  },
+                  "reference": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "iscsi": {
+                "properties": {
+                  "chapAuthDiscovery": {
+                    "type": "boolean"
+                  },
+                  "chapAuthSession": {
+                    "type": "boolean"
+                  },
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "initiatorName": {
+                    "type": "string"
+                  },
+                  "iqn": {
+                    "type": "string"
+                  },
+                  "iscsiInterface": {
+                    "type": "string"
+                  },
+                  "lun": {
+                    "type": "integer"
+                  },
+                  "portals": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "secretRef": {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "targetPortal": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "iqn",
+                  "lun",
+                  "targetPortal"
+                ],
+                "type": "object"
+              },
+              "name": {
+                "type": "string"
+              },
+              "nfs": {
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "server": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "server"
+                ],
+                "type": "object"
+              },
+              "persistentVolumeClaim": {
+                "properties": {
+                  "claimName": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "claimName"
+                ],
+                "type": "object"
+              },
+              "photonPersistentDisk": {
+                "properties": {
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "pdID": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "pdID"
+                ],
+                "type": "object"
+              },
+              "portworxVolume": {
+                "properties": {
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "volumeID": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "volumeID"
+                ],
+                "type": "object"
+              },
+              "projected": {
+                "properties": {
+                  "defaultMode": {
+                    "type": "integer"
+                  },
+                  "sources": {
+                    "items": {
+                      "properties": {
+                        "clusterTrustBundle": {
+                          "properties": {
+                            "labelSelector": {
+                              "properties": {
+                                "matchExpressions": {
+                                  "items": {
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "operator": {
+                                        "type": "string"
+                                      },
+                                      "values": {
+                                        "items": {
+                                          "type": "string"
+                                        },
+                                        "type": "array"
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "operator"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "type": "array"
+                                },
+                                "matchLabels": {
+                                  "additionalProperties": {
+                                    "type": "string"
+                                  },
+                                  "type": "object"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "optional": {
+                              "type": "boolean"
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "signerName": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "path"
+                          ],
+                          "type": "object"
+                        },
+                        "configMap": {
+                          "properties": {
+                            "items": {
+                              "items": {
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "mode": {
+                                    "type": "integer"
+                                  },
+                                  "path": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "path"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "optional": {
+                              "type": "boolean"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "downwardAPI": {
+                          "properties": {
+                            "items": {
+                              "items": {
+                                "properties": {
+                                  "fieldRef": {
+                                    "type": "object"
+                                  },
+                                  "mode": {
+                                    "type": "integer"
+                                  },
+                                  "path": {
+                                    "type": "string"
+                                  },
+                                  "resourceFieldRef": {
+                                    "type": "object"
+                                  }
+                                },
+                                "required": [
+                                  "path"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "podCertificate": {
+                          "properties": {
+                            "certificateChainPath": {
+                              "type": "string"
+                            },
+                            "credentialBundlePath": {
+                              "type": "string"
+                            },
+                            "keyPath": {
+                              "type": "string"
+                            },
+                            "keyType": {
+                              "type": "string"
+                            },
+                            "maxExpirationSeconds": {
+                              "type": "integer"
+                            },
+                            "signerName": {
+                              "type": "string"
+                            },
+                            "userAnnotations": {
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "keyType",
+                            "signerName"
+                          ],
+                          "type": "object"
+                        },
+                        "secret": {
+                          "properties": {
+                            "items": {
+                              "items": {
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "mode": {
+                                    "type": "integer"
+                                  },
+                                  "path": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "path"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "optional": {
+                              "type": "boolean"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "serviceAccountToken": {
+                          "properties": {
+                            "audience": {
+                              "type": "string"
+                            },
+                            "expirationSeconds": {
+                              "type": "integer"
+                            },
+                            "path": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "path"
+                          ],
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              },
+              "quobyte": {
+                "properties": {
+                  "group": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "registry": {
+                    "type": "string"
+                  },
+                  "tenant": {
+                    "type": "string"
+                  },
+                  "user": {
+                    "type": "string"
+                  },
+                  "volume": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "registry",
+                  "volume"
+                ],
+                "type": "object"
+              },
+              "rbd": {
+                "properties": {
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "image": {
+                    "type": "string"
+                  },
+                  "keyring": {
+                    "type": "string"
+                  },
+                  "monitors": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "pool": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "secretRef": {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "user": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "image",
+                  "monitors"
+                ],
+                "type": "object"
+              },
+              "scaleIO": {
+                "properties": {
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "gateway": {
+                    "type": "string"
+                  },
+                  "protectionDomain": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "secretRef": {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "sslEnabled": {
+                    "type": "boolean"
+                  },
+                  "storageMode": {
+                    "type": "string"
+                  },
+                  "storagePool": {
+                    "type": "string"
+                  },
+                  "system": {
+                    "type": "string"
+                  },
+                  "volumeName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "gateway",
+                  "secretRef",
+                  "system"
+                ],
+                "type": "object"
+              },
+              "secret": {
+                "properties": {
+                  "defaultMode": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "mode": {
+                          "type": "integer"
+                        },
+                        "path": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "path"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "optional": {
+                    "type": "boolean"
+                  },
+                  "secretName": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "storageos": {
+                "properties": {
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  },
+                  "secretRef": {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "volumeName": {
+                    "type": "string"
+                  },
+                  "volumeNamespace": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "vsphereVolume": {
+                "properties": {
+                  "fsType": {
+                    "type": "string"
+                  },
+                  "storagePolicyID": {
+                    "type": "string"
+                  },
+                  "storagePolicyName": {
+                    "type": "string"
+                  },
+                  "volumePath": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "volumePath"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "image": {
+          "default": {},
+          "properties": {
+            "digest": {
+              "default": "",
+              "type": "string"
+            },
+            "pullPolicy": {
+              "default": "IfNotPresent",
+              "type": "string"
+            },
+            "repository": {
+              "type": "string"
+            },
+            "tag": {
+              "default": "0.1.2",
+              "type": "string"
+            }
+          },
+          "required": [
+            "repository"
+          ],
+          "type": "object"
+        },
+        "imagePullSecrets": {
+          "default": [],
+          "items": {
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "namespace": {
+          "default": "platform-system",
+          "type": "string"
+        },
+        "podSecurityContext": {
+          "additionalProperties": {},
+          "default": {},
+          "type": "object"
+        },
+        "replicaCount": {
+          "default": 2,
+          "type": "integer"
+        },
+        "resources": {
+          "default": {},
+          "properties": {
+            "claims": {
+              "items": {
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "request": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "limits": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "requests": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "routeTable": {
+          "default": {},
+          "properties": {
+            "createConfigMap": {
+              "default": false,
+              "type": "boolean"
+            },
+            "routes": {
+              "default": [],
+              "items": {
+                "additionalProperties": {},
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "service": {
+          "default": {},
+          "properties": {
+            "port": {
+              "default": 8080,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "title": "Input",
+  "type": "object"
+}

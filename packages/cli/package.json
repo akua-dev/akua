@@ -1,26 +1,23 @@
 {
 	"name": "@akua-dev/cli",
-	"version": "0.13.3",
+	"version": "0.13.6",
 	"private": false,
 	"type": "module",
+	"exports": {
+		"./cli": "./src/cli/main.ts",
+		"./contract": "./scripts/generate-contract.ts",
+		"./runtime/credentials": "./src/runtime/credentials.ts",
+		"./runtime/services": "./src/runtime/services.ts",
+		"./runtime/services-live": "./src/runtime/services-live.ts",
+		"./runtime/exit-codes": "./src/runtime/exit-codes.ts"
+	},
 	"description": "Akua Cloud CLI",
 	"bin": {
 		"akua": "./src/bin/akua.ts"
 	},
-	"scripts": {
-		"dev": "bun src/bin/akua.ts",
-		"build": "tsc --noEmit && bun build src/bin/akua.ts --target=bun --outdir=dist/js",
-		"build:binary": "bun build src/bin/akua.ts --compile --target=bun --outfile dist/akua",
-		"check": "bun run build && bun run test",
-		"generate": "bun scripts/generate-contract.ts",
-		"generate:check": "bun scripts/generate-contract.ts --check",
-		"release:package": "bun scripts/release.ts package --version $npm_package_version --output dist/release --source-sha $CNAP_SOURCE_SHA --akuapkg-version $AKUAPKG_VERSION",
-		"release:verify": "bun scripts/release.ts verify --version $npm_package_version --output dist/release",
-		"release:smoke": "bun scripts/release.ts smoke --version $npm_package_version --output dist/release --archive-sha256 \"$CLI_RELEASE_ARCHIVE_SHA256\"",
-		"test": "bun --bun run vitest run"
-	},
 	"devDependencies": {
-		"@effect/vitest": "4.0.1",
+		"@akua-dev/wasm-sandbox": "0.1.0",
+		"@effect/vitest": "4.1.4",
 		"@types/bun": "1.4.1",
 		"smol-toml": "1.8.0",
 		"typescript": "^6.0.3",
@@ -30,8 +27,8 @@
 		"bun": ">=1.4.4"
 	},
 	"dependencies": {
-		"@akua-dev/sdk": "0.13.3",
-		"@effect/platform-bun": "4.0.1",
-		"effect": "4.0.1"
+		"@akua-dev/sdk": "0.13.6",
+		"@effect/platform-bun": "4.1.4",
+		"effect": "4.1.4"
 	}
 }

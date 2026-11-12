@@ -6,11 +6,11 @@ members = [
 ]
 
 [workspace.package]
-version = "0.13.3"
+version = "0.13.6"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/akua-dev/akua"
-authors = ["CNAP Tech <hello@cnap.tech>"]
+authors = ["Akua UG (haftungsbeschränkt) <support@akua.dev>"]
 
 [workspace.dependencies]
 # Serialization

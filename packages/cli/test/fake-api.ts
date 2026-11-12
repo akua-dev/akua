@@ -1,8 +1,10 @@
-import { BunServices } from '@effect/platform-bun';
+import { BunCrypto, BunServices } from '@effect/platform-bun';
 import { ConfigProvider, Effect, FileSystem, Layer, Ref, Stream } from 'effect';
 import { HttpClient, HttpClientResponse } from 'effect/http';
 
-import { main } from '../src/bin/akua';
+import type { ApiContract } from '../src/api/contract';
+import { VERSION } from '../src/bin/akua';
+import { runAkua as runProgram } from '../src/cli/main';
 import {
 	Browser,
 	Console,
@@ -38,6 +40,7 @@ export interface FakeResponse {
 export type FakeApi = (request: RecordedRequest) => FakeResponse;
 
 export interface RunOptions {
+	readonly contract?: ApiContract;
 	readonly env?: Readonly<Record<string, string>>;
 	readonly api?: FakeApi;
 	/** `--input` sources by name (`-` is stdin). */
@@ -147,10 +150,10 @@ export const runAkua = Effect.fnUntraced(function* (
 		Layer.succeed(Browser, { launch: () => Effect.die('browser is not under test') }),
 		Layer.succeed(Process, { awaitSignal: Effect.never }),
 		Layer.succeed(PackageCli, { execute: () => Effect.succeed(0) }),
-		SecureConfigLive.pipe(Layer.provide(BunServices.layer))
+		SecureConfigLive.pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
 	);
 
-	const exitCode = yield* main(argv).pipe(
+	const exitCode = yield* runProgram(argv, VERSION, options.contract).pipe(
 		Effect.provide(services),
 		Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord({ ...options.env })))
 	);
@@ -168,13 +171,13 @@ export const runAkua = Effect.fnUntraced(function* (
 export const temporaryHome = Effect.gen(function* () {
 	const fs = yield* FileSystem.FileSystem;
 	return yield* fs.makeTempDirectoryScoped({ prefix: 'akua-cli-test-' });
-}).pipe(Effect.provide(BunServices.layer));
+}).pipe(Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)));
 
 export const readConfigFile = (home: string) =>
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
 		return JSON.parse(yield* fs.readFileString(`${home}/.config/akua/config.json`));
-	}).pipe(Effect.provide(BunServices.layer));
+	}).pipe(Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)));
 
 export const writeConfigFile = (home: string, config: unknown) =>
 	Effect.gen(function* () {
@@ -183,4 +186,4 @@ export const writeConfigFile = (home: string, config: unknown) =>
 		yield* fs.writeFileString(`${home}/.config/akua/config.json`, JSON.stringify(config), {
 			mode: 0o600
 		});
-	}).pipe(Effect.provide(BunServices.layer));
+	}).pipe(Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)));

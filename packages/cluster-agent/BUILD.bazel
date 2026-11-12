@@ -1,0 +1,35 @@
+"""The install package of Akua's cluster agent: its Helm chart and Akua package.
+
+The agent's own sources are not part of this repository; this directory is
+what a user installs. The one directory is both the Akua package and its
+Helm chart, so the published chart version carries the package that renders it.
+"""
+
+exports_files(
+    [
+        "Chart.yaml",
+        "akua.toml",
+        "package.k",
+        "values.schema.json",
+        "values.yaml",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# The agent chart's templates, for a `helm package` of this directory.
+filegroup(
+    name = "chart_templates",
+    srcs = glob(["templates/**"]),
+    visibility = ["//visibility:public"],
+)
+
+# The Akua package: akua.toml and package.k beside the chart, plus the chart
+# itself (the package's one dependency, path ".").
+filegroup(
+    name = "package_srcs",
+    srcs = glob(
+        ["**"],
+        exclude = ["BUILD.bazel"],
+    ),
+    visibility = ["//visibility:public"],
+)
