@@ -47,15 +47,9 @@ Full guide: [docs.akua.dev/cli](https://docs.akua.dev/cli).
 
 ### Let your coding agent set Akua up
 
-Give your coding agent one instruction:
-
-```text
-Fetch https://docs.akua.dev/agent-setup/prompt and complete the Akua CLI
-quickstart with me.
-```
-
-The agent installs the CLI, signs you in through your browser and asks before
-every consequential step. Package-authoring skills: [plugins/akuapkg](plugins/akuapkg/).
+Paste the prompt from the [Quickstart](https://docs.akua.dev/quickstart) into your
+coding agent. It installs the CLI, signs you in through your browser and asks
+before every consequential step. Package-authoring skills: [plugins/akuapkg](plugins/akuapkg/).
 
 ### Build a typed Kubernetes package
 
