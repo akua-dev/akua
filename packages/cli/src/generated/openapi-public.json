@@ -9942,7 +9942,7 @@
             }
           }
         },
-        "description": "Hosted Clusters. Creates `node_count` Machines of `machine_type` in the Cluster’s Region, each joined as a node, and returns the creation Operation; it succeeds once every node is ready. Machine creation needs an active billing account; the first `cx23` of a person is the free trial. Adding one Akua server is a pool of size 1.",
+        "description": "Hosted Clusters. Creates `node_count` Machines of `machine_type` in the Cluster’s Region, each joined as a node, and returns the creation Operation; it succeeds once every node is ready. Machine creation needs an active billing account; the first `cx23` of a person is the free trial. An unknown machine type or location is refused here (400, 422). Billing, quota and provider refusals fail the Operation instead: `error.reason` is `billing-required`, `quota-exceeded`, `service-disabled` or `provider-refused`, and `error.message` says what to do. Adding one Akua server is a pool of size 1.",
         "summary": "Create a node pool",
         "requestBody": {
           "content": {
@@ -21039,6 +21039,13 @@
                   },
                   "message": {
                     "type": "string"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Why it failed, stable for clients to branch on. Node pool and Machine creates use `billing-required`, `quota-exceeded`, `service-disabled`, `capacity-unavailable`, `provider-refused`, `provider-unavailable` and `abandoned`; most Operations omit it.",
+                    "examples": [
+                      "billing-required"
+                    ]
                   }
                 },
                 "required": [
