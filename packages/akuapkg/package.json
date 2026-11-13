@@ -27,7 +27,8 @@
 		"./oci": "./src/oci.ts",
 		"./plugins": "./src/plugins.ts",
 		"./url-source": "./src/url-source.ts",
-		"./worker": "./src/worker.ts"
+		"./worker": "./src/worker.ts",
+		"./error-catalog": "./src/error-catalog.ts"
 	},
 	"engines": {
 		"bun": ">=1.4.4"

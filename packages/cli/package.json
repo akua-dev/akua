@@ -9,7 +9,10 @@
 		"./runtime/credentials": "./src/runtime/credentials.ts",
 		"./runtime/services": "./src/runtime/services.ts",
 		"./runtime/services-live": "./src/runtime/services-live.ts",
-		"./runtime/exit-codes": "./src/runtime/exit-codes.ts"
+		"./runtime/exit-codes": "./src/runtime/exit-codes.ts",
+		"./build/release-services": "./scripts/runtime/release-services.ts",
+		"./build/release-host-live": "./scripts/runtime/release-host-live.ts",
+		"./build/services-live": "./scripts/runtime/services-live.ts"
 	},
 	"description": "Akua Cloud CLI",
 	"bin": {

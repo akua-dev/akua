@@ -1,8 +1,8 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun';
 import { Effect, FileSystem, Layer, Path, Schema } from 'effect';
 
-import { ReleaseHost, RELEASE_TARGETS } from '../packages/cli/scripts/runtime/release-services';
-import { makeReleaseHostLive } from '../packages/cli/scripts/runtime/release-host-live';
+import { ReleaseHost, RELEASE_TARGETS } from '@akua-dev/cli/build/release-services';
+import { makeReleaseHostLive } from '@akua-dev/cli/build/release-host-live';
 
 class CliReleasePackageFailure extends Schema.TaggedError<CliReleasePackageFailure>()(
 	'CliReleasePackageFailure',

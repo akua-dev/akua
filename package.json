@@ -10,5 +10,8 @@
 	},
 	"patchedDependencies": {
 		"effect@4.1.4": "patches/effect@4.1.4.patch"
+	},
+	"dependencies": {
+		"@akua-dev/cli": "0.13.7"
 	}
 }

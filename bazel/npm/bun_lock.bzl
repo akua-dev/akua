@@ -231,8 +231,9 @@ def _bun_lock_repository_impl(rctx):
     links = {}
     for member, workspace in workspaces.items():
         for dependency in workspace.get("dependencies", {}).keys() + workspace.get("devDependencies", {}).keys():
-            if dependency in members and member:
-                links["{}/node_modules/{}".format(member, dependency)] = members[dependency]
+            if dependency in members:
+                prefix = member + "/" if member else ""
+                links["{}node_modules/{}".format(prefix, dependency)] = members[dependency]
     rctx.file("workspace.bzl", "WORKSPACE_LINKS = {}\n".format(json.encode(links)))
 
 bun_lock_repository = repository_rule(

@@ -138,7 +138,7 @@ cli_release_archive = rule(
             doc = "Package files from the bun.lock repository for the packaging program.",
         ),
         "workspace_links": attr.string_dict(doc = "node_modules link path -> workspace member directory."),
-        "srcs": attr.label_list(allow_files = [".ts"]),
+        "srcs": attr.label_list(allow_files = [".ts", ".json"]),
         "stamp": attr.bool(
             default = False,
             doc = "Record the checkout source SHA from Bazel's stable status (set from --stamp).",

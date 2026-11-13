@@ -368,6 +368,8 @@ config_setting(
 cli_release_archive(
     name = "cli_release_archive",
     srcs = [
+        "//:package.json",
+        "//packages/cli:package.json",
         "//packages/cli:release_program_srcs",
     ],
     out = "cli-release",

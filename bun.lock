@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "akua-monorepo",
+      "dependencies": {
+        "@akua-dev/cli": "0.13.7",
+      },
     },
     "crates/wasm-sandbox": {
       "name": "@akua-dev/wasm-sandbox",
