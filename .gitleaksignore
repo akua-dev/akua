@@ -77,3 +77,20 @@ f3ca982b7668f20dc0f93e88981c0385af86fff1:crates/akua-napi/bun.lock:generic-passw
 6d60012381490fad6e6499825f14523bd5fbb11e:host/src/error-catalog.ts:generic-credential-uri:34
 6d60012381490fad6e6499825f14523bd5fbb11e:pages/errors/E_MANIFEST_GIT_USERINFO.html:generic-credential-uri:8
 0d1a69a6516f102d4913e016f2f189771881d7d4:.gitleaksignore:generic-credential-uri:74
+
+# The mounted-secret merge test uses a descriptive sentinel in an in-memory
+# rendered Secret. It is test input, not an environment credential.
+620bbfe16f196398bb79e2b333e5135e1a92662f:packages/cluster-agent/src/manifests.test.ts:generic-password:202
+
+# Secret-stripping and cache tests use fixed dummy/base64 payloads to prove
+# Secret values are removed. These are synthetic test data, not credentials.
+a061c25cf5e504f4a6c46b8644fbf0fa7ba78290:packages/cluster-agent/engine/internal/cache/cache_test.go:generic-password:92
+a061c25cf5e504f4a6c46b8644fbf0fa7ba78290:packages/cluster-agent/engine/internal/cache/cache_test.go:generic-password:289
+dadf75d93c208fbd8fb4a661bd36ea06e08d79a0:packages/cluster-agent/src/agent-rpcs.test.ts:generic-password:83
+dadf75d93c208fbd8fb4a661bd36ea06e08d79a0:packages/cluster-agent/src/agent-rpcs.test.ts:generic-password:310
+
+# KafkaBridge health fixtures name the Secret data key at
+# passwordSecret.password; the field contains a key reference, not a password.
+a061c25cf5e504f4a6c46b8644fbf0fa7ba78290:packages/cluster-agent/engine/testdata/argo-cd/resource_customizations/kafka.strimzi.io/KafkaBridge/testdata/degraded.yaml:generic-password:20
+a061c25cf5e504f4a6c46b8644fbf0fa7ba78290:packages/cluster-agent/engine/testdata/argo-cd/resource_customizations/kafka.strimzi.io/KafkaBridge/testdata/healthy.yaml:generic-password:20
+a061c25cf5e504f4a6c46b8644fbf0fa7ba78290:packages/cluster-agent/engine/testdata/argo-cd/resource_customizations/kafka.strimzi.io/KafkaBridge/testdata/progressing_noStatus.yaml:generic-password:20
