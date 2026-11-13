@@ -11,7 +11,7 @@
     },
     "packages/akuapkg": {
       "name": "@akua-dev/sdk",
-      "version": "0.13.7",
+      "version": "0.13.8",
       "dependencies": {
         "@akua-dev/wasm-sandbox": "0.1.0",
         "@bjorn3/browser_wasi_shim": "0.4.2",
@@ -25,12 +25,12 @@
     },
     "packages/cli": {
       "name": "@akua-dev/cli",
-      "version": "0.13.7",
+      "version": "0.13.8",
       "bin": {
         "akua": "./src/bin/akua.ts",
       },
       "dependencies": {
-        "@akua-dev/sdk": "0.13.7",
+        "@akua-dev/sdk": "0.13.8",
         "@effect/platform-bun": "4.1.4",
         "effect": "4.1.4",
       },
@@ -45,11 +45,11 @@
     },
     "packages/cloudflare-tunnel-connector": {
       "name": "@akua-dev/cloudflare-tunnel-connector",
-      "version": "0.13.7",
+      "version": "0.13.8",
     },
     "packages/private-ingress-gateway": {
       "name": "@akua-dev/private-ingress-gateway",
-      "version": "0.13.7",
+      "version": "0.13.8",
       "dependencies": {
         "@effect/platform-bun": "4.1.4",
         "effect": "4.1.4",
