@@ -1,5 +1,6 @@
 import { Effect, Option, Predicate, Redacted, Schema, Stream } from 'effect';
 import { Argument, Command, Flag } from 'effect/cli';
+import type { HttpClient } from 'effect/http';
 
 import { ApiClient, type ApiResult } from '../api/client';
 import type { ApiContract, ApiOperation } from '../api/contract';
@@ -21,6 +22,7 @@ import type { NextStep } from '../runtime/errors';
 import type { RenderEnvelope } from '../runtime/render';
 import { Console, PublicInput, PublicOutput, type SecureConfig } from '../runtime/services';
 import { respond } from './invocation';
+import { diagnoseContractFailure } from './contract-diagnostic';
 import {
 	commandExamples,
 	operationContext,
@@ -211,17 +213,29 @@ const runOperation = Effect.fnUntraced(function* (
 ): Effect.fn.Return<
 	RenderEnvelope<CliFailure>,
 	CliFailure,
-	ApiClient | Console | PublicInput | PublicOutput | SecureConfig
+	ApiClient | Console | HttpClient.HttpClient | PublicInput | PublicOutput | SecureConfig
 > {
 	const { envelope, workspaceMissing } = yield* prepareRequest(context, parsed, workspaceFlag);
 	const failureContext = { ...context, workspaceMissing };
 	const upload = yield* readUpload(context.operation, parsed).pipe(
 		Effect.mapError(toCliFailure(context))
 	);
-	const result = yield* Effect.gen(function* () {
-		const request = yield* decodeRequest(context.contract, context.operation, envelope);
-		return yield* (yield* ApiClient).execute(context.operation, request, upload);
-	}).pipe(Effect.mapError(toCliFailure(failureContext)));
+	const request = yield* decodeRequest(context.contract, context.operation, envelope).pipe(
+		Effect.catch((failure) =>
+			diagnoseContractFailure(failureContext, envelope, failure).pipe(Effect.flatMap(Effect.fail))
+		)
+	);
+	const result = yield* (yield* ApiClient)
+		.execute(context.operation, request, upload)
+		.pipe(
+			Effect.catch((failure) =>
+				failure._tag === 'OperationFailure' && failure.reason === 'api'
+					? diagnoseContractFailure(failureContext, envelope, failure).pipe(
+							Effect.flatMap(Effect.fail)
+						)
+					: Effect.fail(toCliFailure(failureContext)(failure))
+			)
+		);
 	return yield* successEnvelope(context, result, parsed.outputFile);
 });
 

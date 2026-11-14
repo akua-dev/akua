@@ -213,6 +213,16 @@ diagnostics. The CLI stays provider-neutral: it has no provider-specific command
 flags, environment variables, or credential loaders. Provider-specific values
 belong only in the generated request body.
 
+On a request-shape validation failure, the CLI can compare its embedded request
+contract with `/openapi.json` on the selected API server. If they differ, it adds:
+“Your akua CLI is older than the API. Update with `brew upgrade akua`.”
+For a local validation failure, it first checks that the live schema accepts
+the input. The original error and exit code are preserved.
+
+This unauthenticated check runs only on those failures, has a two-second limit,
+and never sends the rejected input, retries the operation, or replaces the
+embedded command contract. Unavailable discovery leaves the original error alone.
+
 ## Learn more
 
 The full command reference and platform guides live at

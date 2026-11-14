@@ -481,7 +481,7 @@ describe('typed flags', () => {
 		}).pipe(Effect.scoped)
 	);
 
-	it.effect('a missing required flag is named before any request is sent', () =>
+	it.effect('a missing required flag is named without dispatching the operation', () =>
 		Effect.gen(function* () {
 			const home = yield* temporaryHome;
 			yield* writeConfigFile(home, { token: TOKEN, workspace: { id: 'ws_team' } });
@@ -495,7 +495,9 @@ describe('typed flags', () => {
 			);
 
 			expect(result.exitCode).toBe(2);
-			expect(result.requests).toEqual([]);
+			expect(result.requests.map(({ method, url }) => [method, url.pathname])).toEqual([
+				['GET', '/openapi.json']
+			]);
 			expect(JSON.parse(result.stdout).error).toMatchObject({
 				code: 'AKUA_INPUT_INVALID',
 				message: 'Invalid input for akua clusters create: --region-id is required.'
@@ -520,7 +522,9 @@ describe('typed flags', () => {
 			});
 
 			expect(result.exitCode).toBe(2);
-			expect(result.requests).toEqual([]);
+			expect(result.requests.map(({ method, url }) => [method, url.pathname])).toEqual([
+				['GET', '/openapi.json']
+			]);
 			expect(JSON.parse(result.stdout).error.message).toBe(
 				'Invalid input for akua clusters create: body.undeclared: Expected no excess property.'
 			);

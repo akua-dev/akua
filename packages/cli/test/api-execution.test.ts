@@ -34,7 +34,9 @@ describe('generated wait timeout help', () => {
 				]);
 				expect(result.exitCode).toBe(2);
 				expect(JSON.parse(result.stdout).error.code).toBe('AKUA_INPUT_INVALID');
-				expect(result.requests).toEqual([]);
+				expect(result.requests.map(({ method, url }) => [method, url.pathname])).toEqual([
+					['GET', '/openapi.json']
+				]);
 			}
 		})
 	);
@@ -416,7 +418,7 @@ describe('request assembly', () => {
 		}).pipe(Effect.scoped)
 	);
 
-	it.effect('rejects a null body and partitions the operation does not have before transport', () =>
+	it.effect('rejects invalid request partitions without dispatching the operation', () =>
 		Effect.gen(function* () {
 			const env = yield* signedIn;
 
@@ -442,8 +444,13 @@ describe('request assembly', () => {
 			for (const result of [nullBody, extraPartition, notJson]) {
 				expect(result.exitCode).toBe(2);
 				expect(JSON.parse(result.stdout).error.code).toBe('AKUA_INPUT_INVALID');
-				expect(result.requests).toEqual([]);
 			}
+			for (const result of [nullBody, extraPartition]) {
+				expect(result.requests.map(({ method, url }) => [method, url.pathname])).toEqual([
+					['GET', '/openapi.json']
+				]);
+			}
+			expect(notJson.requests).toEqual([]);
 		}).pipe(Effect.scoped)
 	);
 });
@@ -663,21 +670,25 @@ describe('inputs that must not reach the API or the terminal', () => {
 			const result = yield* runAkua(['clusters', 'create', '--json'], { env, api: accepted });
 
 			expect(result.exitCode).toBe(2);
-			expect(result.requests).toEqual([]);
+			expect(result.requests.map(({ method, url }) => [method, url.pathname])).toEqual([
+				['GET', '/openapi.json']
+			]);
 			expect(JSON.parse(result.stdout).error.message).toBe(
 				'Invalid input for akua clusters create: --kind is required; --name is required.'
 			);
 		}).pipe(Effect.scoped)
 	);
 
-	it.effect('a dot segment in a path argument is rejected before transport', () =>
+	it.effect('a dot segment in a path argument is rejected without dispatching the operation', () =>
 		Effect.gen(function* () {
 			const env = yield* signedIn;
 
 			const result = yield* runAkua(['clusters', 'get', '..', '--json'], { env, api: accepted });
 
 			expect(result.exitCode).toBe(2);
-			expect(result.requests).toEqual([]);
+			expect(result.requests.map(({ method, url }) => [method, url.pathname])).toEqual([
+				['GET', '/openapi.json']
+			]);
 			expect(JSON.parse(result.stdout).error.code).toBe('AKUA_INPUT_INVALID');
 		}).pipe(Effect.scoped)
 	);

@@ -8,7 +8,7 @@ Status: local authentication and executable generated public API commands.
 - Runtime: Bun and TypeScript.
 - Repository: the `packages/cli/` workspace of `akua-dev/akua` (canonical history in the Akua monorepo at `oss/akua/packages/cli`), released on the package toolchain's version in one `v<version>` release with it.
 - Packaging: Bun self-contained executable via `bun build --compile`.
-- API source of truth: the Akua monorepo's `docs/openapi-public.json` (Bazel-generated; committed here as `src/generated/openapi-public.json`; no production fetch).
+- API source of truth: the Akua monorepo's `docs/openapi-public.json` (Bazel-generated; committed here as `src/generated/openapi-public.json`; embedded for command execution).
 - First release: local auth/config plus a provider-neutral public API command
   surface generated from OpenAPI.
 - Compatibility: no `cnap` binary, Go module, config path, env var, or command
@@ -94,6 +94,18 @@ envelope against the operation's JSON Schema, imported with Effect's
 `SchemaRepresentation.fromJsonSchemaDocument`, rejects unknown fields, builds
 the request, and sends it. Request values are never included in diagnostics.
 Do not add resource- or provider-specific overlays.
+
+On schema failures only, `src/cli/contract-diagnostic.ts` compares the embedded
+request contract with the selected API server's unauthenticated `/openapi.json`,
+using the existing generator for the same normalized request projection. JSON
+object-key order does not affect identity; `info.version` alone is insufficient
+for breaking changes within v1. A mismatch adds an upgrade hint while preserving
+the original error and exit status. A locally rejected request must also pass
+the live schema before the hint is added.
+
+Discovery is best-effort, bounded to two seconds, and never receives request
+values or credentials. Success and unrelated failures do not trigger it.
+It never retries an operation or replaces the embedded contract for execution.
 
 Generation tasks:
 
