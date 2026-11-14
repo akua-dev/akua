@@ -5,7 +5,19 @@ import * as BunSocket from '@effect/platform-bun/BunSocket';
 import { RouteTable, toDispatcherKvKey } from './protocol';
 import { ClusterId } from './identity';
 import { GatewayIdentityVerifier } from './identity';
-import { Config, Context, Effect, FileSystem, Layer, Option, Ref, Result, Schema } from 'effect';
+import {
+	Config,
+	Context,
+	Effect,
+	FileSystem,
+	Layer,
+	Option,
+	Ref,
+	Result,
+	Schema,
+	Semaphore
+} from 'effect';
+import { Digest } from 'effect/crypto';
 import { FetchHttpClient, HttpServer } from 'effect/http';
 import {
 	PrivateIngressRouteResolver,
@@ -79,21 +91,25 @@ const makeRouteResolver = Effect.fn('PrivateIngressGateway.makeRouteResolver')(f
 	environment: GatewayEnvironment
 ) {
 	const fs = yield* FileSystem.FileSystem;
+	const loading = yield* Semaphore.make(1);
+	const crypto = yield* Digest.Digest;
+	const compile = Effect.fnUntraced(function* (source: string) {
+		const routes = compileRouteTable(yield* parseRouteTable(source));
+		const digest = yield* crypto.digestHex(Digest.sha256, new TextEncoder().encode(source));
+		return { routes, digest };
+	});
+	type Loaded = Effect.Success<ReturnType<typeof compile>>;
 	const inline = Option.isSome(environment.routeTable)
-		? Option.some(compileRouteTable(yield* parseRouteTable(environment.routeTable.value)))
-		: Option.none<ReadonlyMap<string, PrivateIngressRouteBackend | null>>();
+		? Option.some(yield* compile(environment.routeTable.value))
+		: Option.none<Loaded>();
 	const snapshot = yield* Ref.make<
 		Option.Option<{
 			readonly fingerprint: string;
-			readonly result: Result.Result<
-				ReadonlyMap<string, PrivateIngressRouteBackend | null>,
-				PrivateIngressGatewayStartupError
-			>;
+			readonly result: Result.Result<Loaded, PrivateIngressGatewayStartupError>;
 		}>
 	>(Option.none());
-	const resolve = Effect.fn('PrivateIngressGateway.resolveRoute')(function* (publicHost: string) {
-		const host = toDispatcherKvKey(publicHost);
-		if (Option.isSome(inline)) return inline.value.get(host) ?? null;
+	const load = Effect.fn('PrivateIngressGateway.loadRouteTable')(function* () {
+		if (Option.isSome(inline)) return inline.value;
 		if (Option.isNone(environment.routeTablePath)) {
 			return yield* new PrivateIngressGatewayStartupError({
 				operation: 'configuration',
@@ -110,24 +126,40 @@ const makeRouteResolver = Effect.fn('PrivateIngressGateway.makeRouteResolver')(f
 		const fingerprint = fileFingerprint(info);
 		const current = yield* Ref.get(snapshot);
 		if (Option.isSome(current) && current.value.fingerprint === fingerprint) {
-			return (yield* Effect.fromResult(current.value.result)).get(host) ?? null;
+			return yield* Effect.fromResult(current.value.result);
 		}
 		const result = yield* fs.readFileString(environment.routeTablePath.value).pipe(
 			Effect.mapError(
 				(cause) => new PrivateIngressGatewayStartupError({ operation: 'route_table', cause })
 			),
-			Effect.andThen(parseRouteTable),
-			Effect.map(compileRouteTable),
+			Effect.andThen(compile),
 			Effect.result
 		);
-		yield* Ref.set(snapshot, Option.some({ fingerprint, result }));
-		return (yield* Effect.fromResult(result)).get(host) ?? null;
-	});
-	return PrivateIngressRouteResolver.of({
-		resolve: (publicHost) =>
-			resolve(publicHost).pipe(
-				Effect.mapError((cause) => new PrivateIngressRouteTableError({ cause }))
+		// A bad replacement never discards a table already serving traffic. Its old digest
+		// cannot acknowledge a different desired table, and its parsed routes stay usable.
+		const serving =
+			Result.isFailure(result) && Option.isSome(current) && Result.isSuccess(current.value.result)
+				? current.value.result
+				: result;
+		yield* Ref.set(snapshot, Option.some({ fingerprint, result: serving }));
+		return yield* Effect.fromResult(serving);
+	}, loading.withPermit);
+	const loaded = load().pipe(
+		Effect.catch((error) =>
+			Ref.get(snapshot).pipe(
+				Effect.flatMap((current) =>
+					Option.isSome(current) && Result.isSuccess(current.value.result)
+						? Effect.succeed(current.value.result.success)
+						: Effect.fail(error)
+				)
 			)
+		),
+		Effect.mapError((cause) => new PrivateIngressRouteTableError({ cause }))
+	);
+	return PrivateIngressRouteResolver.of({
+		ready: loaded.pipe(Effect.map((table) => table.digest)),
+		resolve: (publicHost) =>
+			loaded.pipe(Effect.map((table) => table.routes.get(toDispatcherKvKey(publicHost)) ?? null))
 	});
 });
 
@@ -160,7 +192,7 @@ export const privateIngressGatewayServices = Layer.effectContext(
 			Context.add(GatewayIdentityVerifier, verifier)
 		);
 	})
-);
+).pipe(Layer.provide(Digest.layerWebCrypto));
 
 const upstreamRequestInit: BunFetchRequestInit = { redirect: 'manual', decompress: false };
 

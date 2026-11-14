@@ -97,7 +97,7 @@ resources = [
                         ]
                         if _mounts:
                             volumeMounts = _mounts
-                        readinessProbe = {httpGet = {path = "/healthz", port = "http"}, initialDelaySeconds = 5, periodSeconds = 10}
+                        readinessProbe = {httpGet = {path = "/readyz", port = "http"}, initialDelaySeconds = 5, periodSeconds = 10}
                         livenessProbe = {httpGet = {path = "/healthz", port = "http"}, initialDelaySeconds = 15, periodSeconds = 20}
                         resources = corev1.ResourceRequirements {
                             **_values.resources

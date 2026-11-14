@@ -55,7 +55,10 @@ layer(BunSocket.layerWebSocketConstructor)('gateway request boundary', (it) => {
 	) => {
 		const dependencies = Layer.mergeAll(
 			verifier,
-			Layer.succeed(PrivateIngressRouteResolver)({ resolve: options.resolve ?? table }),
+			Layer.succeed(PrivateIngressRouteResolver)({
+				ready: Effect.succeed('a'.repeat(64)),
+				resolve: options.resolve ?? table
+			}),
 			Layer.succeed(HttpClient.HttpClient)(
 				HttpClient.make(
 					options.execute ??

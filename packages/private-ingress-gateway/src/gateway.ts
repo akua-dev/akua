@@ -30,6 +30,8 @@ export class PrivateIngressRouteTableError extends Schema.TaggedError<
 export class PrivateIngressRouteResolver extends Context.Service<
 	PrivateIngressRouteResolver,
 	{
+		/** Digest of the parseable table this replica serves; unavailable before its first load. */
+		readonly ready: Effect.Effect<string, PrivateIngressRouteTableError>;
 		/** The backend of a public host, null when the table lists none for it. */
 		readonly resolve: (
 			publicHost: string
@@ -147,6 +149,16 @@ export const privateIngressGatewayApp = Effect.gen(function* () {
 	const routeToken = request.headers[ROUTE_TOKEN_HEADER_NAME];
 	if (incomingUrl.pathname === '/healthz' && routeToken === undefined) {
 		return HttpServerResponse.text('ok');
+	}
+	if (incomingUrl.pathname === '/readyz' && routeToken === undefined) {
+		return yield* (yield* PrivateIngressRouteResolver).ready.pipe(
+			Effect.map((digest) =>
+				HttpServerResponse.text(digest, {
+					headers: { 'cache-control': 'no-store' }
+				})
+			),
+			Effect.orElseSucceed(() => routeTableUnavailable)
+		);
 	}
 
 	const forwardedHost = sanitizedForwardedHost(request.headers);
