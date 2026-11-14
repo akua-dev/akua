@@ -363,7 +363,61 @@ index 7848cf3bc3c0e241c40dad6b6f137dd5a5ec6e23..b10292665c8fd52ea25d8533ff0631bb
 +      }
        case "Boolean":
          return makeCode("Schema.Boolean", "boolean");
-       case "BigInt":
+        case "BigInt":
+diff --git a/src/Equal.ts b/src/Equal.ts
+--- a/src/Equal.ts
++++ b/src/Equal.ts
+@@ -15,1 +15,4 @@
+ import { bufferBytes, byReferenceInstances, getAllObjectKeys, isArrayBufferLike, viewBytes } from "./internal/equal.ts"
++// Effect UI PR #10483 (e995236c2c) uses this symbol; drop on upgrade to a release containing it.
++export { byReferenceInstances } from "./internal/equal.ts"
++
+diff --git a/dist/Equal.js b/dist/Equal.js
+--- a/dist/Equal.js
++++ b/dist/Equal.js
+@@ -1,0 +1,2 @@
++// Effect UI PR #10483 (e995236c2c); drop on upgrade to a release containing it.
++export { byReferenceInstances } from "./internal/equal.js";
+diff --git a/dist/Equal.d.ts b/dist/Equal.d.ts
+--- a/dist/Equal.d.ts
++++ b/dist/Equal.d.ts
+@@ -1,0 +1,2 @@
++// Effect UI PR #10483 (e995236c2c); drop on upgrade to a release containing it.
++export declare const byReferenceInstances: WeakSet<object>;
+diff --git a/src/Scope.ts b/src/Scope.ts
+--- a/src/Scope.ts
++++ b/src/Scope.ts
+@@ -1,0 +1,2 @@
++// Effect UI PR #10483 (e995236c2c) uses this symbol; drop on upgrade to a release containing it.
++export { scopeAddFinalizerUnsafe } from "./internal/effect.ts"
+diff --git a/dist/Scope.js b/dist/Scope.js
+--- a/dist/Scope.js
++++ b/dist/Scope.js
+@@ -1,0 +1,2 @@
++// Effect UI PR #10483 (e995236c2c); drop on upgrade to a release containing it.
++export { scopeAddFinalizerUnsafe } from "./internal/effect.js";
+diff --git a/dist/Scope.d.ts b/dist/Scope.d.ts
+--- a/dist/Scope.d.ts
++++ b/dist/Scope.d.ts
+@@ -1,0 +1,2 @@
++// Effect UI PR #10483 (e995236c2c); drop on upgrade to a release containing it.
++export declare const scopeAddFinalizerUnsafe: (scope: Scope, key: {}, finalizer: (exit: Exit<any, any>) => Effect<unknown>) => void;
+diff --git a/dist/SchemaAST.d.ts b/dist/SchemaAST.d.ts
+--- a/dist/SchemaAST.d.ts
++++ b/dist/SchemaAST.d.ts
+@@ -1,0 +1,12 @@
++// Effect UI PR #10483 (e995236c2c) relies on these existing internals; drop on upgrade to a release containing it.
++export declare function mapOrSame<A>(as: readonly [A, ...A[]], f: (a: A) => A): readonly [A, ...A[]];
++export declare function replaceEncoding<A extends AST>(ast: A, encoding: Encoding | undefined): A;
++export declare function replaceContextLastLink<A extends AST>(ast: A, context: Context): A;
++export declare function mapLink(link: Link, f: (ast: AST) => AST): Link;
++export declare function getIndexSignatureKeys(input: { readonly [x: PropertyKey]: unknown }, parameter: Objects["indexSignatures"][number]["parameter"], options?: ParseOptions): ReadonlyArray<PropertyKey>;
++export interface Declaration { recur(recur: (ast: AST) => AST): Declaration; }
++export interface Arrays { recur(recur: (ast: AST) => AST): Arrays; }
++export interface Objects { recur(recur: (ast: AST) => AST, recurParameter?: (ast: AST) => AST): AST; }
++export interface Union<A extends AST = AST> { recur(recur: (ast: AST) => AST): Union<AST>; }
++export interface Suspend { recur(recur: (ast: AST) => AST): Suspend; }
++
 diff --git a/src/ai/McpServer.ts b/src/ai/McpServer.ts
 index b544b6f138b5550bc4fbb465f879d1d04e6443c2..d2175cda7afb50df20b0dddd1a747c8431696b2e 100644
 --- a/src/ai/McpServer.ts
