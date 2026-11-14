@@ -25,15 +25,6 @@ it.effect('runs an explicitly supplied admin contract without changing the publi
 	Effect.gen(function* () {
 		const document = yield* Schema.decodeEffect(OpenApiDocument)({
 			paths: {
-				'/user/admin_status': {
-					get: {
-						operationId: 'auth.getAdminStatus',
-						'x-platform-visibility': 'ADMIN',
-						responses: {
-							'200': { content: { 'application/json': { schema: { type: 'object' } } } }
-						}
-					}
-				},
 				'/admin/access_overrides': {
 					get: {
 						operationId: 'adminAccess.listOverrides',
