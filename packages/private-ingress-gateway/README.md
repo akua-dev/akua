@@ -17,6 +17,14 @@ public origin without trusting caller-supplied proxy metadata.
 The gateway is TypeScript on Bun, built with Effect, and ships as one
 executable in an OCI image. Route state is mounted at runtime.
 
+`/healthz` checks process liveness. `/readyz` returns 503 until a configured
+route table has been loaded and parsed; on success its body is the SHA-256 hex
+digest of the exact table bytes this replica serves. Both endpoints are local
+checks only when no route token is present. Unchanged files are not reparsed
+or rehashed. An unreadable or invalid replacement retains the last valid table
+and its digest, never acknowledging the replacement. Publication must qualify every serving replica against the desired
+table, not just obtain one successful request through the load-balanced Service.
+
 ## Trust and configuration
 
 The gateway verifies ES256 service tokens against the configured issuer and

@@ -1,8 +1,10 @@
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
+import * as BunSocket from '@effect/platform-bun/BunSocket';
 import { expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, FileSystem, Layer, Path } from 'effect';
-import { PrivateIngressRouteResolver } from './gateway';
+import { FetchHttpClient, HttpServerRequest, HttpServerResponse } from 'effect/http';
+import { PrivateIngressRouteResolver, privateIngressGatewayApp } from './gateway';
 import { privateIngressGatewayServices } from './index';
 
 const backend = { url: 'http://orders.default.svc.cluster.local:8080/' };
@@ -29,6 +31,58 @@ const withGatewayEnvironment = <A, E, R>(
 layer(Layer.merge(BunFileSystem.layer, BunPath.layer))(
 	'private ingress gateway configuration',
 	(it) => {
+		it.effect(
+			'is not ready without a parseable mounted table and reports the table it serves',
+			() =>
+				Effect.gen(function* () {
+					const fs = yield* FileSystem.FileSystem;
+					const directory = yield* fs.makeTempDirectoryScoped({
+						prefix: 'gateway-readiness-'
+					});
+					const file = `${directory}/routes.json`;
+					yield* withGatewayEnvironment(
+						Effect.gen(function* () {
+							const ready = privateIngressGatewayApp.pipe(
+								Effect.provideService(
+									HttpServerRequest.HttpServerRequest,
+									HttpServerRequest.fromWeb(new Request('http://gateway/readyz'))
+								)
+							);
+							expect((yield* ready).status).toBe(503);
+							yield* fs.writeFileString(file, '{invalid');
+							expect((yield* ready).status).toBe(503);
+							yield* fs.writeFileString(file, routeTable());
+							const loaded = yield* ready;
+							expect(loaded.status).toBe(200);
+							const digest = yield* Effect.promise(() => HttpServerResponse.toWeb(loaded).text());
+							expect(digest).toMatch(/^[a-f0-9]{64}$/);
+							expect(
+								yield* (yield* PrivateIngressRouteResolver).resolve('app.acme.example')
+							).toEqual(backend);
+							yield* fs.writeFileString(file, '{bad replacement');
+							const retained = yield* ready;
+							expect(retained.status).toBe(200);
+							expect(yield* Effect.promise(() => HttpServerResponse.toWeb(retained).text())).toBe(
+								digest
+							);
+							yield* fs.remove(file);
+							expect((yield* ready).status).toBe(200);
+							expect(
+								yield* (yield* PrivateIngressRouteResolver).resolve('app.acme.example')
+							).toEqual(backend);
+							yield* fs.writeFileString(file, JSON.stringify({ routes: [] }));
+							const changed = yield* ready;
+							expect(changed.status).toBe(200);
+							expect(yield* Effect.promise(() => HttpServerResponse.toWeb(changed).text())).toBe(
+								'18a08e2a6a64fe8f8b178453908493eec71b62c1250d47734466736c98c6431e'
+							);
+						}),
+						{ PRIVATE_INGRESS_GATEWAY_ROUTE_TABLE_PATH: file }
+					).pipe(
+						Effect.provide(Layer.merge(FetchHttpClient.layer, BunSocket.layerWebSocketConstructor))
+					);
+				})
+		);
 		it.effect('resolves a public host from an inline host-only route table', () =>
 			withGatewayEnvironment(
 				Effect.gen(function* () {
@@ -152,6 +206,8 @@ layer(Layer.merge(BunFileSystem.layer, BunPath.layer))(
 					Effect.gen(function* () {
 						const resolver = yield* PrivateIngressRouteResolver;
 						expect(yield* resolver.resolve('app.acme.example')).not.toBeNull();
+						yield* resolver.ready;
+						yield* resolver.ready;
 						expect(yield* resolver.resolve('app.acme.example')).not.toBeNull();
 					}),
 					{ PRIVATE_INGRESS_GATEWAY_ROUTE_TABLE_PATH: routeTablePath }
