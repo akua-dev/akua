@@ -1,7 +1,7 @@
 import { BunCrypto, BunServices } from '@effect/platform-bun';
 import { Clock, ConfigProvider, Duration, Effect, Layer, Option } from 'effect';
 
-import { login, logout, status } from '../src/cli/auth';
+import { login } from '../src/cli/auth';
 import {
 	DeviceCancelledFailure,
 	DeviceRequestFailure,
@@ -42,7 +42,7 @@ export function runAuthView(
 	if (dependencies.signal?.aborted)
 		return Promise.reject(toCliError(new DeviceCancelledFailure({})));
 	return Effect.runPromise(
-		authProgram(argv).pipe(
+		login({ token: Option.none(), noBrowser: argv.includes('--no-browser') }).pipe(
 			Effect.catchIf(
 				(failure): failure is DeviceRequestFailure =>
 					dependencies.signal?.aborted === true && failure._tag === 'DeviceRequestFailure',
@@ -51,16 +51,8 @@ export function runAuthView(
 			Effect.mapError(toCliError),
 			Effect.provide(testServices(dependencies)),
 			Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord(env)))
-		) as Effect.Effect<RenderEnvelope, never>
+		)
 	);
-}
-
-/** The `akua auth` subcommand an argv selects, run without the argument parser. */
-function authProgram(argv: readonly string[]) {
-	const [subcommand, ...flags] = argv;
-	if (subcommand === 'status') return status;
-	if (subcommand === 'logout') return logout;
-	return login({ token: Option.none(), noBrowser: flags.includes('--no-browser') });
 }
 
 function testServices(dependencies: AuthTestDependencies) {

@@ -28,7 +28,11 @@ const loginWithBrowser = (noBrowser: boolean) =>
 const memoryConfig = (saved: Array<{ path: string; token: string }> = []) =>
 	Layer.succeed(SecureConfig, {
 		readToken: () => Effect.succeed(undefined),
-		saveToken: (path, token) => Effect.sync(() => saved.push({ path, token })),
+		saveToken: (path, token) =>
+			Effect.sync(() => {
+				saved.push({ path, token });
+				return false;
+			}),
 		removeToken: () => Effect.succeed(false),
 		readWorkspace: () => Effect.succeed(undefined),
 		saveWorkspace: () => Effect.void,

@@ -199,7 +199,16 @@ export const SecureConfigLive = Layer.effect(
 				),
 			saveToken: (configPath, token) =>
 				readConfig(configPath).pipe(
-					Effect.flatMap((config) => writeConfig(configPath, { ...config, token })),
+					Effect.flatMap((config) => {
+						// Opaque tokens cannot establish account equality. A new credential must choose again.
+						const cleared = config.token !== token && Object.hasOwn(config, 'workspace');
+						const { workspace, ...remaining } = config;
+						return writeConfig(configPath, {
+							...remaining,
+							...(!cleared && workspace !== undefined ? { workspace } : {}),
+							token
+						}).pipe(Effect.as(cleared));
+					}),
 					Effect.mapError(failure('write', configPath))
 				),
 			removeToken: (configPath) =>

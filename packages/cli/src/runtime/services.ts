@@ -87,7 +87,11 @@ export class SecureConfig extends Context.Service<
 	SecureConfig,
 	{
 		readonly readToken: (path: string) => Effect.Effect<string | undefined, SecureConfigFailure>;
-		readonly saveToken: (path: string, token: string) => Effect.Effect<void, SecureConfigFailure>;
+		/** Saves the token atomically, clearing a previous credential's Workspace. Returns whether it cleared one. */
+		readonly saveToken: (
+			path: string,
+			token: string
+		) => Effect.Effect<boolean, SecureConfigFailure>;
 		readonly removeToken: (path: string) => Effect.Effect<boolean, SecureConfigFailure>;
 		readonly readWorkspace: (
 			path: string

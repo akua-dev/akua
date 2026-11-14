@@ -141,7 +141,8 @@ type ParsedFlag = Schema.Json | Redacted.Redacted<string>;
 
 function flagParameter(flag: InputFlag): Flag.Flag<Option.Option<ParsedFlag>> {
 	const description = [
-		firstSentence(flag.description) ?? fieldLabel(flag.key),
+		(flag.target === 'body' ? firstSentence(flag.description) : flag.description) ??
+			fieldLabel(flag.key),
 		flag.required
 			? flag.secret
 				? `(required, or --${flag.name}${SECRET_FILE_SUFFIX})`

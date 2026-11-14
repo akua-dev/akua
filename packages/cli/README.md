@@ -85,9 +85,17 @@ akua auth logout
 `AKUA_API_TOKEN` takes precedence over a stored token. Login writes to the
 selected config file, defaulting to `~/.config/akua/config.json`.
 The directory is forced to `0700` and the file to
-`0600`. Login replaces only `token` and preserves unknown config keys. Logout
+`0600`. When login changes the stored token, it also clears the saved Workspace
+and tells you to run `akua workspaces use <name>`. This includes a new token for
+the same account, because opaque tokens cannot establish account equality.
+Unknown config keys are preserved. Logout
 removes only the stored `token`, also preserving unknown config keys, and cannot
 clear `AKUA_API_TOKEN` from the parent process.
+
+`akua auth status` verifies the effective token with the authentication server
+and names the account by its ID and, when available, display name. JSON output
+includes `data.account`. Tokens and session details are never printed. If the
+server cannot verify the identity, status fails instead of claiming authentication.
 
 ### Keep separate logins
 

@@ -114,6 +114,16 @@ export function operationInputs(
 	const candidates: InputFlag[] = [];
 	for (const parameter of parameters) {
 		if (parameter.in === 'path' || parameter.name === CONTEXT_HEADER) continue;
+		const schema = resolve(contract, parameter.schema);
+		const description = [
+			parameter.description ?? (Predicate.isString(schema.description) ? schema.description : ''),
+			...(Predicate.isNumber(schema.minimum) && Predicate.isNumber(schema.maximum)
+				? [`Range: ${schema.minimum}..${schema.maximum}.`]
+				: []),
+			...(Predicate.isNumber(schema.default) ? [`Default: ${schema.default}.`] : [])
+		]
+			.filter((part) => part !== '')
+			.join(' ');
 		candidates.push({
 			name: kebab(parameter.name),
 			target: parameter.in,
@@ -121,7 +131,7 @@ export function operationInputs(
 			kind: flagKind(contract, parameter.schema),
 			required: parameter.required,
 			secret: isSecret(contract, parameter.schema),
-			...(parameter.description === undefined ? {} : { description: parameter.description })
+			...(description === '' ? {} : { description })
 		});
 	}
 	candidates.push(...bodyFlags(contract, operation));

@@ -46,7 +46,146 @@ const api: FakeApi = (request) => {
 const contextHeader = (requests: readonly RecordedRequest[], path: string) =>
 	requests.find((request) => request.url.pathname === path)?.headers['akua-context'];
 
+describe('verified auth status', () => {
+	it.effect('names the effective account in human output without session or token material', () =>
+		Effect.gen(function* () {
+			const home = yield* temporaryHome;
+			yield* writeConfigFile(home, { token: TOKEN });
+			const result = yield* runAkua(['auth', 'status', '--output', 'human'], {
+				env: { HOME: home, AKUA_AUTH_URL: 'https://auth.example.test/api/auth/' },
+				api: () => ({
+					body: {
+						user: { id: 'user_fixture', name: 'Fixture Account', email: 'private@example.test' },
+						session: { token: 'session-secret', id: 'session-id' }
+					}
+				})
+			});
+			expect(result.exitCode).toBe(0);
+			expect(result.stdout).toContain('Fixture Account (user_fixture)');
+			expect(result.requests[0]?.url.href).toBe('https://auth.example.test/api/auth/get-session');
+			expect(result.requests[0]?.method).toBe('GET');
+			for (const secret of [TOKEN, 'session-secret', 'session-id', 'private@example.test']) {
+				expect(result.stdout + result.stderr).not.toContain(secret);
+			}
+		}).pipe(Effect.scoped)
+	);
+
+	it.effect(
+		'does not claim verified authentication for absent, invalid, or unavailable identity',
+		() =>
+			Effect.gen(function* () {
+				const home = yield* temporaryHome;
+				const absent = yield* runAkua(['auth', 'status', '--json'], { env: { HOME: home } });
+				expect(absent.exitCode).toBe(0);
+				expect(JSON.parse(absent.stdout).data.authenticated).toBe(false);
+				expect(absent.requests).toEqual([]);
+				yield* writeConfigFile(home, { token: TOKEN });
+				for (const response of [
+					{ body: null },
+					{ body: { user: { name: 'Unverified' }, token: TOKEN } },
+					{ status: 401, body: { message: TOKEN } },
+					{ status: 503, body: { message: TOKEN } },
+					{ text: `invalid-json-${TOKEN}` }
+				]) {
+					const result = yield* runAkua(['auth', 'status', '--json'], {
+						env: { HOME: home },
+						api: () => response
+					});
+					expect(result.exitCode).toBe(3);
+					expect(JSON.parse(result.stdout).error.code).toBe('AKUA_IDENTITY_UNAVAILABLE');
+					expect(result.stdout).not.toContain(TOKEN);
+					expect(result.stdout).not.toContain('Unverified');
+				}
+			}).pipe(Effect.scoped)
+	);
+});
+
 describe('workspace context', () => {
+	it.effect(
+		'keeps the Workspace for the same token but clears it for token login after logout',
+		() =>
+			Effect.gen(function* () {
+				const home = yield* temporaryHome;
+				const options = { env: { HOME: home }, api };
+				yield* writeConfigFile(home, { future_key: true });
+				expect(
+					(yield* runAkua(['auth', 'login', '--token', TOKEN, '--json'], options)).exitCode
+				).toBe(0);
+				yield* runAkua(['workspaces', 'use', 'my-team', '--json'], options);
+				yield* runAkua(['auth', 'login', '--token', TOKEN, '--json'], options);
+				expect((yield* readConfigFile(home)).workspace.id).toBe('ws_team');
+				yield* runAkua(['auth', 'logout', '--json'], options);
+				const login = yield* runAkua(
+					['auth', 'login', '--token', 'other-token', '--json'],
+					options
+				);
+				expect(login.exitCode).toBe(0);
+				expect(login.stdout).toContain('Saved Workspace cleared');
+				expect(yield* readConfigFile(home)).toEqual({ token: 'other-token', future_key: true });
+			}).pipe(Effect.scoped)
+	);
+
+	it.effect('leaves the token and Workspace intact when device sign-in fails', () =>
+		Effect.gen(function* () {
+			const home = yield* temporaryHome;
+			const before = { token: TOKEN, workspace: { id: 'ws_team' }, future_key: true };
+			yield* writeConfigFile(home, before);
+			const result = yield* runAkua(['auth', 'login', '--no-browser', '--json'], {
+				env: { HOME: home },
+				api: () => ({ status: 500, body: {} })
+			});
+			expect(result.exitCode).toBe(3);
+			expect(yield* readConfigFile(home)).toEqual(before);
+		}).pipe(Effect.scoped)
+	);
+
+	it.effect('forgets account A workspace after device sign-in as account B', () =>
+		Effect.gen(function* () {
+			const home = yield* temporaryHome;
+			let account = 'a';
+			const authApi: FakeApi = (request) => {
+				if (request.url.pathname.endsWith('/device/code')) {
+					return {
+						body: {
+							device_code: 'fixture-device',
+							user_code: 'TEST-CODE',
+							verification_uri: 'https://example.test/device',
+							expires_in: 60
+						}
+					};
+				}
+				if (request.url.pathname.endsWith('/device/token')) {
+					return { body: { access_token: `fixture-token-${account}` } };
+				}
+				if (request.url.pathname.endsWith('/get-session')) {
+					return { body: { user: { id: `user_${account}`, name: `Account ${account}` } } };
+				}
+				return api(request);
+			};
+			const options = { env: { HOME: home }, api: authApi };
+			expect((yield* runAkua(['auth', 'login', '--no-browser', '--json'], options)).exitCode).toBe(
+				0
+			);
+			expect((yield* runAkua(['workspaces', 'use', 'my-team', '--json'], options)).exitCode).toBe(
+				0
+			);
+			expect((yield* readConfigFile(home)).workspace.id).toBe('ws_team');
+			account = 'b';
+			const login = yield* runAkua(['auth', 'login', '--no-browser', '--json'], options);
+			expect(login.exitCode).toBe(0);
+			const scoped = yield* runAkua(['clusters', 'list', '--json'], options);
+			expect(contextHeader(scoped.requests, '/v1/clusters')).toBeUndefined();
+			expect(login.stdout).toContain('akua workspaces use');
+			expect(login.stdout).toContain('Saved Workspace cleared');
+			expect((yield* readConfigFile(home)).workspace).toBeUndefined();
+			const status = yield* runAkua(['auth', 'status', '--json'], options);
+			expect(status.exitCode).toBe(0);
+			expect(JSON.parse(status.stdout).data.account).toEqual({ id: 'user_b', name: 'Account b' });
+			expect(status.requests[0]?.headers.authorization).toBe('Bearer fixture-token-b');
+			expect(status.stdout).not.toContain('fixture-token');
+		}).pipe(Effect.scoped)
+	);
+
 	it.effect('the --workspace flag wins over AKUA_WORKSPACE and the saved workspace', () =>
 		Effect.gen(function* () {
 			const home = yield* temporaryHome;

@@ -9,6 +9,37 @@ import { contract } from '../src/generated/contract.gen';
 
 import { runAkua as runProgram, type RunOptions, temporaryHome, writeConfigFile } from './fake-api';
 
+describe('generated wait timeout help', () => {
+	it.effect('retains seconds, default, and schema bounds without contacting the API', () =>
+		Effect.gen(function* () {
+			const result = yield* runProgram(['operations', 'wait', '--help']);
+			expect(result.exitCode).toBe(0);
+			expect(result.stdout).toContain('seconds');
+			expect(result.stdout).toContain('Default 30');
+			expect(result.stdout).toContain('1..60');
+			expect(result.requests).toEqual([]);
+		})
+	);
+
+	it.effect('rejects out-of-range timeout values before dispatch', () =>
+		Effect.gen(function* () {
+			for (const timeout of ['0', '61', '600']) {
+				const result = yield* runProgram([
+					'operations',
+					'wait',
+					'op_fixture',
+					'--timeout',
+					timeout,
+					'--json'
+				]);
+				expect(result.exitCode).toBe(2);
+				expect(JSON.parse(result.stdout).error.code).toBe('AKUA_INPUT_INVALID');
+				expect(result.requests).toEqual([]);
+			}
+		})
+	);
+});
+
 /** Transport and secret handling are generic CLI features, independent of published routes. */
 const protocolContract: ApiContract = {
 	...contract,

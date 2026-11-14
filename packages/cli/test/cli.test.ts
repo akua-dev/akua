@@ -19,6 +19,7 @@ import { CliLive } from '../src/runtime/services-live';
 import { Console, PackageCli, PackageCliFailure } from '../src/runtime/services';
 import { runAuthView } from './auth-test-layer';
 import { runAkua } from './run-akua';
+import { runAkua as runFakeAkua, temporaryHome } from './fake-api';
 
 /** An empty environment, so the test runner's own variables do not pick the output mode. */
 const noEnvironment = ConfigProvider.layer(ConfigProvider.fromEnvRecord({}));
@@ -28,24 +29,11 @@ describe('config directory selection', () => {
 		argv: readonly string[],
 		env: Record<string, string>
 	) {
-		const stdout: string[] = [];
-		const exitCode = yield* main(argv).pipe(
-			Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord(env))),
-			Effect.provideService(Console, {
-				stdoutIsTTY: true,
-				stdinIsTTY: false,
-				writeStderr: () => Effect.void,
-				writeStdoutBytes: () => Effect.void,
-				writeStdout: (value) =>
-					Effect.sync(() => {
-						stdout.push(value);
-					})
-			}),
-			Effect.provide(
-				CliLive(VERSION).pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
-			)
-		);
-		return { stdout: stdout.join(''), exitCode };
+		return yield* runFakeAkua(argv, {
+			env,
+			tty: true,
+			api: () => ({ body: { user: { id: 'user_fixture', name: 'Fixture' } } })
+		});
 	});
 
 	const cases: ReadonlyArray<{
@@ -129,13 +117,11 @@ describe('config directory selection', () => {
 				expect(login.exitCode).toBe(0);
 				expect(JSON.parse(yield* fs.readFileString(selectedPath))).toEqual({
 					token: 'fixture-new-token',
-					workspace: { id: 'ws_fixture', name: selected },
 					profile: selected
 				});
 				const logout = yield* run(['auth', 'logout', '--json'], environment);
 				expect(logout.exitCode).toBe(0);
 				expect(JSON.parse(yield* fs.readFileString(selectedPath))).toEqual({
-					workspace: { id: 'ws_fixture', name: selected },
 					profile: selected
 				});
 				for (const directory of ['home/.config/akua', 'xdg/akua', 'profile'].filter(
@@ -949,55 +935,48 @@ describe('akua entrypoint', () => {
 		}
 	});
 
-	test('auth status gives AKUA_API_TOKEN precedence over stored tokens', async () => {
-		const home = await makeTempHome();
-		try {
-			await runAkua(['auth', 'login', '--token', 'sk_akua_stored', '--quiet'], {
-				HOME: home
+	it.effect('auth status gives AKUA_API_TOKEN precedence over stored tokens', () =>
+		Effect.gen(function* () {
+			const home = yield* temporaryHome;
+			yield* runFakeAkua(['auth', 'login', '--token', 'sk_akua_stored', '--quiet'], {
+				env: { HOME: home }
 			});
-			const { stdout, exitCode } = await runAkua(['auth', 'status', '--json'], {
-				HOME: home,
-				AKUA_API_TOKEN: 'sk_akua_env'
+			const { stdout, exitCode, requests } = yield* runFakeAkua(['auth', 'status', '--json'], {
+				env: { HOME: home, AKUA_API_TOKEN: 'sk_akua_env' },
+				api: () => ({ body: { user: { id: 'user_env', name: 'Environment account' } } })
 			});
 
 			expect(exitCode).toBe(0);
 			expect(JSON.parse(stdout)).toMatchObject({
 				status: 'ok',
 				command: 'akua auth status',
-				observations: ['Authenticated with AKUA_API_TOKEN.'],
+				observations: [
+					'Authenticated with AKUA_API_TOKEN. Account: Environment account (user_env).'
+				],
 				data: {
 					authenticated: true,
 					source: 'env'
 				}
 			});
+			expect(requests[0]?.headers.authorization).toBe('Bearer sk_akua_env');
 			expect(stdout).not.toContain('sk_akua_env');
 			expect(stdout).not.toContain('sk_akua_stored');
-		} finally {
-			await removePath(home, { recursive: true, force: true });
-		}
-	});
+		}).pipe(Effect.scoped)
+	);
 
 	it.effect('auth status honors AKUA_API_TOKEN without HOME', () =>
 		Effect.gen(function* () {
 			for (const home of [undefined, '']) {
-				const envelope = yield* Effect.promise(() =>
-					runAuthView(
-						['status'],
-						{ HOME: home, AKUA_API_TOKEN: 'sk_akua_env' },
-						{
-							request: () => Promise.reject(new Error('no device flow')),
-							sleep: () => Promise.resolve(),
-							launchBrowser: () => Promise.resolve()
-						}
-					)
-				);
-				const stdout = renderSuccess(envelope, 'json');
+				const { stdout } = yield* runFakeAkua(['auth', 'status', '--json'], {
+					env: { ...(home === undefined ? {} : { HOME: home }), AKUA_API_TOKEN: 'sk_akua_env' },
+					api: () => ({ body: { user: { id: 'user_env' } } })
+				});
 				const payload = JSON.parse(stdout);
 
 				expect(payload).toMatchObject({
 					status: 'ok',
 					command: 'akua auth status',
-					observations: ['Authenticated with AKUA_API_TOKEN.'],
+					observations: ['Authenticated with AKUA_API_TOKEN. Account: user_env.'],
 					data: {
 						authenticated: true,
 						source: 'env'

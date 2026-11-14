@@ -87,7 +87,7 @@ describe('Effect CLI runtime', () => {
 				}),
 				Layer.succeed(SecureConfig, {
 					readToken: () => Effect.succeed(undefined),
-					saveToken: () => Effect.void,
+					saveToken: () => Effect.succeed(false),
 					removeToken: () => Effect.succeed(false),
 					readWorkspace: () => Effect.succeed(undefined),
 					saveWorkspace: () => Effect.void,

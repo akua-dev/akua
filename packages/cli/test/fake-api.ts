@@ -146,7 +146,15 @@ export const runAkua = Effect.fnUntraced(function* (
 					Effect.map((all) => all.length)
 				)
 		}),
-		Layer.succeed(Http, { postJson: () => Effect.die('device flow is not under test') }),
+		Layer.succeed(Http, {
+			postJson: ({ url, body }) =>
+				Effect.gen(function* () {
+					const request = { method: 'POST', url: new URL(url), headers: {}, body };
+					yield* Ref.update(requests, (all) => [...all, request]);
+					const response = api(request);
+					return { status: response.status ?? 200, body: response.body };
+				})
+		}),
 		Layer.succeed(Browser, { launch: () => Effect.die('browser is not under test') }),
 		Layer.succeed(Process, { awaitSignal: Effect.never }),
 		Layer.succeed(PackageCli, { execute: () => Effect.succeed(0) }),

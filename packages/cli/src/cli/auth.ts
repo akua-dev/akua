@@ -1,5 +1,6 @@
-import { Clock, Duration, Effect, Option, Schema } from 'effect';
+import { Clock, Duration, Effect, Option, Redacted, Schema } from 'effect';
 import { Command, Flag } from 'effect/cli';
+import { HttpClient, HttpClientRequest } from 'effect/http';
 
 import {
 	authenticationBaseUrl,
@@ -14,7 +15,7 @@ import {
 	DeviceRequestFailure,
 	type CliFailure
 } from '../runtime/effect-runtime';
-import { UsageFailure } from '../runtime/errors';
+import { AkuaCliError, UsageFailure } from '../runtime/errors';
 import type { RenderEnvelope } from '../runtime/render';
 import { Browser, Console, Http, Process, SecureConfig } from '../runtime/services';
 import { respond } from './invocation';
@@ -27,7 +28,15 @@ interface AuthStatus {
 	authenticated: boolean;
 	source: CredentialSource;
 	config_path?: string;
+	account?: typeof Account.Type;
 }
+
+// Better Auth's existing get-session response, not claims decoded from an opaque token.
+const Account = Schema.Struct({
+	id: Schema.NonEmptyString,
+	name: Schema.optionalKey(Schema.String)
+});
+const SessionIdentity = Schema.Struct({ user: Account });
 
 interface DeviceLoginDetails {
 	verification_uri_complete: string;
@@ -116,10 +125,18 @@ export const login = Effect.fnUntraced(function* (
 		? { token: options.token.value, observations: [] }
 		: yield* runDeviceLogin(options.noBrowser);
 	const config = yield* SecureConfig;
-	yield* config.saveToken(path, result.token);
+	const workspaceCleared = yield* config.saveToken(path, result.token);
 	return {
 		command: 'akua auth login',
-		observations: [...result.observations, 'Authentication token saved.'],
+		observations: [
+			...result.observations,
+			'Authentication token saved.',
+			...(workspaceCleared
+				? [
+						'Saved Workspace cleared because the credential changed. Run akua workspaces use <name>.'
+					]
+				: [])
+		],
 		data: {
 			authenticated: true,
 			source: 'config',
@@ -133,26 +150,60 @@ export const login = Effect.fnUntraced(function* (
 	} satisfies RenderEnvelope;
 });
 
-export const status: Effect.Effect<RenderEnvelope, CliFailure, SecureConfig> = Effect.gen(
-	function* () {
-		const credential = yield* resolveCredential;
-		const authenticated = credential.source !== 'none';
-		return {
-			command: 'akua auth status',
-			observations: [statusObservation(credential.source)],
-			human: [
-				statusObservation(credential.source),
-				...Option.toArray(credential.configPath).map((path) => `Config: ${path}`)
-			],
-			data: {
-				authenticated,
-				source: credential.source,
-				config_path: Option.getOrUndefined(credential.configPath)
-			} satisfies AuthStatus,
-			...(authenticated ? {} : { next_steps: [{ command: 'akua auth login' }] })
-		};
-	}
-);
+export const status: Effect.Effect<
+	RenderEnvelope,
+	CliFailure,
+	SecureConfig | HttpClient.HttpClient
+> = Effect.gen(function* () {
+	const credential = yield* resolveCredential;
+	const account = Option.isSome(credential.token)
+		? yield* verifiedAccount(credential.token.value)
+		: undefined;
+	const authenticated = account !== undefined;
+	const observation =
+		account === undefined
+			? statusObservation(credential.source)
+			: `${statusObservation(credential.source)} Account: ${account.name ? `${account.name} (${account.id})` : account.id}.`;
+	return {
+		command: 'akua auth status',
+		observations: [observation],
+		human: [observation, ...Option.toArray(credential.configPath).map((path) => `Config: ${path}`)],
+		data: {
+			authenticated,
+			source: credential.source,
+			config_path: Option.getOrUndefined(credential.configPath),
+			...(account === undefined ? {} : { account })
+		} satisfies AuthStatus,
+		...(authenticated ? {} : { next_steps: [{ command: 'akua auth login' }] })
+	};
+});
+
+const verifiedAccount = Effect.fnUntraced(function* (token: Redacted.Redacted<string>) {
+	const unavailable = () =>
+		new AkuaCliError({
+			type: 'authentication_error',
+			code: 'AKUA_IDENTITY_UNAVAILABLE',
+			message:
+				'Could not verify the signed-in account. Check connectivity and AKUA_AUTH_URL, or run akua auth login.',
+			exitCode: 3,
+			nextSteps: [{ command: 'akua auth login' }]
+		});
+	const client = yield* HttpClient.HttpClient;
+	const baseUrl = yield* authenticationBaseUrl;
+	const response = yield* client
+		.execute(
+			HttpClientRequest.get(`${baseUrl}/get-session`).pipe(
+				HttpClientRequest.bearerToken(Redacted.value(token))
+			)
+		)
+		.pipe(Effect.mapError(unavailable));
+	if (response.status !== 200) return yield* unavailable();
+	const identity = yield* response.json.pipe(
+		Effect.flatMap(Schema.decodeUnknownEffect(SessionIdentity)),
+		Effect.mapError(unavailable)
+	);
+	return identity.user;
+});
 
 export const logout: Effect.Effect<RenderEnvelope, CliFailure, SecureConfig> = Effect.gen(
 	function* () {

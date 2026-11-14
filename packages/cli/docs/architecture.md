@@ -125,6 +125,10 @@ Authentication:
   flow.
 - `AKUA_API_TOKEN` is the noninteractive credential environment variable and
   takes precedence over a stored token.
+- Saving a different token atomically clears the saved Workspace and reports
+  that `akua workspaces use` is needed. A new token for the same account also
+  clears it: opaque tokens do not establish account equality. Unknown config
+  keys are preserved.
 
 Configuration defaults to the Akua namespace:
 
@@ -149,7 +153,7 @@ The implemented local auth/config surface is:
 akua auth login                  # browser/device login
 akua auth login --no-browser     # device login without launching a browser
 akua auth login --token <token>  # save a token in the selected config file
-akua auth status                 # show the auth source and selected config path
+akua auth status                 # verify and name the account, auth source, and config path
 akua auth logout                 # remove only the stored config token
 ```
 
@@ -157,7 +161,11 @@ akua auth logout                 # remove only the stored config token
 the config file. `auth status` shows the selected path in human output and
 `data.config_path` in JSON output. It honors `AKUA_API_TOKEN` even when
 `HOME` is unset, and otherwise reads the
-stored token. `auth logout` leaves `AKUA_API_TOKEN` untouched and reports env
+stored token. It calls the existing Better Auth `GET /get-session` endpoint
+with the effective bearer token and renders only the verified user ID and
+display name (`data.account` in JSON), never the session or token. A failed
+identity lookup is an authentication error, not proof of authentication.
+`auth logout` leaves `AKUA_API_TOKEN` untouched and reports env
 auth as still active when that variable is set.
 
 ## Output And UX Modes
