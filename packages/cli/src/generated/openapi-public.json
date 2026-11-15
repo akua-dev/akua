@@ -11363,6 +11363,69 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
+    "/machines/{id}:reportBootstrap": {
+      "post": {
+        "tags": [
+          "machineBootstrap"
+        ],
+        "operationId": "machineBootstrap.reportBootstrap",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "MachineBootstrapBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "<No Content>"
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          }
+        },
+        "description": "Guest-only bootstrap progress. Authenticate with the per-Machine bootstrap bearer from user data, not a session. Authority expires after one hour or the first joined/failed report. Send only a safe step description, never environment, tokens or command output. Messages are truncated and unrecognized descriptions omitted.",
+        "summary": "Report machine bootstrap",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MachineBootstrapReport"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
     "/machines/{id}": {
       "get": {
         "tags": [
@@ -26016,7 +26079,7 @@
               "$ref": "#/components/schemas/Condition"
             },
             "maxItems": 32,
-            "description": "What needs attention now; empty when nothing does. Reasons:\n- `trial-ended` (warning): the free trial is over and the Machine is `SUSPENDED`; upgrade to Pro while its snapshot is retained to restore it. Remedy `upgrade-plan`.\n- `trial-data-expired` (warning): the snapshot expired or was deleted. No server can be restored from it; a Pro upgrade still succeeds.\n- `RESTORING` waits for the replacement server to run and, for a pool Machine, its node to join; only then is the snapshot removed.\n- When `state` is `FAILED`, one error whose reason says why: `capacity-unavailable`, `provider-refused`, `provider-unavailable` or `abandoned`. Its server and capacity were already released."
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `bootstrap-progress` (info): the latest guest-reported stage and report time. If progress stalls, this remains the last observation, not a readiness claim.\n- `bootstrap-failed` (error): guest bootstrap failed at the named step with its exit code. Provider state may remain RUNNING; no automatic replacement occurs.\n- `trial-ended` (warning): the free trial is over and the Machine is `SUSPENDED`; upgrade to Pro while its snapshot is retained to restore it. Remedy `upgrade-plan`.\n- `trial-data-expired` (warning): the snapshot expired or was deleted. No server can be restored from it; a Pro upgrade still succeeds.\n- `RESTORING` waits for the replacement server to run and, for a pool Machine, its node to join; only then is the snapshot removed.\n- When `state` is `FAILED`, one error whose reason says why: `capacity-unavailable`, `provider-refused`, `provider-unavailable` or `abandoned`. Its server and capacity were already released."
           },
           "trial": {
             "anyOf": [
@@ -26136,6 +26199,38 @@
         "examples": [
           "cx23"
         ]
+      },
+      "MachineBootstrapReport": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "started",
+              "hostname-set",
+              "k0s-downloaded",
+              "provider-configured",
+              "k0s-installed",
+              "worker-started",
+              "joined",
+              "failed"
+            ]
+          },
+          "exit_code": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 8192,
+            "description": "Optional secret-free step: hostname, download-k0s, configure-provider-id, install-worker, or start-worker. Other text is omitted rather than exposed as guest output. Retained descriptions are bounded to 2 KiB."
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "additionalProperties": false
       },
       "ApiInternalServerError": {
         "type": "object",
@@ -27103,7 +27198,7 @@
               "$ref": "#/components/schemas/Condition"
             },
             "maxItems": 32,
-            "description": "What needs attention now; empty when nothing does. Reasons:\n- `node-bootstrap-unconfirmed` (info): the first node and in-cluster agent are not confirmed. A RUNNING Machine does not establish guest bootstrap success; no guest bootstrap status is reported.\n- `agent-offline` (warning): the agent is not connected; workloads keep running and nothing new rolls out until it reconnects.\n- `updater-behind` (warning): the updater has run another release than the agent for 30 minutes, so no agent release is offered. Remedy `run-agent-install` on an attached Cluster; none on a hosted one, whose agent and updater Akua re-applies.\n- `needs-customer-upgrade` (warning): the offered agent release changes objects outside the access you granted, so it was not applied. Remedy `customer-upgrade` names the missing permissions and the `helm upgrade` command.\n- `bundle-too-large` (warning): the offered agent release is too large to deliver or to keep as a rollback copy, so it was not applied.\n- `update-rolled-back`, `baseline-degraded` (warning): a capability release failed its health gate and was rolled back, or a capability is not healthy; see the Cluster’s capabilities. A list shows `baseline-degraded` from the Cluster state only; `update-rolled-back` appears when the Cluster is read on its own.\n- When `state` is `failed`, one error whose reason says why: `control-plane-unready`, `enrollment-expired`, `agent-unsupported`, `baseline-failed`, `baseline-rollback-failed`, `cleanup-unconfirmed`, `node-removal-failed` or `agent-bundle-failed`."
+            "description": "What needs attention now; empty when nothing does. Reasons:\n- `node-bootstrap-unconfirmed` (info): the first node and in-cluster agent are not confirmed. Names each Machine latest guest-reported stage when available; otherwise no report has arrived. A RUNNING Machine does not establish guest bootstrap success.\n- `bootstrap-failed` (error): a Machine guest reported bootstrap failure, with its safe step and exit code.\n- `agent-offline` (warning): the agent is not connected; workloads keep running and nothing new rolls out until it reconnects.\n- `updater-behind` (warning): the updater has run another release than the agent for 30 minutes, so no agent release is offered. Remedy `run-agent-install` on an attached Cluster; none on a hosted one, whose agent and updater Akua re-applies.\n- `needs-customer-upgrade` (warning): the offered agent release changes objects outside the access you granted, so it was not applied. Remedy `customer-upgrade` names the missing permissions and the `helm upgrade` command.\n- `bundle-too-large` (warning): the offered agent release is too large to deliver or to keep as a rollback copy, so it was not applied.\n- `update-rolled-back`, `baseline-degraded` (warning): a capability release failed its health gate and was rolled back, or a capability is not healthy; see the Cluster’s capabilities. A list shows `baseline-degraded` from the Cluster state only; `update-rolled-back` appears when the Cluster is read on its own.\n- When `state` is `failed`, one error whose reason says why: `control-plane-unready`, `enrollment-expired`, `agent-unsupported`, `baseline-failed`, `baseline-rollback-failed`, `cleanup-unconfirmed`, `node-removal-failed` or `agent-bundle-failed`."
           },
           "operation_id": {
             "type": "string",
@@ -31229,6 +31324,10 @@
         "description": "Bearer token for the authenticated caller.",
         "type": "http",
         "scheme": "bearer"
+      },
+      "MachineBootstrapBearer": {
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   },
@@ -31290,6 +31389,9 @@
     },
     {
       "name": "Nodes"
+    },
+    {
+      "name": "machineBootstrap"
     },
     {
       "name": "machines"

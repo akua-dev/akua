@@ -24,6 +24,10 @@ export const contract: ApiContract = {
 			"title": "installs"
 		},
 		{
+			"name": "machine-bootstrap",
+			"title": "machineBootstrap"
+		},
+		{
 			"name": "machines",
 			"title": "machines"
 		},
@@ -1125,6 +1129,22 @@ export const contract: ApiContract = {
 				"query:cursor",
 				"query:limit"
 			]
+		},
+		{
+			"id": "machineBootstrap.reportBootstrap",
+			"method": "POST",
+			"path": "/machines/{id}:reportBootstrap",
+			"summary": "Report machine bootstrap",
+			"auth": true,
+			"parameters": [
+				"path:id:3"
+			],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/MachineBootstrapReport"
+				}
+			}
 		},
 		{
 			"id": "machines.get",
@@ -3552,6 +3572,38 @@ export const contract: ApiContract = {
 			},
 			"required": [
 				"path"
+			],
+			"additionalProperties": false
+		},
+		"MachineBootstrapReport": {
+			"type": "object",
+			"properties": {
+				"stage": {
+					"type": "string",
+					"enum": [
+						"started",
+						"hostname-set",
+						"k0s-downloaded",
+						"provider-configured",
+						"k0s-installed",
+						"worker-started",
+						"joined",
+						"failed"
+					]
+				},
+				"exit_code": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 255
+				},
+				"message": {
+					"type": "string",
+					"maxLength": 8192,
+					"description": "Optional secret-free step: hostname, download-k0s, configure-provider-id, install-worker, or start-worker. Other text is omitted rather than exposed as guest output. Retained descriptions are bounded to 2 KiB."
+				}
+			},
+			"required": [
+				"stage"
 			],
 			"additionalProperties": false
 		},
