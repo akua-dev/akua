@@ -70,7 +70,7 @@
     "enrollment": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["method"],
+      "required": ["method", "agentId"],
       "properties": {
         "method": { "enum": ["code", "federated"] },
         "code": {
@@ -79,7 +79,7 @@
         },
         "agentId": {
           "type": "string",
-          "anyOf": [{ "const": "" }, { "pattern": "^cag_[A-Za-z0-9]+$" }]
+          "pattern": "^cag_[A-Za-z0-9]+$"
         },
         "federatedAudience": { "type": "string" }
       }

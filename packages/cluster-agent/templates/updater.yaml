@@ -30,6 +30,8 @@ spec:
           env:
             - name: AKUA_PLATFORM_ORIGIN
               value: {{ .Values.platformOrigin | quote }}
+            - name: AKUA_AGENT_ID
+              value: {{ required "enrollment.agentId is required" .Values.enrollment.agentId | quote }}
             - name: AKUA_AGENT_VERSION
               value: {{ default .Chart.AppVersion .Values.release.version | quote }}
             - name: POD_NAMESPACE

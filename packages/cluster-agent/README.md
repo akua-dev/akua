@@ -13,14 +13,19 @@ Namespace.
 helm upgrade --install akua-cluster-agent <chart> \
   --namespace akua-system --create-namespace \
   --set image.digest=sha256:<digest> \
+  --set enrollment.agentId=cag_<agent ID> \
   --set enrollment.code=akua_enr_<43 characters> \
   --set-json 'access={"namespaces":["team-a","team-b"]}'
 ```
 
 The release must be named in namespace `akua-system`; any other namespace fails
 the render. The same command is the repair path: it re-applies both
-Deployments. If `akua-agent-identity` still holds the agent's key, the agent
-keeps its identity and ignores the code.
+Deployments. If `akua-agent-identity` holds the requested agent ID and key,
+the agent keeps that identity. An install command for another Cluster reuses
+the key to enroll the requested identity. The updater waits for that identity.
+If the Kubernetes cluster is still attached elsewhere, delete the previous
+Cluster in its owning instance and wait for deletion to finish, then run the
+new install command. Deleting the local Secret alone does not release the binding.
 
 ## Values
 
@@ -32,7 +37,8 @@ keeps its identity and ignores the code.
 | `access` | Required. Exactly one of `{"cluster": {}}` or `{"namespaces": [...]}`. |
 | `enrollment.method` | `code` (attached cluster) or `federated` (hosted cluster). |
 | `enrollment.code` | Single-use code, `akua_enr_` + 43 characters. `code` method only. |
-| `enrollment.agentId`, `enrollment.federatedAudience` | Required for `federated`: agent ID (`cag_...`) and the audience of the projected ServiceAccount token. |
+| `enrollment.agentId` | Required target agent ID (`cag_...`), from the install command. |
+| `enrollment.federatedAudience` | Required for `federated`: the audience of the projected ServiceAccount token. |
 | `release.version`, `release.protocol` | Written to the `akua.dev/release` annotation on the agent Deployment (version defaults to the chart appVersion, protocol to 1). The updater rewrites it on each update; re-running the install resets it. |
 | `distribution` | Optional: `k0s`, `k3s`, `kubeadm`, `eks`, `gke`, `aks`, `other`. |
 | `priorityClassName`, `nodeSelector`, `tolerations`, `affinity` | Passed to both pods. |

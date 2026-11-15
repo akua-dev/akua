@@ -6,5 +6,6 @@ access:
   namespaces:
     - app
 enrollment:
+  agentId: cag_0123456789abcdefg
   method: code
   code: akua_enr_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA

@@ -29,6 +29,7 @@ enrollment:
   # federated: hosted cluster, projected ServiceAccount token.
   method: code
   code: ""
+  # Required for both methods. The install command supplies the target identity.
   agentId: ""
   federatedAudience: ""
 

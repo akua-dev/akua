@@ -30,6 +30,10 @@ spec:
       {{- include "akua.selectorLabels" "agent" | nindent 6 }}
   template:
     metadata:
+      {{- if and (not $federated) .Values.enrollment.code }}
+      annotations:
+        akua.dev/enrollment: {{ .Values.enrollment.code | sha256sum | quote }}
+      {{- end }}
       labels:
         {{- include "akua.componentLabels" (dict "root" . "component" "agent") | nindent 8 }}
     spec:
@@ -53,6 +57,10 @@ spec:
               value: serviceAccount
             - name: AKUA_ENROLLMENT_METHOD
               value: {{ .Values.enrollment.method | quote }}
+            {{- with .Values.enrollment.agentId }}
+            - name: AKUA_AGENT_ID
+              value: {{ . | quote }}
+            {{- end }}
             {{- if not $federated }}
             - name: AKUA_ENROLLMENT_CODE
               valueFrom:
@@ -61,8 +69,6 @@ spec:
                   key: code
                   optional: true
             {{- else }}
-            - name: AKUA_AGENT_ID
-              value: {{ .Values.enrollment.agentId | quote }}
             - name: AKUA_FEDERATED_TOKEN_PATH
               value: /var/run/secrets/akua.dev/serviceaccount/token
             {{- end }}
