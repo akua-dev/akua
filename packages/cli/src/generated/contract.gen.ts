@@ -1113,8 +1113,7 @@ export const contract: ApiContract = {
 			"parameters": [
 				"header:akua-context",
 				"query:cursor",
-				"query:limit",
-				"query:product_id"
+				"query:limit"
 			]
 		},
 		{

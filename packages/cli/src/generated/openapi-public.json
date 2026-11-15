@@ -597,7 +597,7 @@
             }
           }
         },
-        "description": "Requests cancellation of an in-flight operation. Cancellation is asynchronous: successful requests return the current operation envelope while the owning resource settles into a terminal result. Replaying the request with the same Idempotency-Key is supported. If the operation has already reached a terminal state, cancellation is rejected with Unprocessable Entity.\n\nWhen accepted, the operation is not cancelled instantly; it transitions through the normal cancellation flow and may still report progress for a short time.",
+        "description": "Requests cancellation of an in-flight operation. Cancellation is asynchronous: successful requests return the current operation envelope while the owning resource settles into a terminal result. Replaying the request with the same Idempotency-Key is supported. If the operation has already reached a terminal state, cancellation is rejected with 409 Conflict (code 7006) because it conflicts with the current state.\n\nWhen accepted, the operation is not cancelled instantly; it transitions through the normal cancellation flow and may still report progress for a short time.",
         "summary": "Request operation cancellation",
         "x-platform-visibility": "PUBLIC"
       }
@@ -809,16 +809,6 @@
               "maximum": 100
             },
             "required": false
-          },
-          {
-            "name": "product_id",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 55
-            },
-            "required": false
           }
         ],
         "security": [
@@ -878,7 +868,7 @@
             }
           }
         },
-        "description": "Lists installs in the current workspace. With `product_id`, lists installs attributed to that product for product-owner support visibility, newest first.",
+        "description": "Lists installs in the current workspace, newest first.",
         "summary": "List installs",
         "x-platform-visibility": "PUBLIC"
       }
