@@ -23,7 +23,13 @@ exports_files(
 
 filegroup(
     name = "srcs",
-    srcs = glob(
+    # The runtime contract diagnostic reuses the generator's request projection.
+    srcs = [
+        "scripts/generate-contract.ts",
+        "scripts/runtime/cli-live.ts",
+        "scripts/runtime/services.ts",
+        "scripts/runtime/services-live.ts",
+    ] + glob(
         ["src/**/*.ts"],
         exclude = ["src/**/*.test.ts"],
     ),
