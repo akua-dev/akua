@@ -1,6 +1,6 @@
 [package]
 name = "akua-cluster-agent"
-version = "0.0.1"
+version = "0.0.2"
 edition = "akua.dev/v1alpha1"
 
 # This directory is both the Akua package and its Helm chart, so the
