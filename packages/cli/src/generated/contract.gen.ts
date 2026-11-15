@@ -13,7 +13,7 @@ export const contract: ApiContract = {
 		},
 		{
 			"name": "clusters",
-			"title": "clusters"
+			"title": "clusterJoin"
 		},
 		{
 			"name": "connections",
@@ -858,6 +858,16 @@ export const contract: ApiContract = {
 			"parameters": [
 				"path:id:3",
 				"header:akua-context"
+			]
+		},
+		{
+			"id": "clusters.getJoinInfo",
+			"method": "GET",
+			"path": "/clusters/{id}/join_info",
+			"summary": "Get public Cluster join information",
+			"auth": false,
+			"parameters": [
+				"path:id:3"
 			]
 		},
 		{
