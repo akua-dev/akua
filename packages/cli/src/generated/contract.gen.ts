@@ -1117,19 +1117,6 @@ export const contract: ApiContract = {
 			]
 		},
 		{
-			"id": "machines.delete",
-			"method": "DELETE",
-			"path": "/machines/{id}",
-			"summary": "Delete machine",
-			"auth": true,
-			"parameters": [
-				"path:id:3",
-				"header:akua-context",
-				"header:idempotency-key",
-				"header:if-match:2"
-			]
-		},
-		{
 			"id": "machines.get",
 			"method": "GET",
 			"path": "/machines/{id}",
