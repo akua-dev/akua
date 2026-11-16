@@ -98,6 +98,15 @@ export interface ReleaseAsset {
 	size: number;
 }
 
+/** Added by the canonical input producer once the source projection exists. */
+export const ReleaseProjection = Schema.Struct({
+	sha: Schema.String.check(Schema.isPattern(/^[a-f0-9]{40}$/)),
+	filter: Schema.NonEmptyString,
+	josh: Schema.String.check(
+		Schema.isPattern(/^ghcr\.io\/josh-project\/josh-proxy@sha256:[a-f0-9]{64}$/)
+	)
+});
+
 export interface ReleaseManifest {
 	schema_version: 1;
 	executable: 'akua';
@@ -107,6 +116,7 @@ export interface ReleaseManifest {
 	source: ReleaseProvenance['source'];
 	dependencies: ReleaseProvenance['dependencies'];
 	assets: ReleaseAsset[];
+	projection?: typeof ReleaseProjection.Type;
 }
 
 export interface ReleaseProvenance {

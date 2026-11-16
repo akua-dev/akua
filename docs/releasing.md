@@ -11,7 +11,7 @@
 | `akuapkg`  | `akuapkg-v<version>-<triple>.{tar.gz,zip}` for `aarch64-apple-darwin`, `x86_64-apple-darwin`, `aarch64-unknown-linux-gnu`, `x86_64-unknown-linux-gnu`, `x86_64-pc-windows-msvc`, each with a `.sha256` sidecar; `akuapkg-v<version>-checksums.txt`, `akuapkg-v<version>-manifest.json`, `akuapkg-v<version>-homebrew.json` | `https://cli.akua.dev/install`, `akua-dev/tap/akuapkg` |
 | `akua` CLI | `akua-v<version>-<target>.{tar.gz,zip}` for `darwin-arm64`, `darwin-x64`, `linux-arm64`, `linux-x64`, `windows-x64`, each with a `.sha256` sidecar; `akua-v<version>-checksums.txt`, `akua-v<version>-manifest.json`, `akua-v<version>-homebrew.json`                                                                      | `akua-dev/tap/akua`                                    |
 
-The CLI manifest's provenance records the embedded akuapkg version, which equals the CLI version.
+For new releases, both manifests bind the canonical source SHA, projected commit SHA, fixed Josh filter, pinned Josh image and every archive's SHA-256. After projection, a hermetic Bazel producer adds the projection identity before admitting the immutable release input; publication rejects missing provenance. The CLI manifest also records the embedded akuapkg version, which equals the CLI version.
 
 The writable source of truth is the canonical repository's `oss/akua` subtree. The public repository is its fixed Josh projection. Public CI remains advisory. The documentation workflow publishes cli.akua.dev separately. Neither workflow creates release tags or distribution assets.
 
@@ -25,4 +25,6 @@ No new npm or container publication is part of this pipeline. The canonical repo
 
 ## Recovery
 
-Tags and published assets are immutable. Never delete or move a tag, replace an asset, or upload artifacts by hand. A retry may fill missing assets in a draft only when the admitted source, projection, and asset digests are unchanged. An existing published release is accepted only after every asset is verified. Correct a changed release by reviewing a new version bump.
+Tags and published assets are immutable. Never delete or move a tag, replace an asset, or upload artifacts by hand. A retry may fill missing assets in a draft only when the admitted source, projection, and asset digests are unchanged. An existing published release is accepted only after every asset is verified.
+
+Fix forward, never roll back: fix a bad release in a new patch version through the normal reviewed release path. Old immutable versions stay installable with their original tags and bytes. The v0.13.9 to v0.13.10 forward fix (`f1339574ce`) restored the contract-diagnostic module missing from compiled releases, without moving the old tag or replacing its assets.

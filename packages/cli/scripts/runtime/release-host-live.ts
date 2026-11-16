@@ -1,5 +1,5 @@
 import { BunCrypto, BunServices } from '@effect/platform-bun';
-import { Effect, FileSystem, Layer, Path, Stream } from 'effect';
+import { Effect, FileSystem, Layer, Path, Schema, Stream } from 'effect';
 import { Digest } from 'effect/crypto';
 import type { PlatformError } from 'effect/PlatformError';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
@@ -8,6 +8,7 @@ import {
 	RELEASE_TARGETS,
 	ReleaseHost,
 	ReleaseFailure,
+	ReleaseProjection,
 	archiveExtractCommand,
 	artifactName,
 	assertCompiledExecutable,
@@ -785,6 +786,11 @@ function parseReleaseManifest(value: unknown): Effect.Effect<ReleaseManifest, Re
 	}
 	return Effect.gen(function* () {
 		const provenance = yield* parseReleaseProvenance(value);
+		const projection = yield* Schema.decodeUnknownEffect(
+			Schema.Struct({ projection: Schema.optionalKey(ReleaseProjection) })
+		)(value).pipe(
+			Effect.mapError(() => new ReleaseFailure({ message: 'Release projection is invalid' }))
+		);
 		const assets = yield* Effect.all(rawAssets.map(parseReleaseAsset));
 		return {
 			schema_version: 1,
@@ -793,6 +799,7 @@ function parseReleaseManifest(value: unknown): Effect.Effect<ReleaseManifest, Re
 			checksums: checksumsName(version),
 			homebrew_manifest: homebrewManifest,
 			...provenance,
+			...projection,
 			assets
 		};
 	});

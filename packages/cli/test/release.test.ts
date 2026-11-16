@@ -327,7 +327,7 @@ describe('release target contract', () => {
 		}
 	});
 
-	it.effect('verifies immutable releases from before the CLI source move', () =>
+	it.effect('verifies immutable legacy releases and validates supplied projection provenance', () =>
 		Effect.gen(function* () {
 			const fs = yield* FileSystem.FileSystem;
 			const path = yield* Path.Path;
@@ -367,6 +367,26 @@ describe('release target contract', () => {
 			yield* fs.writeFileString(manifestPath, historicalManifest);
 			yield* host.verifyReleaseDirectory(outputDir, '1.2.3');
 			expect(yield* fs.readFileString(manifestPath)).toBe(historicalManifest);
+			const projection = {
+				sha: '2'.repeat(40),
+				filter: ':[:/oss/akua,:/tools/akuapkg/source]',
+				josh: `ghcr.io/josh-project/josh-proxy@sha256:${'3'.repeat(64)}`
+			};
+			yield* fs.writeFileString(manifestPath, JSON.stringify({ ...manifest, projection }));
+			yield* host.verifyReleaseDirectory(outputDir, '1.2.3');
+			for (const missing of ['sha', 'filter', 'josh']) {
+				yield* fs.writeFileString(
+					manifestPath,
+					JSON.stringify({
+						...manifest,
+						projection: Object.fromEntries(
+							Object.entries(projection).filter(([key]) => key !== missing)
+						)
+					})
+				);
+				const failure = yield* host.verifyReleaseDirectory(outputDir, '1.2.3').pipe(Effect.flip);
+				expect(failure.message).toBe('Release projection is invalid');
+			}
 			for (const invalidSource of [
 				{ ...source, subtree: 'oss/akua/unknown' },
 				{ ...source, repository: 'other/repository', subtree: 'oss/akua/cli' }
