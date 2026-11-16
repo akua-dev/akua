@@ -23,10 +23,10 @@ This repository holds the open-source tools behind that: the `akua` CLI your
 coding agent uses to publish and install, and `akuapkg`, the package format.
 They work with Akua and on their own:
 
-| Tool                           | What it does                                                                                                                                                              | Install                                         |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| [`akua`](packages/cli/)        | Publish and install from a terminal, a CI pipeline or a coding agent: clusters, machines, installs, domains, team. Every command is generated from Akua's public API.                | `brew install akua-dev/tap/akua`                |
-| [`akuapkg`](packages/akuapkg/) | Build typed Kubernetes packages: KCL instead of YAML templates, Helm and Kustomize in a sandbox, every dependency pinned by digest. Also built into `akua` as `akua pkg`. | `curl -fsSL https://cli.akua.dev/install \| sh` |
+| Tool                           | What it does                                                                                                                                                              | Install                             |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| [`akua`](packages/cli/)        | Publish and install from a terminal, a CI pipeline or a coding agent: clusters, machines, installs, domains, team. Every command is generated from Akua's public API.     | `brew install akua-dev/tap/akua`    |
+| [`akuapkg`](packages/akuapkg/) | Build typed Kubernetes packages: KCL instead of YAML templates, Helm and Kustomize in a sandbox, every dependency pinned by digest. Also built into `akua` as `akua pkg`. | `brew install akua-dev/tap/akuapkg` |
 
 ## Quick start
 
@@ -54,10 +54,16 @@ before every consequential step. Package-authoring skills: [plugins/akuapkg](plu
 ### Build a typed Kubernetes package
 
 ```sh
-curl -fsSL https://cli.akua.dev/install | sh   # or: brew install akua-dev/tap/akuapkg
+brew install akua-dev/tap/akuapkg
+akuapkg --version
 akuapkg init hello && cd hello
 akuapkg render --inputs inputs.example.yaml
 ```
+
+Homebrew installs the standalone `akuapkg` binary on macOS and Linux
+(ARM64 or x86_64). Already installed `akua`? Use `akua pkg` instead; a
+separate install is not required. Without Homebrew, see the
+[standalone installer and release archives](packages/akuapkg/#install).
 
 A typo in a field or a value your Kubernetes version does not accept fails the
 render with the file and line. Walkthrough with CRDs and Helm charts:
@@ -66,17 +72,17 @@ Docs: [docs.akua.dev/akua](https://docs.akua.dev/akua).
 
 ## Repository layout
 
-| Path                                    | Contents                                                                                                                     |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| [`packages/cli`](packages/cli/)         | The `akua` CLI                                                                                                               |
-| [`packages/akuapkg`](packages/akuapkg/) | akuapkg: the Bun + Effect host, its CLI and TypeScript SDK                                                                   |
-| [`crates/`](crates/)                    | The sandboxed render worker (Rust to WebAssembly), the Helm and Kustomize engines (Go to WebAssembly) and the Wasmtime addon |
-| [`packages/cluster-agent`](packages/cluster-agent/) | The Helm chart and Akua package that install Akua's agent, which runs in a customer's cluster and keeps its installs up to date |
-| [`packages/cloudflare-tunnel-connector`](packages/cloudflare-tunnel-connector/) | An akuapkg Package that runs `cloudflared` in a cluster |
-| [`packages/private-ingress-gateway`](packages/private-ingress-gateway/) | The in-cluster HTTP boundary for routes whose services are not public |
-| [`plugins/`](plugins/)                  | Agent plugins and skills                                                                                                     |
-| [`examples/`](examples/)                | Runnable packages, each with its rendered output                                                                             |
-| [`docs/`](docs/)                        | Format specifications (package, lockfile, CLI contract), security model, building and releasing                              |
+| Path                                                                            | Contents                                                                                                                        |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| [`packages/cli`](packages/cli/)                                                 | The `akua` CLI                                                                                                                  |
+| [`packages/akuapkg`](packages/akuapkg/)                                         | akuapkg: the Bun + Effect host, its CLI and TypeScript SDK                                                                      |
+| [`crates/`](crates/)                                                            | The sandboxed render worker (Rust to WebAssembly), the Helm and Kustomize engines (Go to WebAssembly) and the Wasmtime addon    |
+| [`packages/cluster-agent`](packages/cluster-agent/)                             | The Helm chart and Akua package that install Akua's agent, which runs in a customer's cluster and keeps its installs up to date |
+| [`packages/cloudflare-tunnel-connector`](packages/cloudflare-tunnel-connector/) | An akuapkg Package that runs `cloudflared` in a cluster                                                                         |
+| [`packages/private-ingress-gateway`](packages/private-ingress-gateway/)         | The in-cluster HTTP boundary for routes whose services are not public                                                           |
+| [`plugins/`](plugins/)                                                          | Agent plugins and skills                                                                                                        |
+| [`examples/`](examples/)                                                        | Runnable packages, each with its rendered output                                                                                |
+| [`docs/`](docs/)                                                                | Format specifications (package, lockfile, CLI contract), security model, building and releasing                                 |
 
 `akua` and `akuapkg` release together: one version, one
 [GitHub Release](https://github.com/akua-dev/akua/releases) with archives for

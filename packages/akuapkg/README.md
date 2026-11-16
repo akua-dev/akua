@@ -55,11 +55,17 @@ The evidence and the limits are in [docs/why.md](../../docs/why.md).
 ## Install
 
 ```sh
-# The standalone akuapkg binary (macOS, Linux); installs to ~/.akuapkg/bin
-curl -fsSL https://cli.akua.dev/install | sh
-
-# Or with Homebrew
 brew install akua-dev/tap/akuapkg
+akuapkg --version
+```
+
+The formula installs the standalone `akuapkg` binary on macOS and Linux
+(ARM64 or x86_64). Upgrade with `brew upgrade akuapkg`.
+
+Without Homebrew, the macOS and Linux installer writes to `~/.akuapkg/bin`:
+
+```sh
+curl -fsSL https://cli.akua.dev/install | sh
 ```
 
 On Windows, run `irm https://cli.akua.dev/install.ps1 | iex` in PowerShell,
@@ -174,13 +180,13 @@ error[E2L23]: CompileError
 
 ## Documentation
 
-| | |
-|---|---|
-| **Start here** | [Why akuapkg](../../docs/why.md) · [Typed resources](../../docs/typed-resources.md) · [Examples](../../examples/) |
-| **Authoring** | [Package format](../../docs/package-format.md) · [`akua.toml` and `akua.lock`](../../docs/lockfile-format.md) · [Agent usage and skills](../../docs/agent-usage.md) |
-| **Reference** | [Commands](https://docs.akua.dev/akua/cli) · [Error codes](https://docs.akua.dev/akua/errors) · [CLI contract](../../docs/cli-contract.md) · [SDK](../../docs/sdk.md) |
-| **Internals** | [Security model](../../docs/security-model.md) · [Architecture](../../docs/architecture.md) · [Embedded engines](../../docs/embedded-engines.md) · [Debugging](../../docs/debugging.md) |
-| **Project** | [Roadmap](../../docs/roadmap.md) · [Building](../../docs/building.md) · [Releasing](../../docs/releasing.md) · [Release notes](https://github.com/akua-dev/akua/releases) |
+|                |                                                                                                                                                                                         |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Start here** | [Why akuapkg](../../docs/why.md) · [Typed resources](../../docs/typed-resources.md) · [Examples](../../examples/)                                                                       |
+| **Authoring**  | [Package format](../../docs/package-format.md) · [`akua.toml` and `akua.lock`](../../docs/lockfile-format.md) · [Agent usage and skills](../../docs/agent-usage.md)                     |
+| **Reference**  | [Commands](https://docs.akua.dev/akua/cli) · [Error codes](https://docs.akua.dev/akua/errors) · [CLI contract](../../docs/cli-contract.md) · [SDK](../../docs/sdk.md)                   |
+| **Internals**  | [Security model](../../docs/security-model.md) · [Architecture](../../docs/architecture.md) · [Embedded engines](../../docs/embedded-engines.md) · [Debugging](../../docs/debugging.md) |
+| **Project**    | [Roadmap](../../docs/roadmap.md) · [Building](../../docs/building.md) · [Releasing](../../docs/releasing.md) · [Release notes](https://github.com/akua-dev/akua/releases)               |
 
 ## Status
 
