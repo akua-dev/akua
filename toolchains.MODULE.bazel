@@ -91,6 +91,78 @@ register_toolchains(
     "@rust_toolchains//:akua_rust_linux_x64__x86_64-pc-windows-msvc__stable",
 )
 
+# Native macOS execution builds the same WASI renderer without a Linux
+# executor. The host targets also compile its procedural macros/build scripts.
+package_rust.repository_set(
+    name = "akua_rust_darwin_arm64",
+    edition = "2021",
+    exec_triple = "aarch64-apple-darwin",
+    rustfmt_version = "1.98.1",
+    sha256s = {
+        "cargo-1.98.1-aarch64-apple-darwin.tar.xz": "de51d4fade4f31ad8ec405261cc96bedc000d905f98980027610d6e288dbe21b",
+        "clippy-1.98.1-aarch64-apple-darwin.tar.xz": "1ad080040ff0f4f8af0751bd7fa1fb1901212f8d164cecaa3c47b0654e0916f2",
+        "llvm-tools-1.98.1-aarch64-apple-darwin.tar.xz": "9b68ac31be7c6d25a08ce34dbd2c1d026b8006905e74415b6d9576678379ecbc",
+        "rust-std-1.98.1-aarch64-apple-darwin.tar.xz": "2de831ef563ce772519a4d18ba2659f0f7428d497ef66dad24b5a35e8f8cd177",
+        "rust-std-1.98.1-wasm32-wasip1.tar.xz": "b5e91be9ed75c632a4c576d3c4c725ab143cd48c27c345133b97ccdf217b23e7",
+        "rustc-1.98.1-aarch64-apple-darwin.tar.xz": "738e3f60114b20550fcf4f8a57c9cea0544239f214709f45594ff3fde327f577",
+        "rustfmt-1.98.1-aarch64-apple-darwin.tar.xz": "86aa28e2f23edb0045a85288c3f69998dd30294fd2d3f1480efa9485cf137bfd",
+    },
+    target_compatible_with = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:osx",
+    ],
+    target_settings = ["@akua//bazel/platforms:package_rust_198"],
+    target_triple = "aarch64-apple-darwin",
+    versions = ["1.98.1"],
+)
+package_rust.repository_set(
+    name = "akua_rust_darwin_arm64",
+    target_compatible_with = [
+        "@platforms//cpu:wasm32",
+        "@platforms//os:wasi",
+        "@rules_rust//rust/platform:wasi_preview_1",
+    ],
+    target_triple = "wasm32-wasip1",
+)
+package_rust.repository_set(
+    name = "akua_rust_darwin_x64",
+    edition = "2021",
+    exec_triple = "x86_64-apple-darwin",
+    rustfmt_version = "1.98.1",
+    sha256s = {
+        "cargo-1.98.1-x86_64-apple-darwin.tar.xz": "74b1282253c31fb89926d51d57e47a06c6cd26c93657de72edf622a4ab66396f",
+        "clippy-1.98.1-x86_64-apple-darwin.tar.xz": "f0fdf89c5f4a9f05fa893a75791d274799989371655985bce34358b5e8b1d231",
+        "llvm-tools-1.98.1-x86_64-apple-darwin.tar.xz": "3e2649efa7ebd72b96ba23aef4a301dbf9049ce29fb81f6f459772b73451306c",
+        "rust-std-1.98.1-wasm32-wasip1.tar.xz": "b5e91be9ed75c632a4c576d3c4c725ab143cd48c27c345133b97ccdf217b23e7",
+        "rust-std-1.98.1-x86_64-apple-darwin.tar.xz": "48b9835058a8baa4ff5e4387f3772c572a017a2b13393c46e151615c54e322e9",
+        "rustc-1.98.1-x86_64-apple-darwin.tar.xz": "641c301bd19c3cead114cbb61919c5ed2475ce53e2d011fe0c990e16c5a1b04b",
+        "rustfmt-1.98.1-x86_64-apple-darwin.tar.xz": "35014248dd2ab9c9c194a86569aacb2e14784b82517ca9b9c806afb946ef3648",
+    },
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:osx",
+    ],
+    target_settings = ["@akua//bazel/platforms:package_rust_198"],
+    target_triple = "x86_64-apple-darwin",
+    versions = ["1.98.1"],
+)
+package_rust.repository_set(
+    name = "akua_rust_darwin_x64",
+    target_compatible_with = [
+        "@platforms//cpu:wasm32",
+        "@platforms//os:wasi",
+        "@rules_rust//rust/platform:wasi_preview_1",
+    ],
+    target_triple = "wasm32-wasip1",
+)
+
+register_toolchains(
+    "@rust_toolchains//:akua_rust_darwin_arm64__aarch64-apple-darwin__stable",
+    "@rust_toolchains//:akua_rust_darwin_arm64__wasm32-wasip1__stable",
+    "@rust_toolchains//:akua_rust_darwin_x64__wasm32-wasip1__stable",
+    "@rust_toolchains//:akua_rust_darwin_x64__x86_64-apple-darwin__stable",
+)
+
 # Zig, executed on Linux x86_64, for the C dependencies of the macOS, WASI and
 # Linux targets. The repository is lazy: a client that never selects one of
 # these toolchains never fetches the SDK.
@@ -105,4 +177,5 @@ register_toolchains(
     "@akua//bazel/toolchains:package_rust_darwin_x64_cc_toolchain",
     "@akua//bazel/toolchains:package_rust_darwin_arm64_cc_toolchain",
     "@akua//bazel/toolchains:package_rust_windows_cc_toolchain",
+    "@akua//bazel/toolchains:render_worker_wasi_host_cc_toolchain",
 )

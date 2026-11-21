@@ -18,9 +18,15 @@ def _go_engine_impl(ctx):
         outputs = [output],
         arguments = [args],
         command = """
+set -eu
 export GOROOT="$PWD/$2"
 export GOCACHE="$PWD/$4.gocache"
-exec "$PWD/$1" build -C "$PWD/$3" -mod=vendor -trimpath -buildvcs=false -buildmode=c-shared -ldflags='-s -w' -o "$PWD/$4" .
+# Local Bazel sandboxes expose individual input files as symlinks. Go embed
+# excludes symlinked files, so compile a dereferenced copy of the module.
+source_root="$PWD/$4.sources"
+mkdir -p "$source_root"
+cp -RL "$PWD/$3/." "$source_root"
+exec "$PWD/$1" build -C "$source_root" -mod=vendor -trimpath -buildvcs=false -buildmode=c-shared -ldflags='-s -w' -o "$PWD/$4" .
 """,
         env = {
             "CGO_ENABLED": "0",
@@ -41,8 +47,8 @@ go_wasi_engine = rule(
         "out": attr.string(mandatory = True),
         "source": attr.label(mandatory = True),
         "module": attr.label(mandatory = True, allow_single_file = True),
-        "_go": attr.label(default = "@go_linux_x64//:go/bin/go", allow_single_file = True, cfg = "exec"),
-        "_sdk": attr.label(default = "@go_linux_x64//:go_files", cfg = "exec"),
+        "_go": attr.label(default = "//bazel:engine_go", allow_single_file = True, cfg = "exec"),
+        "_sdk": attr.label(default = "//bazel:engine_go_sdk", cfg = "exec"),
     },
 )
 

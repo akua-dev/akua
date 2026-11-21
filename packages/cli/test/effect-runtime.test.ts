@@ -2,10 +2,34 @@ import { describe, expect, it } from '@effect/vitest';
 import { Clock, Effect, Layer, Stream } from 'effect';
 import { TestClock } from 'effect/testing';
 
-import { runCli } from '../src/runtime/effect-runtime';
+import { DeviceRequestFailure, runCli, toCliError } from '../src/runtime/effect-runtime';
 import { Browser, Console, Http, Process, SecureConfig } from '../src/runtime/services';
 
 describe('Effect CLI runtime', () => {
+	it.effect('keeps the full device failure internally without exposing its cause', () =>
+		Effect.gen(function* () {
+			const original = new Error('private-device-sentinel');
+			const failure = new DeviceRequestFailure({ cause: original });
+			const translated = toCliError(failure);
+			expect(translated.cause).toBe(failure);
+			expect(failure.cause).toBe(original);
+			const stdout: string[] = [];
+			const exitCode = yield* runCli(Effect.fail(failure), { mode: 'json' }).pipe(
+				Effect.provideService(Console, {
+					stdoutIsTTY: false,
+					stdinIsTTY: false,
+					writeStderr: () => Effect.void,
+					writeStdoutBytes: () => Effect.void,
+					writeStdout: (value) => Effect.sync(() => stdout.push(value))
+				})
+			);
+			expect(exitCode).toBe(3);
+			expect(stdout.join('')).not.toContain('private-device-sentinel');
+			expect(stdout.join('')).not.toContain('"cause"');
+			expect(JSON.stringify(translated)).not.toContain('private-device-sentinel');
+		})
+	);
+
 	it.effect('runs an Effect command through the central render boundary', () =>
 		Effect.gen(function* () {
 			const stdout: string[] = [];

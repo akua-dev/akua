@@ -30,7 +30,7 @@ export class SecureConfigFailure extends Schema.TaggedError<SecureConfigFailure>
 
 export class PublicInputFailure extends Schema.TaggedError<PublicInputFailure>()(
 	'PublicInputFailure',
-	{}
+	{ cause: Schema.optionalKey(Schema.Defect()) }
 ) {}
 
 export class PackageCliFailure extends Schema.TaggedError<PackageCliFailure>()(

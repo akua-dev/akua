@@ -1,9 +1,10 @@
-import { Effect, FileSystem, Option } from "effect"
+import { Effect, FileSystem, Option, Redacted } from "effect"
 import { osMessage } from "../errors"
 import { Command, Flag } from "effect/cli"
 import { ExitCode, fail } from "../contract"
 import { signDsse, signKeyed, simpleSigningPayload } from "../cosign"
-import { OciRegistry } from "../oci"
+import { type Credentials, OciCredentialOverrides, OciRegistry, parseReference } from "../oci"
+import { PublishHost } from "../publish-host"
 import { packWorkspace } from "../package-tar"
 import type { VerbContext } from "./context"
 import { joinPath, readOptional } from "./files"
@@ -22,7 +23,12 @@ export const publish = (context: VerbContext) =>
     "publish",
     {
       ...universal,
-      ociRef: Flag.String("ref").pipe(Flag.withDescription("Target repository (`oci://<registry>/<repo>`)")),
+      ociRef: Flag.String("ref").pipe(
+        Flag.optional,
+        Flag.withDescription(
+          "Target repository (`oci://<registry>/<repo>`); `akua pkg publish` without it hosts the Package privately in the Workspace"
+        )
+      ),
       tag: Flag.String("tag").pipe(Flag.optional, Flag.withDescription("Tag; defaults to [package].version")),
       noSign: Flag.Boolean("no-sign").pipe(
         Flag.withDefault(false),
@@ -50,6 +56,22 @@ export const publish = (context: VerbContext) =>
           Effect.mapError((error) => fail("E_IO", osMessage(error), ExitCode.userError))
         )
         const publishFailed = (message: string) => fail("E_PUBLISH_FAILED", message, ExitCode.userError)
+        // Without --ref, an embedding host (the hosted `akua` CLI) supplies the destination and its credential.
+        const host = yield* Effect.serviceOption(PublishHost)
+        const hosted = Option.isSome(flags.ociRef)
+          ? undefined
+          : Option.isSome(host)
+          ? yield* host.value.prepare({ name: manifest.package.name, version: tag, archiveSize: tarball.length })
+          : yield* publishFailed("--ref is required; `akua pkg publish` hosts the Package in your Workspace without it.")
+        const reference = Option.getOrElse(flags.ociRef, () => hosted?.reference ?? "")
+        // A hosted registry names the version's OCI tag; the version itself stays as written.
+        const ociTag = hosted?.tag ?? tag
+        const target = parseReference(reference)
+        const overrides = new Map<string, Credentials>(
+          hosted === undefined || target === undefined
+            ? []
+            : [[target.registry, { _tag: "Basic" as const, username: "akua", password: Redacted.value(hosted.password) }]]
+        )
         const keyPath = flags.noSign ? undefined : manifest.signing?.cosign_private_key
         const key = keyPath === undefined
           ? Option.none<string>()
@@ -70,21 +92,21 @@ export const publish = (context: VerbContext) =>
         const output = yield* Effect.gen(function*() {
           const registry = yield* OciRegistry
           const pushed = yield* registry.pushPackage({
-            reference: flags.ociRef,
-            tag,
+            reference,
+            tag: ociTag,
             tarball,
             akuaVersion: context.version
           }).pipe(Effect.mapError((error) => publishFailed(error.message)))
           let signatureTag = Option.none<string>()
           let attestationTag = Option.none<string>()
           if (Option.isSome(key)) {
-            const payload = simpleSigningPayload(dockerReference(flags.ociRef), pushed.manifestDigest)
+            const payload = simpleSigningPayload(dockerReference(reference), pushed.manifestDigest)
             const signature = yield* signKeyed(key.value, payload, passphrase).pipe(
               Effect.mapError((error) => publishFailed(`cosign: ${error.message}`))
             )
             signatureTag = Option.some(
               yield* registry.pushSignature({
-                reference: flags.ociRef,
+                reference,
                 manifestDigest: pushed.manifestDigest,
                 payload,
                 signatureBase64: signature
@@ -102,8 +124,8 @@ export const publish = (context: VerbContext) =>
                 )
                 : Option.none()
               const statement = provenanceStatement({
-                reference: flags.ociRef,
-                tag,
+                reference,
+                tag: ociTag,
                 manifestDigest: pushed.manifestDigest,
                 lock,
                 version: context.version
@@ -113,23 +135,24 @@ export const publish = (context: VerbContext) =>
               )
               attestationTag = Option.some(
                 yield* registry.pushAttestation({
-                  reference: flags.ociRef,
+                  reference,
                   manifestDigest: pushed.manifestDigest,
                   envelope
                 }).pipe(Effect.mapError((error) => publishFailed(error.message)))
               )
             }
           }
+          if (hosted !== undefined) yield* hosted.complete
           return {
-            oci_ref: flags.ociRef,
-            tag,
+            oci_ref: reference,
+            tag: ociTag,
             manifest_digest: pushed.manifestDigest,
             layer_digest: pushed.layerDigest,
             layer_size: pushed.layerSize,
             ...Option.match(signatureTag, { onNone: () => ({}), onSome: (value) => ({ signature_tag: value }) }),
             ...Option.match(attestationTag, { onNone: () => ({}), onSome: (value) => ({ attestation_tag: value }) })
           }
-        }).pipe(Effect.provide(context.fetchers))
+        }).pipe(Effect.provide(context.fetchers), Effect.provideService(OciCredentialOverrides, overrides))
         yield* emit(mode, output, () =>
           [
             `published: ${output.oci_ref}:${output.tag}`,
@@ -140,4 +163,6 @@ export const publish = (context: VerbContext) =>
           ].join("\n"))
       })
     )
-  ).pipe(Command.withDescription("Pack, push, sign and attest the workspace's Package"))
+  ).pipe(Command.withDescription(
+    "Pack, push, sign and attest the workspace's Package. With akua, omit --ref to publish privately to your Workspace. Private images guide: https://docs.akua.dev/private-images"
+  ))

@@ -86,3 +86,15 @@ export const renderSnapshot = Effect.fn("renderSnapshot")(function*(request: {
   }).pipe(Effect.flatMap((tree) => worker.render({ tree, inputs: request.inputs, strict: false }))))
   return resources.map((resource, index): readonly [string, string] => [manifestFilename(index, resource), toYaml(resource)])
 })
+
+/** A vendored Package snapshot's `Input` schema as JSON Schema 2020-12, what `akua export` prints. */
+export const exportSnapshotInputSchema = Effect.fn("exportSnapshotInputSchema")(function*(request: {
+  readonly files: Snapshot
+  readonly filename: string
+}) {
+  const worker = yield* RenderWorker
+  return yield* Effect.scoped(worker.prepare({
+    workspace: "/package", filename: request.filename, files: request.files,
+    options: { offline: true }
+  }).pipe(Effect.flatMap((tree) => worker.exportSchema({ filename: request.filename, tree, format: "json-schema" }))))
+})

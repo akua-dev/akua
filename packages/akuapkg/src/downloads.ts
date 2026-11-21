@@ -35,15 +35,19 @@ export const readBounded = <E>(
   request: {
     readonly url: string
     readonly limit: number
-    readonly fail: (message: string) => E
+    readonly fail: (message: string, cause?: unknown) => E
     readonly status: (status: number, body: string) => string
   }
 ): Effect.Effect<Uint8Array, E> =>
   Effect.gen(function*() {
     const { fail, limit, url } = request
     if (response.status < 200 || response.status >= 300) {
-      const text = yield* response.text.pipe(Effect.orElseSucceed(() => ""))
-      return yield* Effect.fail(fail(request.status(response.status, Array.from(text).slice(0, 300).join(""))))
+      const text = yield* response.text.pipe(Effect.result)
+      const body = text._tag === "Success" ? text.success : ""
+      return yield* Effect.fail(fail(
+        request.status(response.status, Array.from(body).slice(0, 300).join("")),
+        text._tag === "Failure" ? text.failure : undefined
+      ))
     }
     const declared = Number(response.headers["content-length"] ?? Number.NaN)
     if (declared > limit) {
@@ -52,7 +56,7 @@ export const readBounded = <E>(
     let total = 0
     const chunks: Array<Uint8Array> = []
     yield* response.stream.pipe(
-      Stream.mapError((error) => fail(`reading response body from \`${url}\`: ${error.message}`)),
+      Stream.mapError((error) => fail(`reading response body from \`${url}\`: ${error.message}`, error)),
       Stream.runForEach((chunk) => {
         total += chunk.length
         chunks.push(chunk)

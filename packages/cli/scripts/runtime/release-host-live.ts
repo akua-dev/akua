@@ -1,4 +1,5 @@
 import { BunCrypto, BunServices } from '@effect/platform-bun';
+import { constant as discardError } from 'effect/Function';
 import { Effect, FileSystem, Layer, Path, Schema, Stream } from 'effect';
 import { Digest } from 'effect/crypto';
 import type { PlatformError } from 'effect/PlatformError';
@@ -131,7 +132,8 @@ const assertSafeOutputDirectory = Effect.fn('assertSafeOutputDirectory')(functio
 		currentPath = path.join(currentPath, segment);
 		lexicalRealPath = path.join(lexicalRealPath, segment);
 		const realPath = yield* fs.realPath(currentPath).pipe(
-			Effect.catchReason('PlatformError', 'NotFound', () => Effect.undefined),
+			// A missing output path will be created after the existing ancestors pass the safety check.
+			Effect.catchReason('PlatformError', 'NotFound', discardError(Effect.undefined)),
 			Effect.mapError(toReleaseFailure('inspect output directory'))
 		);
 		if (realPath !== undefined) {
@@ -542,7 +544,8 @@ const smokeReleaseArtifact = Effect.fn('smokeReleaseArtifact')(function* (input:
 function parseReportedVersion(output: string): Effect.Effect<unknown, ReleaseFailure> {
 	return attempt('parse executable version response', () => JSON.parse(output)).pipe(
 		Effect.map(versionFromPayload),
-		Effect.catch(() => Effect.succeed(undefined))
+		// An unparseable executable version is represented as absent and rejected by the caller.
+		Effect.catch(discardError(Effect.succeed(undefined)))
 	);
 }
 
@@ -789,7 +792,9 @@ function parseReleaseManifest(value: unknown): Effect.Effect<ReleaseManifest, Re
 		const projection = yield* Schema.decodeUnknownEffect(
 			Schema.Struct({ projection: Schema.optionalKey(ReleaseProjection) })
 		)(value).pipe(
-			Effect.mapError(() => new ReleaseFailure({ message: 'Release projection is invalid' }))
+			Effect.mapError(
+				(cause) => new ReleaseFailure({ message: 'Release projection is invalid', cause })
+			)
 		);
 		const assets = yield* Effect.all(rawAssets.map(parseReleaseAsset));
 		return {

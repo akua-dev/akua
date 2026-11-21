@@ -27,7 +27,7 @@ A failure prints one error object to stderr (as
 JSON under `--json`, as text otherwise) and exits non-zero:
 
 ```json
-{"level":"error","code":"E_PACKAGE_MISSING","message":"Package.k not found","path":"nope.k","suggestion":"pass the Package.k path explicitly or cd to its directory","docs":"https://cli.akua.dev/errors/E_PACKAGE_MISSING"}
+{"level":"error","code":"E_PACKAGE_MISSING","message":"Package.k not found","path":"nope.k","suggestion":"pass the Package.k path explicitly or cd to its directory","docs":"https://docs.akua.dev/akua/errors/E_PACKAGE_MISSING"}
 ```
 
 | Field | Meaning |

@@ -45,6 +45,22 @@ const table: PrivateIngressRouteResolver['Service']['resolve'] = (publicHost) =>
 	);
 
 layer(BunSocket.layerWebSocketConstructor)('gateway request boundary', (it) => {
+	it.effect('retains a rejected dispatcher token cause inside the identity verifier', () =>
+		Effect.gen(function* () {
+			const failure = yield* Effect.gen(function* () {
+				return yield* (yield* GatewayIdentityVerifier).verify(Redacted.make('private-token-input'));
+			}).pipe(
+				Effect.provide(
+					GatewayIdentityVerifier.layer({
+						issuer: 'https://id.example.test',
+						audience: 'gateway:ro_gateway'
+					})
+				),
+				Effect.flip
+			);
+			expect(failure.cause).toBeInstanceOf(Error);
+		})
+	);
 	const runRequest = (
 		request: Request,
 		options: {

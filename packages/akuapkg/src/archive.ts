@@ -10,7 +10,8 @@ import { Bytes, Context, Effect, Schema, Stream } from "effect"
  */
 
 export class ArchiveInvalid extends Schema.TaggedError<ArchiveInvalid>()("ArchiveInvalid", {
-  message: Schema.String
+  message: Schema.String,
+  cause: Schema.optionalKey(Schema.Defect())
 }) {}
 
 /** Ceiling on a decompressed archive: generous for any chart or package, and bounded. */
@@ -23,7 +24,7 @@ export const gunzip = (bytes: Uint8Array, limit = MAX_DECOMPRESSED_BYTES) =>
   Stream.fromReadableStream({
     // A copy, so the Blob holds an ArrayBuffer-backed view whatever backs `bytes`.
     evaluate: () => new Blob([new Uint8Array(bytes)]).stream().pipeThrough(new DecompressionStream("gzip")),
-    onError: (cause) => new ArchiveInvalid({ message: `decompressing: ${String(cause)}` })
+    onError: (cause) => new ArchiveInvalid({ message: `decompressing: ${String(cause)}`, cause })
   }).pipe(
     Stream.mapAccum(() => 0, (total, chunk: Uint8Array) => [total + chunk.length, [{ total, chunk }]]),
     Stream.mapEffect(({ chunk, total }) =>
@@ -111,7 +112,7 @@ export const untar = Effect.fnUntraced(function*(bytes: Uint8Array) {
       try: () =>
         pax?.get("path") ?? longName ??
           (prefix.length > 0 ? `${decoder.decode(prefix)}/${decoder.decode(name)}` : decoder.decode(name)),
-      catch: () => new ArchiveInvalid({ message: "tar entry name is not UTF-8" })
+      catch: (cause) => new ArchiveInvalid({ message: "tar entry name is not UTF-8", cause })
     })
     longName = undefined
     pax = undefined

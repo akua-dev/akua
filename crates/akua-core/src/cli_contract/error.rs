@@ -7,7 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 
-const ERROR_DOCS_BASE: &str = "https://cli.akua.dev/errors";
+const ERROR_DOCS_BASE: &str = "https://docs.akua.dev/akua/errors";
 
 crate::contract_type! {
 /// The canonical error shape. One struct; every verb reuses it.
@@ -48,7 +48,7 @@ pub struct StructuredError {
     pub suggestion: Option<String>,
 
     /// URL to the error's documentation page. Convention:
-    /// `https://cli.akua.dev/errors/<CODE>`.
+    /// `https://docs.akua.dev/akua/errors/<CODE>`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub docs: Option<String>,
 
@@ -114,7 +114,7 @@ impl StructuredError {
     }
 
     /// Auto-fill `docs` using the standard URL convention
-    /// `https://cli.akua.dev/errors/<code>`. Call after `new()`.
+    /// `https://docs.akua.dev/akua/errors/<code>`. Call after `new()`.
     pub fn with_default_docs(mut self) -> Self {
         self.docs = Some(format!("{ERROR_DOCS_BASE}/{}", self.code));
         self
@@ -180,7 +180,7 @@ mod tests {
         assert_eq!(err.suggestion.as_deref(), Some("remove quotes around 3"));
         assert_eq!(
             err.docs.as_deref(),
-            Some("https://cli.akua.dev/errors/E_INPUTS_PARSE")
+            Some("https://docs.akua.dev/akua/errors/E_INPUTS_PARSE")
         );
         assert_eq!(err.next_actions.len(), 1);
     }
@@ -192,7 +192,7 @@ mod tests {
             .with_path("apps/api/inputs.yaml")
             .with_field("replicas")
             .with_suggestion("remove quotes around 3")
-            .with_docs("https://cli.akua.dev/errors/E_INPUTS_PARSE");
+            .with_docs("https://docs.akua.dev/akua/errors/E_INPUTS_PARSE");
 
         let line = err.to_json_line();
         let parsed: serde_json::Value = serde_json::from_str(&line).expect("valid json");
@@ -203,7 +203,7 @@ mod tests {
         assert_eq!(parsed["path"], "apps/api/inputs.yaml");
         assert_eq!(parsed["field"], "replicas");
         assert_eq!(parsed["suggestion"], "remove quotes around 3");
-        assert_eq!(parsed["docs"], "https://cli.akua.dev/errors/E_INPUTS_PARSE");
+        assert_eq!(parsed["docs"], "https://docs.akua.dev/akua/errors/E_INPUTS_PARSE");
 
         // No newline in the serialized line itself.
         assert!(!line.contains('\n'));
@@ -252,7 +252,7 @@ mod tests {
         let err = StructuredError::new("E_FOO_BAR", "m").with_default_docs();
         assert_eq!(
             err.docs.as_deref(),
-            Some("https://cli.akua.dev/errors/E_FOO_BAR")
+            Some("https://docs.akua.dev/akua/errors/E_FOO_BAR")
         );
     }
 
@@ -269,7 +269,7 @@ mod tests {
             let err = StructuredError::new(code, "test").with_default_docs();
             assert_eq!(
                 err.docs.as_deref(),
-                Some(format!("https://cli.akua.dev/errors/{code}").as_str()),
+                Some(format!("https://docs.akua.dev/akua/errors/{code}").as_str()),
                 "unexpected docs URL for {code}"
             );
         }

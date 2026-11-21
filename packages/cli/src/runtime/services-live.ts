@@ -1,4 +1,5 @@
 import { type HostAssets, runAkuapkgWith } from '@akua-dev/sdk/cli';
+import { constant as discardError } from 'effect/Function';
 import { BunCrypto, BunServices } from '@effect/platform-bun';
 import {
 	Effect,
@@ -149,15 +150,14 @@ export const SecureConfigLive = Layer.effect(
 
 		/** The config file as a JSON object; a missing file is an empty one. */
 		const readConfig = Effect.fnUntraced(function* (configPath: string) {
-			const raw = yield* fs
-				.readFileString(configPath)
-				.pipe(Effect.catchIf(isNotFound, () => Effect.succeed('{}')));
+			const raw = yield* fs.readFileString(configPath).pipe(
+				// A missing config file starts with an empty config; all other read errors propagate.
+				Effect.catchIf(isNotFound, discardError(Effect.succeed('{}')))
+			);
 			const value = yield* Effect.try({
 				try: (): unknown => JSON.parse(raw),
-				catch: (cause) =>
-					new ConfigParseFailure({
-						message: cause instanceof Error ? cause.message : String(cause)
-					})
+				// JSON parser diagnostics can quote stored credentials; retain only this fixed boundary error.
+				catch: discardError(new ConfigParseFailure({ message: 'Akua config is not valid JSON.' }))
 			});
 			if (!Predicate.isObject(value)) {
 				return yield* new ConfigParseFailure({ message: 'Akua config must be a JSON object.' });
@@ -264,10 +264,10 @@ export const PublicInputLive = Layer.effect(
 				(source === '-'
 					? stdio.stdin.pipe(Stream.decodeText(), Stream.mkString)
 					: fs.readFileString(source)
-				).pipe(Effect.mapError(() => new PublicInputFailure({}))),
+				).pipe(Effect.mapError((cause) => new PublicInputFailure({ cause }))),
 			readBytes: (source) =>
 				(source === '-' ? Stream.mkUint8Array(stdio.stdin) : fs.readFile(source)).pipe(
-					Effect.mapError(() => new PublicInputFailure({}))
+					Effect.mapError((cause) => new PublicInputFailure({ cause }))
 				)
 		});
 	})

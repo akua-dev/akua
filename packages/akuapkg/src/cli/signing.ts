@@ -74,7 +74,7 @@ export const provenanceStatement = (request: {
         externalParameters: { ociRef: request.reference, tag: request.tag },
         ...(dependencies.length === 0 ? {} : { resolvedDependencies: dependencies })
       },
-      runDetails: { builder: { id: `https://cli.akua.dev/cli/v${request.version}` } }
+      runDetails: { builder: { id: "https://docs.akua.dev/akua/cli", version: { akuapkg: request.version } } }
     }
   }))
 }

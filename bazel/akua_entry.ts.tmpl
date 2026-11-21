@@ -7,4 +7,4 @@ import { BunRuntime } from '@effect/platform-bun';
 import { akuaProgram } from '../packages/cli/src/bin/akua.ts';
 import { EmbeddedPackageCli } from '../packages/cli/src/runtime/services-live.ts';
 
-BunRuntime.runMain(akuaProgram(EmbeddedPackageCli(embeddedAssets, AKUAPKG_VERSION)));
+BunRuntime.runMain(akuaProgram(EmbeddedPackageCli(embeddedAssets, AKUAPKG_VERSION), '{VERSION}'));

@@ -1,0 +1,39 @@
+{
+	"generator": "go_config_schema (Go AST -> JSON Schema -> Effect Schema)",
+	"k0s": {
+		"goMod": "https://github.com/k0sproject/k0s/blob/v1.35.8%2Bk0s.0/go.mod",
+		"version": "v1.35.8+k0s.0"
+	},
+	"modules": [
+		{
+			"module": "k8s.io/kubelet",
+			"sha256": "8217ec8b41fdd31ab91393386263ff95b9626eaf19eb2ec81f5fadcceaee79b8",
+			"url": "https://proxy.golang.org/k8s.io/kubelet/@v/v0.35.8.zip",
+			"version": "v0.35.8"
+		},
+		{
+			"module": "k8s.io/apimachinery",
+			"sha256": "02da0df6ca046e8134a7d33cb479209e30bd249aa76391791ddbd7b958733f20",
+			"url": "https://proxy.golang.org/k8s.io/apimachinery/@v/v0.35.8.zip",
+			"version": "v0.35.8"
+		},
+		{
+			"module": "k8s.io/kubernetes",
+			"sha256": "da5935ed1f59aa41428e119a61b83ecd9b8b214c36af7580454ad661ff76224c",
+			"url": "https://proxy.golang.org/k8s.io/kubernetes/@v/v1.35.8.zip",
+			"version": "v1.35.8"
+		}
+	],
+	"roots": {
+		"AuthConfig": "k8s.io/kubelet/pkg/apis/credentialprovider/v1.AuthConfig",
+		"CredentialProviderConfig": "k8s.io/kubelet/config/v1.CredentialProviderConfig",
+		"CredentialProviderRequest": "k8s.io/kubelet/pkg/apis/credentialprovider/v1.CredentialProviderRequest",
+		"CredentialProviderResponse": "k8s.io/kubelet/pkg/apis/credentialprovider/v1.CredentialProviderResponse",
+		"KubeletConfiguration": "k8s.io/kubernetes/pkg/kubelet/apis/config.KubeletConfiguration",
+		"KubeletFlags": "k8s.io/kubernetes/cmd/kubelet/app/options.KubeletFlags"
+	},
+	"validation": "Pass onExcessProperty=error at each encode/decode boundary. Go zero-value fields are optional; this is not kubelet semantic validation.",
+	"wireTypes": {
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Duration": "string"
+	}
+}

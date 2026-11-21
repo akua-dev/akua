@@ -1,0 +1,21 @@
+{
+	"name": "@akua-dev/image-credential-provider",
+	"version": "0.13.14",
+	"private": true,
+	"type": "module",
+	"license": "Apache-2.0",
+	"exports": {
+		"./KubeletInstall": "./src/KubeletInstall.ts",
+		"./generated/kubelet/*": "./src/generated/kubelet/*.ts"
+	},
+	"dependencies": {
+		"@effect/platform-bun": "4.1.4",
+		"effect": "4.1.4",
+		"yaml": "2.9.0"
+	},
+	"devDependencies": {
+		"@effect/vitest": "4.1.4",
+		"@types/node": "^24.10.0",
+		"vitest": "5.0.2"
+	}
+}

@@ -15,11 +15,11 @@ const readJson = Effect.fn('readVersionManifest')(function* <
 });
 
 describe('one version for akua-dev/akua', () => {
-	it.effect('releases the CLI on the Cargo workspace version, which every manifest carries', () =>
+	it.effect('keeps development workspace identities independent of the release version', () =>
 		Effect.gen(function* () {
 			const fs = yield* FileSystem.FileSystem;
-			// akuapkg and the CLI share one version and one `v<version>` tag. The
-			// Cargo workspace version is the source the Bazel release reads.
+			// Workspace identities are not release identities. Bazel generates
+			// distribution manifests and the executable entry from version.bzl.
 			const cargoText = yield* fs.readFileString('../../Cargo.toml');
 			const cargo = yield* Schema.decodeUnknownEffect(
 				Schema.Struct({
@@ -27,6 +27,7 @@ describe('one version for akua-dev/akua', () => {
 				})
 			)(yield* Effect.try(() => Bun.TOML.parse(cargoText)));
 			const workspaceVersion = cargo.workspace.package.version;
+			expect(workspaceVersion).toBe('0.0.0-dev');
 			expect(workspaceVersion).toMatch(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/);
 			const host = yield* readJson(
 				Schema.Struct({ version: Schema.String }),

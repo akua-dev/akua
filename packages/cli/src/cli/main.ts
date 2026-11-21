@@ -1,4 +1,4 @@
-import { BunServices } from '@effect/platform-bun';
+import { BunCrypto, BunServices } from '@effect/platform-bun';
 import { Console as EffectConsole, Effect, Layer, Option, Ref, Result } from 'effect';
 import { CliConfig, CliError, CliOutput, Command, GlobalFlag } from 'effect/cli';
 
@@ -13,9 +13,11 @@ import { Console, type CliServices, PackageCli } from '../runtime/services';
 import { authCommand, authCommands } from './auth';
 import { resourceCommands } from './api-commands';
 import { discoveryCommand } from './discovery';
+import { docsCommand, docsHelp } from './docs';
 import { Invocation } from './invocation';
 import { akua } from './root';
 import { workspaceContextCommands } from './workspaces';
+import { PackagePublishHost } from './package-publish';
 
 /** The complete `akua` command tree, built from the generated API contract. */
 export function akuaCommand(api: ApiContract) {
@@ -26,6 +28,7 @@ export function akuaCommand(api: ApiContract) {
 		Command.withSubcommands([
 			...(api.resources.some((resource) => resource.name === 'auth') ? [] : [authCommand]),
 			discoveryCommand(api),
+			docsCommand,
 			Command.make('pkg').pipe(
 				Command.withDescription('Build, render, publish, and inspect Packages (akua pkg --help)')
 			),
@@ -88,7 +91,7 @@ export const runAkua = Effect.fn('runAkua')(function* (
 			const help = yield* Ref.get(helpPath);
 			yield* console.writeStdout(
 				Option.isSome(help)
-					? builtInOutput(commandName(help.value), text, { help: text }, mode)
+					? builtInHelp(commandName(help.value), text, mode)
 					: argv.includes('--version') || argv.includes('-v')
 						? builtInOutput('akua --version', text, { version }, mode)
 						: builtInOutput('akua --completions', text, { script: text }, mode)
@@ -99,9 +102,7 @@ export const runAkua = Effect.fn('runAkua')(function* (
 	const failure = outcome.failure;
 	if (failure._tag === 'ShowHelp' && failure.errors.length === 0) {
 		const text = captured.text();
-		yield* console.writeStdout(
-			builtInOutput(commandName(failure.commandPath), text, { help: text }, mode)
-		);
+		yield* console.writeStdout(builtInHelp(commandName(failure.commandPath), text, mode));
 		return 0;
 	}
 	return yield* runCli(Effect.fail(usageFailure(failure)), { mode });
@@ -124,6 +125,11 @@ function recordingHelp(path: Ref.Ref<Option.Option<ReadonlyArray<string>>>) {
 
 function builtInOutput(command: string, text: string, data: unknown, mode: OutputMode): string {
 	return mode === 'json' ? renderSuccess({ command, data }, mode) : text;
+}
+
+function builtInHelp(command: string, text: string, mode: OutputMode): string {
+	const help = `${text}\n${docsHelp}`;
+	return builtInOutput(command, help, { help }, mode);
 }
 
 const commandName = (path: ReadonlyArray<string>) => ['akua', ...path.slice(1)].join(' ');
@@ -155,13 +161,14 @@ function usageFailure(failure: CliError.CliError): UsageFailure {
 const runPackageCommand = Effect.fnUntraced(function* (argv: readonly string[], mode: OutputMode) {
 	const pkg = yield* PackageCli;
 	const args = argv.length === 1 ? ['--help'] : argv.slice(1);
-	return yield* pkg
-		.execute(mode === 'agent' || mode === 'json' ? [...args, '--json'] : args)
-		.pipe(
-			Effect.catchTag('PackageCliFailure', () =>
-				runCli(Effect.fail(packageCommandError()), { mode })
-			)
-		);
+	return yield* pkg.execute(mode === 'agent' || mode === 'json' ? [...args, '--json'] : args).pipe(
+		Effect.provide(
+			PackagePublishHost.pipe(Layer.provide(ApiClient.layer), Layer.provide(BunCrypto.layer))
+		),
+		Effect.catchTag('PackageCliFailure', (cause) =>
+			runCli(Effect.fail(packageCommandError(cause)), { mode })
+		)
+	);
 });
 
 /** The output flags the mode was read from, removed so `akua --json pkg ...` reaches the toolchain. */

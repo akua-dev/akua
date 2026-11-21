@@ -13,6 +13,7 @@ export type InputIssue = typeof InputIssue.Type;
  * tells the renderer which next action to suggest.
  */
 export class OperationFailure extends Schema.TaggedError<OperationFailure>()('OperationFailure', {
+	cause: Schema.optionalKey(Schema.Defect()),
 	operationId: Schema.String,
 	reason: Schema.Literals([
 		/** The request input (flags, arguments, or `--input`) is malformed or invalid. */

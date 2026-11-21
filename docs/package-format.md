@@ -64,15 +64,15 @@ whose names start with `_` are private and are not part of the output.
 
 ## Imports
 
-| Import | What it is | Declared by |
-|---|---|---|
-| `import akua.ctx` | `ctx.input()`, the inputs passed to the render | built in |
-| `import akua.helm`, `akua.kustomize`, `akua.pkg` | the engine calls | built in |
-| `import charts.<name>` | a Helm chart dependency, with a typed `template` call | `akua.toml` |
-| `import pkgs.<name>` | another akua Package, with a typed `render` call | `akua.toml` |
-| `import crds.<name>.<group>.<version>` | schemas generated from a CRD dependency | `akua.toml` with `crds` |
-| `import k8s.api.<group>.<version>` | Kubernetes core types, from the `k8s` dependency `init` declares | `akua.toml` |
-| `import <name>` | any other KCL module published to OCI, such as those under `ghcr.io/kcl-lang` | `akua.toml` |
+| Import                                           | What it is                                                                    | Declared by             |
+| ------------------------------------------------ | ----------------------------------------------------------------------------- | ----------------------- |
+| `import akua.ctx`                                | `ctx.input()`, the inputs passed to the render                                | built in                |
+| `import akua.helm`, `akua.kustomize`, `akua.pkg` | the engine calls                                                              | built in                |
+| `import charts.<name>`                           | a Helm chart dependency, with a typed `template` call                         | `akua.toml`             |
+| `import pkgs.<name>`                             | another akua Package, with a typed `render` call                              | `akua.toml`             |
+| `import crds.<name>.<group>.<version>`           | schemas generated from a CRD dependency                                       | `akua.toml` with `crds` |
+| `import k8s.api.<group>.<version>`               | Kubernetes core types, from the `k8s` dependency `init` declares              | `akua.toml`             |
+| `import <name>`                                  | any other KCL module published to OCI, such as those under `ghcr.io/kcl-lang` | `akua.toml`             |
 
 Every dependency is resolved from `akua.toml` and checked against
 `akua.lock`. A Package never writes a filesystem path to reach another
@@ -128,6 +128,38 @@ with `--format openapi`, without rendering:
 Inputs come from `--inputs` (YAML or JSON). Without the flag, `render` reads
 `inputs.yaml`, then `inputs.example.yaml`; with neither, it renders with
 no inputs, which fails when `Input` has a field without a default.
+
+### Renderer-provided inputs
+
+A render host can supply ordinary declared inputs alongside user configuration.
+Akua's Install host reserves these string fields:
+
+| Input          | Host-provided value                                                        |
+| -------------- | -------------------------------------------------------------------------- |
+| `namespace`    | The destination Kubernetes namespace                                       |
+| `release_name` | A Helm release name unique to the installation                             |
+| `primary_url`  | The primary public URL supplied by routing, or `""` without a public route |
+
+Bind only the values the Package needs:
+
+```kcl
+schema Input:
+    namespace: str = "default"
+    release_name: str = "web"
+    primary_url: str = ""
+
+input: Input = ctx.input()
+```
+
+These remain normal KCL fields: `akua pkg export` includes their types and
+defaults, and standalone `akua pkg render --inputs inputs.yaml` uses the values
+in that file. The CLI does not discover a public URL or contact a platform
+during rendering. The Package decides how its application consumes these inputs.
+`primary_url` names one full primary address, including its served path, not
+every attached domain. An Install host can evaluate in isolation to discover
+that path before evaluating with the final bound URL; it applies only the final
+output. Keep the HTTP output path independent of `primary_url`. Hosts must not
+inject fields a Package has not declared.
 
 ## Calling engines
 
@@ -188,8 +220,7 @@ _base = upstream.render(upstream.Input {appName = "shop"})
 
 `akua.pkg` is the lower-level form: `pkg.render(pkg.Render {package =
 "upstream", inputs = {...}})`, where `package` is the dependency alias.
-Nested renders share the outer render's CPU budget and are capped at depth
-16. [examples/08-pkg-compose](../examples/08-pkg-compose/),
+Nested renders share the outer render's CPU budget and are capped at depth 16. [examples/08-pkg-compose](../examples/08-pkg-compose/),
 [11-install-as-package](../examples/11-install-as-package/) and
 [13-subpackage-helm](../examples/13-subpackage-helm/) show composition.
 

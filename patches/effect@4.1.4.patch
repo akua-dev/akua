@@ -363,7 +363,7 @@ index 7848cf3bc3c0e241c40dad6b6f137dd5a5ec6e23..b10292665c8fd52ea25d8533ff0631bb
 +      }
        case "Boolean":
          return makeCode("Schema.Boolean", "boolean");
-        case "BigInt":
+       case "BigInt":
 diff --git a/src/Equal.ts b/src/Equal.ts
 --- a/src/Equal.ts
 +++ b/src/Equal.ts

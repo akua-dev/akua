@@ -1,4 +1,5 @@
 import { Effect, FileSystem, Path } from "effect"
+import { constant as discardError } from "effect/Function"
 import { Command, Flag } from "effect/cli"
 import { type CliFailure, ExitCode, fail, usageFailure } from "../contract"
 import { cacheRoot } from "../downloads"
@@ -22,7 +23,7 @@ interface CacheEntry {
 }
 
 const ioFailure = (path: string) => (error: { readonly message: string; readonly reason?: { readonly _tag: string } }) =>
-  fail("E_IO", `i/o at \`${path}\`: ${osMessage(error)}`, ExitCode.systemError)
+  fail("E_IO", `i/o at \`${path}\`: ${osMessage(error)}`, ExitCode.systemError, path, undefined, error)
 
 /** The bytes of every regular file under `directory`, symlinks not followed; a missing directory holds none. */
 const directorySize = (directory: string): Effect.Effect<number, CliFailure, FileSystem.FileSystem | Path.Path> =>
@@ -30,7 +31,8 @@ const directorySize = (directory: string): Effect.Effect<number, CliFailure, Fil
     const fs = yield* FileSystem.FileSystem
     const path = yield* Path.Path
     const names = yield* fs.readDirectory(directory).pipe(
-      Effect.catchIf((error) => error.reason._tag === "NotFound", () => Effect.succeed([])),
+      // An absent cache directory consumes zero bytes.
+      Effect.catchIf((error) => error.reason._tag === "NotFound", discardError(Effect.succeed([]))),
       Effect.mapError(ioFailure(directory))
     )
     let total = 0

@@ -15,6 +15,7 @@ import { MemoryFs } from "./memory-fs"
  */
 
 export class GitFetchFailed extends Schema.TaggedError<GitFetchFailed>()("GitFetchFailed", {
+  cause: Schema.optionalKey(Schema.Defect()),
   message: Schema.String,
   /** Refused because `--offline` forbids the network, not because a fetch failed. */
   offline: Schema.Boolean
@@ -51,10 +52,10 @@ export class GitRemote extends Context.Service<GitRemote, {
       const fs = yield* FileSystem.FileSystem
       const path = yield* Path.Path
       const root = yield* cacheRoot("git")
-      const failed = (message: string) => new GitFetchFailed({ message, offline: false })
+      const failed = (message: string, cause?: unknown) => new GitFetchFailed({ message, offline: false, cause })
       const checkout = (commit: string) => path.join(root, "checkouts", commit)
       const attempt = <A>(what: string, run: () => Promise<A>) =>
-        Effect.tryPromise({ try: run, catch: (cause) => failed(`${what}: ${cause instanceof Error ? cause.message : String(cause)}`) })
+        Effect.tryPromise({ try: run, catch: (cause) => failed(`${what}: ${cause instanceof Error ? cause.message : String(cause)}`, cause) })
 
       /** Every blob under `tree`, as paths relative to the checkout. */
       const files = Effect.fnUntraced(function*(memory: MemoryFs, oid: string, prefix: string): Effect.fn.Return<
@@ -130,7 +131,7 @@ export class GitRemote extends Context.Service<GitRemote, {
         const { commit: object } = yield* attempt("reading commit", () => git.readCommit({ fs: memory, gitdir: "/.git", oid: commit }))
         const entries = yield* files(memory, object.tree, "")
         yield* unpackInto(checkout(commit), entries).pipe(
-          Effect.mapError((error) => failed(`io error at ${root}: ${error.message}`))
+          Effect.mapError((error) => failed(`io error at ${root}: ${error.message}`, error))
         )
         return { directory: checkout(commit), commit } satisfies FetchedCommit
       }, Effect.provideService(FileSystem.FileSystem, fs), Effect.provideService(Path.Path, path))

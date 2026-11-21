@@ -5,6 +5,7 @@ hermetic_cc_toolchain) for Linux, macOS and WASI targets, and clang-cl with
 the pinned Windows SDK for Windows.
 """
 
+load("@platforms//host:constraints.bzl", "HOST_CONSTRAINTS")
 load("@rules_cc//cc:defs.bzl", "cc_toolchain")
 load("//bazel:source_build.bzl", "package_windows_sdk")
 load(":windows_cc_toolchain.bzl", "windows_cc_toolchain_config")
@@ -23,6 +24,21 @@ toolchain(
         "@zig_sdk//libc:unconstrained",
     ],
     toolchain = "@zig_config-linux-amd64//:wasm32-wasi-musl_cc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+# The plain Zig repository runs on the invoking host. Its WASI compiler is
+# shared by native macOS builds, while the Linux registration stays first.
+toolchain(
+    name = "render_worker_wasi_host_cc_toolchain",
+    exec_compatible_with = HOST_CONSTRAINTS,
+    target_compatible_with = [
+        "@platforms//cpu:wasm32",
+        "@platforms//os:wasi",
+        "@zig_sdk//libc:unconstrained",
+    ],
+    toolchain = "@zig_config//:wasm32-wasi-musl_cc",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
     visibility = ["//visibility:public"],
 )

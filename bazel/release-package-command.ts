@@ -6,10 +6,10 @@ import { makeReleaseHostLive } from '@akua-dev/cli/build/release-host-live';
 
 class CliReleasePackageFailure extends Schema.TaggedError<CliReleasePackageFailure>()(
 	'CliReleasePackageFailure',
-	{ message: Schema.String }
+	{ message: Schema.String, cause: Schema.optionalKey(Schema.Defect()) }
 ) {}
 
-const fail = (message: string) => new CliReleasePackageFailure({ message });
+const fail = (message: string, cause?: unknown) => new CliReleasePackageFailure({ message, cause });
 
 const UNSTAMPED = '-';
 const UNSTAMPED_SOURCE_SHA = '0'.repeat(40);
@@ -73,10 +73,10 @@ const program = Effect.scoped(
 		}
 		const packageManifest = yield* fs.readFileString(packageJsonPath).pipe(
 			Effect.flatMap(decodePackageManifest),
-			Effect.mapError(() => fail('Invalid CLI package.json'))
+			Effect.mapError((cause) => fail('Invalid CLI package.json', cause))
 		);
 		// One version for akua-dev/akua: the CLI releases on the version of the
-		// package toolchain it embeds (Cargo.toml's workspace version).
+		// package toolchain it embeds (the version.bzl build input).
 		if (packageManifest.version !== packageVersion) {
 			return yield* fail(
 				`packages/cli/package.json version ${packageManifest.version} differs from the embedded akuapkg ${packageVersion}`
@@ -88,7 +88,7 @@ const program = Effect.scoped(
 				? UNSTAMPED_SOURCE_SHA
 				: yield* fs.readFileString(statusPath).pipe(
 						Effect.flatMap(readSourceSha),
-						Effect.mapError(() => fail('Invalid Bazel stable status'))
+						Effect.mapError((cause) => fail('Invalid Bazel stable status', cause))
 					);
 		const targetIds = RELEASE_TARGETS.map((target) => target.id);
 		const targetId = mode === 'target' ? entries[0]?.split('=', 1)[0] : undefined;

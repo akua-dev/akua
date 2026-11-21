@@ -177,10 +177,10 @@ export const privateIngressGatewayApp = Effect.gen(function* () {
 	const backend = backendResult.success;
 	if (backend === null) return routeNotFound;
 
-	const targetOption = yield* Effect.try({
-		try: () => resolveRouteTargetUrl(backend.url, incomingUrl),
-		catch: () => undefined
-	}).pipe(Effect.option);
+	// An invalid backend URL deliberately becomes the fixed public bad-gateway response.
+	const targetOption = yield* Effect.try(() =>
+		resolveRouteTargetUrl(backend.url, incomingUrl)
+	).pipe(Effect.option);
 	if (Option.isNone(targetOption)) return badGateway;
 	const target = targetOption.value;
 

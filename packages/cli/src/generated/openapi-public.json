@@ -597,7 +597,7 @@
             }
           }
         },
-        "description": "Requests cancellation of an in-flight operation. Cancellation is asynchronous: successful requests return the current operation envelope while the owning resource settles into a terminal result. Replaying the request with the same Idempotency-Key is supported. If the operation has already reached a terminal state, cancellation is rejected with 409 Conflict (code 7006) because it conflicts with the current state.\n\nAn accepted request has no fixed cancellation-completion deadline. Keep following GET or WAIT until the Operation is terminal; a WAIT timeout does not stop cancellation. Cancelling Install creation deletes the Install: it first settles active writes and removes its Route and workload, then destroys its secrets and releases admission. CANCELLED is reported only after that cleanup completes. This can exceed three minutes: workload-removal acknowledgement alone allows a fifteen-minute grace period, and unavailable external services can delay required cleanup further. A deletion cannot be cancelled.",
+        "description": "Requests cancellation of an in-flight operation. Cancellation is asynchronous: successful requests return the current operation envelope while the owning resource settles into a terminal result. Replaying the request with the same Idempotency-Key is supported. If the operation has already reached a terminal state, cancellation is rejected with 409 Conflict (code 7006) because it conflicts with the current state.\n\nAn accepted request has no fixed cancellation-completion deadline. Keep following GET or WAIT until the Operation is terminal; a WAIT timeout does not stop cancellation. Cancelling an Install update restores and confirms the last successful version before reporting CANCELLED; if restoration cannot be confirmed, the Operation and Install fail with rollback-unconfirmed. Cancelling Install creation deletes the Install: it first settles active writes and removes its Route and workload, then destroys its secrets and releases admission. CANCELLED is reported only after that cleanup completes. This can exceed three minutes: workload-removal acknowledgement alone allows a fifteen-minute grace period, and unavailable external services can delay required cleanup further. A deletion cannot be cancelled.",
         "summary": "Request operation cancellation",
         "x-platform-visibility": "PUBLIC"
       }
@@ -935,6 +935,16 @@
               ]
             },
             "required": true
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "description": "Remove Akua-side state even if the Cluster cannot acknowledge workload removal. The Operation records any unconfirmed removal; unreachable workloads may remain on the Cluster.",
+              "default": false
+            },
+            "required": false
           }
         ],
         "security": [
@@ -1021,7 +1031,7 @@
             }
           }
         },
-        "description": "Deletes an install and cascades resource cleanup asynchronously. Returns an Operation envelope to poll for progress. If the workflow starts before its Operation is visible, retry with the same Idempotency-Key.",
+        "description": "Deletes an Install and cleans up its Route, Placement, secrets and admission asynchronously. Supersedes an active update and waits for it to settle before cleanup. With force, removes Akua-side inventory without requiring a Ready node or a surviving Cluster and records unconfirmed workload removal in Operation steps. Retry deletion to recover the same Operation, including after completion.",
         "summary": "Delete install",
         "x-platform-visibility": "PUBLIC"
       },
@@ -1119,6 +1129,280 @@
         },
         "description": "Returns current install metadata.",
         "summary": "Get install details",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "patch": {
+        "tags": [
+          "installs"
+        ],
+        "operationId": "installs.update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 55
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Required caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": true
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "The `etag` of the resource version the client last read. Required on writes when the resource exposes an `etag` field. Mismatch returns 409 `ABORTED` with the current etag in the error metadata.",
+              "examples": [
+                "42"
+              ]
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Install update accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The idempotency key was already used for a different request. | The resource changed since the etag the client sent; the current etag is in the metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Updates the Package version and/or inputs of one existing Install (AIP-134). Returns a long-running Operation. The Install identity, Route, namespace and volumes are retained. Concurrent updates conflict; deletion supersedes an update. Cancel the Operation to restore the last successful version; cancellation completes only after restoration is confirmed, otherwise the Install fails with rollback-unconfirmed. Retry the same intent and Idempotency-Key to recover its Operation even with the original If-Match. Other update failures retain the existing resources and a specific condition; no fleet update is performed.",
+        "summary": "Update install",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInstallBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/installs/{id}/inputs": {
+      "get": {
+        "tags": [
+          "installs"
+        ],
+        "operationId": "installs.getInputs",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 55
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Non-secret persisted Install inputs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallInputs"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns original non-secret configure inputs from the Install owner for recovery. Requires install.installs.get in the Install Workspace and access to the pinned Package schema. Does not read the vault or return secret values or references. Returns 422 instead of inputs when the schema no longer matches the original pin or its secrecy cannot be established safely, including indirect or applicator schemas.",
+        "summary": "Get install inputs",
         "x-platform-visibility": "PUBLIC"
       }
     },
@@ -5828,7 +6112,7 @@
             }
           }
         },
-        "description": "Creates a Package in the Akua-Context Workspace from a Helm chart in a public OCI repository. It holds no versions yet; publish each with Create package version. Retry with the same Idempotency-Key to receive the same Package.",
+        "description": "Creates a private Package in the Akua-Context Workspace, hosted at Akua or imported from an external OCI repository. It holds no versions yet; publish each with Create package version. Retry with the same Idempotency-Key to receive the same Package.",
         "summary": "Create package",
         "requestBody": {
           "content": {
@@ -5932,7 +6216,7 @@
             }
           }
         },
-        "description": "Returns a Package of a Workspace you belong to, with its versions.",
+        "description": "Returns a Package of a Workspace you belong to, with its versions. With Akua-Context, also returns a Package granted to that Workspace and all its published versions, including versions published after redemption.",
         "summary": "Get package details",
         "x-platform-visibility": "PUBLIC"
       }
@@ -6054,7 +6338,7 @@
             }
           }
         },
-        "description": "Publishes one version of a Package: Akua pulls the chart at that version from the Package repository, verifies its digest and keeps it, then reads its values schema and defaults. Poll the returned Operation until it is done. A version number is published once; retry with the same Idempotency-Key to receive the same Operation.",
+        "description": "Publishes one version from the private hosted repository or external OCI source, verifies its digest and records its format, input schema and defaults. Push hosted archive bytes before calling this action. Poll the returned Operation until it is done. A version number is published once; retry with the same Idempotency-Key to receive the same Operation.",
         "summary": "Create package version",
         "requestBody": {
           "content": {
@@ -6452,6 +6736,897 @@
         },
         "description": "Revokes one of your API tokens. It stops authenticating requests immediately.",
         "summary": "Revoke an API token",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/registry/upstreams": {
+      "post": {
+        "tags": [
+          "Registry"
+        ],
+        "operationId": "registry.createUpstream",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "upstream_id",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/UpstreamId"
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Upstream created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Upstream"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Connect an image registry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUpstream"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      },
+      "get": {
+        "tags": [
+          "Registry"
+        ],
+        "operationId": "registry.listUpstreams",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Upstream"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "has_more",
+                    "next_cursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List Upstreams",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/registry/upstreams/{upstream}": {
+      "get": {
+        "tags": [
+          "Registry"
+        ],
+        "operationId": "registry.getUpstream",
+        "parameters": [
+          {
+            "name": "upstream",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UpstreamId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Upstream"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get an Upstream",
+        "x-platform-visibility": "PUBLIC"
+      },
+      "delete": {
+        "tags": [
+          "Registry"
+        ],
+        "operationId": "registry.deleteUpstream",
+        "parameters": [
+          {
+            "name": "upstream",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UpstreamId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Upstream"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Delete an Upstream",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/registry/upstreams/{upstream}:test": {
+      "post": {
+        "tags": [
+          "Registry"
+        ],
+        "operationId": "registry.testUpstream",
+        "parameters": [
+          {
+            "name": "upstream",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UpstreamId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ResolvedImage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolvedImage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Test an Upstream pull",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/registry/upstreams/{upstream}:resolveImage": {
+      "post": {
+        "tags": [
+          "Registry"
+        ],
+        "operationId": "registry.resolveImage",
+        "parameters": [
+          {
+            "name": "upstream",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UpstreamId"
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ResolvedImage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolvedImage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Resolve an image to its Akua path",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  }
+                },
+                "required": [
+                  "image"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/registry/images:check": {
+      "post": {
+        "tags": [
+          "Registry"
+        ],
+        "operationId": "registry.checkImages",
+        "parameters": [
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "images": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "public",
+                              "resolved",
+                              "failed"
+                            ]
+                          },
+                          "digest": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "message": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "image",
+                          "state",
+                          "digest",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "images"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Check images before publishing",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 1024
+                    },
+                    "maxItems": 256
+                  }
+                },
+                "required": [
+                  "images"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": true
+        },
         "x-platform-visibility": "PUBLIC"
       }
     },
@@ -7847,8 +9022,181 @@
             }
           }
         },
-        "description": "Unauthenticated TLS discovery for join.sh. Returns only the public CA certificate, Kubernetes API endpoint and controller version. No credentials, private keys or Workspace metadata. Unavailable for attached, unready or deleted Clusters.",
+        "description": "Unauthenticated TLS discovery for join.sh. Returns only the public CA certificate, Kubernetes API endpoint, controller version and the image credential provider digests. No credentials, private keys or Workspace metadata. Unavailable for attached, unready or deleted Clusters.",
         "summary": "Get public Cluster join information",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/clusters/{id}:reportJoinBootstrap": {
+      "post": {
+        "tags": [
+          "joinBootstrap"
+        ],
+        "operationId": "clusters.reportJoinBootstrap",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 54
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "JoinBootstrapBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "<No Content>"
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request conflicts with existing resource state or immutable intent. | The resource changed since the etag the client sent; the current etag is in the metadata. | The idempotency key was already used for a different request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiPreconditionFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIdempotencyConflict"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The resource is permanently unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGone"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is well-formed but cannot be processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnprocessable"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over its per-minute budget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to handle the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInternalServerError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "An upstream provider failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiExternalServiceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "An upstream provider did not answer in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGatewayTimeout"
+                }
+              }
+            }
+          }
+        },
+        "description": "Guest-only diagnostic, authenticated by the active unexpired bootstrap token for this Cluster. Records only a fixed bootstrap step, reason and exit code in API logs. Does not enroll a Node or change Cluster readiness. Never send command output or credentials in the body.",
+        "summary": "Report a customer-server join failure",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinBootstrapReport"
+              }
+            }
+          },
+          "required": true
+        },
         "x-platform-visibility": "PUBLIC"
       }
     },
@@ -9066,7 +10414,7 @@
                 "properties": {
                   "ttl_seconds": {
                     "type": "integer",
-                    "description": "Lifetime of the token in seconds.",
+                    "description": "Lifetime of the token in seconds. A token is for one server: 15 minutes after its first use it expires, whatever is left of this lifetime.",
                     "minimum": 60,
                     "maximum": 86400
                   }
@@ -9551,12 +10899,12 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "The join token",
+          "202": {
+            "description": "Join token revocation accepted",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ClusterJoinToken"
+                  "$ref": "#/components/schemas/Operation"
                 }
               }
             }
@@ -9692,7 +11040,7 @@
             }
           }
         },
-        "description": "Idempotent. Nodes that already joined stay.",
+        "description": "Revocation invalidates the join token generation on acceptance. Kubernetes may cache a successful authentication for at most 10 seconds, so a just-revoked token can still join within that window; subsequent authentication is refused even if old credential material remains. The Operation confirms invalidation and credential cleanup. Existing Nodes stay; remove them with nodes.remove. Idempotent; retry a failed revocation with a new idempotency key.",
         "summary": "Revoke a join token",
         "x-platform-visibility": "PUBLIC"
       }
@@ -17348,7 +18696,7 @@
             }
           }
         },
-        "description": "Erases the vault's key and every value in it at once; connections stop working immediately. A deleted `default` vault comes back empty on next use.",
+        "description": "Erases the vault's key and every value in it at once; connections stop working immediately. Erasure removes every command receipt. A repeated DELETE of a named vault that is still absent returns 404, even with the same Idempotency-Key. If the vault has been recreated, the retry acts on the new vault and can erase its new values. For conditional retries, send If-Match with the last observed etag: a different current etag returns 409. Etags are revision-based and may repeat after recreation, so they do not identify a vault incarnation. A deleted `default` vault comes back empty on next use; a repeated DELETE without If-Match materializes and deletes an empty vault, returning 204.",
         "summary": "Delete a vault",
         "x-platform-visibility": "PUBLIC"
       }
@@ -21118,6 +22466,13 @@
                     "examples": [
                       "billing-required"
                     ]
+                  },
+                  "violations": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/OperationViolation"
+                    },
+                    "description": "Each precondition that failed, like `google.rpc.PreconditionFailure`. A Package version that fails with `image-unresolvable` lists every image it could not resolve."
                   }
                 },
                 "required": [
@@ -21271,8 +22626,63 @@
         ],
         "additionalProperties": false
       },
+      "OperationViolation": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The kind of violation, stable for clients to branch on.",
+            "examples": [
+              "image-unresolvable"
+            ]
+          },
+          "subject": {
+            "type": "string",
+            "description": "What failed it, for `image-unresolvable` the image reference.",
+            "examples": [
+              "pkg.akua.dev/ws_xxx/images/ghcr-acme/web:1.2.3"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Why it failed, safe to show."
+          }
+        },
+        "required": [
+          "type",
+          "subject",
+          "description"
+        ],
+        "additionalProperties": false
+      },
       "OperationResponse": {
         "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "cluster.join_token.revoke"
+                ]
+              },
+              "cluster_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "token_id": {
+                "type": "string",
+                "pattern": "^[a-z0-9]{6}$"
+              }
+            },
+            "required": [
+              "type",
+              "cluster_id",
+              "token_id"
+            ],
+            "additionalProperties": false
+          },
           {
             "type": "object",
             "properties": {
@@ -22473,6 +23883,38 @@
               "type": {
                 "type": "string",
                 "enum": [
+                  "cluster.join_token.revoke"
+                ]
+              },
+              "workspace_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 53
+              },
+              "cluster_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 54
+              },
+              "token_id": {
+                "type": "string",
+                "pattern": "^[a-z0-9]{6}$"
+              }
+            },
+            "required": [
+              "type",
+              "workspace_id",
+              "cluster_id",
+              "token_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
                   "machine.create"
                 ]
               },
@@ -22938,6 +24380,27 @@
                 "type": "string",
                 "enum": [
                   "install.delete"
+                ]
+              },
+              "install_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 55
+              }
+            },
+            "required": [
+              "type",
+              "install_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "install.update"
                 ]
               },
               "install_id": {
@@ -26224,7 +27687,7 @@
           "message": {
             "type": "string",
             "maxLength": 8192,
-            "description": "Optional secret-free step: hostname, download-k0s, configure-provider-id, install-worker, or start-worker. Other text is omitted rather than exposed as guest output. Retained descriptions are bounded to 2 KiB."
+            "description": "Optional secret-free step: hostname, download-k0s, configure-provider-id, download-image-credential-provider, verify-image-credential-provider, install-worker, or start-worker. Other text is omitted rather than exposed as guest output. Retained descriptions are bounded to 2 KiB."
           }
         },
         "required": [
@@ -26715,40 +28178,6 @@
         ],
         "additionalProperties": false
       },
-      "ClusterJoinToken": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^[a-z0-9]{6}$"
-          },
-          "state": {
-            "type": "string",
-            "enum": [
-              "active",
-              "revoked",
-              "expired"
-            ]
-          },
-          "expires_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "created_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "id",
-          "state",
-          "expires_at",
-          "created_at"
-        ],
-        "additionalProperties": false
-      },
       "ClusterJoinTokenList": {
         "type": "object",
         "properties": {
@@ -26778,6 +28207,54 @@
           "data",
           "has_more",
           "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "ClusterJoinToken": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]{6}$"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "active",
+              "revoked",
+              "expired"
+            ]
+          },
+          "expires_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          },
+          "used_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Unix timestamp (seconds)",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the token was first used to join a server; it then expires 15 minutes later (`expires_at`). Null while it is unused, and for the tokens of a node pool. OUTPUT_ONLY."
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "expires_at",
+          "created_at",
+          "used_at"
         ],
         "additionalProperties": false
       },
@@ -27391,6 +28868,49 @@
         ],
         "additionalProperties": false
       },
+      "JoinBootstrapReport": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "string",
+            "enum": [
+              "validate-input",
+              "discover-cluster",
+              "install-k0s",
+              "download-image-credential-provider",
+              "verify-image-credential-provider",
+              "stop-incomplete-worker",
+              "write-bootstrap-config",
+              "encode-worker-token",
+              "install-worker",
+              "start-worker",
+              "await-bootstrap"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "command-failed",
+              "unavailable",
+              "invalid-discovery",
+              "provider-install-failed",
+              "integrity-failed",
+              "bootstrap-timeout"
+            ]
+          },
+          "exit_code": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 255
+          }
+        },
+        "required": [
+          "step",
+          "reason",
+          "exit_code"
+        ],
+        "additionalProperties": false
+      },
       "ClusterJoinInfo": {
         "type": "object",
         "properties": {
@@ -27407,12 +28927,38 @@
           "k0s_version": {
             "type": "string",
             "maxLength": 64
+          },
+          "image_credential_provider": {
+            "type": "object",
+            "properties": {
+              "repository": {
+                "type": "string",
+                "maxLength": 255,
+                "description": "OCI repository (`<registry host>/<path>`) whose blobs hold the provider."
+              },
+              "amd64": {
+                "type": "string",
+                "description": "Blob digest of the linux/amd64 layer."
+              },
+              "arm64": {
+                "type": "string",
+                "description": "Blob digest of the linux/arm64 layer."
+              }
+            },
+            "required": [
+              "repository",
+              "amd64",
+              "arm64"
+            ],
+            "additionalProperties": false,
+            "description": "The kubelet image credential provider a joining server installs, so its Pods pull private Akua images with their own ServiceAccount token. join.sh downloads the layer of its architecture by digest and refuses it unless its SHA-256 matches."
           }
         },
         "required": [
           "ca_certificate",
           "api_endpoint",
-          "k0s_version"
+          "k0s_version",
+          "image_credential_provider"
         ],
         "additionalProperties": false
       },
@@ -27773,6 +29319,7 @@
               "admission",
               "billing",
               "package",
+              "registry",
               "product",
               "offer",
               "order-draft",
@@ -28020,6 +29567,125 @@
           "data",
           "has_more",
           "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "ResolvedImage": {
+        "type": "object",
+        "properties": {
+          "image": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "image",
+          "digest"
+        ],
+        "additionalProperties": false
+      },
+      "UpstreamId": {
+        "type": "string",
+        "description": "a lowercase resource id (AIP-122)"
+      },
+      "Upstream": {
+        "type": "object",
+        "properties": {
+          "upstream_id": {
+            "$ref": "#/components/schemas/UpstreamId"
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 53
+          },
+          "host": {
+            "$ref": "#/components/schemas/RegistryHost"
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "secret": {
+            "type": "string"
+          },
+          "image_prefix": {
+            "type": "string"
+          },
+          "test_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "number"
+          },
+          "etag": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "upstream_id",
+          "workspace_id",
+          "host",
+          "path",
+          "username",
+          "secret",
+          "image_prefix",
+          "test_image",
+          "created_at",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "RegistryHost": {
+        "type": "string",
+        "maxLength": 259,
+        "description": "Public HTTPS OCI registry DNS hostname, optionally with a port. No scheme, IP literal, userinfo, private suffix or Akua-served hostname."
+      },
+      "CreateUpstream": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "$ref": "#/components/schemas/RegistryHost"
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "secret": {
+            "type": "string"
+          },
+          "test_image": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "skip_test": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "host",
+          "path",
+          "username",
+          "secret"
         ],
         "additionalProperties": false
       },
@@ -28354,7 +30020,7 @@
             "minLength": 1,
             "maxLength": 128,
             "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$",
-            "description": "The chart version to publish; Akua pulls the chart at this tag from the Package repository.",
+            "description": "The version tag to publish from the hosted Package repository or external OCI source.",
             "examples": [
               "1.2.3"
             ]
@@ -28388,7 +30054,7 @@
             "type": "string"
           },
           "source": {
-            "$ref": "#/components/schemas/PackageHelmOciSource"
+            "$ref": "#/components/schemas/PackageSource"
           },
           "versions": {
             "type": "array",
@@ -28433,13 +30099,23 @@
         ],
         "additionalProperties": false
       },
-      "PackageHelmOciSource": {
+      "PackageSource": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PackageHostedSource"
+          },
+          {
+            "$ref": "#/components/schemas/PackageOciSource"
+          }
+        ]
+      },
+      "PackageOciSource": {
         "type": "object",
         "properties": {
           "kind": {
             "type": "string",
             "enum": [
-              "helm-oci"
+              "oci"
             ]
           },
           "repository": {
@@ -28468,6 +30144,28 @@
         ],
         "additionalProperties": false
       },
+      "PackageHostedSource": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "hosted"
+            ]
+          },
+          "chart": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 253,
+            "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$"
+          }
+        },
+        "required": [
+          "kind",
+          "chart"
+        ],
+        "additionalProperties": false
+      },
       "CreatePackageRequest": {
         "type": "object",
         "properties": {
@@ -28477,7 +30175,7 @@
             "maxLength": 100
           },
           "source": {
-            "$ref": "#/components/schemas/PackageHelmOciSource"
+            "$ref": "#/components/schemas/PackageSource"
           }
         },
         "required": [
@@ -29921,152 +31619,6 @@
         ],
         "additionalProperties": false
       },
-      "DashboardRegionList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardRegion"
-            }
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "True if more items exist after this page."
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque cursor for the next page, or null if no more pages."
-          }
-        },
-        "required": [
-          "data",
-          "has_more",
-          "next_cursor"
-        ],
-        "additionalProperties": false
-      },
-      "DashboardRegion": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 54
-          },
-          "name": {
-            "type": "string",
-            "examples": [
-              "us-east-1"
-            ]
-          },
-          "icon": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Icon URL"
-          },
-          "workspace_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 53
-          },
-          "created_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "updated_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds) of the last change",
-            "minimum": 0
-          },
-          "etag": {
-            "type": "string",
-            "description": "Opaque version token. Send it as `If-Match` when updating or deleting."
-          },
-          "cluster_pool_health": {
-            "$ref": "#/components/schemas/ClusterPoolHealth"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "icon",
-          "workspace_id",
-          "created_at",
-          "updated_at",
-          "etag",
-          "cluster_pool_health"
-        ],
-        "additionalProperties": false
-      },
-      "ClusterPoolHealth": {
-        "type": "object",
-        "properties": {
-          "region_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 54
-          },
-          "target_size": {
-            "type": "number"
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "available": {
-            "type": "number"
-          },
-          "provisioning": {
-            "type": "number"
-          },
-          "allocation_requests": {
-            "type": "number"
-          },
-          "allocated_last_24h": {
-            "type": "number"
-          },
-          "deleted_last_24h": {
-            "type": "number"
-          },
-          "failed_last_24h": {
-            "type": "number"
-          },
-          "last_refill_at": {
-            "type": "integer",
-            "description": "Unix timestamp (seconds)",
-            "minimum": 0
-          },
-          "last_error": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "region_id",
-          "target_size",
-          "enabled",
-          "available",
-          "provisioning",
-          "allocation_requests",
-          "allocated_last_24h",
-          "deleted_last_24h",
-          "failed_last_24h"
-        ],
-        "additionalProperties": false
-      },
       "RegionList": {
         "type": "object",
         "properties": {
@@ -31236,6 +32788,139 @@
         ],
         "additionalProperties": false
       },
+      "UpdateInstallBody": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "update_mask": {
+                "type": "string",
+                "enum": [
+                  "package_version"
+                ]
+              },
+              "package_version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+              },
+              "inputs": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "update_mask",
+              "package_version"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "update_mask": {
+                "type": "string",
+                "enum": [
+                  "inputs"
+                ]
+              },
+              "package_version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+              },
+              "inputs": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "update_mask",
+              "inputs"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "update_mask": {
+                "type": "string",
+                "enum": [
+                  "package_version,inputs",
+                  "inputs,package_version",
+                  "*"
+                ]
+              },
+              "package_version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+              },
+              "inputs": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "update_mask",
+              "package_version",
+              "inputs"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Update one Install in place. The mask selects package_version and/or inputs; inputs replaces the configure inputs object ({} resets to version defaults). Fields outside the mask are ignored. * replaces both mutable fields. Omitted inputs retain the existing inputs and secret references."
+      },
+      "InstallInputs": {
+        "type": "object",
+        "properties": {
+          "install_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 55
+          },
+          "workspace_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 53
+          },
+          "package_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "package_version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+          },
+          "package_version_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 55
+          },
+          "cluster_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 54
+          },
+          "inputs": {
+            "type": "object",
+            "description": "Persisted non-secret user inputs. Fields marked sensitive by the pinned Package schema are excluded. Secrets remain write-only and must be entered again. Empty when no original inputs were retained."
+          }
+        },
+        "required": [
+          "install_id",
+          "workspace_id",
+          "package_id",
+          "package_version",
+          "package_version_id",
+          "cluster_id",
+          "inputs"
+        ],
+        "additionalProperties": false
+      },
       "CreateInstallBody": {
         "type": "object",
         "properties": {
@@ -31325,6 +33010,10 @@
         "type": "http",
         "scheme": "bearer"
       },
+      "JoinBootstrapBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
       "MachineBootstrapBearer": {
         "type": "http",
         "scheme": "bearer"
@@ -31352,9 +33041,6 @@
       "name": "regions"
     },
     {
-      "name": "Dashboard Overview"
-    },
-    {
       "name": "products"
     },
     {
@@ -31370,6 +33056,10 @@
       "name": "API Tokens"
     },
     {
+      "name": "Registry",
+      "description": "Connect image registry Upstreams and resolve private images. Guide: https://docs.akua.dev/private-images"
+    },
+    {
       "name": "Quota adjustments"
     },
     {
@@ -31380,6 +33070,9 @@
     },
     {
       "name": "clusterJoin"
+    },
+    {
+      "name": "joinBootstrap"
     },
     {
       "name": "clusters"

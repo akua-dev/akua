@@ -2,7 +2,13 @@
 
 load("@bazel_lib//lib:copy_to_bin.bzl", "copy_to_bin")
 
-exports_files(["BUILD.bazel"])
+exports_files(
+    [
+        "BUILD.bazel",
+        "plugin.json",
+    ],
+    visibility = ["//visibility:public"],
+)
 
 filegroup(
     name = "plugin_content",

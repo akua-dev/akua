@@ -195,6 +195,130 @@ const signedIn = Effect.gen(function* () {
 
 const accepted = () => ({ status: 202, body: { id: 'op_1', done: false } });
 
+it.effect(
+	'revoke join token waits through nonterminal responses and returns only terminal success',
+	() =>
+		Effect.gen(function* () {
+			const env = yield* signedIn;
+			const id = 'op_w1.cj1.ws_team.clu_00000000000000000.0123456789abcdef0123456789abcdef';
+			let waits = 0;
+			const result = yield* runProgram(
+				[
+					'clusters',
+					'revoke-join-token',
+					'clu_00000000000000000',
+					'abc123',
+					'--idempotency-key',
+					'revoke-1',
+					'--json'
+				],
+				{
+					env,
+					api: ({ method }) =>
+						method === 'DELETE'
+							? { status: 202, body: { id, state: 'RUNNING', done: false } }
+							: {
+									body:
+										++waits === 1
+											? { id, state: 'RUNNING', done: false }
+											: { id, state: 'SUCCEEDED', done: true }
+								}
+				}
+			);
+			expect(result.exitCode).toBe(0);
+			expect(result.requests[0]?.method).toBe('DELETE');
+			expect(result.requests[0]?.url.pathname).toBe(
+				'/v1/clusters/clu_00000000000000000/join_tokens/abc123'
+			);
+			const output = JSON.parse(result.stdout);
+			expect(output.data).toEqual({ id, state: 'SUCCEEDED', done: true });
+			expect(result.requests.slice(1).map((request) => request.url.pathname)).toEqual([
+				`/v1/operations/${id}:wait`,
+				`/v1/operations/${id}:wait`
+			]);
+			expect(output.next_steps).toBeUndefined();
+		}).pipe(Effect.scoped)
+);
+
+it.effect('revoke join token exits nonzero with the terminal Operation failure reason', () =>
+	Effect.gen(function* () {
+		const env = yield* signedIn;
+		const id = 'op_w1.cj1.ws_team.clu_00000000000000000.0123456789abcdef0123456789abcdef';
+		const result = yield* runProgram(
+			[
+				'clusters',
+				'revoke-join-token',
+				'clu_00000000000000000',
+				'abc123',
+				'--idempotency-key',
+				'revoke-failed',
+				'--json'
+			],
+			{
+				env,
+				api: ({ method }) =>
+					method === 'DELETE'
+						? { status: 202, body: { id, state: 'RUNNING', done: false } }
+						: {
+								body: {
+									id,
+									state: 'FAILED',
+									done: true,
+									error: {
+										reason: 'join-token-revocation-unconfirmed',
+										message: 'Connector refused removal; retry'
+									}
+								}
+							}
+			}
+		);
+		expect(result.exitCode).not.toBe(0);
+		expect(JSON.parse(result.stdout).error.message).toContain('Connector refused removal; retry');
+		expect(JSON.parse(result.stdout).error.response.error.reason).toBe(
+			'join-token-revocation-unconfirmed'
+		);
+	}).pipe(Effect.scoped)
+);
+
+it.effect('generates installs update and sends a masked PATCH with etag and stable retry key', () =>
+	Effect.gen(function* () {
+		const env = yield* signedIn;
+		const body = { package_version: '2.0.0', update_mask: 'package_version' };
+		const args = [
+			'installs',
+			'update',
+			'inst_00000000000000000',
+			'--if-match',
+			'3',
+			'--idempotency-key',
+			'update-1',
+			'--input',
+			'-',
+			'--json'
+		];
+		const result = yield* runProgram(args, {
+			env,
+			inputs: { '-': JSON.stringify({ body }) },
+			api: accepted
+		});
+		expect(result.exitCode, result.stderr || result.stdout).toBe(0);
+		expect(result.requests).toHaveLength(1);
+		expect(result.requests[0]).toMatchObject({
+			method: 'PATCH',
+			body,
+			headers: { 'if-match': '3', 'idempotency-key': 'update-1', 'akua-context': 'ws_team' }
+		});
+		expect(result.requests[0]?.url.pathname).toBe('/v1/installs/inst_00000000000000000');
+		const invalid = yield* runProgram(args, {
+			env,
+			inputs: { '-': JSON.stringify({ body: { update_mask: 'inputs' } }) },
+			api: accepted
+		});
+		expect(invalid.exitCode).toBe(2);
+		expect(invalid.requests.some((request) => request.method === 'PATCH')).toBe(false);
+	}).pipe(Effect.scoped)
+);
+
 it.effect('sends Cluster cascade consent only with the generated --force flag', () =>
 	Effect.gen(function* () {
 		const env = yield* signedIn;

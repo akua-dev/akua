@@ -10,16 +10,113 @@ import {
 	writeFileString
 } from './fs-test';
 import { BunCrypto, BunServices } from '@effect/platform-bun';
-import { ConfigProvider, Effect, FileSystem, Layer, Path } from 'effect';
+import { Cause, ConfigProvider, Effect, FileSystem, Layer, Path } from 'effect';
 
 import { main, VERSION } from '../src/bin/akua';
 import { contract } from '../src/generated/contract.gen';
 import { renderSuccess } from '../src/runtime/render';
 import { CliLive } from '../src/runtime/services-live';
-import { Console, PackageCli, PackageCliFailure } from '../src/runtime/services';
+import { Console, PackageCli, PackageCliFailure, SecureConfig } from '../src/runtime/services';
 import { runAuthView } from './auth-test-layer';
 import { runAkua } from './run-akua';
 import { runAkua as runFakeAkua, temporaryHome } from './fake-api';
+import { FetchHttpClient } from 'effect/http';
+import { PublishHost } from '@akua-dev/sdk/publish-host';
+import { PackagePublishHost } from '../src/cli/package-publish';
+import { ApiClient } from '../src/api/client';
+import { SecureConfigLive } from '../src/runtime/services-live';
+
+it.effect('sanitizes credential-bearing JSON diagnostics at the secure-config boundary', () =>
+	Effect.gen(function* () {
+		const fs = yield* FileSystem.FileSystem;
+		const directory = yield* fs.makeTempDirectoryScoped();
+		const path = `${directory}/config.json`;
+		const canary = 'private-stored-token-canary';
+		yield* fs.writeFileString(path, `{"token":"${canary}", "broken": unquoted}`);
+		const failure = yield* SecureConfig.use((config) => config.readToken(path)).pipe(
+			Effect.provide(SecureConfigLive),
+			Effect.flip
+		);
+		expect(failure.cause).toMatchObject({
+			_tag: 'ConfigParseFailure',
+			message: 'Akua config is not valid JSON.'
+		});
+		expect(Cause.pretty(Cause.fail(failure))).not.toContain(canary);
+	}).pipe(Effect.scoped, Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
+);
+
+it.effect(
+	'reports every unresolvable image of a failed hosted publication with its resolve command',
+	() =>
+		Effect.gen(function* () {
+			const home = yield* temporaryHome;
+			const violations = [
+				...Array.from({ length: 30 }, (_, index) => ({
+					type: 'image-unresolvable',
+					subject: `pkg.akua.dev/ws_builder/images/ghcr-acme/app-${index}:1`,
+					description: `ghcr.io: MANIFEST_UNKNOWN: app-${index} not found`
+				})),
+				{
+					type: 'image-unresolvable',
+					subject: `pkg.akua.dev/ws_builder/images/gone/web@sha256:${'a'.repeat(64)}`,
+					description: 'Upstream gone does not exist'
+				}
+			];
+			const fetch = Object.assign(
+				(input: Parameters<typeof globalThis.fetch>[0], init?: RequestInit) => {
+					const path = new URL(new Request(input, init).url).pathname;
+					if (path.endsWith('/registry/upstreams/gone'))
+						return Promise.resolve(Response.json({ code: 'NOT_FOUND' }, { status: 404 }));
+					return Promise.resolve(
+						Response.json(
+							path.endsWith('/registry/upstreams/ghcr-acme')
+								? { upstream_id: 'ghcr-acme', host: 'ghcr.io', path: 'acme' }
+								: path.endsWith('/packages')
+									? { id: 'pkg_fixture' }
+									: path.endsWith('/versions')
+										? { id: 'op_fixture' }
+										: {
+												done: true,
+												state: 'FAILED',
+												error: {
+													reason: 'image-unresolvable',
+													message: 'Truncated summary',
+													violations
+												}
+											}
+						)
+					);
+				},
+				globalThis.fetch
+			);
+			const failure = yield* Effect.gen(function* () {
+				const host = yield* PublishHost;
+				const prepared = yield* host.prepare({ name: 'web', version: '1.0.0', archiveSize: 10 });
+				return yield* prepared.complete.pipe(Effect.flip);
+			}).pipe(
+				Effect.provide(PackagePublishHost),
+				Effect.provide(ApiClient.layer.pipe(Layer.provide(FetchHttpClient.layer))),
+				Effect.provide(SecureConfigLive),
+				Effect.provideService(FetchHttpClient.Fetch, fetch),
+				Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)),
+				Effect.provide(
+					ConfigProvider.layer(
+						ConfigProvider.fromEnvRecord({
+							HOME: home,
+							AKUA_API_TOKEN: 'fixture-token',
+							AKUA_WORKSPACE: 'ws_fixture'
+						})
+					)
+				)
+			);
+			for (const violation of violations)
+				expect(failure.message).toContain(`${violation.subject}: ${violation.description}`);
+			expect(failure.error.suggestion).toContain(
+				'akua registry resolve-image ghcr-acme --image ghcr.io/acme/app-29:1'
+			);
+			expect(failure.error.suggestion).toContain('akua registry list-upstreams');
+		})
+);
 
 /** An empty environment, so the test runner's own variables do not pick the output mode. */
 const noEnvironment = ConfigProvider.layer(ConfigProvider.fromEnvRecord({}));

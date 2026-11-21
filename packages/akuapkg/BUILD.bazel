@@ -16,6 +16,12 @@ exports_files(
 )
 
 filegroup(
+    name = "test_srcs",
+    srcs = glob(["src/**/*.test.ts"]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
     name = "srcs",
     srcs = glob(
         ["src/**/*.ts"],

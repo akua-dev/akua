@@ -1,0 +1,46 @@
+"""The stateless kubelet image credential provider. Public source has no platform dependencies."""
+
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+
+exports_files(
+    [
+        "package.json",
+        "tsconfig.json",
+        "src/generated/kubelet",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "srcs",
+    srcs = glob(
+        ["src/**/*.ts"],
+        exclude = ["src/**/*.test.ts"],
+    ),
+    visibility = ["//visibility:public"],
+)
+
+# A js_library, so the sources reach the output tree for tests in other packages.
+js_library(
+    name = "test_srcs",
+    srcs = [
+        "package.json",
+        "tsconfig.json",
+    ] + glob(["src/**/*.ts"]),
+    visibility = ["//visibility:public"],
+)
+
+js_library(
+    name = "workspace_verification_package_store_src",
+    srcs = [
+        "package.json",
+        ":srcs",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "workspace_verification_production_package_src",
+    actual = ":workspace_verification_package_store_src",
+    visibility = ["//visibility:public"],
+)

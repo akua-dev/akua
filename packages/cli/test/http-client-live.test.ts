@@ -1,8 +1,85 @@
 import { describe, expect, it } from '@effect/vitest';
-import { Effect } from 'effect';
-import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
+import { Cause, ConfigProvider, Effect, Layer } from 'effect';
+import { BunCrypto, BunServices } from '@effect/platform-bun';
+import {
+	FetchHttpClient,
+	HttpClient,
+	HttpClientError,
+	HttpClientRequest,
+	HttpClientResponse
+} from 'effect/http';
+import { ApiClient } from '../src/api/client';
+import { contract } from '../src/generated/contract.gen';
+import { SecureConfigLive } from '../src/runtime/services-live';
+import { operationContext } from '../src/cli/operation-context';
+import { diagnoseContractFailure } from '../src/cli/contract-diagnostic';
 
 import { AkuaHttpClientLive, buildUserAgent } from '../src/runtime/http-client-live';
+
+it.effect.each(['broken', 'empty', 'json'] as const)(
+	'retains the error-response body outcome through API diagnosis (%s)',
+	(mode) =>
+		Effect.gen(function* () {
+			const operation = yield* Effect.fromNullishOr(contract.operations[0]);
+			const original = new Error('private-response-stream-canary');
+			const http = HttpClient.make((request) =>
+				Effect.succeed(
+					HttpClientResponse.fromWeb(
+						request,
+						mode === 'json'
+							? Response.json({ message: 'safe server refusal' }, { status: 500 })
+							: new Response(
+									mode === 'empty'
+										? ''
+										: new ReadableStream({
+												start(controller) {
+													controller.error(original);
+												}
+											}),
+									{ status: 500 }
+								)
+					)
+				)
+			);
+			const failure = yield* ApiClient.use((client) =>
+				client.execute(operation, { path: { id: 'fixture' } })
+			).pipe(
+				Effect.provide(ApiClient.layer.pipe(Layer.provide(SecureConfigLive))),
+				Effect.provideService(HttpClient.HttpClient, http),
+				Effect.provide(
+					ConfigProvider.layer(
+						ConfigProvider.fromEnvRecord({
+							HOME: '/nonexistent-test-home',
+							AKUA_API_TOKEN: 'fixture-token'
+						})
+					)
+				),
+				Effect.flip
+			);
+			if (failure._tag !== 'OperationFailure')
+				return expect.unreachable('expected operation failure');
+			expect(failure.reason).toBe('api');
+			expect(failure.status).toBe(500);
+			const translated = yield* diagnoseContractFailure(
+				operationContext(contract, operation),
+				{},
+				failure
+			).pipe(Effect.provideService(HttpClient.HttpClient, http));
+			expect(translated.cause).toBe(failure);
+			expect(JSON.stringify(translated.toPayload())).not.toContain(original.message);
+			if (mode === 'broken') {
+				expect(failure.cause).toBeInstanceOf(HttpClientError.HttpClientError);
+				if (
+					failure.cause instanceof HttpClientError.HttpClientError &&
+					failure.cause.reason._tag === 'DecodeError'
+				)
+					expect(failure.cause.reason.cause).toBe(original);
+				else return expect.unreachable('expected body decoding error');
+				expect(Cause.pretty(Cause.fail(translated))).toContain(original.message);
+			} else expect(failure.cause).toBeUndefined();
+			expect(failure.detail).toBe(mode === 'json' ? 'safe server refusal' : undefined);
+		}).pipe(Effect.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
+);
 
 describe('buildUserAgent', () => {
 	it('follows RFC 9110 product/comment syntax with the CLI, platform, and Bun runtime', () => {

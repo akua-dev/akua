@@ -68,7 +68,8 @@ export class ApiClient extends Context.Service<
 					Effect.flatMap((credential) =>
 						Effect.fromOption(credential.token).pipe(
 							Effect.mapError(
-								() => new OperationFailure({ operationId: operation.id, reason: 'auth' })
+								(cause) =>
+									new OperationFailure({ operationId: operation.id, reason: 'auth', cause })
 							)
 						)
 					)
@@ -106,8 +107,8 @@ export class ApiClient extends Context.Service<
 								? base
 								: HttpClientRequest.bodyJsonUnsafe(base, request.body)
 				);
-				const transport = () =>
-					new OperationFailure({ operationId: operation.id, reason: 'transport' });
+				const transport = (cause: unknown) =>
+					new OperationFailure({ operationId: operation.id, reason: 'transport', cause });
 				const response = yield* http.execute(httpRequest).pipe(Effect.mapError(transport));
 				if (response.status >= 400) {
 					return yield* errorResponse(operation, response);
@@ -133,8 +134,9 @@ export class ApiClient extends Context.Service<
 					_tag: 'Value',
 					value: yield* decodeJsonText(text).pipe(
 						Effect.mapError(
-							() =>
+							(cause) =>
 								new OperationFailure({
+									cause,
 									operationId: operation.id,
 									reason: 'response',
 									status: response.status
@@ -189,7 +191,8 @@ const errorResponse = Effect.fnUntraced(function* (
 	operation: ApiOperation,
 	response: HttpClientResponse.HttpClientResponse
 ): Effect.fn.Return<never, OperationFailure> {
-	const text = yield* response.text.pipe(Effect.orElseSucceed(() => ''));
+	const read = yield* response.text.pipe(Effect.result);
+	const text = read._tag === 'Success' ? read.success : '';
 	const json = decodeJsonTextOption(text);
 	const body: Option.Option<Schema.Json> = Option.isSome(json)
 		? json
@@ -205,6 +208,7 @@ const errorResponse = Effect.fnUntraced(function* (
 	return yield* new OperationFailure({
 		operationId: operation.id,
 		reason: 'api',
+		cause: read._tag === 'Failure' ? read.failure : undefined,
 		status: response.status,
 		...Option.match(json, { onNone: () => ({}), onSome: summarizeError }),
 		...(Option.isSome(body) ? { response: body.value } : {})
@@ -238,7 +242,7 @@ function eventStream(
 	return response.stream.pipe(
 		Stream.decodeText,
 		Stream.pipeThroughChannel(Sse.decode()),
-		Stream.mapError(() => new OperationFailure({ operationId, reason: 'transport' })),
+		Stream.mapError((cause) => new OperationFailure({ operationId, reason: 'transport', cause })),
 		Stream.mapEffect((event) =>
 			event.event === failureEvent
 				? Effect.fail(
@@ -256,7 +260,7 @@ function eventStream(
 
 /** NDJSON: every non-empty line is one event named `line`. */
 function lineStream(
-	transport: () => OperationFailure,
+	transport: (cause: unknown) => OperationFailure,
 	response: HttpClientResponse.HttpClientResponse
 ): Stream.Stream<ApiEvent, OperationFailure> {
 	return response.stream.pipe(

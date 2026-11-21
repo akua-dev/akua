@@ -10,6 +10,7 @@ import { cacheRoot, readBounded, sha256, unpackInto } from "./downloads"
  */
 
 export class UrlFetchFailed extends Schema.TaggedError<UrlFetchFailed>()("UrlFetchFailed", {
+  cause: Schema.optionalKey(Schema.Defect()),
   message: Schema.String,
   /** Refused because `--offline` forbids the network, not because a fetch failed. */
   offline: Schema.Boolean,
@@ -49,7 +50,7 @@ export class UrlSource extends Context.Service<UrlSource, {
       const path = yield* Path.Path
       const http = yield* HttpClient.HttpClient
       const root = yield* cacheRoot("url")
-      const failed = (message: string) => new UrlFetchFailed({ message, offline: false })
+      const failed = (message: string, cause?: unknown) => new UrlFetchFailed({ message, offline: false, cause })
       const slot = (digest: string) => path.join(root, digest.replace(/^sha256:/, ""))
 
       const fetch = Effect.fn("UrlSource.fetch")(function*(request: UrlRequest) {
@@ -70,7 +71,7 @@ export class UrlSource extends Context.Service<UrlSource, {
         }
         if (!request.url.startsWith("https://")) return yield* failed(`\`${request.url}\`: only https:// URLs are supported`)
         const bytes = yield* http.execute(HttpClientRequest.get(request.url)).pipe(
-          Effect.mapError((cause) => failed(`fetching ${request.url}: ${cause.message}`)),
+          Effect.mapError((cause) => failed(`fetching ${request.url}: ${cause.message}`, cause)),
           Effect.flatMap((response) =>
             readBounded(response, {
               url: request.url,
@@ -89,7 +90,7 @@ export class UrlSource extends Context.Service<UrlSource, {
           })
         }
         yield* unpackInto(slot(digest), [{ path: name, data: bytes }]).pipe(
-          Effect.mapError((error) => failed(`io error at ${root}: ${error.message}`))
+          Effect.mapError((error) => failed(`io error at ${root}: ${error.message}`, error))
         )
         return { directory: slot(digest), digest } satisfies FetchedFile
       }, Effect.provideService(FileSystem.FileSystem, fs), Effect.provideService(Path.Path, path))

@@ -375,7 +375,9 @@ export const admitNativeSmokeArchive = Effect.fn('admitNativeSmokeArchive')(func
 		);
 	}
 	const expected = yield* Schema.decodeUnknownEffect(ArchiveSha256)(input.archiveSha256).pipe(
-		Effect.mapError(() => new ReleaseFailure({ message: 'Invalid release smoke archive SHA-256' }))
+		Effect.mapError(
+			(cause) => new ReleaseFailure({ message: 'Invalid release smoke archive SHA-256', cause })
+		)
 	);
 	if ((yield* input.actualSha256) !== expected) {
 		return yield* releaseFailure('Release smoke archive checksum mismatch');

@@ -123,8 +123,8 @@ const pickWorkspace = Effect.fnUntraced(function* (contract: ApiContract) {
 	}
 	if (others.length === 0) return only;
 	return yield* chooseWorkspace(workspaces).pipe(
-		Effect.catchTag('QuitError', () =>
-			Effect.fail(new UsageFailure({ message: 'No workspace chosen; nothing was saved.' }))
+		Effect.catchTag('QuitError', (cause) =>
+			Effect.fail(new UsageFailure({ message: 'No workspace chosen; nothing was saved.', cause }))
 		)
 	);
 });

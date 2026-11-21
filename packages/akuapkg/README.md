@@ -65,10 +65,10 @@ The formula installs the standalone `akuapkg` binary on macOS and Linux
 Without Homebrew, the macOS and Linux installer writes to `~/.akuapkg/bin`:
 
 ```sh
-curl -fsSL https://cli.akua.dev/install | sh
+curl -fsSL https://akua.dev/install | sh
 ```
 
-On Windows, run `irm https://cli.akua.dev/install.ps1 | iex` in PowerShell,
+On Windows, run `irm https://akua.dev/install.ps1 | iex` in PowerShell,
 or download an archive from [the releases](https://github.com/akua-dev/akua/releases).
 
 The Akua CLI (`brew install akua-dev/tap/akua`, source in [`packages/cli/`](../cli/))

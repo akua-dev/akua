@@ -14,6 +14,7 @@ import { cacheRoot, readBounded, sha256, unpackInto } from "./downloads"
  */
 
 export class HelmRepositoryFailed extends Schema.TaggedError<HelmRepositoryFailed>()("HelmRepositoryFailed", {
+  cause: Schema.optionalKey(Schema.Defect()),
   message: Schema.String,
   /** Refused because `--offline` forbids the network, not because a fetch failed. */
   offline: Schema.Boolean
@@ -116,11 +117,11 @@ export class HelmRepository extends Context.Service<HelmRepository, {
       const path = yield* Path.Path
       const http = yield* HttpClient.HttpClient
       const root = yield* cacheRoot("helm")
-      const failed = (message: string) => new HelmRepositoryFailed({ message, offline: false })
+      const failed = (message: string, cause?: unknown) => new HelmRepositoryFailed({ message, offline: false, cause })
 
       const get = (url: string, limit: number) =>
         http.execute(HttpClientRequest.get(url)).pipe(
-          Effect.mapError((cause) => failed(`fetching ${url}: ${cause.message}`)),
+          Effect.mapError((cause) => failed(`fetching ${url}: ${cause.message}`, cause)),
           Effect.flatMap((response) =>
             readBounded(response, {
               url,
@@ -161,10 +162,10 @@ export class HelmRepository extends Context.Service<HelmRepository, {
         const indexText = new TextDecoder().decode(yield* get(indexUrl, MAX_INDEX_BYTES))
         const index = yield* Effect.try({
           try: (): unknown => YAML.parse(indexText),
-          catch: (cause) => failed(`parsing index.yaml: ${String(cause)}`)
+          catch: (cause) => failed(`parsing index.yaml: ${String(cause)}`, cause)
         }).pipe(
           Effect.flatMap(Schema.decodeUnknownEffect(RepositoryIndex)),
-          Effect.mapError((error) => error._tag === "HelmRepositoryFailed" ? error : failed(`parsing index.yaml: ${error.message}`))
+          Effect.mapError((error) => error._tag === "HelmRepositoryFailed" ? error : failed(`parsing index.yaml: ${error.message}`, error))
         )
         const selected = selectVersion(index, request.chart, request.version)
         if (typeof selected === "string") return yield* failed(selected)
@@ -177,10 +178,10 @@ export class HelmRepository extends Context.Service<HelmRepository, {
         }
         const entries = yield* gunzip(tarball).pipe(
           Effect.flatMap(untar),
-          Effect.mapError((error) => failed(`extracting \`${request.chart}\`: ${error.message}`))
+          Effect.mapError((error) => failed(`extracting \`${request.chart}\`: ${error.message}`, error))
         )
         yield* unpackInto(path.join(root, digest.replace(/^sha256:/, "")), entries).pipe(
-          Effect.mapError((error) => failed(`io error at ${root}: ${error.message}`))
+          Effect.mapError((error) => failed(`io error at ${root}: ${error.message}`, error))
         )
         const directory = yield* cached(digest, request.chart)
         if (Option.isNone(directory)) return yield* failed(`chart \`${request.chart}\` has no Chart.yaml in its tarball`)

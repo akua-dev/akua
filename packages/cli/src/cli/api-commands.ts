@@ -9,6 +9,7 @@ import {
 	commandPath,
 	BODY_FILE_FLAG,
 	CONTEXT_HEADER,
+	findOperation,
 	OUTPUT_FILE_FLAG,
 	SECRET_FILE_SUFFIX,
 	type InputFlag,
@@ -18,7 +19,8 @@ import {
 import { asJsonRecord, decodeJsonText, type JsonRecord, JsonText } from '../api/json';
 import { decodeRequest } from '../api/request';
 import type { CliFailure } from '../runtime/effect-runtime';
-import type { NextStep } from '../runtime/errors';
+import { AkuaCliError, type NextStep } from '../runtime/errors';
+import { ExitCodes } from '../runtime/exit-codes';
 import type { RenderEnvelope } from '../runtime/render';
 import { Console, PublicInput, PublicOutput, type SecureConfig } from '../runtime/services';
 import { respond } from './invocation';
@@ -236,7 +238,79 @@ const runOperation = Effect.fnUntraced(function* (
 					: Effect.fail(toCliFailure(failureContext)(failure))
 			)
 		);
-	return yield* successEnvelope(context, result, parsed.outputFile);
+	const completed =
+		context.operation.id === 'clusters.revokeJoinToken'
+			? yield* waitForCompletion(context, result, envelope).pipe(
+					Effect.mapError((error) =>
+						error._tag === 'AkuaCliError' ? error : toCliFailure(failureContext)(error)
+					)
+				)
+			: result;
+	return yield* successEnvelope(context, completed, parsed.outputFile);
+});
+
+/** The generic long-running Operation envelope; endpoint requests remain generated. */
+const OperationCompletion = Schema.Struct({
+	id: Schema.String,
+	done: Schema.Boolean,
+	state: Schema.Literals(['PENDING', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELLED']),
+	error: Schema.optionalKey(
+		Schema.NullOr(
+			Schema.Struct({
+				message: Schema.String,
+				reason: Schema.optionalKey(Schema.String)
+			})
+		)
+	)
+});
+
+const waitForCompletion = Effect.fnUntraced(function* (
+	context: OperationCommandContext,
+	initial: ApiResult,
+	envelope: JsonRecord
+) {
+	const api = yield* ApiClient;
+	const wait = yield* findOperation(context.contract, 'operations.wait');
+	const headers = Option.getOrElse(asJsonRecord(envelope.headers), (): JsonRecord => ({}));
+	let result = initial;
+	while (true) {
+		const invalid = (cause?: unknown) =>
+			new OperationFailure({
+				operationId: context.operation.id,
+				reason: 'response',
+				cause
+			});
+		if (result._tag !== 'Value') return yield* invalid();
+		const operation = yield* Schema.decodeUnknownEffect(OperationCompletion)(result.value).pipe(
+			Effect.mapError(invalid)
+		);
+		if (operation.done) {
+			if (operation.state !== 'SUCCEEDED')
+				return yield* new AkuaCliError({
+					type: 'operation_error',
+					code: 'AKUA_OPERATION_FAILED',
+					message:
+						operation.error?.message ??
+						`Operation ${operation.id} ${operation.state.toLowerCase()}.`,
+					response: result.value,
+					exitCode: ExitCodes.Runtime,
+					nextSteps: [
+						{
+							command: `${context.command} --help`,
+							description: 'Retry with a new idempotency key.'
+						}
+					]
+				});
+			return result;
+		}
+		const request = yield* decodeRequest(context.contract, wait, {
+			path: { id: operation.id },
+			query: { timeout: 30 },
+			headers:
+				headers[CONTEXT_HEADER] === undefined ? {} : { [CONTEXT_HEADER]: headers[CONTEXT_HEADER] }
+		});
+		result = yield* api.execute(wait, request);
+	}
 });
 
 /** The bytes `--body-file` names (`-` is stdin), when the operation uploads a raw body. */
@@ -259,8 +333,9 @@ const readUpload = Effect.fnUntraced(function* (operation: ApiOperation, parsed:
 	if (stdinSources > 1) return yield* issue('stdin (-) can be used by only one input source');
 	return yield* (yield* PublicInput).readBytes(parsed.bodyFile.value).pipe(
 		Effect.mapError(
-			() =>
+			(cause) =>
 				new OperationFailure({
+					cause,
 					operationId: operation.id,
 					reason: 'source',
 					detail: `--${BODY_FILE_FLAG}`
@@ -334,8 +409,9 @@ const resolveSecretFlags = Effect.fnUntraced(function* (
 		const direct = flags[index] ?? Option.none();
 		const file = parsed.secretFiles[position] ?? Option.none();
 		const fileFlag = `--${flag.name}${SECRET_FILE_SUFFIX}`;
-		const issue = (message: string) =>
+		const issue = (message: string, cause?: unknown) =>
 			new OperationFailure({
+				cause,
 				operationId: operation.id,
 				reason: 'input',
 				issues: [{ path: [partitionOf(flag.target), flag.key], message }]
@@ -345,7 +421,7 @@ const resolveSecretFlags = Effect.fnUntraced(function* (
 				if (flag.kind._tag === 'Json' && Predicate.isString(direct.value)) {
 					flags[index] = Option.some(
 						yield* decodeJsonText(direct.value).pipe(
-							Effect.mapError(() => issue('Expected a JSON value'))
+							Effect.mapError((cause) => issue('Expected a JSON value', cause))
 						)
 					);
 				}
@@ -360,8 +436,9 @@ const resolveSecretFlags = Effect.fnUntraced(function* (
 		}
 		const text = yield* (yield* PublicInput).read(file.value).pipe(
 			Effect.mapError(
-				() =>
+				(cause) =>
 					new OperationFailure({
+						cause,
 						operationId: operation.id,
 						reason: 'source',
 						detail: fileFlag
@@ -371,7 +448,9 @@ const resolveSecretFlags = Effect.fnUntraced(function* (
 		const value = text.replace(/\r?\n$/, '');
 		flags[index] = Option.some(
 			flag.kind._tag === 'Json'
-				? yield* decodeJsonText(value).pipe(Effect.mapError(() => issue('Expected a JSON value')))
+				? yield* decodeJsonText(value).pipe(
+						Effect.mapError((cause) => issue('Expected a JSON value', cause))
+					)
 				: value
 		);
 	}
@@ -379,8 +458,9 @@ const resolveSecretFlags = Effect.fnUntraced(function* (
 });
 
 const readInput = Effect.fnUntraced(function* (operation: ApiOperation, source: string) {
-	const inputFailure = (message: string) =>
+	const inputFailure = (message: string, cause?: unknown) =>
 		new OperationFailure({
+			cause,
 			operationId: operation.id,
 			reason: 'input',
 			issues: [{ path: [], message }]
@@ -388,13 +468,15 @@ const readInput = Effect.fnUntraced(function* (operation: ApiOperation, source: 
 	const text = yield* (yield* PublicInput)
 		.read(source)
 		.pipe(
-			Effect.mapError(() => new OperationFailure({ operationId: operation.id, reason: 'source' }))
+			Effect.mapError(
+				(cause) => new OperationFailure({ operationId: operation.id, reason: 'source', cause })
+			)
 		);
 	const json = yield* decodeJsonText(text).pipe(
-		Effect.mapError(() => inputFailure('Input is not valid JSON'))
+		Effect.mapError((cause) => inputFailure('Input is not valid JSON', cause))
 	);
 	return yield* Effect.fromOption(asJsonRecord(json)).pipe(
-		Effect.mapError(() => inputFailure('Input must be a JSON object'))
+		Effect.mapError((cause) => inputFailure('Input must be a JSON object', cause))
 	);
 });
 
@@ -471,9 +553,10 @@ const successEnvelope = Effect.fnUntraced(function* (
 			};
 		}
 		const bytes = yield* (yield* PublicOutput).writeFile(outputFile.value, result.stream).pipe(
-			Effect.catchTag('PublicOutputFailure', () =>
+			Effect.catchTag('PublicOutputFailure', (cause) =>
 				Effect.fail(
 					new OperationFailure({
+						cause,
 						operationId: context.operation.id,
 						reason: 'source',
 						detail: `--${OUTPUT_FILE_FLAG}`

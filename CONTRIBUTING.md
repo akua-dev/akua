@@ -31,7 +31,7 @@ This repository holds two products that release together, on one version and
 one `v<version>` release (see [docs/releasing.md](docs/releasing.md)):
 
 - `akuapkg`, the package toolchain (`packages/akuapkg/`, `crates/wasm-sandbox/`, `crates/`), installed
-  by `https://cli.akua.dev/install`;
+  by `https://akua.dev/install`;
 - `akua`, the Akua CLI (`packages/cli/`), installed with
   `brew install akua-dev/tap/akua`. `akua pkg` embeds the same package
   toolchain host.

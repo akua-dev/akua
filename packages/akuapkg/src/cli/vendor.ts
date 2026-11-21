@@ -1,4 +1,5 @@
 import { Effect, FileSystem, Option, Path, type PlatformError } from "effect"
+import { constant as discardError } from "effect/Function"
 import { CliName } from "../cli-name"
 import { osMessage } from "../errors"
 import { Argument, Command, Flag } from "effect/cli"
@@ -41,7 +42,7 @@ const loadWorkspaceManifest = (workspace: string) =>
   )
 
 const ioFailure = (path: string) => (error: { readonly message: string }) =>
-  fail("E_IO", osMessage(error), ExitCode.systemError, path)
+  fail("E_IO", osMessage(error), ExitCode.systemError, path, undefined, error)
 
 interface Source {
   readonly kind: string
@@ -69,10 +70,10 @@ const workspaceDirectory = Effect.fnUntraced(function*(workspace: string, name: 
   }
   const root = yield* fs.realPath(workspace).pipe(Effect.mapError(ioFailure(workspace)))
   const joined = joinPath(workspace, requested)
-  const missing = (at: string) =>
-    fail("E_IO", `source path \`${at}\` does not exist`, ExitCode.userError, at)
+  const missing = (at: string, cause?: unknown) =>
+    fail("E_IO", `source path \`${at}\` does not exist`, ExitCode.userError, at, undefined, cause)
   const target = yield* fs.realPath(joined).pipe(
-    Effect.catchIf((error) => error.reason._tag === "NotFound", () => Effect.fail(missing(joined))),
+    Effect.catchIf((error) => error.reason._tag === "NotFound", (cause) => Effect.fail(missing(joined, cause))),
     Effect.mapError((error) => (error._tag === "CliFailure" ? error : ioFailure(joined)(error)))
   )
   if (target !== root && !target.startsWith(`${root}${path.sep}`)) {
@@ -132,7 +133,8 @@ const resolveSource = Effect.fnUntraced(function*(
           fail(
             error.code,
             error.code === "E_DEP_RESOLVE" ? `fetching OCI dep \`${name}\`: ${error.message}` : error.message,
-            ExitCode.userError
+            ExitCode.userError,
+            undefined, undefined, error
           )
         )
       )
@@ -163,7 +165,7 @@ const resolveSource = Effect.fnUntraced(function*(
         ...(Option.isSome(credential) ? { auth: credential.value } : {})
       }).pipe(
         Effect.mapError((error) =>
-          fail("E_DEP_RESOLVE", `fetching git dep \`${name}\`: ${error.message}`, ExitCode.userError)
+          fail("E_DEP_RESOLVE", `fetching git dep \`${name}\`: ${error.message}`, ExitCode.userError, undefined, undefined, error)
         )
       )
       const label = ref._tag === "Tag" ? ref.tag : ref.rev
@@ -188,7 +190,7 @@ const resolveSource = Effect.fnUntraced(function*(
         pin: Option.map(lockedEntry(lock, name, "url+"), (entry) => entry.digest),
         offline: false
       }).pipe(
-        Effect.mapError((error) => fail("E_DEP_RESOLVE", `fetching url dep \`${name}\`: ${error.message}`, ExitCode.userError))
+        Effect.mapError((error) => fail("E_DEP_RESOLVE", `fetching url dep \`${name}\`: ${error.message}`, ExitCode.userError, undefined, undefined, error))
       )
       return {
         kind: "url",
@@ -235,7 +237,8 @@ const scanVendorTree = Effect.fnUntraced(function*(workspace: string, expected: 
   const fs = yield* FileSystem.FileSystem
   const root = vendorRoot(workspace)
   const names = yield* fs.readDirectory(root).pipe(
-    Effect.catchIf((error) => error.reason._tag === "NotFound", () => Effect.succeed([])),
+    // A missing vendor directory contains no vendored trees.
+    Effect.catchIf((error) => error.reason._tag === "NotFound", discardError(Effect.succeed([]))),
     Effect.mapError(ioFailure(root))
   )
   const trees: Array<VendoredTree> = []
@@ -328,7 +331,7 @@ const vendorAdd = (fetchers: FetchServices, cli: string) =>
         const fs = yield* FileSystem.FileSystem
         const path = yield* Path.Path
         const auth = yield* resolveAuth(flags.auth, flags.authFile).pipe(
-          Effect.mapError((error) => fail("E_AUTH_PARSE", error.message, ExitCode.userError))
+          Effect.mapError((error) => fail("E_AUTH_PARSE", error.message, ExitCode.userError, undefined, undefined, error))
         )
         const manifest = yield* loadWorkspaceManifest(flags.workspace)
         const dependency = manifest.dependencies?.[flags.name]
@@ -344,7 +347,7 @@ const vendorAdd = (fetchers: FetchServices, cli: string) =>
         // Pins are best effort here; a broken lockfile fails the write below.
         const pins = yield* loadLock(flags.workspace).pipe(Effect.orElseSucceed(() => Option.none<Lock>()))
         const cosignPublicKey = yield* configuredCosignKey(flags.workspace, manifest).pipe(
-          Effect.mapError((error) => fail(error.code, error.message, ExitCode.userError))
+          Effect.mapError((error) => fail(error.code, error.message, ExitCode.userError, undefined, undefined, error))
         )
         const source = yield* resolveSource(flags.workspace, flags.name, dependency, pins, auth, cosignPublicKey).pipe(
           Effect.provide(fetchers)
@@ -533,7 +536,7 @@ const vendorList = (fetchers: FetchServices) =>
     )
   ).pipe(Command.withDescription("List on-disk vendor trees, including orphans"))
 
-export const vendor = (context: VerbContext) =>
+export const vendor = (context: Pick<VerbContext, "fetchers" | "name">) =>
   Command.make("vendor").pipe(
     Command.withDescription("Materialize and inspect the vendor tree at `.akua/vendor/`"),
     Command.withSubcommands([vendorAdd(context.fetchers, context.name), vendorCheck(context.fetchers), vendorList(context.fetchers)])

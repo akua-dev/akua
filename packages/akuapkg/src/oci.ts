@@ -1,4 +1,5 @@
 import { Config, Context, Duration, Effect, FileSystem, Layer, Option, Path, Schema } from "effect"
+import { constant as discardError } from "effect/Function"
 import { CliName } from "./cli-name"
 import { HttpClient, HttpClientRequest, type HttpClientResponse } from "effect/http"
 import * as TOML from "smol-toml"
@@ -15,6 +16,7 @@ import { cacheRoot as defaultCacheRoot, readBounded, sha256, unpackInto } from "
  */
 
 export class OciPullFailed extends Schema.TaggedError<OciPullFailed>()("OciPullFailed", {
+  cause: Schema.optionalKey(Schema.Defect()),
   /** E_DEP_RESOLVE, E_DEP_NOT_FOUND, E_COSIGN_VERIFY or E_COSIGN_SIG_MISSING. */
   code: Schema.String,
   message: Schema.String,
@@ -33,6 +35,7 @@ const DSSE_LAYER = "application/vnd.dsse.envelope.v1+json"
 
 /** A registry refused or failed an upload. */
 export class OciPushFailed extends Schema.TaggedError<OciPushFailed>()("OciPushFailed", {
+  cause: Schema.optionalKey(Schema.Defect()),
   message: Schema.String
 }) {}
 
@@ -98,6 +101,18 @@ const authorization = (credentials: Credentials) =>
   credentials._tag === "Bearer"
     ? `Bearer ${credentials.token}`
     : `Basic ${new TextEncoder().encode(`${credentials.username}:${credentials.password}`).toBase64()}`
+
+/**
+ * Credentials an embedding host supplies for one publication, by registry
+ * host. They are sent as is, never persisted to Docker or akua config, and
+ * never exchanged at a token realm.
+ */
+export const OciCredentialOverrides = Context.Reference<ReadonlyMap<string, Credentials>>(
+  "akuapkg/OciCredentialOverrides",
+  { defaultValue: (): ReadonlyMap<string, Credentials> => new Map() }
+)
+const hostedRejected = (registry: string) =>
+  `registry \`${registry}\` rejected the supplied credential; it is never exchanged for a token.`
 
 /** `oci://<registry>/<repository>`. */
 export const parseReference = (reference: string) => {
@@ -206,7 +221,7 @@ export class OciRegistry extends Context.Service<OciRegistry, {
       const dockerConfig = yield* env("DOCKER_CONFIG")
       const home = yield* env("HOME")
       const cacheRoot = yield* defaultCacheRoot("oci")
-      const failed = (message: string, code = "E_DEP_RESOLVE") => new OciPullFailed({ code, message, offline: false })
+      const failed = (message: string, code = "E_DEP_RESOLVE", cause?: unknown) => new OciPullFailed({ code, message, offline: false, cause })
 
       /** `auth.toml` (akua) first, then `~/.docker/config.json`; read once, on first use. */
       const credentials = yield* Effect.cached(Effect.gen(function*() {
@@ -222,20 +237,23 @@ export class OciRegistry extends Context.Service<OciRegistry, {
         const read = (file: string) =>
           fs.readFileString(file).pipe(
             Effect.map(Option.some),
-            Effect.catchIf((error) => error.reason._tag === "NotFound", () => Effect.succeed(Option.none<string>())),
-            Effect.mapError((error) => failed(`auth config parse error: i/o reading auth config at ${file}: ${error.message}`))
+            // An absent optional auth file contributes no credentials.
+            Effect.catchIf((error) => error.reason._tag === "NotFound", discardError(Effect.succeed(Option.none<string>()))),
+            Effect.mapError((error) => failed(`auth config parse error: i/o reading auth config at ${file}: ${error.message}`, "E_DEP_RESOLVE", error))
           )
-        const parseError = (file: string, cause: unknown) =>
-          failed(`auth config parse error: malformed auth config at ${file}: ${cause instanceof Error ? cause.message : String(cause)}`)
+        const parseError = (file: string) =>
+          failed(`auth config parse error: malformed auth config at ${file}`)
         if (Option.isSome(akuaAuth)) {
           const text = yield* read(akuaAuth.value)
           if (Option.isSome(text)) {
             const parsed = yield* Effect.try({
               try: (): unknown => TOML.parse(text.value),
-              catch: (cause) => parseError(akuaAuth.value, cause)
+              // TOML errors can quote credentials; retain only the safe file diagnostic.
+              catch: discardError(parseError(akuaAuth.value))
             })
             const registries = yield* Schema.decodeUnknownEffect(AkuaAuthFile)(parsed).pipe(
-              Effect.mapError((error) => parseError(akuaAuth.value, error))
+              // Schema issues can retain the complete credential object.
+              Effect.mapError(discardError(parseError(akuaAuth.value)))
             )
             for (const [registry, entry] of Object.entries(registries.registries ?? {})) {
               store.set(
@@ -251,7 +269,8 @@ export class OciRegistry extends Context.Service<OciRegistry, {
           const text = yield* read(docker.value)
           if (Option.isSome(text)) {
             const config = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(DockerConfig))(text.value).pipe(
-              Effect.mapError((error) => parseError(docker.value, error))
+              // Docker JSON/schema issues can retain encoded registry credentials.
+              Effect.mapError(discardError(parseError(docker.value)))
             )
             for (const [registry, entry] of Object.entries(config.auths ?? {})) {
               if (store.has(registry)) continue
@@ -273,23 +292,27 @@ export class OciRegistry extends Context.Service<OciRegistry, {
         readonly token: { value: string | undefined }
         readonly notFoundCode?: string
       }) {
-        const configured = (yield* credentials).get(request.registry)
+        const override = (yield* OciCredentialOverrides).get(request.registry)
+        const configured = override ?? (yield* credentials).get(request.registry)
         const send = (bearer: string | undefined) => {
           const base = HttpClientRequest.get(request.url).pipe(
             request.accept.length === 0 ? (r) => r : HttpClientRequest.setHeader("Accept", request.accept.join(", "))
           )
           const authed = bearer !== undefined
             ? HttpClientRequest.bearerToken(base, bearer)
+            : override !== undefined
+            ? HttpClientRequest.setHeader(base, "Authorization", authorization(override))
             : configured?._tag === "Bearer"
             ? HttpClientRequest.bearerToken(base, configured.token)
             : base
           return http.execute(authed).pipe(
             Effect.timeout(REQUEST_TIMEOUT),
-            Effect.mapError((cause) => failed(`http error on \`${request.url}\`: ${cause.message}`))
+            Effect.mapError((cause) => failed(`http error on \`${request.url}\`: ${cause.message}`, "E_DEP_RESOLVE", cause))
           )
         }
         let response = yield* send(request.token.value)
         if (response.status === 401) {
+          if (override !== undefined) return yield* failed(hostedRejected(request.registry))
           const challenge = bearerChallenge(response.headers["www-authenticate"])
           if (challenge === undefined) {
             return yield* failed(
@@ -323,11 +346,11 @@ export class OciRegistry extends Context.Service<OciRegistry, {
         )
         const response = yield* http.execute(request).pipe(
           Effect.timeout(REQUEST_TIMEOUT),
-          Effect.mapError((cause) => failed(`http error on \`${challenge.realm}\`: ${cause.message}`))
+          Effect.mapError((cause) => failed(`http error on \`${challenge.realm}\`: ${cause.message}`, "E_DEP_RESOLVE", cause))
         )
         const text = new TextDecoder().decode(yield* body(response, challenge.realm, MAX_MANIFEST_BYTES))
         const token = yield* decodeToken(text).pipe(
-          Effect.mapError((error) => failed(`http error on \`${challenge.realm}\`: ${error.message}`))
+          Effect.mapError((error) => failed(`http error on \`${challenge.realm}\`: ${error.message}`, "E_DEP_RESOLVE", error))
         )
         const value = token.token || token.access_token || ""
         if (value === "") {
@@ -344,7 +367,7 @@ export class OciRegistry extends Context.Service<OciRegistry, {
         readBounded(response, {
           url,
           limit,
-          fail: (message) => failed(message, code),
+          fail: (message, cause) => failed(message, code, cause),
           status: (status, text) => `registry returned ${status} for \`${url}\`: ${text}`
         })
 
@@ -362,7 +385,7 @@ export class OciRegistry extends Context.Service<OciRegistry, {
           return yield* failed(`invalid OCI reference \`${request.reference}\`: expected \`oci://<registry>/<repo>\``)
         }
         const signature = yield* Effect.transposeOption(Option.map(request.cosignPublicKey, keyedSignatureRef)).pipe(
-          Effect.mapError((error) => failed(`cosign public key: ${error.message}`, "E_COSIGN_VERIFY"))
+          Effect.mapError((error) => failed(`cosign public key: ${error.message}`, "E_COSIGN_VERIFY", error))
         )
         if (Option.isSome(request.pin)) {
           const hit = yield* cached(request.pin.value)
@@ -401,7 +424,7 @@ export class OciRegistry extends Context.Service<OciRegistry, {
           token
         })
         const manifest = yield* decodeManifest(new TextDecoder().decode(manifestBytes)).pipe(
-          Effect.mapError((error) => failed(`malformed manifest JSON: ${error.message}`))
+          Effect.mapError((error) => failed(`malformed manifest JSON: ${error.message}`, "E_DEP_RESOLVE", error))
         )
         const manifestDigest = sha256(manifestBytes)
         if (Option.isSome(request.cosignPublicKey)) {
@@ -453,13 +476,13 @@ export class OciRegistry extends Context.Service<OciRegistry, {
         const slot = cacheSlot(path, cacheRoot, digest)
         yield* unpack(slot, entries)
         return { directory: slot, digest, signature } satisfies Pulled
-      }, Effect.catchTag("ArchiveInvalid", (error) => Effect.fail(failed(`extracting chart tarball: ${error.message}`))))
+      }, Effect.catchTag("ArchiveInvalid", (error) => Effect.fail(failed(`extracting chart tarball: ${error.message}`, "E_DEP_RESOLVE", error))))
 
       const unpack = (slot: string, entries: ReadonlyArray<{ path: string; data: Uint8Array }>) =>
         unpackInto(slot, entries).pipe(
           Effect.provideService(FileSystem.FileSystem, fs),
           Effect.provideService(Path.Path, path),
-          Effect.mapError((error) => failed(`i/o at the OCI cache: ${error.message}`))
+          Effect.mapError((error) => failed(`i/o at the OCI cache: ${error.message}`, "E_DEP_RESOLVE", error))
         )
 
       const verifySignature = Effect.fnUntraced(function*(request: {
@@ -471,11 +494,12 @@ export class OciRegistry extends Context.Service<OciRegistry, {
         readonly token: { value: string | undefined }
       }) {
         const tag = `sha256-${request.manifestDigest.replace(/^sha256:/, "")}.sig`
-        const missing = (detail: string) =>
+        const missing = (detail: string, cause?: unknown) =>
           failed(
             `cosign signature for \`${request.reference}@${request.manifestDigest}\` is missing or malformed at ` +
               `\`${tag}\`: ${detail}`,
-            "E_COSIGN_SIG_MISSING"
+            "E_COSIGN_SIG_MISSING",
+            cause
           )
         const signatureManifest = yield* get({
           url: `${request.base}/manifests/${tag}`,
@@ -485,7 +509,7 @@ export class OciRegistry extends Context.Service<OciRegistry, {
           token: request.token
         }).pipe(
           Effect.flatMap((bytes) => decodeManifest(new TextDecoder().decode(bytes))),
-          Effect.mapError((error) => missing(error.message))
+          Effect.mapError((error) => missing(error.message, error))
         )
         const layer = signatureManifest.layers.find((candidate) => candidate.mediaType === COSIGN_LAYER)
         if (layer === undefined) return yield* missing(`no layer with media type ${COSIGN_LAYER}`)
@@ -497,7 +521,7 @@ export class OciRegistry extends Context.Service<OciRegistry, {
           accept: [],
           limit: MAX_MANIFEST_BYTES,
           token: request.token
-        }).pipe(Effect.mapError((error) => missing(`payload blob: ${error.message}`)))
+        }).pipe(Effect.mapError((error) => missing(`payload blob: ${error.message}`, error)))
         yield* verifyKeyed({
           publicKeyPem: request.publicKeyPem,
           payload,
@@ -507,7 +531,8 @@ export class OciRegistry extends Context.Service<OciRegistry, {
           Effect.mapError((error) =>
             failed(
               `cosign verify failed for \`${request.reference}@${request.manifestDigest}\`: ${error.message}`,
-              "E_COSIGN_VERIFY"
+              "E_COSIGN_VERIFY",
+              error
             )
           )
         )
@@ -531,7 +556,7 @@ export class OciRegistry extends Context.Service<OciRegistry, {
           token
         })
         const manifest = yield* decodeManifest(new TextDecoder().decode(manifestBytes)).pipe(
-          Effect.mapError((error) => failed(`manifest parse: ${error.message}`))
+          Effect.mapError((error) => failed(`manifest parse: ${error.message}`, "E_DEP_RESOLVE", error))
         )
         const layer = manifest.layers.find((entry) => entry.mediaType === AKUA_LAYER)
         if (layer === undefined) {
@@ -571,7 +596,7 @@ export class OciRegistry extends Context.Service<OciRegistry, {
           token
         })
         const manifest = yield* decodeManifest(new TextDecoder().decode(manifestBytes)).pipe(
-          Effect.mapError((error) => failed(`manifest parse: ${error.message}`))
+          Effect.mapError((error) => failed(`manifest parse: ${error.message}`, "E_DEP_RESOLVE", error))
         )
         const manifestDigest = sha256(manifestBytes)
         const layerDigests = manifest.layers.map((layer) => layer.digest)
@@ -583,11 +608,12 @@ export class OciRegistry extends Context.Service<OciRegistry, {
           token
         }).pipe(
           Effect.map(Option.some),
-          Effect.catchIf((error) => / returned 404 /.test(error.message), () => Effect.succeedNone)
+          // A missing optional attestation sidecar is reported as unsigned.
+          Effect.catchIf((error) => / returned 404 /.test(error.message), discardError(Effect.succeedNone))
         )
         if (Option.isNone(attestation)) return { manifestDigest, layerDigests, envelope: Option.none() }
         const sidecar = yield* decodeManifest(new TextDecoder().decode(attestation.value)).pipe(
-          Effect.mapError((error) => failed(`manifest parse: ${error.message}`))
+          Effect.mapError((error) => failed(`manifest parse: ${error.message}`, "E_DEP_RESOLVE", error))
         )
         const layer = sidecar.layers.find((entry) => entry.mediaType === DSSE_LAYER)
         if (layer === undefined) {
@@ -605,14 +631,19 @@ export class OciRegistry extends Context.Service<OciRegistry, {
         return { manifestDigest, layerDigests, envelope: Option.some(envelope) }
       })
 
-      const pushFailed = (message: string) => new OciPushFailed({ message })
+      const pushFailed = (message: string, cause?: unknown) => new OciPushFailed({ message, cause })
       const authRejected = (registry: string) =>
         pushFailed(
           `registry \`${registry}\` rejected auth. Configure credentials in \`~/.config/akua/auth.toml\` ` +
             "or `docker login` for `~/.docker/config.json`."
         )
 
-      /** A POST or PUT with the registry's auth, retried once with a bearer token after a 401 challenge. */
+      /**
+       * A POST or PUT with the registry's auth, retried once with a bearer token after a 401
+       * challenge. Credentials are bound to the registry's own origin: a destination elsewhere (an
+       * absolute upload `Location` on another host, or plain HTTP) never receives them, and a
+       * hosted credential override refuses such a destination before anything is sent.
+       */
       const send = Effect.fnUntraced(function*(request: {
         readonly method: "POST" | "PUT"
         readonly url: string
@@ -621,40 +652,56 @@ export class OciRegistry extends Context.Service<OciRegistry, {
         readonly contentType?: string
         readonly token: { value: string | undefined }
       }) {
-        const configured = (yield* credentials.pipe(Effect.mapError((error) => pushFailed(error.message)))).get(
-          request.registry
-        )
+        const destination = URL.parse(request.url)?.origin
+        const own = destination !== undefined &&
+          destination === URL.parse(`${scheme(request.registry)}://${request.registry}`)?.origin
+        const hosted = (yield* OciCredentialOverrides).get(request.registry)
+        if (hosted !== undefined && !own) {
+          return yield* pushFailed(
+            `registry \`${request.registry}\` sent the upload to \`${destination ?? request.url}\`; ` +
+              "the hosted credential is only sent to its own registry."
+          )
+        }
+        const override = own ? hosted : undefined
+        const configured = !own ? undefined : override ??
+          (yield* credentials.pipe(Effect.mapError((error) => pushFailed(error.message, error)))).get(request.registry)
         const attempt = (bearer: string | undefined) => {
           const base = (request.method === "POST" ? HttpClientRequest.post : HttpClientRequest.put)(request.url).pipe(
             HttpClientRequest.bodyUint8Array(request.body, request.contentType ?? "application/octet-stream")
           )
           const authed = bearer !== undefined
             ? HttpClientRequest.bearerToken(base, bearer)
+            : override !== undefined
+            ? HttpClientRequest.setHeader(base, "Authorization", authorization(override))
             : configured?._tag === "Bearer"
             ? HttpClientRequest.bearerToken(base, configured.token)
             : base
           return http.execute(authed).pipe(
             Effect.timeout(REQUEST_TIMEOUT),
-            Effect.mapError((cause) => pushFailed(`http error on \`${request.url}\`: ${cause.message}`))
+            Effect.mapError((cause) => pushFailed(`http error on \`${request.url}\`: ${cause.message}`, cause))
           )
         }
-        let response = yield* attempt(request.token.value)
+        let response = yield* attempt(own ? request.token.value : undefined)
         if (response.status !== 401) return response
+        if (override !== undefined) return yield* pushFailed(hostedRejected(request.registry))
+        if (!own) return yield* authRejected(request.registry)
         const challenge = bearerChallenge(response.headers["www-authenticate"])
         if (challenge === undefined) return yield* authRejected(request.registry)
         request.token.value = yield* exchangeToken(challenge, configured, request.registry).pipe(
-          Effect.mapError((error) => pushFailed(error.message))
+          Effect.mapError((error) => pushFailed(error.message, error))
         )
         response = yield* attempt(request.token.value)
         if (response.status === 401) return yield* authRejected(request.registry)
         return response
       })
 
-      const failedUpload = (response: HttpClientResponse.HttpClientResponse) =>
-        response.text.pipe(
-          Effect.orElseSucceed(() => ""),
-          Effect.flatMap((body) => Effect.fail(pushFailed(`registry returned ${response.status} on blob upload: ${body}`)))
+      const failedUpload = Effect.fnUntraced(function*(response: HttpClientResponse.HttpClientResponse) {
+        const body = yield* response.text.pipe(Effect.result)
+        return yield* pushFailed(
+          `registry returned ${response.status} on blob upload: ${body._tag === "Success" ? body.success : ""}`,
+          body._tag === "Failure" ? body.failure : undefined
         )
+      })
 
       /** A monolithic blob upload: `POST .../blobs/uploads/`, then `PUT <location>?digest=`. */
       const uploadBlob = Effect.fnUntraced(function*(

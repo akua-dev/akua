@@ -5,7 +5,7 @@
     "": {
       "name": "akua-monorepo",
       "dependencies": {
-        "@akua-dev/cli": "0.13.12",
+        "@akua-dev/cli": "0.0.0-dev",
       },
     },
     "crates/wasm-sandbox": {
@@ -14,7 +14,7 @@
     },
     "packages/akuapkg": {
       "name": "@akua-dev/sdk",
-      "version": "0.13.12",
+      "version": "0.0.0-dev",
       "dependencies": {
         "@akua-dev/wasm-sandbox": "0.1.0",
         "@bjorn3/browser_wasi_shim": "0.4.2",
@@ -25,15 +25,19 @@
         "smol-toml": "1.8.0",
         "yaml": "2.9.0",
       },
+      "devDependencies": {
+        "@effect/vitest": "4.1.4",
+        "vitest": "5.0.2",
+      },
     },
     "packages/cli": {
       "name": "@akua-dev/cli",
-      "version": "0.13.12",
+      "version": "0.0.0-dev",
       "bin": {
         "akua": "./src/bin/akua.ts",
       },
       "dependencies": {
-        "@akua-dev/sdk": "0.13.12",
+        "@akua-dev/sdk": "0.0.0-dev",
         "@effect/platform-bun": "4.1.4",
         "effect": "4.1.4",
       },
@@ -49,6 +53,20 @@
     "packages/cloudflare-tunnel-connector": {
       "name": "@akua-dev/cloudflare-tunnel-connector",
       "version": "0.13.9",
+    },
+    "packages/image-credential-provider": {
+      "name": "@akua-dev/image-credential-provider",
+      "version": "0.13.14",
+      "dependencies": {
+        "@effect/platform-bun": "4.1.4",
+        "effect": "4.1.4",
+        "yaml": "2.9.0",
+      },
+      "devDependencies": {
+        "@effect/vitest": "4.1.4",
+        "@types/node": "^24.10.0",
+        "vitest": "5.0.2",
+      },
     },
     "packages/private-ingress-gateway": {
       "name": "@akua-dev/private-ingress-gateway",
@@ -78,6 +96,8 @@
     "@akua-dev/cli": ["@akua-dev/cli@workspace:packages/cli"],
 
     "@akua-dev/cloudflare-tunnel-connector": ["@akua-dev/cloudflare-tunnel-connector@workspace:packages/cloudflare-tunnel-connector"],
+
+    "@akua-dev/image-credential-provider": ["@akua-dev/image-credential-provider@workspace:packages/image-credential-provider"],
 
     "@akua-dev/private-ingress-gateway": ["@akua-dev/private-ingress-gateway@workspace:packages/private-ingress-gateway"],
 

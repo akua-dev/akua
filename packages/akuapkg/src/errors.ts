@@ -113,6 +113,7 @@ export class LockInvalid extends Schema.TaggedError<LockInvalid>()("LockInvalid"
  * specific contract code (`E_PATH_ESCAPE`, `E_COSIGN_VERIFY`, ...).
  */
 export class DependencyUnresolved extends Schema.TaggedError<DependencyUnresolved>()("DependencyUnresolved", {
+  cause: Schema.optionalKey(Schema.Defect()),
   dependency: Schema.String,
   code: Schema.String,
   message: Schema.String,

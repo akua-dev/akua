@@ -31,6 +31,15 @@ export function operationError(
 	failure: OperationFailure,
 	context: OperationCommandContext
 ): AkuaCliError {
+	return Object.defineProperty(operationErrorDetails(failure, context), 'cause', {
+		value: failure
+	});
+}
+
+function operationErrorDetails(
+	failure: OperationFailure,
+	context: OperationCommandContext
+): AkuaCliError {
 	const help = {
 		command: `${context.command} --help`,
 		description: 'See the arguments and flags.'

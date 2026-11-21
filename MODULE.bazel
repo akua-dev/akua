@@ -41,7 +41,7 @@ use_repo(rust, "rust_toolchains")
 # only advertises zig_sdk); `bazel mod tidy` would drop the import the
 # toolchains in bazel/toolchains need.
 zig = use_extension("@hermetic_cc_toolchain//toolchain:ext.bzl", "toolchains")
-use_repo(zig, "zig_config-linux-amd64", "zig_sdk")
+use_repo(zig, "zig_config", "zig_config-linux-amd64", "zig_sdk")
 
 # Linux C toolchains for a standalone checkout; a consuming root brings its own.
 register_toolchains(
@@ -124,10 +124,6 @@ bun_lock_repository(
 # ---------------------------------------------------------------------------
 # Source version, cross SDKs and compilers
 # ---------------------------------------------------------------------------
-
-source_version = use_repo_rule("//bazel:source_version.bzl", "source_version")
-
-source_version(name = "source_version")
 
 macos_sdk = use_repo_rule("//bazel:source_cross_sdks.bzl", "macos_sdk")
 
@@ -226,7 +222,9 @@ crate.from_cargo(
     ],
     skip_cargo_lockfile_overwrite = True,
     supported_platform_triples = [
+        "aarch64-apple-darwin",
         "wasm32-wasip1",
+        "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu",
     ],
 )
@@ -324,6 +322,24 @@ crate.annotation(
     repositories = ["akua_worker_crates"],
     version = "3.2.0",
 )
+crate.annotation(
+    crate = "protoc-bin-vendored-macos-aarch_64",
+    data_glob = [
+        "bin/protoc",
+        "include/**",
+    ],
+    repositories = ["akua_worker_crates"],
+    version = "3.2.0",
+)
+crate.annotation(
+    crate = "protoc-bin-vendored-macos-x86_64",
+    data_glob = [
+        "bin/protoc",
+        "include/**",
+    ],
+    repositories = ["akua_worker_crates"],
+    version = "3.2.0",
+)
 
 # Native Windows import libraries must remain declared inputs of the final
 # link. The upstream build script otherwise emits a runfiles-only search path.
@@ -334,14 +350,21 @@ crate.annotation(
     patches = ["//bazel:patches/windows-msvc-import-lib-link.patch"],
     repositories = ["akua_sandbox_crates"],
 )
-
-# use_repo exposes aggregate crate repos, not these generated per-crate inputs.
-# buildifier: disable=canonical-repository
 crate.annotation(
-    build_script_data = ["@@rules_rust++crate+akua_worker_crates__protoc-bin-vendored-linux-x86_64-3.2.0//:bin/protoc"],
+    additive_build_file_content = """
+alias(
+    name = "worker_protoc",
+    actual = select({
+        "@rules_rust//rust/platform:aarch64-apple-darwin": "@akua_worker_crates__protoc-bin-vendored-macos-aarch_64-3.2.0//:bin/protoc",
+        "@rules_rust//rust/platform:x86_64-apple-darwin": "@akua_worker_crates__protoc-bin-vendored-macos-x86_64-3.2.0//:bin/protoc",
+        "//conditions:default": "@akua_worker_crates__protoc-bin-vendored-linux-x86_64-3.2.0//:bin/protoc",
+    }),
+)
+""",
     build_script_env = {
-        "PROTOC": "$(location @@rules_rust++crate+akua_worker_crates__protoc-bin-vendored-linux-x86_64-3.2.0//:bin/protoc)",
+        "PROTOC": "$(location :worker_protoc)",
     },
+    build_script_tools = [":worker_protoc"],
     crate = "kcl-api",
     repositories = ["akua_worker_crates"],
     version = "0.13.0",

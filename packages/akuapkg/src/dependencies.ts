@@ -218,7 +218,7 @@ export const resolvePackage = Effect.fn("resolvePackage")(function*(workspace: s
     : yield* configuredCosignKey(workspace, manifest)
   const trustedSignature = yield* Effect.transposeOption(Option.map(cosignPublicKey, keyedSignatureRef)).pipe(
     Effect.mapError((error) =>
-      new DependencyUnresolved({ dependency: "[signing]", code: "E_COSIGN_VERIFY", message: error.message })
+      new DependencyUnresolved({ dependency: "[signing]", code: "E_COSIGN_VERIFY", message: error.message, cause: error })
     )
   )
   const resolved = yield* Effect.forEach(dependencies(manifest), ([name, dependency]) =>
@@ -288,7 +288,8 @@ const resolveDependency = Effect.fnUntraced(function*(request: DependencyRequest
         new DependencyUnresolved({
           dependency: request.name,
           code: error._tag === "CrdsInvalid" ? "E_CRDS_INVALID" : "E_DEP_RESOLVE",
-          message: `dependency \`${request.name}\`: ${error.message}`
+          message: `dependency \`${request.name}\`: ${error.message}`,
+          cause: error
         })
       )
     )
@@ -414,6 +415,7 @@ const resolveSourceTree = Effect.fnUntraced(function*(request: DependencyRequest
           new DependencyUnresolved({
             dependency: name,
             code: error.code,
+            cause: error,
             ...(error.drift === true ? { drift: true } : {}),
             message: error.offline
               ? `chart \`${name}\`: oci:// source not resolvable in the current mode - ${error.message}`
@@ -441,6 +443,7 @@ const resolveSourceTree = Effect.fnUntraced(function*(request: DependencyRequest
           new DependencyUnresolved({
             dependency: name,
             code: "E_DEP_RESOLVE",
+            cause: error,
             message: error.offline
               ? `chart \`${name}\`: helm source not resolvable in the current mode - ${error.message}`
               : `chart \`${name}\`: helm-repo fetch failed: ${error.message}`
@@ -469,6 +472,7 @@ const resolveSourceTree = Effect.fnUntraced(function*(request: DependencyRequest
           new DependencyUnresolved({
             dependency: name,
             code: "E_DEP_RESOLVE",
+            cause: error,
             message: error.offline
               ? `chart \`${name}\`: git source not resolvable in the current mode - ${error.message}`
               : `chart \`${name}\`: git fetch failed: ${error.message}`
@@ -485,6 +489,7 @@ const resolveSourceTree = Effect.fnUntraced(function*(request: DependencyRequest
             dependency: name,
             code: "E_DEP_RESOLVE",
             ...(error.drift === true ? { drift: true } : {}),
+            cause: error,
             message: error.offline
               ? `dependency \`${name}\`: url source not resolvable in the current mode - ${error.message}`
               : `dependency \`${name}\`: url fetch failed: ${error.message}`
@@ -509,7 +514,8 @@ export const configuredCosignKey = Effect.fnUntraced(function*(workspace: string
         new DependencyUnresolved({
           dependency: "[signing]",
           code: "E_COSIGN_VERIFY",
-          message: `reading cosign public key at ${file}: ${error.message}`
+          message: `reading cosign public key at ${file}: ${error.message}`,
+          cause: error
         })
       )
     )
@@ -531,8 +537,8 @@ const fromWorkspacePath = Effect.fnUntraced(function*(
 ) {
   const fs = yield* FileSystem.FileSystem
   const path = yield* Path.Path
-  const unresolved = (message: string, code = "E_DEP_RESOLVE") =>
-    new DependencyUnresolved({ dependency: name, code, message: `dependency \`${name}\`: ${message}` })
+  const unresolved = (message: string, code = "E_DEP_RESOLVE", cause?: unknown) =>
+    new DependencyUnresolved({ dependency: name, code, message: `dependency \`${name}\`: ${message}`, cause })
   if (path.isAbsolute(requested)) {
     return yield* unresolved(
       `absolute path \`${requested}\` is rejected - path / replace deps must stay under the workspace root`,
@@ -544,7 +550,7 @@ const fromWorkspacePath = Effect.fnUntraced(function*(
   const target = yield* fs.realPath(joined).pipe(
     Effect.catchIf(
       (error) => error.reason._tag === "NotFound",
-      () => Effect.fail(unresolved(`path-dep target \`${joined}\` does not exist`))
+      (cause) => Effect.fail(unresolved(`path-dep target \`${joined}\` does not exist`, "E_DEP_RESOLVE", cause))
     )
   )
   if (target !== root && !target.startsWith(`${root}${path.sep}`)) {
@@ -566,7 +572,8 @@ const fromDirectory = Effect.fnUntraced(function*(name: string, directory: strin
         new DependencyUnresolved({
           dependency: name,
           code: "E_PATH_ESCAPE",
-          message: `dependency \`${name}\`: \`${escape.path}\` resolves outside the dependency`
+          message: `dependency \`${name}\`: \`${escape.path}\` resolves outside the dependency`,
+          cause: escape
         })
       ))
   )

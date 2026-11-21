@@ -9,6 +9,7 @@ import { sha256 } from "./downloads"
  */
 
 export class CosignInvalid extends Schema.TaggedError<CosignInvalid>()("CosignInvalid", {
+  cause: Schema.optionalKey(Schema.Defect()),
   message: Schema.String
 }) {}
 
@@ -53,16 +54,16 @@ export const verifyKeyed = Effect.fn("verifyKeyed")(function*(request: {
   readonly signatureBase64: string
   readonly manifestDigest: string
 }) {
-  const invalid = (message: string) => new CosignInvalid({ message })
+  const invalid = (message: string, cause?: unknown) => new CosignInvalid({ message, cause })
   const signature = yield* Effect.try({
     try: () => Uint8Array.fromBase64(request.signatureBase64.trim()),
-    catch: (cause) => invalid(`signature is not valid DER/raw base64: ${String(cause)}`)
+    catch: (cause) => invalid(`signature is not valid DER/raw base64: ${String(cause)}`, cause)
   })
   // cosign signs DER by default; older tools wrote the raw form.
   const raw = signature.length === 64 ? signature : derToRaw(signature)
   if (raw === undefined) return yield* invalid("signature is not valid DER/raw base64: unrecognised encoding")
   const payload = yield* decodePayload(new TextDecoder().decode(request.payload)).pipe(
-    Effect.mapError((error) => invalid(`payload isn't the cosign simple-signing shape: ${error.message}`))
+    Effect.mapError((error) => invalid(`payload isn't the cosign simple-signing shape: ${error.message}`, error))
   )
   const claimed = payload.critical.image["docker-manifest-digest"]
   if (claimed !== request.manifestDigest) {
@@ -80,11 +81,11 @@ export const verifyKeyed = Effect.fn("verifyKeyed")(function*(request: {
         false,
         ["verify"]
       ),
-    catch: (cause) => invalid(`public key is not a valid PEM-encoded P-256 ECDSA key: ${String(cause)}`)
+    catch: (cause) => invalid(`public key is not a valid PEM-encoded P-256 ECDSA key: ${String(cause)}`, cause)
   })
   const verified = yield* Effect.tryPromise({
     try: () => crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, new Uint8Array(raw), new Uint8Array(request.payload)),
-    catch: (cause) => invalid(`signature does not verify against the supplied public key: ${String(cause)}`)
+    catch: (cause) => invalid(`signature does not verify against the supplied public key: ${String(cause)}`, cause)
   })
   if (!verified) return yield* invalid("signature does not verify against the supplied public key")
 })
@@ -98,7 +99,7 @@ export const verifyKeyed = Effect.fn("verifyKeyed")(function*(request: {
 export const keyedSignatureRef = Effect.fn("keyedSignatureRef")(function*(publicKeyPem: string) {
   const der = yield* Effect.try({
     try: () => Uint8Array.fromBase64(pemBody(publicKeyPem)),
-    catch: (cause) => new CosignInvalid({ message: `public key is not valid PEM: ${String(cause)}` })
+    catch: (cause) => new CosignInvalid({ message: `public key is not valid PEM: ${String(cause)}`, cause })
   })
   return `cosign:key:${sha256(der)}`
 })

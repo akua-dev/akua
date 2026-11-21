@@ -1,12 +1,13 @@
 import { expect, it } from '@effect/vitest';
 import { ConfigProvider, Effect, Fiber, Schema } from 'effect';
-import { HttpClient } from 'effect/http';
+import { HttpClient, HttpClientResponse } from 'effect/http';
 import { TestClock } from 'effect/testing';
 
 import { buildContract, OpenApiDocument } from '../scripts/generate-contract';
 import { OperationFailure } from '../src/api/failure';
 import { diagnoseContractFailure } from '../src/cli/contract-diagnostic';
 import { operationContext } from '../src/cli/operation-context';
+import { operationError, toCliFailure } from '../src/cli/operation-errors';
 import { runAkua, temporaryHome, writeConfigFile } from './fake-api';
 
 const upgrade = 'Your akua CLI is older than the API. Update with `brew upgrade akua`.';
@@ -54,6 +55,52 @@ const rejection = {
 	errors: [{ code: 7001, message: 'Original shape error', path: ['body', 'name'] }],
 	result: {}
 };
+
+it.effect.each(['business', 'discovery-unavailable', 'upgrade'] as const)(
+	'retains the original operation through %s diagnosis without exposing its cause',
+	(mode) =>
+		Effect.gen(function* () {
+			const contract = yield* contractOf(3);
+			const operation = yield* Effect.fromNullishOr(contract.operations[0]);
+			const context = operationContext(contract, operation);
+			const original = new OperationFailure({
+				operationId: operation.id,
+				reason: mode === 'business' ? 'api' : 'input',
+				...(mode === 'business' ? { status: 500 } : { issues: [] }),
+				cause: new Error('private-operation-canary')
+			});
+			const error = yield* diagnoseContractFailure(
+				context,
+				{ body: { name: 'long-name' } },
+				original
+			).pipe(
+				Effect.provideService(
+					HttpClient.HttpClient,
+					HttpClient.make((request) =>
+						Effect.succeed(
+							HttpClientResponse.fromWeb(
+								request,
+								mode === 'discovery-unavailable'
+									? Response.json({}, { status: 503 })
+									: Response.json(document(100))
+							)
+						)
+					)
+				),
+				Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord({})))
+			);
+			expect(error.code).toBe(mode === 'business' ? 'AKUA_API_ERROR' : 'AKUA_INPUT_INVALID');
+			expect(error.nextSteps.some(({ command }) => command === 'brew upgrade akua')).toBe(
+				mode === 'upgrade'
+			);
+			expect(error.cause).toBe(original);
+			expect(operationError(original, context).cause).toBe(original);
+			expect(toCliFailure(context)(original).cause).toBe(original);
+			expect(JSON.stringify(error.toPayload())).not.toContain('private-operation-canary');
+			expect(JSON.stringify(error)).not.toContain('"cause"');
+			expect(Object.getOwnPropertyDescriptor(error, 'cause')?.enumerable).toBe(false);
+		})
+);
 
 it.effect('keeps a server shape error and adds the upgrade hint when contracts differ', () =>
 	Effect.gen(function* () {

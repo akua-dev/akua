@@ -22,6 +22,32 @@ load(":cli_release_archive.bzl", "cli_release_archive")
 load(":source_build.bzl", "go_wasi_engine")
 load(":version.bzl", "PACKAGE_SOURCE_VERSION")
 
+# Workspace identities stay fixed. Only build outputs carry a release version,
+# including inter-package npm dependencies and Cargo's inherited crate version.
+_RELEASE_MANIFESTS = {
+    "Cargo.toml": "//:Cargo.toml",
+    "package.json": "//:package.json",
+    "packages/akuapkg/package.json": "//packages/akuapkg:package.json",
+    "packages/cli/package.json": "//packages/cli:package.json",
+    "plugins/akuapkg/plugin.json": "//plugins/akuapkg:plugin.json",
+}
+
+[
+    expand_template(
+        name = "release_manifest_" + destination.replace("/", "_").replace(".", "_"),
+        out = "release-manifests/" + destination,
+        substitutions = {"0.0.0-dev": PACKAGE_SOURCE_VERSION},
+        template = source,
+    )
+    for destination, source in _RELEASE_MANIFESTS.items()
+]
+
+filegroup(
+    name = "release_manifests",
+    srcs = [":release_manifest_" + destination.replace("/", "_").replace(".", "_") for destination in _RELEASE_MANIFESTS],
+    visibility = ["//visibility:public"],
+)
+
 # The `effect` patch and the rest of the bun.lock packages the executables run with.
 _NODE_MODULES = "@npm//:production"
 
@@ -105,6 +131,24 @@ rust_library(
             "@@rules_rust++crate+akua_worker_crates__socket2-0.6.3//:socket2",
         ],
         "//conditions:default": [],
+    }),
+)
+
+# These aliases are consumed in the execution configuration. Linux remote
+# builds retain their pinned SDK; native macOS builds use the pinned host SDK.
+alias(
+    name = "engine_go",
+    actual = select({
+        "//bazel/platforms:darwin": "@go_host//:go/bin/go",
+        "//conditions:default": "@go_linux_x64//:go/bin/go",
+    }),
+)
+
+alias(
+    name = "engine_go_sdk",
+    actual = select({
+        "//bazel/platforms:darwin": "@go_host//:go_files",
+        "//conditions:default": "@go_linux_x64//:go_files",
     }),
 )
 
@@ -389,7 +433,7 @@ cli_release_archive(
         "memory_kb": "2097152",
     },
     node_modules = _NODE_MODULES,
-    package_json = "//packages/cli:package.json",
+    package_json = ":release_manifest_packages_cli_package_json",
     package_version = PACKAGE_SOURCE_VERSION,
     program = "release-package-command.ts",
     stamp = select({
@@ -403,6 +447,23 @@ cli_release_archive(
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
+bun_test(
+    name = "release_version_test",
+    srcs = [
+        "release-version.test.ts",
+        ":release_manifests",
+    ],
+    bun_args = [
+        "--bun",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "bazel/release-version.test.ts",
+    ],
+    env = {"AKUA_EXPECTED_RELEASE_VERSION": PACKAGE_SOURCE_VERSION},
+    node_modules = "@npm//:linux_x64",
+    visibility = ["//visibility:public"],
+)
 
 _TEST_NODE_MODULES = select({
     "//bazel/platforms:darwin_arm64": "@npm//:darwin_arm64",
@@ -445,6 +506,7 @@ bun_test(
         "//crates/wasm-sandbox:package.json",
         "//packages/akuapkg:package.json",
         "//packages/akuapkg:srcs",
+        "//packages/akuapkg:test_srcs",
         "//packages/akuapkg:tsconfig.json",
     ],
     bun_args = [
@@ -452,6 +514,27 @@ bun_test(
         "--noEmit",
         "--project",
         "tsconfig.json",
+    ],
+    chdir = "packages/akuapkg",
+    node_modules = _TEST_NODE_MODULES,
+    visibility = ["//visibility:public"],
+    workspace_links = WORKSPACE_LINKS,
+)
+
+bun_test(
+    name = "host_unit_test",
+    size = "small",
+    srcs = [
+        "//:package.json",
+        "//packages/akuapkg:package.json",
+        "//packages/akuapkg:srcs",
+        "//packages/akuapkg:test_srcs",
+    ],
+    bun_args = [
+        "--bun",
+        "../../node_modules/vitest/vitest.mjs",
+        "run",
+        "src",
     ],
     chdir = "packages/akuapkg",
     node_modules = _TEST_NODE_MODULES,

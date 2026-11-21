@@ -1,4 +1,5 @@
 import { Effect, Option, Predicate, Schema } from 'effect';
+import { constant as discardError } from 'effect/Function';
 import { HttpClient } from 'effect/http';
 
 import { buildContract, OpenApiDocument } from '../../scripts/generate-contract';
@@ -24,20 +25,24 @@ export const diagnoseContractFailure = Effect.fnUntraced(function* (
 	const mismatch = yield* newerContractAccepts(context, input, failure).pipe(
 		Effect.timeoutOption('2 seconds'),
 		// Discovery is optional: network, decoding, or future-schema failures must not hide the error.
-		Effect.catchCause(() => Effect.succeed(Option.none()))
+		Effect.catchCause(discardError(Effect.succeed(Option.none())))
 	);
 	if (Option.isNone(mismatch) || !mismatch.value) return error;
-	return new AkuaCliError({
-		...error,
-		message: error.message,
-		nextSteps: [
-			{
-				command: 'brew upgrade akua',
-				description: 'Your akua CLI is older than the API. Update with `brew upgrade akua`.'
-			},
-			...error.nextSteps
-		]
-	});
+	return Object.defineProperty(
+		new AkuaCliError({
+			...error,
+			message: error.message,
+			nextSteps: [
+				{
+					command: 'brew upgrade akua',
+					description: 'Your akua CLI is older than the API. Update with `brew upgrade akua`.'
+				},
+				...error.nextSteps
+			]
+		}),
+		'cause',
+		{ value: error.cause }
+	);
 });
 
 const newerContractAccepts = Effect.fnUntraced(function* (

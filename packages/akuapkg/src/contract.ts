@@ -95,7 +95,8 @@ export type TreeOutput = typeof TreeOutput.Type
  */
 export class CliFailure extends Schema.TaggedError<CliFailure>()("CliFailure", {
   error: StructuredError,
-  exitCode: Schema.Number
+  exitCode: Schema.Number,
+  cause: Schema.optionalKey(Schema.Defect())
 }) {
   override get message() {
     return `${this.error.code}: ${this.error.message}`
@@ -124,7 +125,7 @@ export class ExitWith extends Schema.TaggedError<ExitWith>()("ExitWith", {
   }
 }
 
-export const fail = (code: string, message: string, exitCode: number, path?: string, suggestion?: string) =>
+export const fail = (code: string, message: string, exitCode: number, path?: string, suggestion?: string, cause?: unknown) =>
   new CliFailure({
     error: {
       level: "error",
@@ -132,9 +133,10 @@ export const fail = (code: string, message: string, exitCode: number, path?: str
       message,
       ...(path === undefined ? {} : { path }),
       ...(suggestion === undefined ? {} : { suggestion }),
-      docs: `https://cli.akua.dev/errors/${code}`
+      docs: `https://docs.akua.dev/akua/errors/${code}`
     },
-    exitCode
+    exitCode,
+    cause
   })
 
 export const usageFailure = (message: string) => fail("E_INVALID_FLAG", message, ExitCode.userError)
@@ -146,46 +148,48 @@ export const packageMissing = (path: string) =>
     path,
     "pass the Package.k path explicitly or cd to its directory"
   )
-const ioFailure = (message: string) => fail("E_IO", message, ExitCode.systemError)
+const ioFailure = (message: string, cause?: unknown) => fail("E_IO", message, ExitCode.systemError, undefined, undefined, cause)
 
 /** A render failure under `code`: running out of the CPU budget is a timeout. */
-const budgetFailure = (code: string, message: string) =>
-  fail(code, message, code === "E_RENDER_BUDGET_DEADLINE" ? ExitCode.timeout : ExitCode.userError)
+const budgetFailure = (code: string, message: string, cause?: unknown) =>
+  fail(code, message, code === "E_RENDER_BUDGET_DEADLINE" ? ExitCode.timeout : ExitCode.userError, undefined, undefined, cause)
 
 /** Map a host failure onto the contract's codes and exit codes. */
-export const toCliFailure = ({ reason: error }: HostError): CliFailure => {
+export const toCliFailure = (cause: HostError): CliFailure => {
+  const error = cause.reason
   switch (error._tag) {
     case "PathEscape":
-      return fail("E_PATH_ESCAPE", error.message, ExitCode.userError, error.path)
+      return fail("E_PATH_ESCAPE", error.message, ExitCode.userError, error.path, undefined, cause)
     case "GuestFailure":
-      return budgetFailure(error.budgetCode ?? "E_RENDER_KCL", error.message)
+      return budgetFailure(error.budgetCode ?? "E_RENDER_KCL", error.message, cause)
     case "PluginError":
-      return budgetFailure(error.code ?? "E_RENDER_KCL", `${error.plugin}: ${error.message}`)
+      return budgetFailure(error.code ?? "E_RENDER_KCL", `${error.plugin}: ${error.message}`, cause)
     case "RenderError":
-      return fail("E_RENDER_KCL", error.message, ExitCode.userError)
+      return fail("E_RENDER_KCL", error.message, ExitCode.userError, undefined, undefined, cause)
     case "ProgramShape":
-      return fail("E_PACKAGE_PARSE", error.message, ExitCode.userError)
+      return fail("E_PACKAGE_PARSE", error.message, ExitCode.userError, undefined, undefined, cause)
     case "PackageMissing":
-      return packageMissing(error.path)
+      return new CliFailure({ ...packageMissing(error.path), cause })
     case "InputsMissing":
-      return fail("E_INPUTS_MISSING", error.message, ExitCode.userError, error.path)
+      return fail("E_INPUTS_MISSING", error.message, ExitCode.userError, error.path, undefined, cause)
     case "InputsParseError":
-      return fail("E_INPUTS_PARSE", error.message, ExitCode.userError, error.path)
+      return fail("E_INPUTS_PARSE", error.message, ExitCode.userError, error.path, undefined, cause)
     case "ManifestInvalid":
-      return fail(error.code, error.message, ExitCode.userError, error.path)
+      return fail(error.code, error.message, ExitCode.userError, error.path, undefined, cause)
     case "LockInvalid":
-      return fail("E_LOCK_PARSE", error.message, ExitCode.userError, error.path)
+      return fail("E_LOCK_PARSE", error.message, ExitCode.userError, error.path, undefined, cause)
     case "DependencyUnresolved":
-      return fail(error.code, error.message, ExitCode.userError)
+      return fail(error.code, error.message, ExitCode.userError, undefined, undefined, cause)
     case "WasmLoadError":
       // Bun loads an embedded addon from a copy in TMPDIR; its own error
       // names only the embedded path.
       return ioFailure(
         error.module === "wasm-sandbox"
           ? `cannot load the sandbox addon; is TMPDIR a writable directory? ${String(error.cause)}`
-          : `cannot load ${error.module}: ${String(error.cause)}`
+          : `cannot load ${error.module}: ${String(error.cause)}`,
+        cause
       )
     case "IoError":
-      return ioFailure(error.message)
+      return ioFailure(error.message, cause)
   }
 }

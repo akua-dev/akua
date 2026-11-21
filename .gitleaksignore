@@ -71,7 +71,7 @@ f1ea16c802e0c86afd2430ec8d395a5598d5c1de:packages/sdk/tests/docker-config.test.t
 f3ca982b7668f20dc0f93e88981c0385af86fff1:crates/akua-napi/bun.lock:generic-password:41
 
 # The error catalog's documentation example of a git URL that embeds
-# credentials, in the catalog and in the cli.akua.dev page generated from it;
+# credentials, in the catalog and in the retired forwarding page generated from it;
 # reworded in the following commit. The first version of this comment quoted
 # the example itself.
 6d60012381490fad6e6499825f14523bd5fbb11e:host/src/error-catalog.ts:generic-credential-uri:34

@@ -179,15 +179,19 @@ export const status: Effect.Effect<
 });
 
 const verifiedAccount = Effect.fnUntraced(function* (token: Redacted.Redacted<string>) {
-	const unavailable = () =>
-		new AkuaCliError({
-			type: 'authentication_error',
-			code: 'AKUA_IDENTITY_UNAVAILABLE',
-			message:
-				'Could not verify the signed-in account. Check connectivity and AKUA_AUTH_URL, or run akua auth login.',
-			exitCode: 3,
-			nextSteps: [{ command: 'akua auth login' }]
-		});
+	const unavailable = (cause?: unknown) =>
+		Object.defineProperty(
+			new AkuaCliError({
+				type: 'authentication_error',
+				code: 'AKUA_IDENTITY_UNAVAILABLE',
+				message:
+					'Could not verify the signed-in account. Check connectivity and AKUA_AUTH_URL, or run akua auth login.',
+				exitCode: 3,
+				nextSteps: [{ command: 'akua auth login' }]
+			}),
+			'cause',
+			{ value: cause }
+		);
 	const client = yield* HttpClient.HttpClient;
 	const baseUrl = yield* authenticationBaseUrl;
 	const response = yield* client
@@ -299,7 +303,7 @@ const requestDevice = Effect.fnUntraced(function* (url: string, body: Record<str
 	const http = yield* Http;
 	return yield* http
 		.postJson({ url, body })
-		.pipe(Effect.mapError(() => new DeviceRequestFailure({})));
+		.pipe(Effect.mapError((cause) => new DeviceRequestFailure({ cause })));
 });
 
 function parseDeviceCode(response: DeviceResponse) {

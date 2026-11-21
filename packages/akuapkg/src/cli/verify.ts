@@ -1,4 +1,5 @@
 import { Effect, FileSystem, Option, Schema } from "effect"
+import { constant as discardError } from "effect/Function"
 import { osMessage } from "../errors"
 import { Command, Flag } from "effect/cli"
 import { ExitCode, ExitWith, fail } from "../contract"
@@ -141,7 +142,7 @@ const attestationViolation = Effect.fnUntraced(function*(entry: LockedPackage, p
   })
 })
 
-const workspaceVerify = (context: VerbContext, workspace: string, mode: "json" | "text") =>
+const workspaceVerify = (context: Pick<VerbContext, "fetchers" | "version">, workspace: string, mode: "json" | "text") =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     const manifest = yield* loadManifest(workspace).pipe(
@@ -163,7 +164,7 @@ const workspaceVerify = (context: VerbContext, workspace: string, mode: "json" |
       )
     }
     const lock = yield* parseLock(lockText.value, lockFile).pipe(
-      Effect.mapError((error) => fail("E_LOCK_PARSE", error.message, ExitCode.userError, lockFile))
+      Effect.mapError((error) => fail("E_LOCK_PARSE", error.message, ExitCode.userError, lockFile, undefined, error))
     )
     const declared = manifest.dependencies ?? {}
     const packages = lock.package ?? []
@@ -192,7 +193,8 @@ const workspaceVerify = (context: VerbContext, workspace: string, mode: "json" |
             osMessage(error),
             ExitCode.userError,
             file,
-            "akua.toml [signing].cosign_public_key must resolve to a PEM-encoded public key file."
+            "akua.toml [signing].cosign_public_key must resolve to a PEM-encoded public key file.",
+            error
           )
         )
       )))
@@ -201,7 +203,7 @@ const workspaceVerify = (context: VerbContext, workspace: string, mode: "json" |
       // A recorded signature counts only if it names the configured key: that
       // key verified these bytes when they were locked.
       const trusted = yield* Effect.transposeOption(Option.map(publicKey, keyedSignatureRef)).pipe(
-        Effect.mapError((error) => fail("E_COSIGN_VERIFY", error.message, ExitCode.userError, Option.getOrUndefined(keyFile)))
+        Effect.mapError((error) => fail("E_COSIGN_VERIFY", error.message, ExitCode.userError, Option.getOrUndefined(keyFile), undefined, error))
       )
       for (const entry of packages.filter((p) => !isPath(p))) {
         const { name, version, signature } = entry
@@ -274,7 +276,7 @@ const checkText = (check: Check) => {
 }
 
 /** A packed tarball against its `sign` sidecar and a public key, offline. */
-const tarballVerify = (context: VerbContext, flags: {
+const tarballVerify = (context: Pick<VerbContext, "fetchers" | "version">, flags: {
   readonly tarball: string
   readonly sig: Option.Option<string>
   readonly publicKey: Option.Option<string>
@@ -283,7 +285,7 @@ const tarballVerify = (context: VerbContext, flags: {
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     const tarball = yield* fs.readFile(flags.tarball).pipe(
-      Effect.mapError((error) => fail("E_IO", `reading tarball \`${flags.tarball}\`: ${osMessage(error)}`, ExitCode.userError))
+      Effect.mapError((error) => fail("E_IO", `reading tarball \`${flags.tarball}\`: ${osMessage(error)}`, ExitCode.userError, undefined, undefined, error))
     )
     const sidecarPath = Option.getOrElse(flags.sig, () => `${flags.tarball}.akuasig`)
     const checks: Array<Check> = []
@@ -302,7 +304,7 @@ const tarballVerify = (context: VerbContext, flags: {
     }
     const readKey = (path: string) =>
       fs.readFileString(path).pipe(
-        Effect.mapError((error) => fail("E_IO", `reading public key \`${path}\`: ${osMessage(error)}`, ExitCode.userError))
+        Effect.mapError((error) => fail("E_IO", `reading public key \`${path}\`: ${osMessage(error)}`, ExitCode.userError, undefined, undefined, error))
       )
     const publicKey = Option.isSome(flags.publicKey)
       ? Option.some(yield* readKey(flags.publicKey.value))
@@ -310,7 +312,8 @@ const tarballVerify = (context: VerbContext, flags: {
         Effect.map((manifest) => Option.fromUndefinedOr(manifest.signing?.cosign_public_key)),
         Effect.catchIf(
           (error) => error.error.message.startsWith("akua.toml not found"),
-          () => Effect.succeedNone
+          // Without a manifest there is no optional configured verification key.
+          discardError(Effect.succeedNone)
         ),
         Effect.flatMap((relative) =>
           Option.isSome(relative)
@@ -365,7 +368,7 @@ const tarballVerify = (context: VerbContext, flags: {
   })
 
 /** `akua.toml` against `akua.lock` (and attestations), or a packed tarball against its signature. */
-export const verify = (context: VerbContext) =>
+export const verify = (context: Pick<VerbContext, "fetchers" | "version">) =>
   Command.make(
     "verify",
     {

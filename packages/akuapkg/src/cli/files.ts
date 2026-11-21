@@ -1,4 +1,5 @@
 import { Effect, FileSystem, Option, Path } from "effect"
+import { constant as discardError } from "effect/Function"
 import { osMessage } from "../errors"
 import { ExitCode, fail } from "../contract"
 import { bareTree, RenderWorker } from "../worker"
@@ -14,8 +15,9 @@ export const readOptional = Effect.fnUntraced(function*(path: string) {
   const fs = yield* FileSystem.FileSystem
   return yield* fs.readFileString(path).pipe(
     Effect.map(Option.some),
-    Effect.catchIf((error) => error.reason._tag === "NotFound", () => Effect.succeed(Option.none<string>())),
-    Effect.mapError((error) => fail("E_IO", osMessage(error), ExitCode.systemError, path))
+    // A missing optional file is represented by None, not a read failure.
+    Effect.catchIf((error) => error.reason._tag === "NotFound", discardError(Effect.succeed(Option.none<string>()))),
+    Effect.mapError((error) => fail("E_IO", osMessage(error), ExitCode.systemError, path, undefined, error))
   )
 })
 

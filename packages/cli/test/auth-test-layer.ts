@@ -46,7 +46,7 @@ export function runAuthView(
 			Effect.catchIf(
 				(failure): failure is DeviceRequestFailure =>
 					dependencies.signal?.aborted === true && failure._tag === 'DeviceRequestFailure',
-				() => Effect.fail(new DeviceCancelledFailure({}))
+				(cause) => Effect.fail(new DeviceCancelledFailure({ cause }))
 			),
 			Effect.mapError(toCliError),
 			Effect.provide(testServices(dependencies)),
@@ -104,7 +104,7 @@ function testServices(dependencies: AuthTestDependencies) {
 			sleep: (duration) =>
 				Effect.tryPromise({
 					try: () => dependencies.sleep(Duration.toMillis(duration)),
-					catch: () => new DeviceRequestFailure({})
+					catch: (cause) => new DeviceRequestFailure({ cause })
 				}).pipe(Effect.orDie)
 		}),
 		SecureConfigLive.pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))

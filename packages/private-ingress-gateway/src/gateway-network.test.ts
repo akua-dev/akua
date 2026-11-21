@@ -2,6 +2,7 @@ import { BunFileSystem, BunHttpServer, BunSocket } from '@effect/platform-bun';
 import { expect, it } from '@effect/vitest';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { Clock, ConfigProvider, Context, Effect, Layer, Ref, Schedule } from 'effect';
+import { constant as discardError } from 'effect/Function';
 import { Socket } from 'effect/socket';
 import { HttpRouter, HttpServer, HttpServerRequest, HttpServerResponse } from 'effect/http';
 import { privateIngressGatewayApp } from './gateway';
@@ -251,7 +252,8 @@ it.live(
 							);
 						})
 					).pipe(
-						Effect.catchTag('SocketError', () => Effect.void),
+						// Socket closure is expected in this test server; the finalizer records it.
+						Effect.catchTag('SocketError', discardError(Effect.void)),
 						Effect.ensuring(Ref.update(closed, (n) => n + 1)),
 						Effect.as(HttpServerResponse.empty())
 					);

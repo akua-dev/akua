@@ -9,6 +9,7 @@ const NextStepSchema = Schema.Struct({
 export type NextStep = typeof NextStepSchema.Type;
 
 export class UsageFailure extends Schema.TaggedError<UsageFailure>()('UsageFailure', {
+	cause: Schema.optionalKey(Schema.Defect()),
 	message: Schema.String,
 	/** Help command to suggest, for example `akua clusters create --help`. */
 	help: Schema.optionalKey(Schema.String)
@@ -60,19 +61,23 @@ export function usageError(message: string, helpCommand = 'akua --help'): AkuaCl
 	});
 }
 
-export function packageCommandError(): AkuaCliError {
-	return new AkuaCliError({
-		type: 'runtime_error',
-		code: 'AKUA_PACKAGE_UNAVAILABLE',
-		message: 'The package toolchain (the akuapkg executable next to akua) could not be run.',
-		exitCode: ExitCodes.Runtime,
-		nextSteps: [
-			{
-				command: 'brew reinstall akua-dev/tap/akua',
-				description: 'Reinstall the CLI together with its package toolchain.'
-			}
-		]
-	});
+export function packageCommandError(cause?: unknown): AkuaCliError {
+	return Object.defineProperty(
+		new AkuaCliError({
+			type: 'runtime_error',
+			code: 'AKUA_PACKAGE_UNAVAILABLE',
+			message: 'The package toolchain (the akuapkg executable next to akua) could not be run.',
+			exitCode: ExitCodes.Runtime,
+			nextSteps: [
+				{
+					command: 'brew reinstall akua-dev/tap/akua',
+					description: 'Reinstall the CLI together with its package toolchain.'
+				}
+			]
+		}),
+		'cause',
+		{ value: cause }
+	);
 }
 
 function exitCodeForStatus(status: number | undefined): ExitCode {

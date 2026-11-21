@@ -7,12 +7,12 @@ import { Console, type SecureConfigFailure } from './services';
 
 export class DeviceRequestFailure extends Schema.TaggedError<DeviceRequestFailure>()(
 	'DeviceRequestFailure',
-	{}
+	{ cause: Schema.optionalKey(Schema.Defect()) }
 ) {}
 
 export class DeviceCancelledFailure extends Schema.TaggedError<DeviceCancelledFailure>()(
 	'DeviceCancelledFailure',
-	{}
+	{ cause: Schema.optionalKey(Schema.Defect()) }
 ) {}
 
 export class DeviceAuthorizationFailure extends Schema.TaggedError<DeviceAuthorizationFailure>()(
@@ -73,6 +73,11 @@ function writeCliFailure(
 }
 
 export function toCliError(failure: CliFailure): AkuaCliError {
+	if (failure._tag === 'AkuaCliError') return failure;
+	return Object.defineProperty(classifyCliError(failure), 'cause', { value: failure });
+}
+
+function classifyCliError(failure: CliFailure): AkuaCliError {
 	switch (failure._tag) {
 		case 'UsageFailure':
 			return usageError(failure.message, failure.help);

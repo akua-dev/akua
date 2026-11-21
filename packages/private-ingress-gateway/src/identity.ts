@@ -32,7 +32,7 @@ const Claims = Schema.Struct({
 export class GatewayIdentityError extends Schema.TaggedError<
 	GatewayIdentityError,
 	{ readonly brand: unique symbol }
->()('GatewayIdentityError', {}) {}
+>()('GatewayIdentityError', { cause: Schema.optional(Schema.Defect()) }) {}
 
 /** Only the dispatcher, for this Cluster, may route through this boundary. */
 export class GatewayIdentityVerifier extends Context.Service<
@@ -71,13 +71,13 @@ export class GatewayIdentityVerifier extends Context.Service<
 									requiredClaims: ['iss', 'sub', 'aud', 'iat', 'exp', 'scope'],
 									currentDate: new Date(now * 1000)
 								}),
-							catch: () => new GatewayIdentityError()
+							catch: (cause) => new GatewayIdentityError({ cause })
 						});
 						yield* Schema.decodeUnknownEffect(Schema.Struct({ kid: Schema.NonEmptyString }))(
 							protectedHeader
-						).pipe(Effect.mapError(() => new GatewayIdentityError()));
+						).pipe(Effect.mapError((cause) => new GatewayIdentityError({ cause })));
 						const claims = yield* Schema.decodeUnknownEffect(Claims)(payload).pipe(
-							Effect.mapError(() => new GatewayIdentityError())
+							Effect.mapError((cause) => new GatewayIdentityError({ cause }))
 						);
 						const scopes = claims.scope.split(' ');
 						if (

@@ -1,112 +1,128 @@
 <div align="center">
-  <img src="assets/logo.png" height="200" alt="Akua" />
+  <a href="https://akua.dev"><img src="assets/readme/hero.webp" width="100%" alt="Build it once. Install it for every customer. Sell it with one link: every customer gets their own install, and your coding agent runs it all." /></a>
 
   <h1>Akua</h1>
 
   <p>Build it once. Install it for every customer.</p>
 
   <p>
-    <a href="https://github.com/akua-dev/akua/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/akua-dev/akua?label=release&style=flat-square"></a>
-    <a href="https://docs.akua.dev"><img alt="Docs" src="https://img.shields.io/badge/docs-docs.akua.dev-blue?style=flat-square"></a>
-    <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square"></a>
+    <a href="https://akua.dev/discord"><img alt="Discord" src="https://img.shields.io/badge/Discord-join%20us-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
+    <a href="https://docs.akua.dev"><img alt="Docs" src="https://img.shields.io/badge/Docs-docs.akua.dev-0f172a?style=flat-square&logo=mintlify&logoColor=white"></a>
+    <a href="https://akua.dev"><img alt="Website" src="https://img.shields.io/badge/Website-akua.dev-1577ff?style=flat-square&logo=googlechrome&logoColor=white"></a>
+    <a href="./LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square&logo=apache&logoColor=white"></a>
   </p>
 </div>
 
----
+## Start with your coding agent
 
-Each customer gets their own install, on a server run by Akua or on their
-own. Every one stays up to date. Your coding agent runs it all: it builds the
-software with you, publishes it as a package, and installs it for each
-customer.
+Paste this prompt into Claude Code, Codex, Cursor or any agent that can run
+terminal commands. It installs the `akua` CLI, signs you in through your
+browser and works out with you what to set up:
 
-This repository holds the open-source tools behind that: the `akua` CLI your
-coding agent uses to publish and install, and `akuapkg`, the package format.
-They work with Akua and on their own:
+<!-- generated:quickstart-prompt:start -->
+```text
+Akua lets me build my software once and install it for every customer, each with their own install, on a server Akua runs or one they own.
+Read https://docs.akua.dev/agent-setup/prompt, install the Akua CLI and sign me in with `akua auth login`.
+Then work out with me what I want to set up, and ask me before you change anything.
+```
+<!-- generated:quickstart-prompt:end -->
 
-| Tool                           | What it does                                                                                                                                                              | Install                             |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| [`akua`](packages/cli/)        | Publish and install from a terminal, a CI pipeline or a coding agent: clusters, machines, installs, domains, team. Every command is generated from Akua's public API.     | `brew install akua-dev/tap/akua`    |
-| [`akuapkg`](packages/akuapkg/) | Build typed Kubernetes packages: KCL instead of YAML templates, Helm and Kustomize in a sandbox, every dependency pinned by digest. Also built into `akua` as `akua pkg`. | `brew install akua-dev/tap/akuapkg` |
-
-## Quick start
-
-### Run Akua from your terminal
+Prefer the terminal? Install the CLI and sign in:
 
 ```sh
 brew install akua-dev/tap/akua
-akua auth login               # sign in with your browser
-akua workspaces use my-team   # choose the workspace to work in
-akua clusters list
-akua commands --resource installs
+akua auth login
 ```
 
-Every command takes `--json`, and output switches to a compact agent format
-when a coding agent or CI runs it. No Homebrew? Use the
+Homebrew works on macOS and Linux. On Windows, or without Homebrew, use the
 [checksummed release archives](packages/cli/docs/install.md).
-Full guide: [docs.akua.dev/cli](https://docs.akua.dev/cli).
 
-### Let your coding agent set Akua up
+## What Akua does
 
-Paste the prompt from the [Quickstart](https://docs.akua.dev/quickstart) into your
-coding agent. It installs the CLI, signs you in through your browser and asks
-before every consequential step. Package-authoring skills: [plugins/akuapkg](plugins/akuapkg/).
+Akua runs a separate install of your software for each of your customers, on a
+server Akua runs or on a server the customer owns. For example, an agency
+builds one booking app and gives each client their own copy, with the client's
+own data and web address. You share an app with a customer through one link.
 
-### Build a typed Kubernetes package
+<p align="center">
+  <img src="assets/readme/agent.webp" width="100%" alt="Your agent can do everything. Every step is a command and an API call: the CLI for your coding agent and automated builds, MCP for agents that connect over the Model Context Protocol, and the API for your own apps." />
+</p>
+
+Every step is a command your agent can run and you can read. The `akua` CLI
+covers the whole flow, and the [MCP server](https://docs.akua.dev/ai/platform-mcp)
+and the [API](https://docs.akua.dev/apis/introduction) offer the same steps to
+other tools. To run it yourself:
 
 ```sh
-brew install akua-dev/tap/akuapkg
-akuapkg --version
-akuapkg init hello && cd hello
-akuapkg render --inputs inputs.example.yaml
+akua workspaces list                # the Workspaces you can use
+akua commands --resource clusters   # discover what you can do
+akua docs search "deploy an app"    # search the docs from your terminal
 ```
 
-Homebrew installs the standalone `akuapkg` binary on macOS and Linux
-(ARM64 or x86_64). Already installed `akua`? Use `akua pkg` instead; a
-separate install is not required. Without Homebrew, see the
-[standalone installer and release archives](packages/akuapkg/#install).
+Next: [deploy an app and get its URL](https://docs.akua.dev/guides/deploy-an-app),
+or [share it with a customer](https://docs.akua.dev/guides/share-with-a-customer).
 
-A typo in a field or a value your Kubernetes version does not accept fails the
-render with the file and line. Walkthrough with CRDs and Helm charts:
-[packages/akuapkg](packages/akuapkg/#quick-start).
-Docs: [docs.akua.dev/akua](https://docs.akua.dev/akua).
+## Why you can trust it
 
-## Repository layout
+- **Open source.** The [`akua` CLI](packages/cli/) and the
+  [akuapkg package format](packages/akuapkg/) live in this repository under
+  the [Apache-2.0](LICENSE) license.
+- **Your agent asks first.** The setup prompt has your agent look things up
+  on its own, and ask you before anything that costs money, connects a server,
+  touches production, publishes, shares or deletes. It never asks for or
+  prints secrets, and sign-in happens in your own browser.
+- **Your servers stay yours.** Apps run on servers you or your customers own,
+  or on a server Akua runs for you. On your own servers you pay your provider
+  directly; Akua adds no fee and no markup.
+- **Packages render in a sandbox.** akuapkg runs Helm, Kustomize and KCL as
+  WebAssembly with no access to your files, network or environment, and pins
+  every dependency by digest. The [security model](docs/security-model.md)
+  lists what it guarantees and what it doesn't.
+- **A clear security policy.** Report vulnerabilities privately through
+  [GitHub Security Advisories](https://github.com/akua-dev/akua/security/advisories/new)
+  or to security@akua.dev ([SECURITY.md](SECURITY.md)). Akua's
+  [security page](https://docs.akua.dev/platform/security) says what Akua does
+  and what it doesn't have yet, such as certifications.
+- **Alpha, said plainly.** The package format, the JSON output, and the error
+  and exit codes are stable enough to build on; other interfaces can still
+  change.
 
-| Path                                                                            | Contents                                                                                                                        |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| [`packages/cli`](packages/cli/)                                                 | The `akua` CLI                                                                                                                  |
-| [`packages/akuapkg`](packages/akuapkg/)                                         | akuapkg: the Bun + Effect host, its CLI and TypeScript SDK                                                                      |
-| [`crates/`](crates/)                                                            | The sandboxed render worker (Rust to WebAssembly), the Helm and Kustomize engines (Go to WebAssembly) and the Wasmtime addon    |
-| [`packages/cluster-agent`](packages/cluster-agent/)                             | The Helm chart and Akua package that install Akua's agent, which runs in a customer's cluster and keeps its installs up to date |
-| [`packages/cloudflare-tunnel-connector`](packages/cloudflare-tunnel-connector/) | An akuapkg Package that runs `cloudflared` in a cluster                                                                         |
-| [`packages/private-ingress-gateway`](packages/private-ingress-gateway/)         | The in-cluster HTTP boundary for routes whose services are not public                                                           |
-| [`plugins/`](plugins/)                                                          | Agent plugins and skills                                                                                                        |
-| [`examples/`](examples/)                                                        | Runnable packages, each with its rendered output                                                                                |
-| [`docs/`](docs/)                                                                | Format specifications (package, lockfile, CLI contract), security model, building and releasing                                 |
+## Build a typed Kubernetes package
 
-`akua` and `akuapkg` release together: one version, one
-[GitHub Release](https://github.com/akua-dev/akua/releases) with archives for
-macOS, Linux and Windows. Changes: the release notes on each
-[GitHub Release](https://github.com/akua-dev/akua/releases).
+akuapkg is built into `akua` as `akua pkg`, and you don't need an Akua account
+to use it:
 
-## Status
+```sh
+akua pkg init hello
+cd hello
+akua pkg render --inputs inputs.example.yaml
+```
 
-Alpha. The package format, the JSON output and the error and exit codes are
-stable enough to build on; interfaces can still change before 1.0.
-
-## Security
-
-Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
-The sandbox's guarantees and limits are in
-[docs/security-model.md](docs/security-model.md).
+A typo in a field, or a value your Kubernetes version doesn't accept, fails the
+render with the file and line. To use the format on its own, install
+`brew install akua-dev/tap/akuapkg`. Next:
+[the akuapkg walkthrough](packages/akuapkg/#quick-start) and the
+[package format](https://docs.akua.dev/akua).
 
 ## Contributing
 
-Issues are welcome: bug reports, reproductions, root-cause analysis and design
-feedback. Development happens in Akua's internal monorepo, which this
-repository mirrors exactly, so code pull requests cannot be merged here yet.
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Bug reports, reproductions, root-cause analysis and design feedback are
+welcome as [issues](https://github.com/akua-dev/akua/issues). Akua is developed
+in an internal monorepo that this repository mirrors, so code pull requests
+can't be merged here yet; describe the fix in an issue instead.
+[CONTRIBUTING.md](CONTRIBUTING.md) explains what helps most, and
+[docs/building.md](docs/building.md) how to build and test from a clone. Ask
+questions and share what you build on [Discord](https://akua.dev/discord).
 
-## License
+---
 
-[Apache-2.0](LICENSE).
+<div align="center">
+  <a href="https://docs.akua.dev/quickstart"><img src="assets/readme/cta.webp" width="100%" alt="Get your first customer live today. Start free. Share one link. Get paid." /></a>
+
+  <p>
+    <a href="https://akua.dev">Website</a> ·
+    <a href="https://docs.akua.dev">Docs</a> ·
+    <a href="https://docs.akua.dev/quickstart">Quickstart</a> ·
+    <a href="https://akua.dev/discord">Discord</a>
+  </p>
+</div>

@@ -16,6 +16,7 @@ exports_files(
         "package.json",
         "patches/effect@4.1.4.patch",
         "toolchains.MODULE.bazel",
+        "version.bzl",
     ],
     visibility = ["//visibility:public"],
 )
@@ -58,13 +59,5 @@ filegroup(
 filegroup(
     name = "typescript_only_policy_srcs",
     srcs = [],
-    visibility = ["//visibility:public"],
-)
-
-# cli.akua.dev: forwarding pages to docs.akua.dev, generated from the error
-# catalog and published by .github/workflows/pages.yml.
-filegroup(
-    name = "pages",
-    srcs = glob(["pages/**"]),
     visibility = ["//visibility:public"],
 )
