@@ -24,7 +24,11 @@
             "schema": {
               "type": "string",
               "minLength": 2,
-              "maxLength": 192
+              "maxLength": 192,
+              "description": "Operation ID, `op_<id>`.",
+              "examples": [
+                "op_j572abc..."
+              ]
             },
             "required": true
           },
@@ -208,7 +212,11 @@
             "schema": {
               "type": "string",
               "minLength": 2,
-              "maxLength": 192
+              "maxLength": 192,
+              "description": "Operation ID, `op_<id>`.",
+              "examples": [
+                "op_j572abc..."
+              ]
             },
             "required": true
           },
@@ -403,7 +411,11 @@
             "schema": {
               "type": "string",
               "minLength": 2,
-              "maxLength": 192
+              "maxLength": 192,
+              "description": "Operation ID, `op_<id>`.",
+              "examples": [
+                "op_j572abc..."
+              ]
             },
             "required": true
           },
@@ -1419,7 +1431,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Organization ID, `org_<id>`."
             },
             "required": true
           }
@@ -1499,7 +1512,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Organization ID, `org_<id>`."
             },
             "required": true
           },
@@ -1841,7 +1855,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Organization ID, `org_<id>`."
             },
             "required": true
           }
@@ -1919,7 +1934,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Organization ID, `org_<id>`."
             },
             "required": true
           },
@@ -2047,7 +2063,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Organization ID, `org_<id>`."
             },
             "required": true
           },
@@ -2186,7 +2203,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Organization ID, `org_<id>`."
             },
             "required": true
           },
@@ -2301,7 +2319,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Organization ID, `org_<id>`."
             },
             "required": true
           },
@@ -2311,7 +2330,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 55
+              "maxLength": 55,
+              "description": "Invitation ID, `orgi_<id>`."
             },
             "required": true
           }
@@ -2486,7 +2506,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Organization ID, `org_<id>`."
             },
             "required": true
           },
@@ -2496,7 +2517,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 55
+              "maxLength": 55,
+              "description": "Invitation ID, `orgi_<id>`."
             },
             "required": true
           }
@@ -2586,7 +2608,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Organization ID, `org_<id>`."
             },
             "required": true
           },
@@ -2596,7 +2619,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 55
+              "maxLength": 55,
+              "description": "Invitation ID, `orgi_<id>`."
             },
             "required": true
           }
@@ -6447,6 +6471,126 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
+    "/packages/{id}/grants": {
+      "get": {
+        "tags": [
+          "packages"
+        ],
+        "operationId": "packages.listGrants",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Package ID",
+              "examples": [
+                "pkg_j572abc123def456"
+              ],
+              "minLength": 1,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512,
+              "description": "Pagination cursor from a previous response's `next_cursor`."
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Grants per page (1-100, default 50)",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grants, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageGrantList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          }
+        },
+        "description": "Lists the customer Workspaces that hold a grant to your Package, newest grant first: each Workspace ID, the version it redeemed, the Offer and redemption time that granted it, and when. Use the Workspace ID to revoke a grant. Requires package.grants.list in the Package's Workspace.",
+        "summary": "List package grants",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
     "/packages/{id}/grants/{workspace_id}": {
       "delete": {
         "tags": [
@@ -6474,7 +6618,11 @@
             "schema": {
               "type": "string",
               "minLength": 2,
-              "maxLength": 53
+              "maxLength": 53,
+              "description": "The customer Workspace that holds the grant.",
+              "examples": [
+                "ws_9177x8shcx0niswcn"
+              ]
             },
             "required": true
           },
@@ -6736,7 +6884,11 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "API token ID.",
+              "examples": [
+                "tok_3k9x2mfq8a1b7c4d5e6f"
+              ]
             },
             "required": true
           }
@@ -6804,7 +6956,11 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "API token ID.",
+              "examples": [
+                "tok_3k9x2mfq8a1b7c4d5e6f"
+              ]
             },
             "required": true
           }
@@ -8989,7 +9145,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           }
@@ -9155,7 +9312,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           }
@@ -9719,7 +9877,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -9900,7 +10059,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -10122,7 +10282,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -10339,7 +10500,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -10557,7 +10719,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -10761,7 +10924,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -10966,7 +11130,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -11173,7 +11338,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -11373,7 +11539,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -11589,7 +11756,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -11778,7 +11946,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -11998,7 +12167,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -12228,7 +12398,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -12438,7 +12609,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -12630,7 +12802,8 @@
             "schema": {
               "type": "string",
               "minLength": 3,
-              "maxLength": 54
+              "maxLength": 54,
+              "description": "Cluster ID"
             },
             "required": true
           },
@@ -27704,7 +27877,8 @@
           "operation_id": {
             "type": "string",
             "minLength": 2,
-            "maxLength": 192
+            "maxLength": 192,
+            "description": "The latest Operation: the create, or the deletion."
           },
           "created_at": {
             "type": "integer",
@@ -28141,7 +28315,8 @@
           "operation_id": {
             "type": "string",
             "minLength": 2,
-            "maxLength": 192
+            "maxLength": 192,
+            "description": "The latest Operation: the create, a size change, or the deletion."
           },
           "created_at": {
             "type": "integer",
@@ -28796,7 +28971,8 @@
           "operation_id": {
             "type": "string",
             "minLength": 2,
-            "maxLength": 192
+            "maxLength": 192,
+            "description": "The latest Operation: the create, or the deletion once requested."
           },
           "connector": {
             "$ref": "#/components/schemas/ClusterConnector"
@@ -29811,7 +29987,11 @@
           "id": {
             "type": "string",
             "minLength": 3,
-            "maxLength": 54
+            "maxLength": 54,
+            "description": "API token ID.",
+            "examples": [
+              "tok_3k9x2mfq8a1b7c4d5e6f"
+            ]
           },
           "name": {
             "type": "string",
@@ -29833,7 +30013,10 @@
               {
                 "type": "string",
                 "minLength": 2,
-                "maxLength": 53
+                "maxLength": 53,
+                "examples": [
+                  "ws_j572abc123def4"
+                ]
               },
               {
                 "type": "null"
@@ -29915,7 +30098,11 @@
           "id": {
             "type": "string",
             "minLength": 3,
-            "maxLength": 54
+            "maxLength": 54,
+            "description": "API token ID.",
+            "examples": [
+              "tok_3k9x2mfq8a1b7c4d5e6f"
+            ]
           },
           "name": {
             "type": "string",
@@ -29937,7 +30124,10 @@
               {
                 "type": "string",
                 "minLength": 2,
-                "maxLength": 53
+                "maxLength": 53,
+                "examples": [
+                  "ws_j572abc123def4"
+                ]
               },
               {
                 "type": "null"
@@ -30053,7 +30243,10 @@
               {
                 "type": "string",
                 "minLength": 2,
-                "maxLength": 53
+                "maxLength": 53,
+                "examples": [
+                  "ws_j572abc123def4"
+                ]
               },
               {
                 "type": "null"
@@ -30122,6 +30315,98 @@
           "data",
           "has_more",
           "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "PackageGrantList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageGrant"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if more grants exist after this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more pages."
+          }
+        },
+        "required": [
+          "data",
+          "has_more",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "PackageGrant": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 53,
+            "description": "The customer Workspace that holds the grant.",
+            "examples": [
+              "ws_9177x8shcx0niswcn"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$",
+            "description": "The version the customer redeemed. The grant covers every published version of the Package."
+          },
+          "offer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 4,
+                "maxLength": 56
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Offer whose redemption granted access, or null for a grant made before Akua recorded it."
+          },
+          "redeemed_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Unix timestamp (seconds)",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the customer redeemed the Offer (Unix seconds), or null like offer_id."
+          },
+          "granted_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds)",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "workspace_id",
+          "version",
+          "offer_id",
+          "redeemed_at",
+          "granted_at"
         ],
         "additionalProperties": false
       },
@@ -32431,12 +32716,14 @@
           "id": {
             "type": "string",
             "minLength": 3,
-            "maxLength": 55
+            "maxLength": 55,
+            "description": "Invitation ID, `orgi_<id>`."
           },
           "organization_id": {
             "type": "string",
             "minLength": 3,
-            "maxLength": 54
+            "maxLength": 54,
+            "description": "Organization ID, `org_<id>`."
           },
           "email": {
             "type": "string",
@@ -32588,7 +32875,8 @@
           "id": {
             "type": "string",
             "minLength": 3,
-            "maxLength": 54
+            "maxLength": 54,
+            "description": "Organization ID, `org_<id>`."
           },
           "name": {
             "anyOf": [
