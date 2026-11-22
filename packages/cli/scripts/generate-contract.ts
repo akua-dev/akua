@@ -118,7 +118,8 @@ export const buildContract = Effect.fn('buildContract')(function* (
 
 	const operations: ApiOperation[] = [];
 	const parameters: Record<string, ApiParameter> = {};
-	const resources = new Map<string, ApiResource>();
+	const resourceTags = new Map<string, string[]>();
+	const resourceOperations = new Map<string, number>();
 	for (const { method, path, operation } of publicOperations) {
 		const id = operation.operationId;
 		if (id === undefined || id === '') {
@@ -130,14 +131,12 @@ export const buildContract = Effect.fn('buildContract')(function* (
 		}
 		const resource = kebab(rawResource);
 		const tag = operation.tags?.[0];
-		if (!resources.has(resource)) {
-			const description = tag === undefined ? undefined : tagDescriptions.get(tag);
-			resources.set(resource, {
-				name: resource,
-				title: tag ?? resource,
-				...(description === undefined ? {} : { description })
-			});
-		}
+		resourceTags.set(resource, [
+			...(resourceTags.get(resource) ?? []),
+			...(tag === undefined ? [] : [tag])
+		]);
+		const operationCount = (resourceOperations.get(resource) ?? 0) + 1;
+		resourceOperations.set(resource, operationCount);
 
 		const parameterKeys: string[] = [];
 		for (const parameter of yield* orderParameters(id, path, operation.parameters ?? [])) {
@@ -170,7 +169,11 @@ export const buildContract = Effect.fn('buildContract')(function* (
 
 	operations.sort((left, right) => left.id.localeCompare(right.id));
 	const partial = {
-		resources: [...resources.values()].sort((left, right) => left.name.localeCompare(right.name)),
+		resources: [...resourceTags.entries()]
+			.map(([name, tags]) =>
+				resourceOf(name, tags, resourceOperations.get(name) ?? 0, tagDescriptions)
+			)
+			.sort((left, right) => left.name.localeCompare(right.name)),
 		parameters: sortKeys(parameters),
 		operations
 	};
@@ -399,6 +402,44 @@ function renderContract(contract: ApiContract): string {
 		"import type { ApiContract } from '../api/contract';\n\n" +
 		`export const contract: ApiContract = ${JSON.stringify(contract, null, '\t')};\n`
 	);
+}
+
+/**
+ * A resource's help title: the tag that names it, else the tag most of its operations carry, else
+ * its own name, always in words. A tag that groups a few side operations never names it.
+ */
+function resourceOf(
+	name: string,
+	tags: readonly string[],
+	operations: number,
+	descriptions: ReadonlyMap<string, string | undefined>
+): ApiResource {
+	const counts = new Map<string, number>();
+	for (const tag of tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+	const majority = [...counts.entries()].find(([, count]) => count * 2 > operations)?.[0];
+	const tag = tags.find((candidate) => tagNames(candidate, name)) ?? majority;
+	const description = tag === undefined ? undefined : descriptions.get(tag);
+	return {
+		name,
+		title: humanize(tag ?? name),
+		...(description === undefined ? {} : { description })
+	};
+}
+
+/** A tag names a resource when its words are the resource's, or end with them ("Vault secrets"). */
+function tagNames(tag: string, resource: string): boolean {
+	const slug = kebab(tag.trim().replace(/\s+/g, '-')).toLowerCase();
+	return slug === resource || slug.endsWith(`-${resource}`);
+}
+
+/** Help text words: `machineBootstrap` and `machine-bootstrap` read "Machine bootstrap". */
+function humanize(name: string): string {
+	if (/\s/.test(name)) return name;
+	const words = kebab(name)
+		.split('-')
+		.filter((word) => word.length > 0);
+	const sentence = words.join(' ');
+	return sentence.charAt(0).toUpperCase() + sentence.slice(1);
 }
 
 function invalid(message: string): Effect.Effect<never, ScriptValidationFailure> {

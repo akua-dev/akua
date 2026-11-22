@@ -649,7 +649,9 @@ describe('responses', () => {
 			const error = JSON.parse(result.stdout).error;
 			expect(result.exitCode).toBe(6);
 			expect(error).toMatchObject({ code: 'AKUA_API_7011', status: 503, response: body });
-			expect(error.message).toMatch(/unavailable.*Origin unreachable.*try again/i);
+			expect(error.message).toBe(
+				'The Akua API is temporarily unavailable (HTTP 503). Origin unreachable. Please try again in a few minutes.'
+			);
 		}).pipe(Effect.scoped)
 	);
 

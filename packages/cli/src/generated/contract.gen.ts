@@ -13,7 +13,7 @@ export const contract: ApiContract = {
 		},
 		{
 			"name": "clusters",
-			"title": "clusterJoin"
+			"title": "Clusters"
 		},
 		{
 			"name": "connections",
@@ -21,15 +21,15 @@ export const contract: ApiContract = {
 		},
 		{
 			"name": "installs",
-			"title": "installs"
+			"title": "Installs"
 		},
 		{
 			"name": "machine-bootstrap",
-			"title": "machineBootstrap"
+			"title": "Machine bootstrap"
 		},
 		{
 			"name": "machines",
-			"title": "machines"
+			"title": "Machines"
 		},
 		{
 			"name": "node-pools",
@@ -41,7 +41,7 @@ export const contract: ApiContract = {
 		},
 		{
 			"name": "offers",
-			"title": "offers"
+			"title": "Offers"
 		},
 		{
 			"name": "opencodes",
@@ -49,7 +49,7 @@ export const contract: ApiContract = {
 		},
 		{
 			"name": "operations",
-			"title": "operations"
+			"title": "Operations"
 		},
 		{
 			"name": "order-drafts",
@@ -61,15 +61,15 @@ export const contract: ApiContract = {
 		},
 		{
 			"name": "packages",
-			"title": "packages"
+			"title": "Packages"
 		},
 		{
 			"name": "products",
-			"title": "products"
+			"title": "Products"
 		},
 		{
 			"name": "regions",
-			"title": "regions"
+			"title": "Regions"
 		},
 		{
 			"name": "registry",
@@ -82,15 +82,15 @@ export const contract: ApiContract = {
 		},
 		{
 			"name": "secrets",
-			"title": "vaultSecrets"
+			"title": "Vault secrets"
 		},
 		{
 			"name": "vaults",
-			"title": "vaults"
+			"title": "Vaults"
 		},
 		{
 			"name": "workspaces",
-			"title": "Billing accounts"
+			"title": "Workspaces"
 		}
 	],
 	"parameters": {
@@ -404,6 +404,16 @@ export const contract: ApiContract = {
 				"type": "string",
 				"minLength": 1,
 				"maxLength": 55
+			}
+		},
+		"path:workspace_id": {
+			"name": "workspace_id",
+			"in": "path",
+			"required": true,
+			"schema": {
+				"type": "string",
+				"minLength": 2,
+				"maxLength": 53
 			}
 		},
 		"query:create_parents": {
@@ -1883,6 +1893,19 @@ export const contract: ApiContract = {
 				"path:id:10",
 				"path:version_id",
 				"header:akua-context"
+			]
+		},
+		{
+			"id": "packages.revokeGrant",
+			"method": "DELETE",
+			"path": "/packages/{id}/grants/{workspace_id}",
+			"summary": "Revoke package grant",
+			"auth": true,
+			"parameters": [
+				"path:id:11",
+				"path:workspace_id",
+				"header:akua-context",
+				"header:idempotency-key"
 			]
 		},
 		{

@@ -36,6 +36,12 @@ export function operationError(
 	});
 }
 
+/** The API's detail as a sentence of the CLI's message: it ends in a full stop. */
+function sentence(detail: string): string {
+	const trimmed = String.trimEnd(detail);
+	return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
 function operationErrorDetails(
 	failure: OperationFailure,
 	context: OperationCommandContext
@@ -93,7 +99,7 @@ function operationErrorDetails(
 				code: failure.code === undefined ? 'AKUA_API_ERROR' : `AKUA_API_${failure.code}`,
 				message:
 					failure.status !== undefined && failure.status >= 500 && failure.status < 600
-						? `The Akua API is temporarily unavailable (HTTP ${failure.status}). ${failure.detail === undefined ? '' : `${failure.detail} `}Please try again in a few minutes.`
+						? `The Akua API is temporarily unavailable (HTTP ${failure.status}). ${failure.detail === undefined ? '' : `${sentence(failure.detail)} `}Please try again in a few minutes.`
 						: needsWorkspace(failure, context)
 							? `No workspace selected; ${context.command} runs in a workspace (API: ${failure.detail ?? `HTTP ${failure.status}`}).`
 							: fields.length > 0

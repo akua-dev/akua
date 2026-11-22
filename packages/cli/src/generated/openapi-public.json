@@ -140,7 +140,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -335,7 +335,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -547,7 +547,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -2851,7 +2851,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -3145,7 +3145,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -3283,7 +3283,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -3511,7 +3511,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -3793,7 +3793,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -4007,7 +4007,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -5369,7 +5369,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -5643,7 +5643,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -6444,6 +6444,121 @@
         },
         "description": "Returns the version input schema used by the install wizard, typically generated JSON Schema.",
         "summary": "Get package version input schema",
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
+    "/packages/{id}/grants/{workspace_id}": {
+      "delete": {
+        "tags": [
+          "packages"
+        ],
+        "operationId": "packages.revokeGrant",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Package ID",
+              "examples": [
+                "pkg_j572abc123def456"
+              ],
+              "minLength": 1,
+              "maxLength": 54
+            },
+            "required": true
+          },
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 53
+            },
+            "required": true
+          },
+          {
+            "name": "akua-context",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 53,
+              "description": "Optional workspace/scope context for the request. Carries a single workspace wire id (`ws_…`) today. Only needed for broad tokens - a workspace-owned token implies its workspace.",
+              "examples": [
+                "ws_j572abc123def4"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Optional caller-supplied idempotency key. Any non-empty key up to 64 characters is accepted. Endpoint-specific documentation describes how the key is used.",
+              "examples": [
+                "create-prod-2026-05-07"
+              ]
+            },
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Grant revoked"
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource was not found in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiNotFound"
+                }
+              }
+            }
+          }
+        },
+        "description": "Ends a customer Workspace's access to your Package, which an Offer redemption granted. From then on the Workspace can no longer read, resolve or install any version of it, and redeeming the same Offer again grants nothing. Installs already running keep running unchanged and remain the customer's to delete; they can no longer be updated or have their inputs read. Another Offer for the Package that the Workspace redeems later grants access again; archive the Offers it should not redeem. Retry with the same Idempotency-Key to receive the same answer; a Workspace without a grant answers 404.",
+        "summary": "Revoke package grant",
         "x-platform-visibility": "PUBLIC"
       }
     },
@@ -7960,7 +8075,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -8244,7 +8359,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -8418,7 +8533,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -8706,7 +8821,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -8972,7 +9087,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -9135,7 +9250,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -9340,7 +9455,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -9526,7 +9641,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -9720,7 +9835,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -9939,7 +10054,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -10137,7 +10252,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -10354,7 +10469,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -10579,7 +10694,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -10783,7 +10898,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -10990,7 +11105,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -11193,7 +11308,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -11396,7 +11511,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -11598,7 +11713,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -11815,7 +11930,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -12035,7 +12150,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -12256,7 +12371,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -12450,7 +12565,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -12656,7 +12771,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -18225,7 +18340,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -18505,7 +18620,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -18676,7 +18791,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -18948,7 +19063,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -19354,7 +19469,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -19650,7 +19765,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -19829,7 +19944,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -19993,7 +20108,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -20436,7 +20551,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -20622,7 +20737,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -20808,7 +20923,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -20936,7 +21051,7 @@
             }
           },
           "429": {
-            "description": "The caller is over its per-minute budget.",
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
             "content": {
               "application/json": {
                 "schema": {
@@ -28462,9 +28577,10 @@
           "metrics-server",
           "cni",
           "incluster-api-proxy",
-          "cluster-connector"
+          "cluster-connector",
+          "gateway-api-crds"
         ],
-        "description": "`cni`, `incluster-api-proxy` and `cluster-connector` run on hosted Clusters only, applied from beside the control plane."
+        "description": "`cni`, `incluster-api-proxy`, `cluster-connector` and `gateway-api-crds` run on hosted Clusters only, applied from beside the control plane. `gateway-api-crds` serves the Gateway API standard-channel CRDs, so an Install can expose its web service with an HTTPRoute."
       },
       "ClusterJoinCommand": {
         "type": "object",

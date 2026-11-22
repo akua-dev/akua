@@ -105,7 +105,41 @@ describe('generated API contract', () => {
 			});
 			expect(contract.resources).toEqual([
 				{ name: 'clusters', title: 'Clusters', description: 'Kubernetes clusters.' },
-				{ name: 'offers', title: 'offers' }
+				{ name: 'offers', title: 'Offers' }
+			]);
+		})
+	);
+
+	it.effect('names a resource after the tag that names it, in words, never another group', () =>
+		Effect.gen(function* () {
+			const operation = (operationId: string, tag: string) => ({
+				'x-platform-visibility': 'PUBLIC',
+				operationId,
+				tags: [tag],
+				responses: { '200': { description: 'OK' } }
+			});
+			const contract = yield* contractOf({
+				...document,
+				tags: [
+					{ name: 'Clusters', description: 'Kubernetes clusters.' },
+					{ name: 'Billing accounts', description: 'Billing accounts' }
+				],
+				paths: {
+					'/cluster_join': { get: operation('clusters.joinInfo', 'clusterJoin') },
+					'/clusters': { get: operation('clusters.list', 'Clusters') },
+					'/workspace_billing': { get: operation('workspaces.billing', 'Billing accounts') },
+					'/workspaces': { get: operation('workspaces.list', 'workspaces') },
+					'/opencodes': { get: operation('opencodes.list', 'OpenCode Servers') },
+					'/vault_secrets': { get: operation('secrets.list', 'vaultSecrets') },
+					'/machine_bootstrap': { get: operation('machineBootstrap.get', 'machineBootstrap') }
+				}
+			});
+			expect(contract.resources).toEqual([
+				{ name: 'clusters', title: 'Clusters', description: 'Kubernetes clusters.' },
+				{ name: 'machine-bootstrap', title: 'Machine bootstrap' },
+				{ name: 'opencodes', title: 'OpenCode Servers' },
+				{ name: 'secrets', title: 'Vault secrets' },
+				{ name: 'workspaces', title: 'Workspaces' }
 			]);
 		})
 	);
