@@ -27976,7 +27976,7 @@
           "message": {
             "type": "string",
             "maxLength": 8192,
-            "description": "Optional secret-free step: hostname, download-k0s, configure-provider-id, download-image-credential-provider, verify-image-credential-provider, install-worker, or start-worker. Other text is omitted rather than exposed as guest output. Retained descriptions are bounded to 2 KiB."
+            "description": "Optional secret-free step: hostname, download-k0s, configure-provider-id, download-image-credential-provider, verify-image-credential-provider, install-worker, or start-worker. A provider download that kept failing may add its last curl result as `download-image-credential-provider: curl exit <code>, HTTP <status>`. Other text is omitted rather than exposed as guest output. Retained descriptions are bounded to 2 KiB."
           }
         },
         "required": [

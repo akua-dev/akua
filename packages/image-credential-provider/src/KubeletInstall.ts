@@ -135,14 +135,22 @@ export const renderCredentialProviderConfig = (registry: string) =>
  * requires (`cacheType: Token`) when the provider returns that token itself
  * as the credential. A Pod without a ServiceAccount never reaches it.
  *
+ * A failed download is retried up to six times with exponential backoff
+ * (2 to 32 seconds between attempts): curl's own `--retry` retries only
+ * timeouts and HTTP 408, 429 and 5xx, not a refused or reset connection, a
+ * partial transfer or another 4xx, and `--retry-all-errors` needs curl 7.71
+ * or newer, which a joined server may not have.
+ *
  * The caller defines `akua_image_credential_provider_failed <step>
- * <message>`; the installer calls it on any failure and exits if it
- * returns. `<step>` is `download-image-credential-provider` or
- * `verify-image-credential-provider`; neither argument carries input.
+ * <message> [<detail>]`; the installer calls it on any failure and exits if
+ * it returns. `<step>` is `download-image-credential-provider` or
+ * `verify-image-credential-provider`. A download that keeps failing passes
+ * `<detail>` as `curl exit <code>, HTTP <status>` from its last attempt, digits
+ * only. No argument carries input.
  */
 export const imageCredentialProviderInstaller = (registry: string) => `akua_icp_fail() {
   rm -rf "\${akua_icp_work:-}"
-  akua_image_credential_provider_failed "$1" "$2"
+  akua_image_credential_provider_failed "$@"
   exit 1
 }
 akua_install_image_credential_provider() {
@@ -168,10 +176,25 @@ akua_install_image_credential_provider() {
   esac
   [ "\${#akua_icp_hex}" -eq 64 ] || akua_icp_fail verify-image-credential-provider "Invalid image credential provider digest"
   akua_icp_work=$(mktemp -d) || akua_icp_fail download-image-credential-provider "Could not create a temporary directory"
-  curl -sSfL --proto '=https' --proto-redir '=https' --connect-timeout 10 --max-time 300 --retry 3 \\
-    "https://$akua_icp_registry/v2/\${akua_icp_repository#*/}/blobs/$akua_icp_digest" \\
-    -o "$akua_icp_work/layer.tar.gz" >/dev/null 2>&1 \\
-    || akua_icp_fail download-image-credential-provider "Could not download the image credential provider; check connectivity and retry"
+  akua_icp_attempt=1
+  while :; do
+    rm -f "$akua_icp_work/layer.tar.gz"
+    # Not a command substitution: bash's errtrace would run the caller's ERR trap inside it.
+    if curl -sSfL --proto '=https' --proto-redir '=https' --connect-timeout 10 --max-time 300 \\
+      --write-out '%{http_code}' -o "$akua_icp_work/layer.tar.gz" \\
+      "https://$akua_icp_registry/v2/\${akua_icp_repository#*/}/blobs/$akua_icp_digest" \\
+      >"$akua_icp_work/status" 2>/dev/null; then
+      break
+    else
+      akua_icp_exit=$?
+    fi
+    akua_icp_status=$(cat "$akua_icp_work/status")
+    case "$akua_icp_status" in [0-9][0-9][0-9]) ;; *) akua_icp_status=000 ;; esac
+    [ "$akua_icp_attempt" -lt 6 ] \\
+      || akua_icp_fail download-image-credential-provider "Could not download the image credential provider (curl exit $akua_icp_exit, HTTP $akua_icp_status after $akua_icp_attempt attempts); check connectivity and retry" "curl exit $akua_icp_exit, HTTP $akua_icp_status"
+    sleep $((1 << akua_icp_attempt))
+    akua_icp_attempt=$((akua_icp_attempt + 1))
+  done
   printf '%s  %s\\n' "$akua_icp_hex" "$akua_icp_work/layer.tar.gz" | sha256sum -c - >/dev/null 2>&1 \\
     || akua_icp_fail verify-image-credential-provider "The downloaded image credential provider does not match its pinned digest"
   tar -xzf "$akua_icp_work/layer.tar.gz" -C "$akua_icp_work" >/dev/null 2>&1 \\
