@@ -7010,6 +7010,95 @@
         "x-platform-visibility": "PUBLIC"
       }
     },
+    "/feedback": {
+      "post": {
+        "tags": [
+          "Feedback"
+        ],
+        "operationId": "feedback.create",
+        "parameters": [],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The message reached the Akua team. The receipt shows what was sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiBadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiUnauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not act in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiForbidden"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The caller is over a rate budget, or a resource it adds to is at its limit (resource exhausted).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiTooManyRequests"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiServiceUnavailable"
+                }
+              }
+            }
+          }
+        },
+        "description": "Sends a message to the Akua team. It is attributed to the person the credential belongs to, never to a user named in the request. The message is delivered to a private team channel with your user ID, your account email and the `User-Agent` of your client (for the Akua CLI: its version, your operating system and architecture, and the Bun version); nothing else is attached. Each person may send a few messages per minute.",
+        "summary": "Send feedback to the Akua team",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFeedbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "x-platform-visibility": "PUBLIC"
+      }
+    },
     "/registry/upstreams": {
       "post": {
         "tags": [
@@ -15484,7 +15573,7 @@
           }
         },
         "description": "Writes text to the standard input of a command started with `stdin: true`. Requires `run_commands`. Commands and file operations need an `ACTIVE` sandbox; on any other state they answer 409.",
-        "summary": "Write to a command’s input",
+        "summary": "Write command input",
         "requestBody": {
           "content": {
             "application/json": {
@@ -29981,6 +30070,69 @@
         ],
         "additionalProperties": false
       },
+      "FeedbackReceipt": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The message as delivered, without leading or trailing whitespace. The team channel shows it with @ and mention forms made inert."
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The user the message is attributed to: the person the credential belongs to."
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The account email sent with the message, or null if the credential has none."
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The client identification sent with the message: the `User-Agent` header, at most 200 characters, or null if the request had none.",
+            "examples": [
+              "akua-cli/0.13.9 (darwin; arm64) bun/1.4.4"
+            ]
+          }
+        },
+        "required": [
+          "message",
+          "user_id",
+          "email",
+          "client"
+        ],
+        "additionalProperties": false
+      },
+      "CreateFeedbackRequest": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "What happened, or what you would like to see. The Akua team reads it in a private channel together with your user ID, the email of your account and the `User-Agent` of the client you sent it with (for the Akua CLI: its version, your operating system and architecture).",
+            "examples": [
+              "akua clusters list is slow for workspaces with many clusters"
+            ],
+            "minLength": 1,
+            "maxLength": 1500
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
       "ApiToken": {
         "type": "object",
         "properties": {
@@ -33458,6 +33610,9 @@
     },
     {
       "name": "API Tokens"
+    },
+    {
+      "name": "Feedback"
     },
     {
       "name": "Registry",

@@ -13,11 +13,12 @@ import {
 	Stdio,
 	Stream
 } from 'effect';
-import { SecureRandom } from 'effect/crypto';
+import { Digest, SecureRandom } from 'effect/crypto';
 import { HttpClient, HttpClientRequest } from 'effect/http';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 
 import { AkuaHttpClientLive } from './http-client-live';
+import { InstallationLive } from './installation-live';
 import {
 	Browser,
 	BrowserFailure,
@@ -338,6 +339,7 @@ export const PackageCliLive = Layer.effect(
 
 export type CliPlatform =
 	| ChildProcessSpawner.ChildProcessSpawner
+	| Digest.Digest
 	| SecureRandom.SecureRandom
 	| FileSystem.FileSystem
 	| Path.Path
@@ -355,6 +357,11 @@ export function CliLive(
 		SecureConfigLive,
 		PublicInputLive,
 		PublicOutputLive,
+		InstallationLive({
+			execPath: process.execPath,
+			platform: process.platform,
+			arch: process.arch
+		}),
 		packageCli
 	).pipe(Layer.provideMerge(AkuaHttpClientLive(cliVersion)));
 }

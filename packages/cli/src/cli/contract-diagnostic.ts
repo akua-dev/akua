@@ -34,8 +34,8 @@ export const diagnoseContractFailure = Effect.fnUntraced(function* (
 			message: error.message,
 			nextSteps: [
 				{
-					command: 'brew upgrade akua',
-					description: 'Your akua CLI is older than the API. Update with `brew upgrade akua`.'
+					command: 'akua update',
+					description: 'Your akua CLI is older than the API. Update it with `akua update`.'
 				},
 				...error.nextSteps
 			]

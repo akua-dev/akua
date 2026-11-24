@@ -16,6 +16,7 @@ import { discoveryCommand } from './discovery';
 import { docsCommand, docsHelp } from './docs';
 import { Invocation } from './invocation';
 import { akua } from './root';
+import { updateCommand, withUpdateNotice } from './update';
 import { workspaceContextCommands } from './workspaces';
 import { PackagePublishHost } from './package-publish';
 
@@ -29,6 +30,7 @@ export function akuaCommand(api: ApiContract) {
 			...(api.resources.some((resource) => resource.name === 'auth') ? [] : [authCommand]),
 			discoveryCommand(api),
 			docsCommand,
+			updateCommand,
 			Command.make('pkg').pipe(
 				Command.withDescription('Build, render, publish, and inspect Packages (akua pkg --help)')
 			),
@@ -60,8 +62,22 @@ export const runAkua = Effect.fn('runAkua')(function* (
 	}
 	const mode = detected.success;
 	const packageArgs = withoutOutputFlags(argv);
-	if (packageArgs[0] === 'pkg') return yield* runPackageCommand(packageArgs, mode);
+	return yield* withUpdateNotice(
+		packageArgs[0] === 'pkg'
+			? runPackageCommand(packageArgs, mode)
+			: runCommand(argv, version, api, mode),
+		{ mode, version, command: packageArgs[0] }
+	);
+});
 
+/** One parsed `akua` command, other than `akua pkg`. */
+const runCommand = Effect.fnUntraced(function* (
+	argv: readonly string[],
+	version: string,
+	api: ApiContract,
+	mode: OutputMode
+): Effect.fn.Return<number, never, CliServices> {
+	const console = yield* Console;
 	const exitCode = yield* Ref.make(0);
 	const helpPath = yield* Ref.make(Option.none<ReadonlyArray<string>>());
 	const captured = capturingConsole();
@@ -72,7 +88,7 @@ export const runAkua = Effect.fn('runAkua')(function* (
 		Effect.provideService(EffectConsole.Console, captured.console),
 		Effect.provide(
 			Layer.mergeAll(
-				Layer.succeed(Invocation, { mode, exitCode }),
+				Layer.succeed(Invocation, { mode, version, exitCode }),
 				ApiClient.layer,
 				CliConfig.layer({
 					builtIns: [recordingHelp(helpPath), GlobalFlag.Version, GlobalFlag.Completions]

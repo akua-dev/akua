@@ -68,7 +68,7 @@ export const ERROR_CATALOG: ReadonlyArray<ErrorCatalogEntry> = [
     code: "E_MANIFEST_HELM_CHART_INVALID",
     section: "Manifest and lockfile",
     summary:
-      "A `repo` dependency's `chart` contains a path separator or `..`. A chart name must be a single plain name, which keeps the chart cache free of path confusion."
+      "A `repo` dependency's `chart` contains a path separator or a `..` segment. A chart name must be a single plain name, which keeps the chart cache free of path confusion."
   },
   {
     code: "E_MANIFEST_OCI_USERINFO",
@@ -105,7 +105,7 @@ export const ERROR_CATALOG: ReadonlyArray<ErrorCatalogEntry> = [
     code: "E_LOCK_DRIFT",
     section: "Manifest and lockfile",
     summary:
-      "`akua lock --check` found `akua.lock` out of sync with `akua.toml`. Run `akua pkg lock` without `--check` to refresh it."
+      "`akua pkg lock --check` found `akua.lock` out of sync with `akua.toml`. Run `akua pkg lock` without `--check` to refresh it."
   },
   {
     code: "E_DEP_KIND_MISMATCH",

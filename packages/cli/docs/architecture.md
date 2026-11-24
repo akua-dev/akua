@@ -241,6 +241,8 @@ akua clusters create --name demo --region-id reg_123
 akua clusters get clu_123                # path parameters are arguments
 akua workspaces list --input -           # stdin JSON request
 akua machines create --input request.json # file JSON request
+akua update --check                      # installed and latest release
+akua update                              # brew upgrade, or replace a release binary
 akua --help                              # also -h
 akua --version                           # also -v or -V
 ```

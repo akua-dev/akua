@@ -20,6 +20,10 @@ export const contract: ApiContract = {
 			"title": "Vault connections"
 		},
 		{
+			"name": "feedback",
+			"title": "Feedback"
+		},
+		{
 			"name": "installs",
 			"title": "Installs"
 		},
@@ -1198,6 +1202,20 @@ export const contract: ApiContract = {
 				"required": true,
 				"schema": {
 					"$ref": "#/$defs/TestIamPermissionsRequest"
+				}
+			}
+		},
+		{
+			"id": "feedback.create",
+			"method": "POST",
+			"path": "/feedback",
+			"summary": "Send feedback to the Akua team",
+			"auth": true,
+			"parameters": [],
+			"body": {
+				"required": true,
+				"schema": {
+					"$ref": "#/$defs/CreateFeedbackRequest"
 				}
 			}
 		},
@@ -2490,7 +2508,7 @@ export const contract: ApiContract = {
 			"id": "sandboxes.writeCommandStdin",
 			"method": "POST",
 			"path": "/sandboxes/{id}/commands/{command_id}:writeStdin",
-			"summary": "Write to a command’s input",
+			"summary": "Write command input",
 			"auth": true,
 			"parameters": [
 				"path:id:15",
@@ -3237,6 +3255,21 @@ export const contract: ApiContract = {
 			"required": [
 				"organization",
 				"display_name"
+			],
+			"additionalProperties": false
+		},
+		"CreateFeedbackRequest": {
+			"type": "object",
+			"properties": {
+				"message": {
+					"type": "string",
+					"description": "What happened, or what you would like to see. The Akua team reads it in a private channel together with your user ID, the email of your account and the `User-Agent` of the client you sent it with (for the Akua CLI: its version, your operating system and architecture).",
+					"minLength": 1,
+					"maxLength": 1500
+				}
+			},
+			"required": [
+				"message"
 			],
 			"additionalProperties": false
 		},

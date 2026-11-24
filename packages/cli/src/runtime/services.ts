@@ -1,5 +1,7 @@
-import { Context, Effect, Schema, type Stream } from 'effect';
+import { Context, Effect, Option, Schema, type Stream } from 'effect';
 import type { HttpClient } from 'effect/http';
+
+import type { ReleaseTarget } from '../../scripts/runtime/release-services';
 
 export interface HttpResponse {
 	readonly status: number;
@@ -136,7 +138,64 @@ export class PackageCli extends Context.Service<
 	}
 >()('platform/cli/PackageCli') {}
 
+export class InstallationFailure extends Schema.TaggedError<InstallationFailure>()(
+	'InstallationFailure',
+	{
+		reason: Schema.Literals(['locate', 'checksum', 'archive', 'permission', 'write', 'run']),
+		message: Schema.String,
+		cause: Schema.optionalKey(Schema.Defect())
+	}
+) {}
+
+/** The executable this process runs from, with symlinks resolved. */
+export interface RunningExecutable {
+	readonly path: string;
+	readonly platform: string;
+	readonly arch: string;
+}
+
+/** The last release check, saved next to the config file. */
+export const UpdateCheck = Schema.Struct({
+	latest_version: Schema.String,
+	/** Milliseconds since the epoch. */
+	checked_at: Schema.Finite
+});
+export type UpdateCheck = typeof UpdateCheck.Type;
+
+/** This installation of `akua`: where it runs from and how to replace it. */
+export class Installation extends Context.Service<
+	Installation,
+	{
+		readonly executable: Effect.Effect<RunningExecutable, InstallationFailure>;
+		/**
+		 * Verifies the release archive's SHA-256, then atomically replaces the
+		 * executable at `path` with the one the archive contains.
+		 */
+		readonly replaceExecutable: (input: {
+			readonly path: string;
+			readonly target: ReleaseTarget;
+			readonly archive: Uint8Array;
+			readonly sha256: string;
+		}) => Effect.Effect<void, InstallationFailure>;
+		/**
+		 * Runs a package manager and returns its exit code. Without `onOutput`
+		 * it shares this terminal; with it, its output goes to `onOutput`.
+		 */
+		readonly run: (
+			command: readonly [string, ...string[]],
+			onOutput?: (text: string) => Effect.Effect<void>
+		) => Effect.Effect<number, InstallationFailure>;
+		/** The saved release check; a missing or unreadable file is none. */
+		readonly readUpdateCheck: (path: string) => Effect.Effect<Option.Option<UpdateCheck>>;
+		readonly saveUpdateCheck: (
+			path: string,
+			check: UpdateCheck
+		) => Effect.Effect<void, InstallationFailure>;
+	}
+>()('platform/cli/Installation') {}
+
 export type CliServices =
+	| Installation
 	| Http
 	| HttpClient.HttpClient
 	| Browser

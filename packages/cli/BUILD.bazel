@@ -23,10 +23,12 @@ exports_files(
 
 filegroup(
     name = "srcs",
-    # The runtime contract diagnostic reuses the generator's request projection.
+    # The runtime contract diagnostic reuses the generator's request projection,
+    # and `akua update` the release asset contract.
     srcs = [
         "scripts/generate-contract.ts",
         "scripts/runtime/cli-live.ts",
+        _RELEASE_SERVICES,
         "scripts/runtime/services.ts",
         "scripts/runtime/services-live.ts",
     ] + glob(

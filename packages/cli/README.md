@@ -28,17 +28,35 @@ akua commands --limit 1
 akua pkg version
 ```
 
-Upgrade with:
-
-```sh
-brew update
-brew upgrade akua
-```
-
 The formula is maintained in `akua-dev/homebrew-tap`.
 
 No Homebrew? See [manual install](docs/install.md) for checksummed release
 archives.
+
+## Update
+
+```sh
+akua update --check   # the installed and the latest version, without changing anything
+akua update           # install the latest release
+```
+
+`akua update` works out how this `akua` was installed:
+
+- Installed with Homebrew, it runs `brew upgrade akua-dev/tap/akua`.
+- A release binary from the [manual install](docs/install.md) is replaced in
+  place: the CLI downloads the latest archive for this OS and architecture from
+  the GitHub release, checks it against the release's `.sha256` file, and
+  renames the new executable over the old one. The old one stays if any step
+  fails.
+- Anything else, such as an `akua` in `/usr/bin` that a system package
+  manager owns, is left alone; the CLI prints the commands to run instead.
+
+On an interactive terminal, the CLI checks for a newer release at most every
+20 hours and then prints one line on stderr until you update. The check runs
+next to your command and waits for GitHub at most one second after it.
+Agent, JSON, quiet and CI runs never check. Set `AKUA_NO_UPDATE_CHECK=1` to
+turn the check off. The result is saved as `update-check.json` next to the
+selected config file.
 
 ## First commands
 
@@ -215,13 +233,26 @@ belong only in the generated request body.
 
 On a request-shape validation failure, the CLI can compare its embedded request
 contract with `/openapi.json` on the selected API server. If they differ, it adds:
-“Your akua CLI is older than the API. Update with `brew upgrade akua`.”
+“Your akua CLI is older than the API. Update it with `akua update`.”
 For a local validation failure, it first checks that the live schema accepts
 the input. The original error and exit code are preserved.
 
 This unauthenticated check runs only on those failures, has a two-second limit,
 and never sends the rejected input, retries the operation, or replaces the
 embedded command contract. Unavailable discovery leaves the original error alone.
+
+## Send feedback
+
+```sh
+akua feedback create --message "what happened, or what you would like to see"
+```
+
+`akua feedback create` sends the message to the Akua team through the API
+(`POST /v1/feedback`). It needs a sign-in. The message arrives with your user ID,
+your account email, and the CLI's `User-Agent` (CLI version, operating system,
+architecture, and Bun version), and the command prints a receipt with exactly
+those values. No token, workspace, or file path is attached. A message holds up to 1,500 characters; each person can send a few per
+minute.
 
 ## Learn more
 

@@ -10,7 +10,7 @@ import { operationContext } from '../src/cli/operation-context';
 import { operationError, toCliFailure } from '../src/cli/operation-errors';
 import { runAkua, temporaryHome, writeConfigFile } from './fake-api';
 
-const upgrade = 'Your akua CLI is older than the API. Update with `brew upgrade akua`.';
+const upgrade = 'Your akua CLI is older than the API. Update it with `akua update`.';
 
 const document = (maxLength: number, includeKind = false) => ({
 	openapi: '3.1.0',
@@ -90,7 +90,7 @@ it.effect.each(['business', 'discovery-unavailable', 'upgrade'] as const)(
 				Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord({})))
 			);
 			expect(error.code).toBe(mode === 'business' ? 'AKUA_API_ERROR' : 'AKUA_INPUT_INVALID');
-			expect(error.nextSteps.some(({ command }) => command === 'brew upgrade akua')).toBe(
+			expect(error.nextSteps.some(({ command }) => command === 'akua update')).toBe(
 				mode === 'upgrade'
 			);
 			expect(error.cause).toBe(original);
@@ -122,7 +122,7 @@ it.effect('keeps a server shape error and adds the upgrade hint when contracts d
 			response: rejection
 		});
 		expect(result.stdout).toContain(upgrade);
-		expect(error.next_steps).toContainEqual({ command: 'brew upgrade akua', description: upgrade });
+		expect(error.next_steps).toContainEqual({ command: 'akua update', description: upgrade });
 		expect(result.requests.map((request) => request.url.href)).toEqual([
 			'https://selected.example.test/v1/things',
 			'https://selected.example.test/openapi.json'

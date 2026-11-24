@@ -40,18 +40,18 @@ if command -v sha256sum >/dev/null 2>&1; then
 else
   shasum -a 256 --check "${ASSET}.sha256"
 fi
-INSTALL_ROOT="$HOME/.local/libexec/akua-v${VERSION}"
-mkdir -p "$INSTALL_ROOT" "$HOME/.local/bin"
-tar -xzf "$ASSET" -C "$INSTALL_ROOT"
-ln -sfn "$INSTALL_ROOT/akua" "$HOME/.local/bin/akua"
+mkdir -p "$HOME/.local/bin"
+tar -xzf "$ASSET" -C "$HOME/.local/bin" akua
 "$HOME/.local/bin/akua" --version
 "$HOME/.local/bin/akua" --help
 "$HOME/.local/bin/akua" commands --limit 1
 "$HOME/.local/bin/akua" pkg version
 ```
 
-Ensure `~/.local/bin` is on `PATH`. Manual upgrades repeat these steps with a
-newer `VERSION`, replacing `~/.local/bin/akua`. The CLI does not self-update.
+Ensure `~/.local/bin` is on `PATH`. To upgrade later, run `akua update`: it
+downloads the latest release for this OS and architecture, checks it against
+its `.sha256` file, and replaces `~/.local/bin/akua`. See
+[Update](../README.md#update).
 
 ## Windows x64
 
@@ -69,11 +69,8 @@ $Expected = ((Get-Content "$Asset.sha256") -split "\s+")[0].ToLower()
 $Actual = (Get-FileHash $Asset -Algorithm SHA256).Hash.ToLower()
 if ($Actual -ne $Expected) { throw "SHA-256 mismatch for $Asset" }
 Expand-Archive $Asset -DestinationPath .\akua-release -Force
-$InstallRoot = "$HOME\libexec\akua-v$Version"
-New-Item -ItemType Directory -Force "$InstallRoot" | Out-Null
-Copy-Item .\akua-release\* "$InstallRoot" -Recurse -Force
 New-Item -ItemType Directory -Force "$HOME\bin" | Out-Null
-Copy-Item "$InstallRoot\akua.exe" "$HOME\bin\akua.exe" -Force
+Copy-Item .\akua-release\akua.exe "$HOME\bin\akua.exe" -Force
 & "$HOME\bin\akua.exe" --version
 & "$HOME\bin\akua.exe" --help
 & "$HOME\bin\akua.exe" commands --limit 1
@@ -82,13 +79,13 @@ Copy-Item "$InstallRoot\akua.exe" "$HOME\bin\akua.exe" -Force
 
 ## Supported release artifacts
 
-| Platform | Architecture | Asset | Runtime baseline |
-| --- | --- | --- | --- |
-| macOS | Apple Silicon arm64 | `akua-v0.13.0-darwin-arm64.tar.gz` | Bun darwin arm64 |
-| macOS | Intel x64 | `akua-v0.13.0-darwin-x64.tar.gz` | Bun darwin x64 |
-| Linux | glibc arm64 | `akua-v0.13.0-linux-arm64.tar.gz` | Bun linux arm64 |
-| Linux | glibc x64 | `akua-v0.13.0-linux-x64.tar.gz` | Bun linux x64 baseline |
-| Windows | x64 | `akua-v0.13.0-windows-x64.zip` | Bun windows x64 baseline |
+| Platform | Architecture        | Asset                              | Runtime baseline         |
+| -------- | ------------------- | ---------------------------------- | ------------------------ |
+| macOS    | Apple Silicon arm64 | `akua-v0.13.0-darwin-arm64.tar.gz` | Bun darwin arm64         |
+| macOS    | Intel x64           | `akua-v0.13.0-darwin-x64.tar.gz`   | Bun darwin x64           |
+| Linux    | glibc arm64         | `akua-v0.13.0-linux-arm64.tar.gz`  | Bun linux arm64          |
+| Linux    | glibc x64           | `akua-v0.13.0-linux-x64.tar.gz`    | Bun linux x64 baseline   |
+| Windows  | x64                 | `akua-v0.13.0-windows-x64.zip`     | Bun windows x64 baseline |
 
 Linux musl, Windows arm64, and other systems are not in the tested release
 contract. x64 Linux and Windows use Bun's baseline target for older CPUs. Unix

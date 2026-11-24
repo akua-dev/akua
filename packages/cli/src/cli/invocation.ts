@@ -13,6 +13,8 @@ export class Invocation extends Context.Service<
 	Invocation,
 	{
 		readonly mode: OutputMode;
+		/** The running CLI's version. */
+		readonly version: string;
 		readonly exitCode: Ref.Ref<number>;
 	}
 >()('platform/cli/Invocation') {}

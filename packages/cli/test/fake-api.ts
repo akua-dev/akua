@@ -9,6 +9,8 @@ import {
 	Browser,
 	Console,
 	Http,
+	Installation,
+	InstallationFailure,
 	PackageCli,
 	Process,
 	PublicInput,
@@ -47,6 +49,10 @@ export interface RunOptions {
 	readonly inputs?: Readonly<Record<string, string>>;
 	/** Pretend stdout is a terminal (human mode unless flags or env say otherwise). */
 	readonly tty?: boolean;
+	/** The CLI version under test; defaults to the source build's. */
+	readonly version?: string;
+	/** This installation of akua; by default it cannot be located, so nothing checks for updates. */
+	readonly installation?: Layer.Layer<Installation>;
 }
 
 export interface RunResult {
@@ -158,10 +164,20 @@ export const runAkua = Effect.fnUntraced(function* (
 		Layer.succeed(Browser, { launch: () => Effect.die('browser is not under test') }),
 		Layer.succeed(Process, { awaitSignal: Effect.never }),
 		Layer.succeed(PackageCli, { execute: () => Effect.succeed(0) }),
+		options.installation ??
+			Layer.succeed(Installation, {
+				executable: Effect.fail(
+					new InstallationFailure({ reason: 'locate', message: 'not under test' })
+				),
+				replaceExecutable: () => Effect.die('installation is not under test'),
+				run: () => Effect.die('installation is not under test'),
+				readUpdateCheck: () => Effect.die('installation is not under test'),
+				saveUpdateCheck: () => Effect.die('installation is not under test')
+			}),
 		SecureConfigLive.pipe(Layer.provide(Layer.mergeAll(BunServices.layer, BunCrypto.layer)))
 	);
 
-	const exitCode = yield* runProgram(argv, VERSION, options.contract).pipe(
+	const exitCode = yield* runProgram(argv, options.version ?? VERSION, options.contract).pipe(
 		Effect.provide(services),
 		Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord({ ...options.env })))
 	);
